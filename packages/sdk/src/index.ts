@@ -9,6 +9,7 @@ export interface TrackOrderParams {
   name?: string;
   phone?: string;
   status?: string;
+  productName?: string;
 }
 
 export interface TrackOrderResult {
@@ -21,9 +22,6 @@ export interface TrackOrderResult {
 let globalConfig: TrackerConfig | null = null;
 let listenerAttached = false;
 
-/**
- * 🚀 تهيئة النظام مرة واحدة في التطبيق بالكامل
- */
 export function initTracker(config: TrackerConfig) {
   globalConfig = {
     baseUrl: (config.baseUrl || 'http://localhost:3000').replace(/\/$/, ''),
@@ -31,7 +29,6 @@ export function initTracker(config: TrackerConfig) {
     ...config,
   };
 
-  // تفعيل الاستماع التلقائي لعناصر data-track-status
   if (typeof window !== 'undefined' && globalConfig.autoCapture && !listenerAttached) {
     setupAutoCapture();
   }
@@ -44,11 +41,11 @@ function getConfig(): TrackerConfig {
   return globalConfig;
 }
 
-/**
- * ⚡ إنشاء طلب جديد برمجياً
- */
 export async function trackOrder(params: TrackOrderParams): Promise<TrackOrderResult> {
   const config = getConfig();
+
+  // ✅ التصحيح: البحث عن productName أولاً، وإن لم يوجد يفحص الـ DOM تلقائياً
+  const finalProductName = getAutoCapturedProductName(params.productName);
 
   const response = await fetch(`${config.baseUrl}/api/webhooks`, {
     method: 'POST',
@@ -60,6 +57,7 @@ export async function trackOrder(params: TrackOrderParams): Promise<TrackOrderRe
       order_id: params.orderId,
       customer_name: params.name,
       customer_phone: params.phone,
+      product_name: finalProductName,
       status: params.status || 'order_placed',
     }),
   });
@@ -87,9 +85,6 @@ export async function trackOrder(params: TrackOrderParams): Promise<TrackOrderRe
   };
 }
 
-/**
- * 📦 تحديث حالة طلب برمجياً (سطر واحد بدون أي نصوص عربية)
- */
 export async function updateStatus(orderId: string, status: string): Promise<any> {
   const config = getConfig();
 
@@ -113,13 +108,9 @@ export async function updateStatus(orderId: string, status: string): Promise<any
   return response.json();
 }
 
-/**
- * 🕵️‍♂️ محرك الالتقاط التلقائي (Autocapture Engine)
- */
 function setupAutoCapture() {
   listenerAttached = true;
 
-  // 1. التقاط الضغط على الأزرار التي تحمل data-track-status
   document.addEventListener('click', async (e) => {
     const target = (e.target as HTMLElement)?.closest('[data-track-status]') as HTMLElement | null;
     if (!target) return;
@@ -137,7 +128,6 @@ function setupAutoCapture() {
     }
   });
 
-  // 2. التقاط تغيير الـ Checkbox التي تحمل data-track-status
   document.addEventListener('change', async (e) => {
     const target = e.target as HTMLInputElement | null;
     if (!target || !target.matches('input[type="checkbox"][data-track-status]')) return;
@@ -156,12 +146,27 @@ function setupAutoCapture() {
   });
 }
 
-/**
- * 🚀 النمط الأسرع: ينشئ الطلب ويحول المتصفح فوراً لصفحة التتبع (Zero-UI)
- */
 export async function trackAndRedirect(params: TrackOrderParams): Promise<void> {
   const { trackingUrl } = await trackOrder(params);
   if (typeof window !== 'undefined' && trackingUrl) {
     window.location.href = trackingUrl;
   }
+}
+
+function getAutoCapturedProductName(explicitName?: string): string | undefined {
+  if (explicitName && explicitName.trim()) {
+    return explicitName.trim();
+  }
+
+  if (typeof document !== 'undefined') {
+    const el = document.querySelector('[data-track-product]');
+    if (el) {
+      if ('value' in el && typeof (el as HTMLInputElement).value === 'string') {
+        return (el as HTMLInputElement).value.trim();
+      }
+      return el.textContent?.trim() || undefined;
+    }
+  }
+
+  return undefined;
 }

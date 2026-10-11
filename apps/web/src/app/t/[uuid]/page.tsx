@@ -54,7 +54,7 @@ export default async function TrackingPage({ params }: PageProps) {
       externalOrderId={order.external_order_id}
       customerName={order.customer_name}
       productName={order.product_name}
-      productImage={order.product_image}
+      
       storeName={storeName}
       initialEvents={formattedEvents}
     />

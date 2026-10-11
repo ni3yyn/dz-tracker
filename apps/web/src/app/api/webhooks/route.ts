@@ -51,6 +51,8 @@ export async function POST(req: Request) {
       customerPhone: body.customer_phone,
       statusRaw: body.status,
       description: body.description,
+      productName: body.product_name || body.productName,     // 👈 استقبال الاسم
+      productImage: body.product_image || body.productImage,  // 👈 استقبال الصورة
     });
 
     if (!result.success) {

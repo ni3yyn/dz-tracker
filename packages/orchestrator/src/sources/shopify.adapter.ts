@@ -18,11 +18,11 @@ export class ShopifyAdapter {
   static normalize(merchantId: string, payload: any): TrackingEvent {
     const externalOrderId = payload.name || `#${payload.order_number}` || String(payload.id);
 
-    // تنظيف اسم العميل من الرموز الزائدة
+    // 1. تنظيف اسم العميل
     let customerName = payload.customer
       ? `${payload.customer.first_name || ''} ${payload.customer.last_name || ''}`.trim()
       : payload.shipping_address?.name || undefined;
-    
+
     if (customerName) {
       customerName = customerName.replace(/[-_]$/, '').trim();
     }
@@ -32,11 +32,23 @@ export class ShopifyAdapter {
       payload.shipping_address?.phone ||
       payload.billing_address?.phone ||
       undefined;
-    const firstItem = payload.line_items && payload.line_items.length > 0 ? payload.line_items[0] : null;
-    const productName = firstItem?.title || undefined;
-    const productImage = firstItem?.image?.src || firstItem?.image_url || undefined;
 
-    // فحص الشحنة وتحديد الحالة والوصف الذكي
+    // 2. 🛍️ استخراج وتلخيص منتجات السلة بذكاء (منتج واحد أو سلة متعددة)
+    const items = Array.isArray(payload.line_items) ? payload.line_items : [];
+    let productName: string | undefined = undefined;
+
+    if (items.length === 1) {
+      const first = items[0];
+      const qty = Number(first.quantity) || 1;
+      const title = first.title || 'منتج';
+      productName = qty > 1 ? `${title} (×${qty})` : title;
+    } else if (items.length > 1) {
+      const firstTitle = items[0]?.title || 'منتج';
+      const remainingCount = items.length - 1;
+      productName = `${firstTitle} (+ ${remainingCount} منتج${remainingCount > 1 ? 'ات أخرى' : ' آخر'})`;
+    }
+
+    // 3. تحليل بيانات الشحن والتوصيل (Fulfillments)
     let statusRaw = 'order_placed';
     let carrierName: string | undefined;
     let carrierTrackingNumber: string | undefined;
@@ -64,7 +76,6 @@ export class ShopifyAdapter {
           : 'الشحنة في طريقها إليك مع مندوب التوصيل';
       } else if (payload.fulfillment_status === 'fulfilled') {
         statusRaw = 'fulfilled';
-        // 👇 صياغة ذكية: إذا لم يكن هناك بوليصة لا تذكرها أبداً
         if (carrierTrackingNumber) {
           description = `تم تجهيز الشحنة وإصدار بوليصة التتبع: ${carrierTrackingNumber}${carrierName ? ` عبر ${carrierName}` : ''}`;
         } else if (carrierName) {
@@ -86,8 +97,7 @@ export class ShopifyAdapter {
       externalOrderId,
       customerName,
       customerPhone,
-      productName,   // 👈 أضف هذا
-      productImage,  // 👈 أضف هذا
+      productName, // 👈 الاسم الملخص تلقائياً
       statusRaw,
       description,
       carrierName,

@@ -10,7 +10,6 @@ interface Props {
   externalOrderId: string;
   customerName: string | null;
   productName: string | null;
-  productImage: string | null;
   storeName: string;
   initialEvents: TimelineEvent[];
 }
@@ -20,7 +19,6 @@ export function TrackingLiveView({
   externalOrderId,
   customerName,
   productName,
-  productImage,
   storeName,
   initialEvents,
 }: Props) {
@@ -86,20 +84,24 @@ export function TrackingLiveView({
             </p>
           )}
 
-          {/* 🛍️ بطاقة المنتج الذكية الجديدة (تظهر إذا وُجد اسم أو صورة للمنتج) */}
-          {(productName || productImage) && (
-            <div className={styles.productSnippetCard}>
-              {productImage && (
-                <img
-                  src={productImage}
-                  alt={productName || 'المنتج'}
-                  className={styles.productThumbnail}
-                />
-              )}
-              <div className={styles.productSnippetInfo}>
-                <span className={styles.productSnippetLabel}>محتويات الشحنة:</span>
-                <span className={styles.productSnippetTitle}>{productName || 'منتجات المتجر'}</span>
-              </div>
+          {/* 📦 شريط اسم المنتج النصي الأنيق (بدون صور) */}
+          {productName && (
+            <div style={{
+              marginTop: '0.9rem',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '0.5rem 0.8rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.88rem',
+              color: '#475569',
+              fontWeight: 600,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+            }}>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>محتوى الطلب:</span>
+              <span style={{ color: '#0f172a', fontWeight: 700 }}>{productName}</span>
             </div>
           )}
         </header>
