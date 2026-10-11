@@ -61,3 +61,47 @@
   font-family: system-ui, sans-serif;
   padding: 2rem;
 }
+
+/* بطاقة المنتج الفاخرة داخل صفحة التتبع */
+.productSnippetCard {
+  margin-top: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  text-align: right;
+}
+
+.productThumbnail {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.productSnippetInfo {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.productSnippetLabel {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.productSnippetTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

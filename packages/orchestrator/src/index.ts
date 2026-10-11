@@ -10,6 +10,8 @@ export interface TrackingEvent {
   externalOrderId: string;
   customerName?: string;
   customerPhone?: string;
+  productName?: string;  // 👈 جديد
+  productImage?: string; // 👈 جديد
   statusRaw: string;
   description?: string;
   carrierName?: string;
@@ -77,6 +79,8 @@ export class TrackingOrchestrator {
             external_order_id: event.externalOrderId,
             customer_name: event.customerName || null,
             customer_phone: event.customerPhone || null,
+            product_name: event.productName || null,   // 👈 تخزين الاسم
+            product_image: event.productImage || null, // 👈 تخزين الصورة
             current_status: event.statusRaw,
             carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,

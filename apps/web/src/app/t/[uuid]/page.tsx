@@ -16,7 +16,7 @@ export default async function TrackingPage({ params }: PageProps) {
   // 1. جلب الطلب
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, external_order_id, customer_name, merchants(store_name)')
+    .select('id, external_order_id, customer_name, product_name, product_image, merchants(store_name)')
     .eq('tracking_uuid', uuid)
     .maybeSingle();
 
@@ -53,6 +53,8 @@ export default async function TrackingPage({ params }: PageProps) {
       orderId={order.id}
       externalOrderId={order.external_order_id}
       customerName={order.customer_name}
+      productName={order.product_name}
+      productImage={order.product_image}
       storeName={storeName}
       initialEvents={formattedEvents}
     />

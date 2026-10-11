@@ -9,6 +9,8 @@ interface Props {
   orderId: string;
   externalOrderId: string;
   customerName: string | null;
+  productName: string | null;
+  productImage: string | null;
   storeName: string;
   initialEvents: TimelineEvent[];
 }
@@ -17,6 +19,8 @@ export function TrackingLiveView({
   orderId,
   externalOrderId,
   customerName,
+  productName,
+  productImage,
   storeName,
   initialEvents,
 }: Props) {
@@ -24,7 +28,6 @@ export function TrackingLiveView({
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
-    // 1. فتح اتصال المتصفح بالـ WebSocket
     const supabase = getSupabaseBrowserClient();
 
     const channel = supabase
@@ -39,17 +42,15 @@ export function TrackingLiveView({
         },
         (payload) => {
           const newRow = payload.new as any;
-
-          // 2. تحديث قائمة الأحداث لحظياً بدون إعادة تحميل الصفحة!
           setEvents((prevEvents) => [
             {
               id: newRow.id,
               title: newRow.status_title,
               date: newRow.created_at,
               description: newRow.description,
-              isCurrent: true, // الحدث الجديد يصبح هو الحالي
+              isCurrent: true,
             },
-            ...prevEvents.map((e) => ({ ...e, isCurrent: false })), // الحالات السابقة تصبح رمادية
+            ...prevEvents.map((e) => ({ ...e, isCurrent: false })),
           ]);
         }
       )
@@ -59,7 +60,6 @@ export function TrackingLiveView({
         }
       });
 
-    // إغلاق قناة الاتصال عند مغادرة الصفحة
     return () => {
       supabase.removeChannel(channel);
     };
@@ -84,6 +84,23 @@ export function TrackingLiveView({
             <p className={styles.greeting}>
               مرحباً بك، {customerName.replace(/[-_]$/, '').trim()}
             </p>
+          )}
+
+          {/* 🛍️ بطاقة المنتج الذكية الجديدة (تظهر إذا وُجد اسم أو صورة للمنتج) */}
+          {(productName || productImage) && (
+            <div className={styles.productSnippetCard}>
+              {productImage && (
+                <img
+                  src={productImage}
+                  alt={productName || 'المنتج'}
+                  className={styles.productThumbnail}
+                />
+              )}
+              <div className={styles.productSnippetInfo}>
+                <span className={styles.productSnippetLabel}>محتويات الشحنة:</span>
+                <span className={styles.productSnippetTitle}>{productName || 'منتجات المتجر'}</span>
+              </div>
+            </div>
           )}
         </header>
 

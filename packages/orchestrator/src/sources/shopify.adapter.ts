@@ -32,6 +32,9 @@ export class ShopifyAdapter {
       payload.shipping_address?.phone ||
       payload.billing_address?.phone ||
       undefined;
+    const firstItem = payload.line_items && payload.line_items.length > 0 ? payload.line_items[0] : null;
+    const productName = firstItem?.title || undefined;
+    const productImage = firstItem?.image?.src || firstItem?.image_url || undefined;
 
     // فحص الشحنة وتحديد الحالة والوصف الذكي
     let statusRaw = 'order_placed';
@@ -83,6 +86,8 @@ export class ShopifyAdapter {
       externalOrderId,
       customerName,
       customerPhone,
+      productName,   // 👈 أضف هذا
+      productImage,  // 👈 أضف هذا
       statusRaw,
       description,
       carrierName,
