@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { TrackingOrchestrator, ShopifyAdapter } from '@saas/orchestrator';
 import { getSupabaseAdminClient } from '@saas/database';
+export const dynamic = 'force-dynamic';
+
 
 const orchestrator = new TrackingOrchestrator();
 const supabase = getSupabaseAdminClient();

@@ -2,25 +2,18 @@ import { NextResponse } from 'next/server';
 import { TrackingOrchestrator } from '@saas/orchestrator';
 import { getSupabaseAdminClient } from '@saas/database';
 
-const orchestrator = new TrackingOrchestrator();
-const supabase = getSupabaseAdminClient();
+export const dynamic = 'force-dynamic'; // 👈 يمنع فحص السيرفر أثناء البناء
 
-// ترويسات السماح بالاتصال من أي موقع خارجي (CORS Headers)
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Authorization',
 };
 
-// 1. الرد على طلب التحقق الأولي للمتصفح (Preflight Request)
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders,
-  });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
-// 2. معالجة طلب إنشاء/تحديث الطلب
 export async function POST(req: Request) {
   try {
     const apiKey = req.headers.get('x-api-key');
@@ -31,6 +24,10 @@ export async function POST(req: Request) {
         { status: 401, headers: corsHeaders }
       );
     }
+
+    // استدعاء العملاء فقط عند وصول طلب فعلي
+    const supabase = getSupabaseAdminClient();
+    const orchestrator = new TrackingOrchestrator();
 
     const { data: merchant, error: merchantError } = await supabase
       .from('merchants')
@@ -71,7 +68,6 @@ export async function POST(req: Request) {
       },
       { status: 200, headers: corsHeaders }
     );
-
   } catch (error: any) {
     console.error('Webhook Error:', error);
     return NextResponse.json(

@@ -23,13 +23,9 @@ if (fs.existsSync(rootEnvPath)) {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 🚀 إخبار Vercel بتجاهل أخطاء الأنواع مؤقتاً لرفع المشروع فوراً
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  }
 };
 
 module.exports = nextConfig;
