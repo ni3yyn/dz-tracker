@@ -1,8 +1,8 @@
 import '../styles/globals.css';
 
 export const metadata = {
-  title: 'منصة التتبع',
-  description: 'تتبع طلباتك بسهولة',
+  title: 'DZ Tracking — Post-purchase infrastructure for COD commerce',
+  description: 'Turn where-is-my-order questions into automated revenue with branded tracking, carrier sync, and WhatsApp alerts.',
 };
 
 export default function RootLayout({
@@ -11,7 +11,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="en" dir="ltr">
       <body>{children}</body>
     </html>
   );
