@@ -1,0 +1,63 @@
+.pageContainer {
+  min-height: 100vh;
+  background-color: #f3f4f6;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  direction: rtl;
+}
+
+.card {
+  background: white;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.header {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  text-align: center;
+}
+
+.storeName {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.orderNumber {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.greeting {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.95rem;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.trackingSection {
+  padding: 1.5rem;
+}
+
+.errorContainer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background-color: #fef2f2;
+  color: #991b1b;
+  font-family: system-ui, sans-serif;
+  padding: 2rem;
+}

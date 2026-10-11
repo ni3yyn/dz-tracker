@@ -1,0 +1,80 @@
+.timeline-container {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0;
+  direction: rtl; /* دعم اللغة العربية */
+}
+
+.timeline-empty {
+  text-align: center;
+  color: #6b7280;
+  font-family: system-ui, sans-serif;
+}
+
+.timeline-item {
+  display: flex;
+  position: relative;
+  min-height: 80px;
+}
+
+.timeline-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 1.5rem;
+}
+
+.timeline-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #d1d5db;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #e5e7eb;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.timeline-line {
+  width: 2px;
+  background-color: #e5e7eb;
+  flex-grow: 1;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.timeline-content {
+  padding-bottom: 2rem;
+  font-family: system-ui, sans-serif;
+}
+
+.timeline-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.timeline-date {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-desc {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+/* حالة التحديث الأخير (Current Status) */
+.timeline-item.current .timeline-dot {
+  background-color: #3b82f6; /* لون أزرق جذاب */
+  box-shadow: 0 0 0 4px #bfdbfe;
+}
+
+.timeline-item.current .timeline-title {
+  color: #1d4ed8;
+}
