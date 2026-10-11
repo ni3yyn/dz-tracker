@@ -1,26 +1,24 @@
 import { getSupabaseAdminClient } from '@saas/database';
 
 export { ShopifyAdapter } from './sources/shopify.adapter';
+export { YalidineAdapter } from './carriers/yalidine.adapter';
 
-// الواجهة الموحدة التي سنحول إليها كل الطلبات بغض النظر عن مصدرها
 export interface TrackingEvent {
   merchantId: string;
-  externalOrderId: string; // مثل "#1050"
+  externalOrderId: string;
   customerName?: string;
   customerPhone?: string;
-  statusRaw: string;       // مثل "order_placed" أو "fulfilled" أو "in_transit"
+  statusRaw: string;
   description?: string;
   carrierName?: string;
   carrierTrackingNumber?: string;
 }
 
 export class TrackingOrchestrator {
-  // استخدام Getter لضمان استدعاء العميل عند التشغيل الفعلي وتجنب مشاكل البناء في Vercel
   private get supabase() {
     return getSupabaseAdminClient();
   }
 
-  // الدالة الأساسية التي تستدعى عند وصول أي Webhook
   async processEvent(event: TrackingEvent): Promise<{ success: boolean; trackingUuid?: string; error?: any }> {
     try {
       // 1. جلب الاسم المعروض للحالة بناءً على إعدادات التاجر إن وُجدت
@@ -31,16 +29,21 @@ export class TrackingOrchestrator {
         .eq('source_status', event.statusRaw)
         .maybeSingle();
 
-      // إذا لم يقم التاجر بتعيين اسم مخصص، نستخدم القاموس العربي الاحترافي الموحد
       const displayStatus = mapping?.display_status || this.formatFallbackStatus(event.statusRaw);
 
-      // 2. التحقق مما إذا كان الطلب موجوداً مسبقاً في نظامنا
-      const { data: existingOrder } = await this.supabase
+      // 2. البحث عن الطلب (إما برقم الطلب الخارجي أو برقم بوليصة شركة الشحن)
+      let query = this.supabase
         .from('orders')
         .select('id, tracking_uuid, current_status')
-        .eq('merchant_id', event.merchantId)
-        .eq('external_order_id', event.externalOrderId)
-        .maybeSingle();
+        .eq('merchant_id', event.merchantId);
+
+      if (event.externalOrderId && event.externalOrderId !== 'UNKNOWN_ORDER') {
+        query = query.eq('external_order_id', event.externalOrderId);
+      } else if (event.carrierTrackingNumber) {
+        query = query.eq('carrier_tracking_number', event.carrierTrackingNumber);
+      }
+
+      const { data: existingOrder } = await query.maybeSingle();
 
       let orderId: string;
       let trackingUuid: string;
@@ -49,13 +52,13 @@ export class TrackingOrchestrator {
         orderId = existingOrder.id;
         trackingUuid = existingOrder.tracking_uuid;
 
-        // تحديث الطلب فقط إذا تغيرت الحالة (لمنع تكرار نفس النقطة الزمنية)
+        // تحديث الطلب فقط إذا تغيرت الحالة
         if (existingOrder.current_status !== event.statusRaw) {
           await this.supabase
             .from('orders')
             .update({
               current_status: event.statusRaw,
-              carrier_name: event.carrierName || null,
+              carrier_name: event.carrierName || 'Yalidine Express',
               carrier_tracking_number: event.carrierTrackingNumber || null,
               updated_at: new Date().toISOString(),
             })
@@ -64,7 +67,7 @@ export class TrackingOrchestrator {
           await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description);
         }
       } else {
-        // إنشاء طلب جديد
+        // إنشاء طلب جديد إذا لم يكن موجوداً
         const { data: newOrder, error: createError } = await this.supabase
           .from('orders')
           .insert({
@@ -73,7 +76,7 @@ export class TrackingOrchestrator {
             customer_name: event.customerName || null,
             customer_phone: event.customerPhone || null,
             current_status: event.statusRaw,
-            carrier_name: event.carrierName || null,
+            carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,
           })
           .select('id, tracking_uuid')
@@ -98,7 +101,6 @@ export class TrackingOrchestrator {
     }
   }
 
-  // دالة مساعدة لحفظ السجل الزمني (Timeline)
   private async insertHistory(orderId: string, statusRaw: string, statusTitle: string, description?: string) {
     await this.supabase.from('order_history').insert({
       order_id: orderId,
@@ -108,25 +110,23 @@ export class TrackingOrchestrator {
     });
   }
 
-  // قاموس الحالات الاحترافي (عربي فصيح موحد لجميع المتاجر بدون أسماء منصات مثل Shopify)
+  // قاموس شامل يدعم شوبيفاي، ووكومرس، وحالات ياليدين التشغيلية الدقيقة
   private formatFallbackStatus(raw: string): string {
     const dictionary: Record<string, string> = {
       order_placed: 'تم تأكيد الطلب 📝',
-      shopify_unfulfilled: 'تم تأكيد الطلب 📝',
-      unfulfilled: 'تم تأكيد الطلب 📝',
       processing: 'قيد التجهيز في المستودع 📦',
-      fulfilled: 'تم تجهيز وتغليف الطلب 📦',
-      shopify_fulfilled: 'تم تجهيز وتغليف الطلب 📦',
-      in_transit: 'الشحنة في الطريق 🚚',
-      shopify_in_transit: 'الشحنة في الطريق 🚚',
-      out_for_delivery: 'خرج للتوصيل اليوم 🛵',
-      shopify_out_for_delivery: 'خرج للتوصيل اليوم 🛵',
-      delivered: 'تم التسليم بنجاح ✅',
-      shopify_delivered: 'تم التسليم بنجاح ✅',
+      dispatched: 'تم تسليم الشحنة لشركة التوصيل 🚚',
+      in_transit: 'الشحنة في الطريق إلى ولايتك 🚛',
+      at_local_hub: 'وصلت إلى مركز التوزيع المحلي 📍',
+      ready_for_pickup: 'جاهز للاستلام من مكتب ياليدين 🏢',
+      out_for_delivery: 'خرج للتوصيل مع المندوب اليوم 🛵',
+      attempt_failed_no_answer: 'تنبيه: تعذر الاتصال (لا يوجد رد) ⚠️',
+      attempt_failed_unreachable: 'تنبيه: الهاتف غير متاح 📵',
+      attempt_failed: 'محاولة تسليم غير مكتملة ⚠️',
+      postponed: 'تم تأجيل موعد التسليم 🗓️',
+      delivered: 'تم التسليم واستلام المبلغ بنجاح ✅',
+      returned: 'طرد مرتجع إلى المتجر 🔄',
       cancelled: 'تم إلغاء الطلب ❌',
-      shopify_cancelled: 'تم إلغاء الطلب ❌',
-      returned: 'مرتجع 🔄',
-      shopify_returned: 'مرتجع 🔄',
     };
 
     const key = raw.toLowerCase().trim();
@@ -134,9 +134,8 @@ export class TrackingOrchestrator {
       return dictionary[key];
     }
 
-    // تنظيف أي حالة مجهولة من بادئات المنصات
     return raw
-      .replace(/shopify_|wc_/gi, '')
+      .replace(/shopify_|wc_|yalidine_/gi, '')
       .replace(/[-_]/g, ' ')
       .replace(/\b\w/g, (char) => char.toUpperCase());
   }
