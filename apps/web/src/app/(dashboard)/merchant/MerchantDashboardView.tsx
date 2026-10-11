@@ -44,6 +44,26 @@ export function MerchantDashboardView({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'transit' | 'alerts' | 'delivered'>('all');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [editingMappingId, setEditingMappingId] = useState<string | null>(null);
+  const [editDisplayStatus, setEditDisplayStatus] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // دالة حفظ التعديل المباشر
+  const handleSaveInlineEdit = async (sourceStatus: string) => {
+    if (!editDisplayStatus.trim()) return;
+    setIsSavingEdit(true);
+
+    const fd = new FormData();
+    fd.append('merchant_id', merchantId);
+    fd.append('source_status', sourceStatus);
+    fd.append('display_status', editDisplayStatus);
+
+    const { saveStatusMapping } = await import('./actions');
+    await saveStatusMapping(fd);
+
+    setEditingMappingId(null);
+    setIsSavingEdit(false);
+  };
 
   // نسخ النصوص مع إشعار بصري سريع
   const copyToClipboard = (text: string, id: string) => {
@@ -417,41 +437,174 @@ export function MerchantDashboardView({
       )}
 
       {/* =========================================================
-          TAB 3: شاشة مطابقة الحالات وتخصيص اللغة
+          TAB 3: شاشة مطابقة الحالات وتخصيص اللغة الذكية
          ========================================================= */}
       {activeTab === 'mappings' && (
         <section className={styles.tabContent}>
           <div className={styles.sectionHeadingBox}>
             <h2>تخصيص ومطابقة مسميات الحالات (Status Mapping) 🏷️</h2>
             <p>
-              حدد ما يظهر لزبائنك بالعربية لأي كود حالة قادم من شوبيفاي أو شركات الشحن دون تعديل نظامك:
+              حدد ما يراه زبائنك بالعربية لأي كود حالة قادم من شوبيفاي، شركات الشحن، أو متجرك المخصص دون تعديل برمجياتك:
             </p>
           </div>
 
-          <MappingForm merchantId={merchantId} />
-
-          {mappings.length > 0 && (
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>كود الحالة الخام (من شركة الشحن أو المتجر)</th>
-                    <th>ما يراه عميلك في صفحة التتبع</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mappings.map((m) => (
-                    <tr key={m.id}>
-                      <td className={styles.monoCell}>
-                        <code>{m.source_status}</code>
-                      </td>
-                      <td className={styles.highlightGreen}>{m.display_status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* 1. القوالب الجاهزة بنقرة زر واحدة */}
+          <div className={styles.presetsCard}>
+            <div className={styles.presetText}>
+              <h3>تطبيق قوالب معربة جاهزة بضغطة زر ⚡</h3>
+              <p>بدلاً من كتابة الحالات يدوياً، حمّل حزمة الترجمة الكاملة الموصى بها لشركتك فوراً:</p>
             </div>
-          )}
+            <div className={styles.presetButtons}>
+              {/* 1. زر ياليدين */}
+              <form action={async (fd) => {
+                const { applyPresetMappings } = await import('./actions');
+                await applyPresetMappings(fd);
+              }}>
+                <input type="hidden" name="merchant_id" value={merchantId} />
+                <input type="hidden" name="preset_type" value="yalidine" />
+                <button type="submit" className={styles.presetBtnOrange}>
+                  + حزمة ياليدين (9 حالات) 🚚
+                </button>
+              </form>
+
+              {/* 2. زر شبكة إيكوتراك الجديد 🌐 */}
+              <form action={async (fd) => {
+                const { applyPresetMappings } = await import('./actions');
+                await applyPresetMappings(fd);
+              }}>
+                <input type="hidden" name="merchant_id" value={merchantId} />
+                <input type="hidden" name="preset_type" value="ecotrack" />
+                <button type="submit" className={styles.presetBtnBlue}>
+                  + حزمة إيكوتراك (80+ شركة شحن) 🌐
+                </button>
+              </form>
+
+              {/* 3. زر شوبيفاي */}
+              <form action={async (fd) => {
+                const { applyPresetMappings } = await import('./actions');
+                await applyPresetMappings(fd);
+              }}>
+                <input type="hidden" name="merchant_id" value={merchantId} />
+                <input type="hidden" name="preset_type" value="shopify" />
+                <button type="submit" className={styles.presetBtnGreen}>
+                  + حزمة شوبيفاي (5 حالات) 🛍️
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* 2. استمارة إضافة أو تعديل مطابقة مخصصة */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 0.8rem 0' }}>
+              إضافة أو تعديل مطابقة يدوية:
+            </h3>
+            <MappingForm merchantId={merchantId} />
+          </div>
+
+          {/* 3. جدول المطابقات الحالية مع إمكانية الحذف */}
+          <div style={{ marginTop: '2rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 0.8rem 0' }}>
+              المطابقات المفعلة حالياً في متجرك ({mappings.length}):
+            </h3>
+
+            {mappings.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p>لا توجد مطابقات مخصصة بعد.</p>
+                <small>اضغط على أحد أزرار الحزم الجاهزة بالأعلى لتفعيل الترجمة فوراً!</small>
+              </div>
+            ) : (
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>كود الحالة الأصلي (Raw Code)</th>
+                      <th>ما يظهر للزبون في صفحة التتبع</th>
+                      <th style={{ width: '80px', textAlign: 'center' }}>إجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mappings.map((m) => {
+                      const isEditing = editingMappingId === m.id;
+
+                      return (
+                        <tr key={m.id}>
+                          <td className={styles.monoCell}>
+                            <code>{m.source_status}</code>
+                          </td>
+
+                          {/* إذا كان في وضع التعديل يظهر حقل إدخال، وإلا يظهر النص العادي */}
+                          <td>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editDisplayStatus}
+                                onChange={(e) => setEditDisplayStatus(e.target.value)}
+                                className={styles.inlineEditInput}
+                                autoFocus
+                              />
+                            ) : (
+                              <span className={styles.statusPreviewBadge}>{m.display_status}</span>
+                            )}
+                          </td>
+
+                          {/* أزرار الإجراءات: حفظ وإلغاء في وضع التعديل، أو تعديل وحذف في الوضع العادي */}
+                          <td style={{ textAlign: 'center' }}>
+                            {isEditing ? (
+                              <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveInlineEdit(m.source_status)}
+                                  disabled={isSavingEdit}
+                                  className={styles.saveEditBtn}
+                                >
+                                  {isSavingEdit ? '...' : 'حفظ ✓'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMappingId(null)}
+                                  className={styles.cancelEditBtn}
+                                >
+                                  إلغاء
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingMappingId(m.id);
+                                    setEditDisplayStatus(m.display_status);
+                                  }}
+                                  className={styles.editMappingBtn}
+                                  title="تعديل هذا المسمى"
+                                >
+                                  تعديل ✎
+                                </button>
+
+                                <form action={async (fd) => {
+                                  const { deleteStatusMapping } = await import('./actions');
+                                  await deleteStatusMapping(fd);
+                                }}>
+                                  <input type="hidden" name="id" value={m.id} />
+                                  <button
+                                    type="submit"
+                                    className={styles.deleteMappingBtn}
+                                    title="حذف هذه المطابقة"
+                                  >
+                                    حذف ✕
+                                  </button>
+                                </form>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </section>
       )}
     </div>

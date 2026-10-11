@@ -519,3 +519,169 @@
   text-align: center;
   color: #94a3b8;
 }
+
+/* قوالب الحالات الجاهزة */
+.presetsCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.presetText h3 {
+  margin: 0 0 0.3rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.presetText p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.presetButtons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.presetBtnOrange {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.presetBtnOrange:hover {
+  background: #ffedd5;
+}
+
+.presetBtnGreen {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #86efac;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.presetBtnGreen:hover {
+  background: #dcfce7;
+}
+
+.statusPreviewBadge {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.deleteMappingBtn {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: none;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.deleteMappingBtn:hover {
+  background: #fecaca;
+}
+
+.presetBtnBlue {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.presetBtnBlue:hover {
+  background: #dbeafe;
+}
+
+/* أزرار وحقول التعديل المباشر في جدول المطابقات */
+.inlineEditInput {
+  width: 100%;
+  padding: 0.4rem 0.7rem;
+  border: 2px solid #2563eb;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-family: system-ui, sans-serif;
+  outline: none;
+}
+
+.editMappingBtn {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.editMappingBtn:hover {
+  background: #dbeafe;
+}
+
+.saveEditBtn {
+  background: #15803d;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.saveEditBtn:hover {
+  background: #166534;
+}
+
+.cancelEditBtn {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cancelEditBtn:hover {
+  background: #e2e8f0;
+}
