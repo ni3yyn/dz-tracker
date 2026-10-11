@@ -2,6 +2,8 @@ import { getSupabaseAdminClient } from '@saas/database';
 
 export { ShopifyAdapter } from './sources/shopify.adapter';
 export { YalidineAdapter } from './carriers/yalidine.adapter';
+export { EcoTrackAdapter } from './carriers/ecotrack.adapter';
+
 
 export interface TrackingEvent {
   merchantId: string;
