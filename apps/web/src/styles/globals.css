@@ -1,9 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
 
 :root { --ink:#101318; --muted:#69717d; --line:#e4e7eb; --soft:#f6f7f8; --blue:#2c70f0; --green:#22b573; --dark:#11151a; }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }
-body { margin:0; background:#fff; color:var(--ink); font-family:'Manrope', sans-serif; }
+body { margin:0; background:#fff; color:var(--ink); font-family:var(--font-arabic), sans-serif; }
+
+@keyframes rise-in { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:translateY(0); } }
+@keyframes float-preview { 0%,100% { transform:rotate(1deg) translateY(0); } 50% { transform:rotate(1deg) translateY(-8px); } }
+@keyframes pulse-dot { 0%,100% { box-shadow:0 0 0 0 rgba(57,213,140,.35); } 50% { box-shadow:0 0 0 7px rgba(57,213,140,0); } }
+.hero-copy { animation:rise-in .7s ease both; }
+.hero-visual { animation:rise-in .7s .12s ease both; }
+.tracking-preview { animation:float-preview 5s ease-in-out infinite; }
+.brand-mark i, .live-label i, .status-dot, .system-status i { animation:pulse-dot 2.2s ease-in-out infinite; }
+.step, .bento-card, .problem-card, .price-card { transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.step:hover, .bento-card:hover, .problem-card:hover, .price-card:hover { transform:translateY(-5px); box-shadow:0 16px 32px rgba(16,25,33,.08); border-color:#cbd7e8; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.01ms !important; } }
 a { color:inherit; text-decoration:none; }
 button, input { font:inherit; }
 button { cursor:pointer; }
