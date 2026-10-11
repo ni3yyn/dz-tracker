@@ -120,7 +120,7 @@ export class TrackingOrchestrator {
       dispatched: 'تم تسليم الشحنة لشركة التوصيل 🚚',
       in_transit: 'الشحنة في الطريق إلى ولايتك 🚛',
       at_local_hub: 'وصلت إلى مركز التوزيع المحلي 📍',
-      ready_for_pickup: 'جاهز للاستلام من مكتب ياليدين 🏢',
+      ready_for_pickup: 'جاهز للاستلام من المكتب (Stopdesk) 🏢',
       out_for_delivery: 'خرج للتوصيل مع المندوب اليوم 🛵',
       attempt_failed_no_answer: 'تنبيه: تعذر الاتصال (لا يوجد رد) ⚠️',
       attempt_failed_unreachable: 'تنبيه: الهاتف غير متاح 📵',

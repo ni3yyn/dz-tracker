@@ -53,6 +53,7 @@
   font-size: 1.1rem;
   font-weight: 600;
   color: #374151;
+  unicode-bidi: plaintext;
 }
 
 .timeline-date {
@@ -67,6 +68,8 @@
   font-size: 0.95rem;
   color: #4b5563;
   line-height: 1.5;
+  unicode-bidi: plaintext;
+  text-align: right; 
 }
 
 /* حالة التحديث الأخير (Current Status) */
