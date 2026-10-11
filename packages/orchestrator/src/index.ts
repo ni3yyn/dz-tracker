@@ -1,32 +1,37 @@
 import { getSupabaseAdminClient } from '@saas/database';
 
+export { ShopifyAdapter } from './sources/shopify.adapter';
+
 // الواجهة الموحدة التي سنحول إليها كل الطلبات بغض النظر عن مصدرها
 export interface TrackingEvent {
   merchantId: string;
   externalOrderId: string; // مثل "#1050"
   customerName?: string;
   customerPhone?: string;
-  statusRaw: string;       // مثل "wc-processing" أو "shipped"
+  statusRaw: string;       // مثل "order_placed" أو "fulfilled" أو "in_transit"
   description?: string;
   carrierName?: string;
   carrierTrackingNumber?: string;
 }
 
 export class TrackingOrchestrator {
-  private supabase = getSupabaseAdminClient();
+  // استخدام Getter لضمان استدعاء العميل عند التشغيل الفعلي وتجنب مشاكل البناء في Vercel
+  private get supabase() {
+    return getSupabaseAdminClient();
+  }
 
   // الدالة الأساسية التي تستدعى عند وصول أي Webhook
   async processEvent(event: TrackingEvent): Promise<{ success: boolean; trackingUuid?: string; error?: any }> {
     try {
-      // 1. جلب الاسم المعروض للحالة بناءً على إعدادات التاجر
+      // 1. جلب الاسم المعروض للحالة بناءً على إعدادات التاجر إن وُجدت
       const { data: mapping } = await this.supabase
         .from('status_mappings')
         .select('display_status')
         .eq('merchant_id', event.merchantId)
         .eq('source_status', event.statusRaw)
-        .single();
+        .maybeSingle();
 
-      // إذا لم يقم التاجر بتعيين اسم، نستخدم دالة مساعدة لتجميل النص
+      // إذا لم يقم التاجر بتعيين اسم مخصص، نستخدم القاموس العربي الاحترافي الموحد
       const displayStatus = mapping?.display_status || this.formatFallbackStatus(event.statusRaw);
 
       // 2. التحقق مما إذا كان الطلب موجوداً مسبقاً في نظامنا
@@ -35,7 +40,7 @@ export class TrackingOrchestrator {
         .select('id, tracking_uuid, current_status')
         .eq('merchant_id', event.merchantId)
         .eq('external_order_id', event.externalOrderId)
-        .single();
+        .maybeSingle();
 
       let orderId: string;
       let trackingUuid: string;
@@ -44,7 +49,7 @@ export class TrackingOrchestrator {
         orderId = existingOrder.id;
         trackingUuid = existingOrder.tracking_uuid;
 
-        // تحديث الطلب فقط إذا تغيرت الحالة (لمنع تكرار الإشعارات)
+        // تحديث الطلب فقط إذا تغيرت الحالة (لمنع تكرار نفس النقطة الزمنية)
         if (existingOrder.current_status !== event.statusRaw) {
           await this.supabase
             .from('orders')
@@ -103,13 +108,36 @@ export class TrackingOrchestrator {
     });
   }
 
-  // دالة احتياطية لتجميل النصوص الإنجليزية في حال غياب المطابقة: "wc-processing" -> "Processing"
+  // قاموس الحالات الاحترافي (عربي فصيح موحد لجميع المتاجر بدون أسماء منصات مثل Shopify)
   private formatFallbackStatus(raw: string): string {
+    const dictionary: Record<string, string> = {
+      order_placed: 'تم تأكيد الطلب 📝',
+      shopify_unfulfilled: 'تم تأكيد الطلب 📝',
+      unfulfilled: 'تم تأكيد الطلب 📝',
+      processing: 'قيد التجهيز في المستودع 📦',
+      fulfilled: 'تم تجهيز وتغليف الطلب 📦',
+      shopify_fulfilled: 'تم تجهيز وتغليف الطلب 📦',
+      in_transit: 'الشحنة في الطريق 🚚',
+      shopify_in_transit: 'الشحنة في الطريق 🚚',
+      out_for_delivery: 'خرج للتوصيل اليوم 🛵',
+      shopify_out_for_delivery: 'خرج للتوصيل اليوم 🛵',
+      delivered: 'تم التسليم بنجاح ✅',
+      shopify_delivered: 'تم التسليم بنجاح ✅',
+      cancelled: 'تم إلغاء الطلب ❌',
+      shopify_cancelled: 'تم إلغاء الطلب ❌',
+      returned: 'مرتجع 🔄',
+      shopify_returned: 'مرتجع 🔄',
+    };
+
+    const key = raw.toLowerCase().trim();
+    if (dictionary[key]) {
+      return dictionary[key];
+    }
+
+    // تنظيف أي حالة مجهولة من بادئات المنصات
     return raw
+      .replace(/shopify_|wc_/gi, '')
       .replace(/[-_]/g, ' ')
-      .replace('wc ', '') // إزالة بادئة ووكومرس إن وجدت
-      .replace(/\b\w/g, char => char.toUpperCase());
+      .replace(/\b\w/g, (char) => char.toUpperCase());
   }
 }
-
-export { ShopifyAdapter } from './sources/shopify.adapter';

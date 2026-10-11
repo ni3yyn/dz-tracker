@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 import { TrackingEvent } from '../index';
 
 export class ShopifyAdapter {
-  // التحقق من صحة الـ Webhook عبر HMAC SHA256 (اختياري للأمان المتقدم)
   static verifyHmac(rawBody: string, hmacHeader: string | null, secret: string): boolean {
     if (!hmacHeader || !secret) return false;
     const hash = crypto
@@ -16,51 +15,67 @@ export class ShopifyAdapter {
     }
   }
 
-  // تحويل كائن شوبيفاي إلى صيغة نظامنا الموحدة
   static normalize(merchantId: string, payload: any): TrackingEvent {
     const externalOrderId = payload.name || `#${payload.order_number}` || String(payload.id);
 
-    // استخراج اسم العميل
-    const customerName = payload.customer
+    // تنظيف اسم العميل من الرموز الزائدة
+    let customerName = payload.customer
       ? `${payload.customer.first_name || ''} ${payload.customer.last_name || ''}`.trim()
       : payload.shipping_address?.name || undefined;
+    
+    if (customerName) {
+      customerName = customerName.replace(/[-_]$/, '').trim();
+    }
 
-    // استخراج رقم الهاتف
     const customerPhone =
       payload.customer?.phone ||
       payload.shipping_address?.phone ||
       payload.billing_address?.phone ||
       undefined;
 
-    // فحص بيانات الشحن والتوصيل (Fulfillments)
+    // فحص الشحنة وتحديد الحالة والوصف الذكي
     let statusRaw = 'order_placed';
     let carrierName: string | undefined;
     let carrierTrackingNumber: string | undefined;
-    let description = 'تم تسجيل الطلب في المتجر وهو قيد المراجعة';
+    let description = 'تم استلام طلبك في المتجر وهو قيد المراجعة';
 
     const fulfillments = payload.fulfillments || [];
     const latestFulfillment = fulfillments.length > 0 ? fulfillments[fulfillments.length - 1] : null;
 
     if (latestFulfillment) {
-      carrierName = latestFulfillment.tracking_company || latestFulfillment.tracking_carrier;
-      carrierTrackingNumber = latestFulfillment.tracking_number;
+      carrierName = latestFulfillment.tracking_company || latestFulfillment.tracking_carrier || undefined;
+      carrierTrackingNumber = latestFulfillment.tracking_number || undefined;
 
-      const shipmentStatus = latestFulfillment.shipment_status; // شوبيفاي ترسل حالات دقيقة هنا
+      const shipmentStatus = latestFulfillment.shipment_status;
 
-      if (shipmentStatus) {
-        statusRaw = `shopify_${shipmentStatus}`; // مثال: shopify_in_transit, shopify_out_for_delivery, shopify_delivered
-        description = shipmentStatus === 'delivered' 
-          ? 'تم تسليم الشحنة للعميل بنجاح' 
-          : `الشحنة في الطريق مع ${carrierName || 'شركة الشحن'}`;
-      } else {
-        statusRaw = 'shopify_fulfilled';
-        description = `تم تجهيز الشحنة وإصدار بوليصة التتبع: ${carrierTrackingNumber || ''}`;
+      if (shipmentStatus === 'delivered') {
+        statusRaw = 'delivered';
+        description = 'تم تسليم الشحنة للعميل بنجاح';
+      } else if (shipmentStatus === 'out_for_delivery') {
+        statusRaw = 'out_for_delivery';
+        description = 'الشحنة مع مندوب التوصيل للتسليم اليوم';
+      } else if (shipmentStatus === 'in_transit') {
+        statusRaw = 'in_transit';
+        description = carrierName
+          ? `الشحنة في الطريق مع شركة ${carrierName}${carrierTrackingNumber ? ` (رقم التتبع: ${carrierTrackingNumber})` : ''}`
+          : 'الشحنة في طريقها إليك مع مندوب التوصيل';
+      } else if (payload.fulfillment_status === 'fulfilled') {
+        statusRaw = 'fulfilled';
+        // 👇 صياغة ذكية: إذا لم يكن هناك بوليصة لا تذكرها أبداً
+        if (carrierTrackingNumber) {
+          description = `تم تجهيز الشحنة وإصدار بوليصة التتبع: ${carrierTrackingNumber}${carrierName ? ` عبر ${carrierName}` : ''}`;
+        } else if (carrierName) {
+          description = `تم تجهيز طلبك وتسليمه لشركة ${carrierName}`;
+        } else {
+          description = 'تم تجهيز وتغليف طلبك في المستودع وهو جاهز للشحن';
+        }
       }
     } else if (payload.fulfillment_status === 'partial') {
-      statusRaw = 'shopify_partially_fulfilled';
-      description = 'تم تجهيز جزء من الطلب';
+      statusRaw = 'partially_fulfilled';
+      description = 'تم تجهيز جزء من الطلب وجاري استكمال الباقي';
     } else {
-      statusRaw = 'shopify_unfulfilled';
+      statusRaw = 'order_placed';
+      description = 'تم استلام طلبك بنجاح وهو قيد المراجعة في المتجر';
     }
 
     return {
