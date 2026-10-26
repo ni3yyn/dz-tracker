@@ -435,13 +435,12 @@ export default async function HomePage() {
             </g>
             <circle className={styles.splitSignal} cx="245" cy="164" r="4" fill="#d57955"/>
           </svg>
-          <div className={styles.artNote}><span>شبكة التوصيل</span><b><i>+80</i>شركة توصيل<br />جزائرية مدمجة</b></div>
         </div>
         <div className={styles.splitCopy} data-dz-reveal>
           <span className={styles.sectionEyebrow}>منظومة التوصيل الجزائرية</span>
           <h2 id="split-title">حالة الطلب واضحة<br /><em>بدل عشرات الرسائل.</em></h2>
           <p>اعرض للزبون صفحة تتبّع تحمل هوية متجرك. إذا ربطت شركة توصيل مدعومة، تظهر التحديثات التي ترسلها؛ وإلا يمكنك تغيير الحالة من لوحة التاجر.</p>
-          <div className={styles.carrierNames} aria-label="أمثلة على شركات توصيل مدعومة"><span>Yalidine</span><i /><span>ZR Express</span><i /><span>وشركات أخرى مدمجة</span></div>
+          <div className={styles.carrierNames} aria-label="أمثلة على شركات توصيل مدعومة"><span>Yalidine</span><i /><span>ZR Express</span><i /><span>و80+ شركة أخرى</span></div>
           <a className={styles.textLink} href="/register">ابدأ إعداد الربط <span aria-hidden="true">↗</span></a>
         </div>
       </section>
