@@ -1,80 +1,23 @@
-import { NextResponse } from 'next/server';
-import { TrackingOrchestrator } from '@saas/orchestrator';
-import { getSupabaseAdminClient } from '@saas/database';
+import { createWebhookHandler, handleOptions } from '../../../lib/webhook-handler';
 
-export const dynamic = 'force-dynamic'; // 👈 يمنع فحص السيرفر أثناء البناء
+export const dynamic = 'force-dynamic';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Authorization',
-};
+export const OPTIONS = handleOptions;
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 200, headers: corsHeaders });
-}
-
-export async function POST(req: Request) {
-  try {
-    const apiKey = req.headers.get('x-api-key');
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Missing x-api-key header' },
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
-    // استدعاء العملاء فقط عند وصول طلب فعلي
-    const supabase = getSupabaseAdminClient();
-    const orchestrator = new TrackingOrchestrator();
-
-    const { data: merchant, error: merchantError } = await supabase
-      .from('merchants')
-      .select('id, store_name')
-      .eq('api_key', apiKey)
-      .maybeSingle();
-
-    if (merchantError || !merchant) {
-      return NextResponse.json(
-        { error: 'Invalid API Key' },
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
-    const body = await req.json();
-
-    const result = await orchestrator.processEvent({
+export const POST = createWebhookHandler({
+  source: 'direct',
+  transformEvent: ({ merchant, payload }) => {
+    return {
       merchantId: merchant.id,
-      externalOrderId: body.order_id || body.id,
-      customerName: body.customer_name,
-      customerPhone: body.customer_phone,
-      statusRaw: body.status,
-      description: body.description,
-      productName: body.product_name || body.productName,     // 👈 استقبال الاسم
-      productImage: body.product_image || body.productImage,  // 👈 استقبال الصورة
-    });
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        tracking_uuid: result.trackingUuid,
-        tracking_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/t/${result.trackingUuid}`,
-      },
-      { status: 200, headers: corsHeaders }
-    );
-  } catch (error: any) {
-    console.error('Webhook Error:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500, headers: corsHeaders }
-    );
-  }
-}
+      externalOrderId: String(payload.order_id || payload.id || 'DIRECT_ORDER'),
+      customerName: payload.customer_name || payload.name,
+      customerPhone: payload.customer_phone || payload.phone,
+      statusRaw: payload.status || 'order_placed',
+      description: payload.description,
+      productName: payload.product_name || payload.productName,
+      productImage: payload.product_image || payload.productImage,
+      carrierName: payload.carrier_name || payload.carrier,
+      carrierTrackingNumber: payload.carrier_tracking_number || payload.tracking_number,
+    };
+  },
+});

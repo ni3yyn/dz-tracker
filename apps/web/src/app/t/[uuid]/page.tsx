@@ -16,7 +16,7 @@ export default async function TrackingPage({ params }: PageProps) {
   // 1. جلب الطلب
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, external_order_id, customer_name, product_name, product_image, merchants(store_name)')
+    .select('id, merchant_id, external_order_id, customer_name, product_name, product_image, carrier_name, carrier_tracking_number, merchants(store_name)')
     .eq('tracking_uuid', uuid)
     .maybeSingle();
 
@@ -29,7 +29,30 @@ export default async function TrackingPage({ params }: PageProps) {
     );
   }
 
-  // 2. جلب السجل الزمني الأولي
+  // 2. جلب الهوية البصرية وإعدادات التخصيص الكاملة (White-Label Branding)
+  const { data: brandMappings } = await supabase
+    .from('status_mappings')
+    .select('source_status, display_status')
+    .eq('merchant_id', order.merchant_id);
+
+  const brandJsonRow = brandMappings?.find((m) => m.source_status === '__brand_settings_json__');
+  let brandSettings = undefined;
+
+  if (brandJsonRow?.display_status) {
+    try {
+      brandSettings = JSON.parse(brandJsonRow.display_status);
+    } catch {
+      // fallback
+    }
+  }
+
+  const fallbackColor =
+    brandMappings?.find((m) => m.source_status === '__brand_primary_color__')?.display_status ||
+    '#09090B';
+  const fallbackSubtitle =
+    brandMappings?.find((m) => m.source_status === '__brand_subtitle__')?.display_status || '';
+
+  // 3. جلب السجل الزمني الأولي
   const { data: history } = await supabase
     .from('order_history')
     .select('id, status_title, description, created_at')
@@ -54,8 +77,12 @@ export default async function TrackingPage({ params }: PageProps) {
       externalOrderId={order.external_order_id}
       customerName={order.customer_name}
       productName={order.product_name}
-      
+      carrierName={order.carrier_name}
+      carrierTrackingNumber={order.carrier_tracking_number}
       storeName={storeName}
+      brandSettings={brandSettings}
+      brandColor={fallbackColor}
+      brandSubtitle={fallbackSubtitle}
       initialEvents={formattedEvents}
     />
   );

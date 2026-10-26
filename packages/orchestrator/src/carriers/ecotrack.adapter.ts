@@ -1,51 +1,94 @@
 import { TrackingEvent } from '../index';
+import {
+  safeString,
+  safeLower,
+  normalizeDiacritics,
+  extractFirst,
+  normalizeAlgerianPhone,
+} from '../utils/safe';
 
 export class EcoTrackAdapter {
   /**
-   * تحويل Payload نظام EcoTrack إلى صيغة TrackingEvent الموحدة
+   * تحويل Payload نظام EcoTrack إلى صيغة TrackingEvent الموحدة بطريقة شديدة المتانة
    */
-  static normalize(merchantId: string, payload: any): TrackingEvent {
-    // إيكوتراك ترسل عادة tracking_code أو code، ورقم الطلب الخاص بالمتجر reference أو order_id
-    const trackingNumber =
-      payload.tracking_code ||
-      payload.tracking ||
-      payload.barcode ||
-      payload.code ||
-      undefined;
+  static normalize(merchantId: string, rawPayload: any): TrackingEvent {
+    const payload = rawPayload && typeof rawPayload === 'object' ? rawPayload : {};
 
-    const externalOrderId =
-      payload.reference ||
-      payload.order_id ||
-      payload.order_number ||
-      payload.external_id ||
-      trackingNumber ||
-      'UNKNOWN_ORDER';
+    // 1. استخراج رقم الطرد وبوليصة الشحن بمرونة تشمل 80+ شركة شحن
+    const trackingNumber = extractFirst(payload, [
+      'tracking_code',
+      'trackingCode',
+      'tracking',
+      'barcode',
+      'code',
+      'code_suivi',
+      'id',
+    ]);
 
-    // اسم شركة التوصيل المحددة (مثلاً NOEST أو DHD)، وإن لم ترسل نضع EcoTrack Network
-    const carrierName =
-      payload.carrier_name ||
-      payload.company_name ||
-      payload.transporteur ||
-      'EcoTrack Network';
+    const externalOrderId = extractFirst(
+      payload,
+      [
+        'reference',
+        'order_id',
+        'order_number',
+        'orderId',
+        'orderNumber',
+        'external_id',
+        'code_commande',
+      ],
+      trackingNumber || 'UNKNOWN_ORDER'
+    )!;
 
-    const customerName = payload.client_name || payload.customer_name || payload.name || undefined;
-    const customerPhone = payload.client_phone || payload.phone || undefined;
+    // 2. اسم شركة التوصيل المحددة (NOEST, DHD, Conexlog, World Express...)
+    const carrierName = extractFirst(
+      payload,
+      ['carrier_name', 'carrierName', 'company_name', 'transporteur', 'societe'],
+      'EcoTrack Network'
+    )!;
 
-    const rawStatus = (payload.status || payload.current_status || payload.statut || 'cree').toLowerCase().trim();
-    const reason = (payload.reason || payload.motif || payload.sub_status || payload.comment || '').toLowerCase().trim();
+    // 3. بيانات العميل والهاتف المعرب
+    const customerName = extractFirst(payload, [
+      'client_name',
+      'customer_name',
+      'name',
+      'nom_client',
+      'destinataire',
+    ]);
 
-    // فحص وتحليل حالات إيكوتراك
-    const parsed = this.parseEcoTrackStatus(rawStatus, reason, payload, carrierName);
+    const rawPhone = extractFirst(payload, [
+      'client_phone',
+      'customer_phone',
+      'phone',
+      'telephone',
+      'tel',
+      'mobile',
+    ]);
+    const customerPhone = normalizeAlgerianPhone(rawPhone);
+
+    const rawStatus = extractFirst(
+      payload,
+      ['status', 'current_status', 'statut', 'etat'],
+      'cree'
+    );
+
+    const rawReason = extractFirst(
+      payload,
+      ['reason', 'motif', 'sub_status', 'comment', 'remarque', 'observation'],
+      ''
+    );
+
+    // فحص وتحليل الحالات التشغيلية
+    const parsed = this.parseEcoTrackStatus(rawStatus!, rawReason!, payload, carrierName);
 
     return {
-      merchantId,
-      externalOrderId: String(externalOrderId),
-      customerName,
-      customerPhone,
+      merchantId: safeString(merchantId),
+      externalOrderId: safeString(externalOrderId),
+      customerName: customerName ? safeString(customerName).replace(/[-_]$/, '').trim() : undefined,
+      customerPhone: customerPhone || undefined,
       statusRaw: parsed.statusRaw,
       description: parsed.description,
       carrierName: carrierName,
-      carrierTrackingNumber: trackingNumber,
+      carrierTrackingNumber: trackingNumber || undefined,
     };
   }
 
@@ -53,23 +96,26 @@ export class EcoTrackAdapter {
    * ترجمة الحالات الميدانية لشبكة إيكوتراك إلى سيناريوهات عربية واضحة للزبون
    */
   private static parseEcoTrackStatus(
-    status: string,
-    reason: string,
+    statusRaw: string,
+    reasonRaw: string,
     payload: any,
     carrierName: string
   ): { statusRaw: string; description: string } {
-    const hub = payload.hub || payload.center || payload.agence || '';
-    const wilaya = payload.wilaya || payload.destination || '';
+    const status = normalizeDiacritics(safeLower(statusRaw));
+    const reason = normalizeDiacritics(safeLower(reasonRaw));
+
+    const hub = extractFirst(payload, ['hub', 'center', 'agence', 'centre', 'depot']) || '';
+    const wilaya = extractFirst(payload, ['wilaya', 'destination', 'wilaya_name']) || '';
 
     // 1. الإنشاء والاستلام الأولي (Ramassage)
-    if (status.includes('cree') || status.includes('en_attente') || status.includes('draft')) {
+    if (status.includes('cree') || status.includes('en attente') || status.includes('draft') || status.includes('attente ramassage')) {
       return {
         statusRaw: 'processing',
         description: `تم تسجيل الشحنة لدى ${carrierName} وهي قيد التجهيز للاستلام من المتجر`,
       };
     }
 
-    if (status.includes('ramasse') || status.includes('enleve') || status.includes('recu_hub')) {
+    if (status.includes('ramasse') || status.includes('enleve') || status.includes('recu hub') || status.includes('collecte')) {
       return {
         statusRaw: 'dispatched',
         description: `استلمت شركة ${carrierName} الطرد من المتجر وبدأت عملية التوجيه`,
@@ -77,7 +123,7 @@ export class EcoTrackAdapter {
     }
 
     // 2. النقل والعبور بين المراكز (Transit inter-wilayas)
-    if (status.includes('transit') || status.includes('transfert') || status.includes('vers_hub')) {
+    if (status.includes('transit') || status.includes('transfert') || status.includes('vers hub')) {
       return {
         statusRaw: 'in_transit',
         description: wilaya
@@ -87,7 +133,7 @@ export class EcoTrackAdapter {
     }
 
     // 3. الوصول للوكالة أو مكتب الـ Stopdesk
-    if (status.includes('stopdesk') || status.includes('au_bureau') || status.includes('disponible')) {
+    if (status.includes('stopdesk') || status.includes('au bureau') || status.includes('disponible')) {
       return {
         statusRaw: 'ready_for_pickup',
         description: hub
@@ -96,36 +142,53 @@ export class EcoTrackAdapter {
       };
     }
 
-    if (status.includes('centre') || status.includes('au_hub') || status.includes('dispatch')) {
+    if (status.includes('centre') || status.includes('au hub') || status.includes('dispatch') || status.includes('hub local')) {
       return {
         statusRaw: 'at_local_hub',
         description: 'وصل الطرد إلى مركز التوزيع الإقليمي في ولايتك وجاري الفرز للتسليم 📍',
       };
     }
 
-    // 4. خروج المندوب للتوصيل المنزلي
-    if (status.includes('en_livraison') || status.includes('sorti') || status.includes('livreur')) {
-      return {
-        statusRaw: 'out_for_delivery',
-        description: `مندوب ${carrierName} في طريقه إلى عنوانك اليوم، يرجى إبقاء هاتفك قريباً منك 🛵`,
-      };
-    }
-
-    // 5. حالات التنبيه والأخطاء الميدانية (حماية التاجر من الـ Retour)
-    if (status.includes('echoue') || status.includes('non_abouti') || status.includes('alerte')) {
-      if (reason.includes('pas_de_reponse') || reason.includes('repond_pas') || reason.includes('injoignable')) {
+    // 4. 🚨 حالات التنبيه والأخطاء الميدانية ورادار الـ COD (يجب فحصها أولاً لتفادي كلمات التوصيل)
+    if (
+      status.includes('echoue') ||
+      status.includes('echec') ||
+      status.includes('non abouti') ||
+      status.includes('alerte') ||
+      status.includes('probleme') ||
+      status.includes('injoignable') ||
+      status.includes('pas de reponse') ||
+      reason.includes('pas de reponse') ||
+      reason.includes('repond pas') ||
+      reason.includes('injoignable')
+    ) {
+      if (
+        status.includes('pas de reponse') ||
+        status.includes('repond pas') ||
+        status.includes('injoignable') ||
+        reason.includes('pas de reponse') ||
+        reason.includes('repond pas') ||
+        reason.includes('sans reponse') ||
+        reason.includes('injoignable')
+      ) {
         return {
           statusRaw: 'attempt_failed_no_answer',
-          description: `تنبيه: حاول المندوب الاتصال بك ولم يتم الرد على الهاتف! يرجى الانتباه لهاتفك لإعادة التوصيل ⚠️`,
+          description: `تنبيه: حاول مندوب ${carrierName} الاتصال بك ولم يتم الرد على الهاتف! يرجى الانتباه لهاتفك لإعادة التوصيل ⚠️`,
         };
       }
-      if (reason.includes('ferme') || reason.includes('eteint') || reason.includes('hors_service')) {
+      if (
+        status.includes('hors zone') ||
+        reason.includes('ferme') ||
+        reason.includes('eteint') ||
+        reason.includes('hors service') ||
+        reason.includes('hors zone')
+      ) {
         return {
           statusRaw: 'attempt_failed_unreachable',
           description: 'تنبيه: رقم هاتفك غير متاح لشبكة الاتصال حالياً، يرجى تشغيل الهاتف للتنسيق مع المندوب 📵',
         };
       }
-      if (reason.includes('absent')) {
+      if (reason.includes('absent') || reason.includes('client absent')) {
         return {
           statusRaw: 'attempt_failed',
           description: 'تنبيه: المندوب وصل للعنوان والزبون غير متواجد، سيتم إعادة المحاولة لاحقاً ⚠️',
@@ -137,7 +200,21 @@ export class EcoTrackAdapter {
       };
     }
 
-    if (status.includes('reporte') || reason.includes('reporte') || reason.includes('date_ulterieure')) {
+    // 5. خروج المندوب للتوصيل المنزلي
+    if (
+      status.includes('sorti') ||
+      status.includes('livreur') ||
+      status.includes('en livraison') ||
+      status.includes('en cours livraison') ||
+      (status.includes('distribution') && !status.includes('echec'))
+    ) {
+      return {
+        statusRaw: 'out_for_delivery',
+        description: `مندوب ${carrierName} في طريقه إلى عنوانك اليوم، يرجى إبقاء هاتفك قريباً منك 🛵`,
+      };
+    }
+
+    if (status.includes('reporte') || reason.includes('reporte') || reason.includes('date ulterieure')) {
       return {
         statusRaw: 'postponed',
         description: 'تم تأجيل موعد تسليم الشحنة بناءً على رغبتك إلى موعد لاحق 🗓️',
@@ -153,7 +230,7 @@ export class EcoTrackAdapter {
     }
 
     // 7. الإلغاء والإرجاع (Retour)
-    if (status.includes('retour') || status.includes('refuse') || status.includes('annule')) {
+    if (status.includes('retour') || status.includes('refuse') || status.includes('annule') || status.includes('retourne')) {
       return {
         statusRaw: 'returned',
         description: 'تعذر تسليم الشحنة وجاري إرجاع الطرد إلى المتجر 🔄',
@@ -161,7 +238,7 @@ export class EcoTrackAdapter {
     }
 
     return {
-      statusRaw: status,
+      statusRaw: statusRaw ? safeLower(statusRaw) : 'processing',
       description: `جاري متابعة وضعية الشحنة مع شركة ${carrierName}`,
     };
   }

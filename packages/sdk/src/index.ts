@@ -1,172 +1,81 @@
-export interface TrackerConfig {
-  apiKey: string;
-  baseUrl?: string;
-  autoCapture?: boolean;
-}
+/**
+ * DZ Tracking SDK - Official Client Library
+ * Post-purchase order tracking & COD return mitigation infrastructure
+ */
 
-export interface TrackOrderParams {
-  orderId: string;
-  name?: string;
-  phone?: string;
-  status?: string;
-  productName?: string;
-}
+import { DZTrackerClient } from './client';
+import { setupAutoCapture } from './autocapture';
+import { DZTrackerConfig, TrackOrderParams, TrackOrderResult, AutoCaptureOptions } from './types';
 
-export interface TrackOrderResult {
-  success: boolean;
-  trackingUuid: string;
-  trackingUrl: string;
-  whatsappUrl: string;
-}
+export { DZTrackerClient } from './client';
+export { setupAutoCapture } from './autocapture';
+export { OfflineQueue } from './queue';
+export { normalizeAlgerianPhone, formatAlgerianPhoneDisplay } from './utils/phone';
+export { useTracker } from './react';
+export type { UseTrackerReturn } from './react';
+export * from './types';
 
-let globalConfig: TrackerConfig | null = null;
-let listenerAttached = false;
+// Browser Global Singleton
+let singletonClient: DZTrackerClient | null = null;
+let autoCaptureCleanup: (() => void) | null = null;
 
-export function initTracker(config: TrackerConfig) {
-  globalConfig = {
-    baseUrl: (config.baseUrl || 'http://localhost:3000').replace(/\/$/, ''),
-    autoCapture: config.autoCapture !== false,
-    ...config,
-  };
+/**
+ * Initializes the global DZ Tracking client in browser environments.
+ * Automatically activates declarative zero-code HTML Form auto-capture unless disabled.
+ */
+export function initTracker(config: DZTrackerConfig, options?: AutoCaptureOptions): DZTrackerClient {
+  singletonClient = new DZTrackerClient(config);
 
-  if (typeof window !== 'undefined' && globalConfig.autoCapture && !listenerAttached) {
-    setupAutoCapture();
+  // Expose to window for debug / CDN users
+  if (typeof window !== 'undefined') {
+    (window as any).DZTracker = singletonClient;
   }
-}
 
-function getConfig(): TrackerConfig {
-  if (!globalConfig) {
-    throw new Error('[dz-tracking-sdk]: You must call initTracker({ apiKey }) first in your app root.');
+  // Setup Declarative HTML Form Auto-Capture
+  if (config.autoCapture !== false) {
+    if (autoCaptureCleanup) {
+      autoCaptureCleanup();
+    }
+    autoCaptureCleanup = setupAutoCapture(singletonClient, options);
   }
-  return globalConfig;
+
+  return singletonClient;
 }
 
+/**
+ * Returns the currently initialized global DZTrackerClient instance.
+ */
+export function getTrackerClient(): DZTrackerClient {
+  if (!singletonClient) {
+    throw new Error(
+      '[DZ Tracking SDK]: Tracker not initialized. Please call initTracker({ apiKey: "..." }) in your app root.'
+    );
+  }
+  return singletonClient;
+}
+
+/**
+ * Programmatically tracks an order using the initialized global client.
+ */
 export async function trackOrder(params: TrackOrderParams): Promise<TrackOrderResult> {
-  const config = getConfig();
-
-  // ✅ التصحيح: البحث عن productName أولاً، وإن لم يوجد يفحص الـ DOM تلقائياً
-  const finalProductName = getAutoCapturedProductName(params.productName);
-
-  const response = await fetch(`${config.baseUrl}/api/webhooks`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': config.apiKey,
-    },
-    body: JSON.stringify({
-      order_id: params.orderId,
-      customer_name: params.name,
-      customer_phone: params.phone,
-      product_name: finalProductName,
-      status: params.status || 'order_placed',
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`[dz-tracking-sdk Error]: ${err.error || response.statusText}`);
-  }
-
-  const data = await response.json();
-  const trackingUrl = data.tracking_url as string;
-  const trackingUuid = data.tracking_uuid as string;
-
-  let cleanPhone = (params.phone || '').replace(/[^0-9]/g, '');
-  if (cleanPhone.startsWith('0')) cleanPhone = '213' + cleanPhone.substring(1);
-
-  const msg = `مرحباً ${params.name || ''}، رابط تتبع شحنتك رقم ${params.orderId} هو:\n${trackingUrl}`;
-  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-
-  return {
-    success: true,
-    trackingUuid,
-    trackingUrl,
-    whatsappUrl,
-  };
+  const client = getTrackerClient();
+  return client.trackOrder(params);
 }
 
-export async function updateStatus(orderId: string, status: string): Promise<any> {
-  const config = getConfig();
-
-  const response = await fetch(`${config.baseUrl}/api/webhooks`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': config.apiKey,
-    },
-    body: JSON.stringify({
-      order_id: orderId,
-      status: status,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`[dz-tracking-sdk Error]: ${err.error || response.statusText}`);
-  }
-
-  return response.json();
+/**
+ * Updates an order status (backward compatible signature).
+ */
+export async function updateStatus(orderId: string, status: string, description?: string): Promise<any> {
+  const client = getTrackerClient();
+  return client.updateStatus({ orderId, status, description });
 }
 
-function setupAutoCapture() {
-  listenerAttached = true;
-
-  document.addEventListener('click', async (e) => {
-    const target = (e.target as HTMLElement)?.closest('[data-track-status]') as HTMLElement | null;
-    if (!target) return;
-
-    const status = target.getAttribute('data-track-status');
-    const orderId = target.getAttribute('data-order-id');
-
-    if (status && orderId) {
-      try {
-        await updateStatus(orderId, status);
-        target.dispatchEvent(new CustomEvent('track:success', { bubbles: true, detail: { orderId, status } }));
-      } catch (err) {
-        target.dispatchEvent(new CustomEvent('track:error', { bubbles: true, detail: { orderId, status, error: err } }));
-      }
-    }
-  });
-
-  document.addEventListener('change', async (e) => {
-    const target = e.target as HTMLInputElement | null;
-    if (!target || !target.matches('input[type="checkbox"][data-track-status]')) return;
-
-    const status = target.getAttribute('data-track-status');
-    const orderId = target.getAttribute('data-order-id');
-
-    if (target.checked && status && orderId) {
-      try {
-        await updateStatus(orderId, status);
-        target.dispatchEvent(new CustomEvent('track:success', { bubbles: true, detail: { orderId, status } }));
-      } catch (err) {
-        target.dispatchEvent(new CustomEvent('track:error', { bubbles: true, detail: { orderId, status, error: err } }));
-      }
-    }
-  });
-}
-
+/**
+ * Tracks an order and automatically navigates the browser to the public tracking URL.
+ */
 export async function trackAndRedirect(params: TrackOrderParams): Promise<void> {
-  const { trackingUrl } = await trackOrder(params);
-  if (typeof window !== 'undefined' && trackingUrl) {
-    window.location.href = trackingUrl;
+  const result = await trackOrder(params);
+  if (typeof window !== 'undefined' && result.trackingUrl) {
+    window.location.href = result.trackingUrl;
   }
-}
-
-function getAutoCapturedProductName(explicitName?: string): string | undefined {
-  if (explicitName && explicitName.trim()) {
-    return explicitName.trim();
-  }
-
-  if (typeof document !== 'undefined') {
-    const el = document.querySelector('[data-track-product]');
-    if (el) {
-      if ('value' in el && typeof (el as HTMLInputElement).value === 'string') {
-        return (el as HTMLInputElement).value.trim();
-      }
-      return el.textContent?.trim() || undefined;
-    }
-  }
-
-  return undefined;
 }

@@ -7,4 +7,5 @@ export default defineConfig({
   clean: false,
   minify: true,
   sourcemap: true,
+  external: ['react'],
 });

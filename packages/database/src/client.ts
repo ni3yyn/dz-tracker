@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// تعريف هيكل قاعدة البيانات بالكامل لضمان Type Safety
+// تعريف هيكل قاعدة البيانات بالكامل لضمان Type Safety في جميع الحزم والتطبيقات
 export type Database = {
   public: {
     Tables: {
@@ -10,17 +10,38 @@ export type Database = {
           store_name: string;
           api_key: string;
           created_at: string;
+          auth_user_id: string | null;
+          subscription_tier?: string | null;
+          subscription_status?: string | null;
+          max_orders_limit?: number | null;
+          monthly_orders_used?: number | null;
+          subscription_expires_at?: string | null;
         };
         Insert: {
           id?: string;
           store_name: string;
           api_key?: string;
           created_at?: string;
+          auth_user_id?: string | null;
+          subscription_tier?: string | null;
+          subscription_status?: string | null;
+          max_orders_limit?: number | null;
+          monthly_orders_used?: number | null;
+          subscription_expires_at?: string | null;
         };
         Update: {
+          id?: string;
           store_name?: string;
           api_key?: string;
+          created_at?: string;
+          auth_user_id?: string | null;
+          subscription_tier?: string | null;
+          subscription_status?: string | null;
+          max_orders_limit?: number | null;
+          monthly_orders_used?: number | null;
+          subscription_expires_at?: string | null;
         };
+        Relationships: [];
       };
       orders: {
         Row: {
@@ -29,6 +50,8 @@ export type Database = {
           external_order_id: string;
           customer_phone: string | null;
           customer_name: string | null;
+          product_name: string | null;
+          product_image: string | null;
           tracking_uuid: string;
           current_status: string;
           carrier_name: string | null;
@@ -42,6 +65,8 @@ export type Database = {
           external_order_id: string;
           customer_phone?: string | null;
           customer_name?: string | null;
+          product_name?: string | null;
+          product_image?: string | null;
           tracking_uuid?: string;
           current_status?: string;
           carrier_name?: string | null;
@@ -50,11 +75,29 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          id?: string;
+          merchant_id?: string;
+          external_order_id?: string;
+          customer_phone?: string | null;
+          customer_name?: string | null;
+          product_name?: string | null;
+          product_image?: string | null;
+          tracking_uuid?: string;
           current_status?: string;
           carrier_name?: string | null;
           carrier_tracking_number?: string | null;
+          created_at?: string;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: string;
+            columns: ['merchant_id'];
+            isOneToOne: false;
+            referencedRelation: 'merchants';
+            referencedColumns: ['id'];
+          }
+        ];
       };
       order_history: {
         Row: {
@@ -73,6 +116,23 @@ export type Database = {
           description?: string | null;
           created_at?: string;
         };
+        Update: {
+          id?: string;
+          order_id?: string;
+          status_title?: string;
+          status_raw?: string;
+          description?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: string;
+            columns: ['order_id'];
+            isOneToOne: false;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          }
+        ];
       };
       status_mappings: {
         Row: {
@@ -89,7 +149,85 @@ export type Database = {
           display_status: string;
           created_at?: string;
         };
+        Update: {
+          id?: string;
+          merchant_id?: string;
+          source_status?: string;
+          display_status?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: string;
+            columns: ['merchant_id'];
+            isOneToOne: false;
+            referencedRelation: 'merchants';
+            referencedColumns: ['id'];
+          }
+        ];
       };
+      subscription_payments: {
+        Row: {
+          id: string;
+          merchant_id: string;
+          plan_tier: string;
+          amount_dzd: number;
+          payment_method: string;
+          payment_proof_url: string | null;
+          transaction_ref: string | null;
+          status: string;
+          admin_notes: string | null;
+          created_at: string;
+          reviewed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          merchant_id: string;
+          plan_tier: string;
+          amount_dzd: number;
+          payment_method: string;
+          payment_proof_url?: string | null;
+          transaction_ref?: string | null;
+          status?: string;
+          admin_notes?: string | null;
+          created_at?: string;
+          reviewed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          merchant_id?: string;
+          plan_tier?: string;
+          amount_dzd?: number;
+          payment_method?: string;
+          payment_proof_url?: string | null;
+          transaction_ref?: string | null;
+          status?: string;
+          admin_notes?: string | null;
+          created_at?: string;
+          reviewed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: string;
+            columns: ['merchant_id'];
+            isOneToOne: false;
+            referencedRelation: 'merchants';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 };

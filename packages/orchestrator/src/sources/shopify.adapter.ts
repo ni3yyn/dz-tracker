@@ -1,67 +1,80 @@
 import crypto from 'node:crypto';
 import { TrackingEvent } from '../index';
+import { safeString, normalizeAlgerianPhone } from '../utils/safe';
 
 export class ShopifyAdapter {
   static verifyHmac(rawBody: string, hmacHeader: string | null, secret: string): boolean {
     if (!hmacHeader || !secret) return false;
-    const hash = crypto
-      .createHmac('sha256', secret)
-      .update(rawBody, 'utf8')
-      .digest('base64');
     try {
+      const hash = crypto
+        .createHmac('sha256', secret)
+        .update(rawBody, 'utf8')
+        .digest('base64');
       return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(hmacHeader));
     } catch {
       return false;
     }
   }
 
-  static normalize(merchantId: string, payload: any): TrackingEvent {
-    const externalOrderId = payload.name || `#${payload.order_number}` || String(payload.id);
+  static normalize(merchantId: string, rawPayload: any): TrackingEvent {
+    const payload = rawPayload && typeof rawPayload === 'object' ? rawPayload : {};
 
-    // 1. تنظيف اسم العميل
-    let customerName = payload.customer
-      ? `${payload.customer.first_name || ''} ${payload.customer.last_name || ''}`.trim()
-      : payload.shipping_address?.name || undefined;
+    const externalOrderId = safeString(
+      payload.name || (payload.order_number ? `#${payload.order_number}` : payload.id) || 'SHOPIFY_ORDER'
+    );
+
+    // 1. تنظيف اسم العميل بأمان
+    let customerName: string | undefined = undefined;
+    if (payload.customer && typeof payload.customer === 'object') {
+      const first = safeString(payload.customer.first_name);
+      const last = safeString(payload.customer.last_name);
+      const full = `${first} ${last}`.trim();
+      if (full) customerName = full;
+    } else if (payload.shipping_address && typeof payload.shipping_address === 'object') {
+      customerName = safeString(payload.shipping_address.name);
+    }
 
     if (customerName) {
       customerName = customerName.replace(/[-_]$/, '').trim();
     }
 
-    const customerPhone =
+    // 2. تنظيف هاتف العميل
+    const rawPhone =
       payload.customer?.phone ||
       payload.shipping_address?.phone ||
       payload.billing_address?.phone ||
-      undefined;
+      payload.phone;
+    const customerPhone = normalizeAlgerianPhone(rawPhone);
 
-    // 2. 🛍️ استخراج وتلخيص منتجات السلة بذكاء (منتج واحد أو سلة متعددة)
+    // 3. استخراج وتلخيص منتجات السلة
     const items = Array.isArray(payload.line_items) ? payload.line_items : [];
     let productName: string | undefined = undefined;
 
-    if (items.length === 1) {
-      const first = items[0];
-      const qty = Number(first.quantity) || 1;
-      const title = first.title || 'منتج';
-      productName = qty > 1 ? `${title} (×${qty})` : title;
-    } else if (items.length > 1) {
-      const firstTitle = items[0]?.title || 'منتج';
-      const remainingCount = items.length - 1;
-      productName = `${firstTitle} (+ ${remainingCount} منتج${remainingCount > 1 ? 'ات أخرى' : ' آخر'})`;
+    if (items.length > 0) {
+      productName = items
+        .map((item: any) => {
+          if (!item || typeof item !== 'object') return 'منتج';
+          const title = safeString(item.title, 'منتج');
+          const qty = Number(item.quantity) || 1;
+          return qty > 1 ? `${title} (×${qty})` : title;
+        })
+        .join(' • ');
     }
 
-    // 3. تحليل بيانات الشحن والتوصيل (Fulfillments)
+    // 4. تحليل بيانات الشحن والتوصيل (Fulfillments)
     let statusRaw = 'order_placed';
     let carrierName: string | undefined;
     let carrierTrackingNumber: string | undefined;
     let description = 'تم استلام طلبك في المتجر وهو قيد المراجعة';
 
-    const fulfillments = payload.fulfillments || [];
+    const fulfillments = Array.isArray(payload.fulfillments) ? payload.fulfillments : [];
     const latestFulfillment = fulfillments.length > 0 ? fulfillments[fulfillments.length - 1] : null;
 
-    if (latestFulfillment) {
-      carrierName = latestFulfillment.tracking_company || latestFulfillment.tracking_carrier || undefined;
-      carrierTrackingNumber = latestFulfillment.tracking_number || undefined;
+    if (latestFulfillment && typeof latestFulfillment === 'object') {
+      carrierName = safeString(latestFulfillment.tracking_company || latestFulfillment.tracking_carrier) || undefined;
+      carrierTrackingNumber = safeString(latestFulfillment.tracking_number) || undefined;
 
-      const shipmentStatus = latestFulfillment.shipment_status;
+      const shipmentStatus = safeString(latestFulfillment.shipment_status);
 
       if (shipmentStatus === 'delivered') {
         statusRaw = 'delivered';
@@ -93,11 +106,11 @@ export class ShopifyAdapter {
     }
 
     return {
-      merchantId,
+      merchantId: safeString(merchantId),
       externalOrderId,
-      customerName,
-      customerPhone,
-      productName, // 👈 الاسم الملخص تلقائياً
+      customerName: customerName || undefined,
+      customerPhone: customerPhone || undefined,
+      productName,
       statusRaw,
       description,
       carrierName,

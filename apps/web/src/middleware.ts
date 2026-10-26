@@ -36,10 +36,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // إذا كان مسجل دخول ويحاول فتح صفحة تسجيل الدخول، نوجهه للوحة التحكم
+  // إذا كان مسجل دخول ويحاول فتح صفحة تسجيل الدخول، نوجهه للوحة المناسبة
   if (user && request.nextUrl.pathname === '/login') {
+    const adminEmail = process.env.ADMIN_EMAIL;
     const url = request.nextUrl.clone();
-    url.pathname = '/merchant';
+    if (adminEmail && user.email?.toLowerCase() === adminEmail.toLowerCase()) {
+      url.pathname = '/admin';
+    } else {
+      url.pathname = '/merchant';
+    }
     return NextResponse.redirect(url);
   }
 
