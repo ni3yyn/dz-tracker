@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>تاجر تراك</title>
+  <defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="512"><stop offset="0" stop-color="#2D5640"/><stop offset="1" stop-color="#223F2F"/></linearGradient></defs>
+  <rect width="512" height="512" rx="100" fill="url(#g)"/>
+  <g transform="translate(256 256) scale(1.5) translate(-254 -259.5)">
+    <path d="M156 160 H316 A48 48 0 0 1 316 256 H196 A48 48 0 0 0 196 352 H344" fill="none" stroke="#FFFEFA" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="156" cy="160" r="26" fill="#D57955"/>
+    <circle cx="344" cy="352" r="26" fill="url(#g)" stroke="#FFFEFA" stroke-width="16"/>
+  </g>
+</svg>

@@ -22,8 +22,8 @@
 }
 .header:has(.mobileMenuOpen) { box-shadow: 0 8px 24px rgba(31, 48, 35, .04); }
 .brand { display: inline-flex; align-items: center; gap: 11px; width: max-content; max-width: 100%; color: inherit; text-decoration: none; justify-self: start; }
-.mark { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 42px; border-radius: 12px; background: #294b37; color: #fffefa; }
-.mark svg { width: 35px; height: 35px; }
+.mark { display: block; width: 42px; height: 42px; flex: 0 0 42px; }
+.mark img { display: block; width: 100%; height: 100%; }
 .wordmark { display: flex; min-width: 0; align-items: center; }
 .wordmark strong { color: #202a23; font-size: 16px; font-weight: 750; letter-spacing: -.025em; white-space: nowrap; }
 .desktopNav { display: flex; align-items: center; justify-content: center; gap: clamp(18px, 2.1vw, 31px); white-space: nowrap; }
@@ -97,8 +97,7 @@
   .desktopNav, .actions { display: none; }
   .menuToggle { display: flex; }
   .brand { gap: 10px; }
-  .mark { width: 39px; height: 39px; flex-basis: 39px; border-radius: 11px; }
-  .mark svg { width: 33px; height: 33px; }
+  .mark { width: 39px; height: 39px; flex-basis: 39px; }
   .wordmark strong { font-size: 16px; }
   .compact { min-height: 74px; }
   .dashboardMenuToggle { display: flex; }

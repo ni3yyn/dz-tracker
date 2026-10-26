@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="tj-title">
+  <title id="tj-title">تاجر تراك</title>
+  <!-- TajerTrack animated icon: intro plays once (~2.3s), then the delivery loop repeats every 6s. Static icon is shown if animation is unsupported or reduced motion is on. -->
+  <defs>
+    <linearGradient id="tj-tile" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="512">
+      <stop offset="0" stop-color="#2D5640"/>
+      <stop offset="1" stop-color="#223F2F"/>
+    </linearGradient>
+    <path id="tj-route-path" d="M156 160 H316 A48 48 0 0 1 316 256 H196 A48 48 0 0 0 196 352 H344"/>
+  </defs>
+  <style>@media (prefers-reduced-motion: reduce){ animate, animateTransform, .motion{ display:none } }</style>
+
+  <g transform="translate(256 256)">
+    <g>
+      <animateTransform attributeName="transform" type="scale" begin="0s" dur="0.8s" fill="freeze"
+                        calcMode="spline" keyTimes="0;0.65;1" values="0.86;1.025;1" keySplines=".2 .8 .2 1;.4 0 .3 1"/>
+      <g transform="translate(-256 -256)">
+
+        <rect id="tile" width="512" height="512" rx="112" fill="url(#tj-tile)">
+          <animate attributeName="opacity" begin="0s" dur="0.35s" fill="freeze" values="0;1"/>
+        </rect>
+        <rect id="tile-edge" x="1.5" y="1.5" width="509" height="509" rx="110.5" fill="none" stroke="#FFFFFF" stroke-opacity=".07" stroke-width="3">
+          <animate attributeName="opacity" begin="0s" dur="0.35s" fill="freeze" values="0;1"/>
+        </rect>
+
+        <g id="art" transform="translate(256 256) scale(1.45) translate(-254 -259.5)">
+        <path id="route" pathLength="100" fill="none" stroke="#FFFEFA" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"
+              stroke-dasharray="100 200" stroke-dashoffset="0"
+              d="M156 160 H316 A48 48 0 0 1 316 256 H196 A48 48 0 0 0 196 352 H344">
+          <animate attributeName="stroke-dashoffset" begin="0s" dur="1.5s" fill="freeze"
+                   calcMode="spline" keyTimes="0;0.2;1" values="101;101;0" keySplines="0 0 1 1;.45 0 .25 1"/>
+        </path>
+
+        <circle id="station-hub" cx="364" cy="208" r="7" fill="url(#tj-tile)">
+          <animate attributeName="r" begin="0s" dur="2.2s" fill="freeze" keyTimes="0;0.355;0.395;0.43;1" values="0;0;9;7;7"/>
+        </circle>
+        <circle id="station-out" cx="148" cy="304" r="7" fill="url(#tj-tile)">
+          <animate attributeName="r" begin="0s" dur="2.2s" fill="freeze" keyTimes="0;0.51;0.55;0.586;1" values="0;0;9;7;7"/>
+        </circle>
+
+        <circle id="origin" cx="156" cy="160" r="26" fill="#D57955">
+          <animate attributeName="r" begin="0s" dur="0.9s" fill="freeze" keyTimes="0;0.16;0.55;1" values="0;0;31;26"/>
+        </circle>
+        <circle id="destination" cx="344" cy="352" r="26" fill="url(#tj-tile)" stroke="#FFFEFA" stroke-width="14">
+          <animate attributeName="r" begin="0s" dur="2.2s" fill="freeze" keyTimes="0;0.66;0.72;0.77;1" values="0;0;31;26;26"/>
+        </circle>
+        </g>
+
+      </g>
+    </g>
+  </g>
+
+  <!-- delivery loop, starts after the intro -->
+  <g class="motion" transform="translate(256 256) scale(1.45) translate(-254 -259.5)">
+    <!-- stations light up once the parcel has passed -->
+    <circle cx="364" cy="208" r="7" fill="#D57955" opacity="0">
+      <animate begin="2.6s" attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.2615;0.28;0.9;0.95;1" values="0;0;1;1;0;0"/>
+    </circle>
+    <circle cx="148" cy="304" r="7" fill="#D57955" opacity="0">
+      <animate begin="2.6s" attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.447;0.465;0.9;0.95;1" values="0;0;1;1;0;0"/>
+    </circle>
+
+    <!-- the parcel -->
+    <circle r="19" fill="#D57955" stroke="#294B37" stroke-width="7" opacity="0">
+      <animateMotion begin="2.6s" dur="6s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.1;0.6;1" keyPoints="0;0;1;1">
+        <mpath href="#tj-route-path" xlink:href="#tj-route-path"/>
+      </animateMotion>
+      <animate begin="2.6s" attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.099;0.1;0.6;0.65;1" values="0;0;1;1;0;0"/>
+    </circle>
+
+    <!-- ripples at hub, out-for-delivery and destination -->
+    <circle cx="364" cy="208" r="12" fill="none" stroke="#D57955" stroke-width="5" opacity="0">
+      <animate begin="2.6s" attributeName="r" dur="6s" repeatCount="indefinite" keyTimes="0;0.2615;0.34;1" values="12;12;38;38"/>
+      <animate begin="2.6s" attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.2615;0.2616;0.34;1" values="0;0;0.85;0;0"/>
+    </circle>
+    <circle cx="148" cy="304" r="12" fill="none" stroke="#D57955" stroke-width="5" opacity="0">
+      <animate begin="2.6s" attributeName="r" dur="6s" repeatCount="indefinite" keyTimes="0;0.447;0.525;1" values="12;12;38;38"/>
+      <animate begin="2.6s" attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.447;0.4471;0.525;1" values="0;0;0.85;0;0"/>
+    </circle>
+    <circle cx="344" cy="352" r="30" fill="none" stroke="#FFFEFA" stroke-width="5" opacity="0">
+      <animate begin="2.6s" attributeName="r" dur="6s" repeatCount="indefinite" keyTimes="0;0.6;0.69;1" values="30;30;60;60"/>
+      <animate begin="2.6s" attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.6;0.6001;0.69;1" values="0;0;0.7;0;0"/>
+    </circle>
+
+    <!-- delivered: the ring fills and a check draws in -->
+    <g opacity="0">
+      <animate begin="2.6s" attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.6;0.601;0.92;0.98;1" values="0;0;1;1;0;0"/>
+      <circle cx="344" cy="352" r="0" fill="#FFFEFA">
+        <animate begin="2.6s" attributeName="r" dur="6s" repeatCount="indefinite" keyTimes="0;0.6;0.64;0.67;1" values="0;0;38;33;33"/>
+      </circle>
+      <path d="M330 353 L340 363 L359 341" pathLength="1" fill="none" stroke="#294B37" stroke-width="11"
+            stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 2" stroke-dashoffset="1.1">
+        <animate begin="2.6s" attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite" keyTimes="0;0.64;0.7;1" values="1.1;1.1;0;0"/>
+      </path>
+    </g>
+  </g>
+</svg>

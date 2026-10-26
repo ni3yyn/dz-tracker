@@ -1,6 +1,8 @@
 import '../styles/globals.css';
+import type { Metadata } from 'next';
 
-export const metadata = {
+export const metadata: Metadata = {
+  metadataBase: new URL('https://tajertrack.vercel.app'),
   title: { default: 'تاجر تراك | تتبّع الطلبات', template: '%s | تاجر تراك' },
   description: 'اربط متجرك عبر SDK أو Webhook، أرسل روابط التتبّع عبر Telegram، وتابع حالات الطلب يدوياً أو عبر شركات توصيل جزائرية مدعومة.',
   applicationName: 'تاجر تراك',
@@ -8,6 +10,11 @@ export const metadata = {
     type: 'website',
     locale: 'ar_DZ',
     siteName: 'تاجر تراك',
+    title: 'تاجر تراك | تتبّع الطلبات',
+    description: 'تكاملات الطلبات والتوصيل، وروابط تتبّع للعملاء عبر Telegram.',
+  },
+  twitter: {
+    card: 'summary_large_image',
     title: 'تاجر تراك | تتبّع الطلبات',
     description: 'تكاملات الطلبات والتوصيل، وروابط تتبّع للعملاء عبر Telegram.',
   },

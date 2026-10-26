@@ -20,13 +20,12 @@ type Props = {
 };
 
 function Mark() {
+  // Animated brand mark (public/tajertrack-animated.svg): intro plays once, then the delivery loop repeats.
+  // Loaded as an <img> so the SVG's own animation runs and it respects prefers-reduced-motion.
   return (
     <span className={styles.mark} aria-hidden="true">
-      <svg viewBox="0 0 36 36" fill="none">
-        <path d="M5.5 9.5H23c10 0 10 13 0 13H13c-9 0-9 10 0 10h16" stroke="currentColor" strokeWidth="2.15" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="5.5" cy="9.5" r="2.1" fill="#D57955" />
-        <circle cx="29" cy="32.5" r="2.1" fill="currentColor" />
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/tajertrack-animated.svg" alt="" width={42} height={42} decoding="async" />
     </span>
   );
 }
