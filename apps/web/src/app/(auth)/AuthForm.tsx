@@ -147,7 +147,7 @@ export default function AuthForm({ mode, isAuthenticated = false }: { mode: Auth
             <span>{isLogin ? 'جديد على تاجر تراك؟' : 'لديك حساب بالفعل؟'}</span>
             <a href={isLogin ? '/register' : '/login'}>{isLogin ? 'أنشئ حساباً' : 'سجّل الدخول'} <span aria-hidden="true">↗</span></a>
           </div>
-          <div className={styles.contentFooter}><span>© تاجر تراك TajerTrack</span><span>تتبّع أوضح. إدارة أهدأ.</span></div>
+          <div className={styles.contentFooter}><span>© تاجر تراك </span><span>تتبّع أوضح. إدارة أهدأ.</span></div>
         </section>
         <RouteVisual mode={mode} />
       </div>

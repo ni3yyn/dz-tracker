@@ -103,10 +103,10 @@ export default function SiteHeader({
 
   return (
     <header ref={headerRef} className={`${styles.header} ${compact ? styles.compact : ''}`}>
-      <a href="/" className={styles.brand} aria-label="تاجر تراك TajerTrack — الصفحة الرئيسية">
+      <a href="/" className={styles.brand} aria-label="تاجر تراك | الصفحة الرئيسية">
         <Mark />
         <span className={styles.wordmark}>
-          <strong>تاجر تراك TajerTrack</strong>
+          <strong>تاجر تراك </strong>
         </span>
       </a>
 

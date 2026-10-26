@@ -311,7 +311,7 @@
   .page *, .page *::before, .page *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
-/* تاجر تراك TajerTrack visual philosophy: open canvas, no card chrome, route-line identity. */
+/* تاجر تراك  visual philosophy: open canvas, no card chrome, route-line identity. */
 .page {
   --paper: #f7f6f0;
   --surface: transparent;

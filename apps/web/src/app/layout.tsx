@@ -1,14 +1,14 @@
 import '../styles/globals.css';
 
 export const metadata = {
-  title: { default: 'تاجر تراك TajerTrack — تتبّع الطلبات', template: '%s | تاجر تراك TajerTrack' },
+  title: { default: 'تاجر تراك | تتبّع الطلبات', template: '%s | تاجر تراك' },
   description: 'اربط متجرك عبر SDK أو Webhook، أرسل روابط التتبّع عبر Telegram، وتابع حالات الطلب يدوياً أو عبر شركات توصيل جزائرية مدعومة.',
-  applicationName: 'تاجر تراك TajerTrack',
+  applicationName: 'تاجر تراك',
   openGraph: {
     type: 'website',
     locale: 'ar_DZ',
-    siteName: 'تاجر تراك TajerTrack',
-    title: 'تاجر تراك TajerTrack — تتبّع الطلبات',
+    siteName: 'تاجر تراك',
+    title: 'تاجر تراك | تتبّع الطلبات',
     description: 'تكاملات الطلبات والتوصيل، وروابط تتبّع للعملاء عبر Telegram.',
   },
 };

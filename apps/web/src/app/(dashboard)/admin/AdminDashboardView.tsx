@@ -291,7 +291,7 @@ export function AdminDashboardView({
           <div className={styles.railBrand}>
             <div className={styles.brandLogo}>TT</div>
             <div className={styles.brandTextGroup}>
-              <span className={styles.brandTitle}>تاجر تراك TajerTrack</span>
+              <span className={styles.brandTitle}>تاجر تراك </span>
               <span className={styles.brandRoleBadge}>مدير المنصة</span>
             </div>
           </div>
@@ -751,7 +751,7 @@ export function AdminDashboardView({
               
               <div>
                 <label className={styles.formLabel}>الاسم الكامل لصاحب الحساب</label>
-                <div style={{ fontWeight: 600, fontSize: '15px' }}>تاجر تراك TajerTrack</div>
+                <div style={{ fontWeight: 600, fontSize: '15px' }}>تاجر تراك </div>
               </div>
             </div>
 

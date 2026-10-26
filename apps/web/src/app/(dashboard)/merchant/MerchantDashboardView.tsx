@@ -4381,10 +4381,10 @@ export async function processOrderAction(formData: FormData) {
                   <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
                     <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>رقم الحساب البريدي الجاري (RIP):</span>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
-                      <strong className="dz-mono" style={{ fontSize: '16px', background: 'transparent', border: 'none', padding: 0 }}>00799999002233445566</strong>
+                      <strong className="dz-mono" style={{ fontSize: '16px', background: 'transparent', border: 'none', padding: 0 }}>00799999123456789</strong>
                       <button className="dz-icon-btn" onClick={() => copyToClipboard('00799999002233445566', 'rip')}><Icons.Copy /></button>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '8px' }}>صاحب الحساب: تاجر تراك TajerTrack</div>
+                    <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '8px' }}>صاحب الحساب: تاجر تراك </div>
                   </div>
 
                   <form onSubmit={handleSubmitProof}>

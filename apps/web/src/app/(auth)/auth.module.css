@@ -151,7 +151,7 @@
   .authScreen *, .authScreen *::before, .authScreen *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
-/* تاجر تراك TajerTrack authentication: borderless, spacious, route-line editorial layout. */
+/* تاجر تراك authentication: borderless, spacious, route-line editorial layout. */
 .authScreen {
   --paper: #f7f6f0;
   --surface: transparent;

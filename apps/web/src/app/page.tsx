@@ -340,10 +340,10 @@ export default async function HomePage() {
       </section>
 
       <footer className={styles.footer}>
-        <a href="/" className={styles.footerBrand}><BrandMark light /> <strong>تاجر تراك TajerTrack</strong></a>
+        <a href="/" className={styles.footerBrand}><BrandMark light /> <strong>تاجر تراك </strong></a>
         <span>منصة متابعة الطلبات وتجربة ما بعد الشراء</span>
         <div className={styles.footerLinks}><a href="#how-it-works">كيف يعمل</a><a href="/login">تسجيل الدخول</a><a href="/register">إنشاء حساب</a></div>
-        <a href="#pricing" className={styles.footerPricing}>الأسعار</a><span className={styles.footerCopyright}>© تاجر تراك TajerTrack</span>
+        <a href="#pricing" className={styles.footerPricing}>الأسعار</a><span className={styles.footerCopyright}>© تاجر تراك </span>
       </footer>
     </main>
   );
