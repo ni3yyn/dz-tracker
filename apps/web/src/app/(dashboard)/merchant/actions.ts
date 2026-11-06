@@ -438,17 +438,83 @@ export async function fetchProductUrlMetadata(url: string) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
+    // 1. Shopify Native JSON Shortcut:
+    // If URL contains /products/, Shopify natively provides a public JSON endpoint: /products/[handle].json
+    // This avoids HTML Cloudflare challenges and 429 scraping blocks completely!
+    if (validUrl.pathname.includes('/products/')) {
+      try {
+        const cleanPath = validUrl.pathname.replace(/\/+$/, '');
+        const jsonUrl = `${validUrl.origin}${cleanPath}.json`;
+        const jsonRes = await fetch(jsonUrl, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            Accept: 'application/json',
+          },
+        });
+
+        if (jsonRes.ok) {
+          const contentType = jsonRes.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await jsonRes.json();
+            if (data && data.product) {
+              clearTimeout(timeoutId);
+              const p = data.product;
+              const title = p.title || '';
+              const imageUrl = p.image?.src || p.images?.[0]?.src || '';
+              const rawPrice = p.variants?.[0]?.price;
+              const price = rawPrice ? `${rawPrice} د.ج` : '';
+
+              return {
+                success: true,
+                title: title || 'منتج جديد',
+                image_url: imageUrl,
+                price: price || null,
+                product_url: validUrl.href,
+              };
+            }
+          }
+        }
+      } catch (jsonErr) {
+        // If JSON endpoint fails or isn't Shopify, seamlessly fall back to HTML scraping below
+      }
+    }
+
+    // 2. Standard HTML OpenGraph Scraper with realistic browser headers
     const response = await fetch(validUrl.href, {
       signal: controller.signal,
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
         'Accept-Language': 'ar,en-US,en;q=0.9,fr;q=0.8',
+        'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
       },
     });
 
     clearTimeout(timeoutId);
+
+    if (response.status === 429) {
+      return {
+        error:
+          'الموقع يطبق جدار حماية ضد الروبوتات والطلبات المتكررة (Rate Limit 429). يمكنك كتابة اسم وصورة المنتج يدوياً وسيعمل مباشرة.',
+      };
+    }
+
+    if (response.status === 403) {
+      return {
+        error:
+          'الموقع محمي بجدار حماية ضد الكشط (403 Forbidden). يمكنك إدخال بيانات المنتج يدوياً.',
+      };
+    }
 
     if (!response.ok) {
       return { error: `تعذر الاتصال بصفحة المنتج (رمز الحالة: ${response.status})` };
