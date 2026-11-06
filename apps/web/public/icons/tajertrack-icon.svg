@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="tj-tile" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="512">
+      <stop offset="0" stop-color="#2D5640"/>
+      <stop offset="1" stop-color="#223F2F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded tile -->
+  <rect width="512" height="512" rx="112" fill="url(#tj-tile)"/>
+  <rect x="2" y="2" width="508" height="508" rx="110" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="4"/>
+
+  <!-- Delivery Track Graphic -->
+  <g transform="translate(256 256) scale(1.45) translate(-254 -259.5)">
+    <!-- Main delivery route -->
+    <path fill="none" stroke="#FFFEFA" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"
+          d="M156 160 H316 A48 48 0 0 1 316 256 H196 A48 48 0 0 0 196 352 H344"/>
+
+    <!-- Intermediate hub stations -->
+    <circle cx="364" cy="208" r="9" fill="#D57955"/>
+    <circle cx="148" cy="304" r="9" fill="#D57955"/>
+
+    <!-- Origin circle (Terracotta Coral) -->
+    <circle cx="156" cy="160" r="26" fill="#D57955"/>
+
+    <!-- Destination circle with white checkmark -->
+    <circle cx="344" cy="352" r="26" fill="#FFFEFA"/>
+    <!-- Checkmark inside destination -->
+    <path d="M334 353 L341 360 L354 346" fill="none" stroke="#223F2F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

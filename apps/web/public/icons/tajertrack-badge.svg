@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <!-- Monochrome delivery path badge for Android/Windows notification tray -->
+  <g transform="translate(48 48) scale(0.24) translate(-250 -256)">
+    <path fill="none" stroke="#FFFFFF" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"
+          d="M156 160 H316 A48 48 0 0 1 316 256 H196 A48 48 0 0 0 196 352 H344"/>
+    <circle cx="156" cy="160" r="32" fill="#FFFFFF"/>
+    <circle cx="344" cy="352" r="32" fill="#FFFFFF"/>
+  </g>
+</svg>
