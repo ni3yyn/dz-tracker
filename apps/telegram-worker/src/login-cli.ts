@@ -53,7 +53,7 @@ async function main() {
       },
       password: async () => {
         const p = await rl.question('Enter 2-Step Verification password (leave blank if none): ');
-        return p.trim() || undefined;
+        return p.trim();
       },
     });
 

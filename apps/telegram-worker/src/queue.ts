@@ -86,6 +86,7 @@ export class TelegramQueueManager {
 
     return {
       ...order,
+      telegram_consent_at: order.telegram_consent_at ?? null,
       merchant: merchant
         ? {
             id: merchant.id,
