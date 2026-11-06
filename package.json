@@ -2,11 +2,13 @@
   "name": "my-saas-monorepo",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@12.11.2",
+  "packageManager": "pnpm@9.15.4",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "lint": "turbo lint"
+    "lint": "turbo lint",
+    "start:push-worker": "node apps/push-worker/dist/main.js",
+    "start:telegram-worker": "node apps/telegram-worker/dist/main.js"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
