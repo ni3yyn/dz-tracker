@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@saas/database';
+import { Database } from './database.types.js';
 import { PushWorkerConfig } from './config.js';
 import {
   PushOutboxJob,
