@@ -10,7 +10,7 @@ export interface OrderWithMerchant {
   customer_phone: string | null;
   customer_name: string | null;
   tracking_uuid: string;
-  telegram_consent_at: string | null;
+  telegram_consent_at?: string | null;
   merchant: {
     id: string;
     store_name: string;
@@ -86,6 +86,7 @@ export class TelegramQueueManager {
 
     return {
       ...order,
+      telegram_consent_at: order.telegram_consent_at ?? null,
       merchant: merchant
         ? {
             id: merchant.id,
