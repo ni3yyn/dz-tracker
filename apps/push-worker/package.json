@@ -1,0 +1,27 @@
+{
+  "name": "push-worker",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "generate-vapid": "tsx src/generate-vapid.ts",
+    "test": "node --import tsx/esm --test src/__tests__/*.test.ts"
+  },
+  "dependencies": {
+    "@saas/database": "workspace:*",
+    "@supabase/supabase-js": "^2.117.3",
+    "dotenv": "^16.4.7",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/web-push": "^3.6.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  }
+}
+

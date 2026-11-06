@@ -51,19 +51,20 @@ export async function updateOrderStatus(formData: FormData) {
 
   const supabase = getSupabaseAdminClient();
 
-  // 1. تحديث الحالة الحالية في جدول الطلبات
-  const { data: order, error: updateError } = await supabase
+  // 1. جلب بيانات الطلب والمتجر
+  const { data: order, error: orderError } = await supabase
     .from('orders')
-    .update({
-      current_status: newStatus,
-      updated_at: new Date().toISOString(),
-    })
+    .select('merchant_id, current_status')
     .eq('id', orderId)
-    .select('merchant_id')
     .single();
 
-  if (updateError || !order) {
-    return { error: 'فشل تحديث الطلب' };
+  if (orderError || !order) {
+    return { error: 'تعذر العثور على الطلب المطلوب' };
+  }
+
+  // إذا كانت الحالة متطابقة تماماً، ننهي العملية دون تسجيل أحداث مكررة
+  if (order.current_status === newStatus) {
+    return { success: true, noop: true };
   }
 
   // 2. البحث عن المسمى المعروض بناءً على إعدادات التاجر
@@ -89,16 +90,21 @@ export async function updateOrderStatus(formData: FormData) {
 
   const statusTitle = mapping?.display_status || titleMap[newStatus] || newStatus;
 
-  // 3. إضافة التحديث للسجل الزمني (Timeline)
-  await supabase.from('order_history').insert({
-    order_id: orderId,
-    status_raw: newStatus,
-    status_title: statusTitle,
-    description: description || null,
+  // 3. تحديث الحالة وإدراج السجل الزمني ذرّياً (Atomic Status Change RPC)
+  const { data: rpcResult, error: rpcError } = await supabase.rpc('record_order_status_change', {
+    p_order_id: orderId,
+    p_status_raw: newStatus,
+    p_status_title: statusTitle,
+    p_description: description || null,
   });
 
+  if (rpcError) {
+    console.error('Error recording order status change via RPC:', rpcError);
+    return { error: 'فشل تحديث حالة الطلب' };
+  }
+
   revalidatePath('/merchant');
-  return { success: true };
+  return { success: true, changed: rpcResult?.[0]?.changed ?? true };
 }
 
 // 1. حذف مطابقة حالة

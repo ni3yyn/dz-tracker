@@ -157,28 +157,44 @@ export class TrackingOrchestrator {
           .update(updatePayload)
           .eq('id', orderId);
 
-        // إضافة سجل تاريخي فقط إذا تغيرت الحالة
+        // إضافة سجل تاريخي فقط إذا تغيرت الحالة ذرّياً عبر RPC
         if (!isSameStatus) {
-          await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description);
-
-          // إطلاق التنبيهات والأحداث الموجهة (Automated Multi-Channel Triggers)
-          const triggers = await this.dispatchTriggers({
-            event,
-            orderId,
-            trackingUuid,
-            isNewOrder: false,
-            statusChanged: true,
-            displayStatus,
-            options,
+          const { data: statusChangeData } = await this.supabase.rpc('record_order_status_change', {
+            p_order_id: orderId,
+            p_status_raw: event.statusRaw,
+            p_status_title: displayStatus,
+            p_description: event.description || null,
           });
 
-          return {
-            success: true,
-            trackingUuid,
-            deduplicated: false,
-            isNewOrder: false,
-            triggers,
-          };
+          const actuallyChanged = statusChangeData?.[0]?.changed ?? true;
+
+          if (actuallyChanged) {
+            // إطلاق التنبيهات والأحداث الموجهة (Automated Multi-Channel Triggers)
+            const triggers = await this.dispatchTriggers({
+              event,
+              orderId,
+              trackingUuid,
+              isNewOrder: false,
+              statusChanged: true,
+              displayStatus,
+              options,
+            });
+
+            return {
+              success: true,
+              trackingUuid,
+              deduplicated: false,
+              isNewOrder: false,
+              triggers,
+            };
+          } else {
+            return {
+              success: true,
+              trackingUuid,
+              deduplicated: true,
+              isNewOrder: false,
+            };
+          }
         } else {
           return {
             success: true,
@@ -260,14 +276,13 @@ export class TrackingOrchestrator {
             let triggers: TriggerResult[] | undefined = undefined;
 
             if (changed) {
-              await this.supabase
-                .from('orders')
-                .update({
-                  current_status: event.statusRaw,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', orderId);
-              await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description);
+              await this.supabase.rpc('record_order_status_change', {
+                p_order_id: orderId,
+                p_status_raw: event.statusRaw,
+                p_status_title: displayStatus,
+                p_description: event.description || null,
+              });
+
               triggers = await this.dispatchTriggers({
                 event,
                 orderId,
@@ -300,7 +315,8 @@ export class TrackingOrchestrator {
         orderId = newOrder.id;
         trackingUuid = newOrder.tracking_uuid;
 
-        await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description);
+        // Explicitly classify initial history as order_created (bypasses push notification fanout)
+        await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description, 'order_created');
 
         const triggers = await this.dispatchTriggers({
           event,
@@ -367,12 +383,19 @@ export class TrackingOrchestrator {
     }
   }
 
-  private async insertHistory(orderId: string, statusRaw: string, statusTitle: string, description?: string) {
+  private async insertHistory(
+    orderId: string,
+    statusRaw: string,
+    statusTitle: string,
+    description?: string,
+    eventType: 'order_created' | 'status_changed' = 'status_changed'
+  ) {
     await this.supabase.from('order_history').insert({
       order_id: orderId,
       status_raw: statusRaw,
       status_title: statusTitle,
       description: description || null,
+      event_type: eventType,
     });
   }
 

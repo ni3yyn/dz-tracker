@@ -1,0 +1,55 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+
+export interface PushWorkerConfig {
+  vapidPublicKey: string;
+  vapidPrivateKey: string;
+  vapidSubject: string;
+  isEnabled: boolean;
+  workerId: string;
+  supabaseUrl: string;
+  supabaseSecretKey: string;
+  trackingPublicBaseUrl: string;
+  pollIntervalMs: number;
+  leaseDurationSeconds: number;
+}
+
+export function loadConfig(): PushWorkerConfig {
+  const localEnvPath = path.resolve(process.cwd(), 'apps/push-worker/.env');
+  const rootEnvPath = path.resolve(process.cwd(), '.env');
+
+  if (fs.existsSync(localEnvPath)) {
+    dotenv.config({ path: localEnvPath });
+  } else if (fs.existsSync(rootEnvPath)) {
+    dotenv.config({ path: rootEnvPath });
+  } else {
+    dotenv.config();
+  }
+
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl) throw new Error('Missing required environment variable: SUPABASE_URL');
+  if (!supabaseSecretKey) throw new Error('Missing required environment variable: SUPABASE_SECRET_KEY');
+
+  const vapidPublicKey = process.env.WEB_PUSH_VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY || '';
+  const vapidPrivateKey = process.env.WEB_PUSH_VAPID_PRIVATE_KEY || '';
+  const vapidSubject = process.env.WEB_PUSH_VAPID_SUBJECT || 'mailto:support@tajertrack.dz';
+
+  const isEnabled = process.env.WEB_PUSH_WORKER_ENABLED === 'true';
+
+  return {
+    vapidPublicKey,
+    vapidPrivateKey,
+    vapidSubject,
+    isEnabled,
+    workerId: process.env.WEB_PUSH_WORKER_ID || `push-worker-${Math.random().toString(36).substring(2, 7)}`,
+    supabaseUrl,
+    supabaseSecretKey,
+    trackingPublicBaseUrl: process.env.TRACKING_PUBLIC_BASE_URL || 'https://tajertrack.vercel.app',
+    pollIntervalMs: Math.max(1000, parseInt(process.env.POLL_INTERVAL_MS || '3000', 10)),
+    leaseDurationSeconds: Math.max(10, parseInt(process.env.LEASE_DURATION_SECONDS || '30', 10)),
+  };
+}
+

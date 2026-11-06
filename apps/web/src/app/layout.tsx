@@ -6,6 +6,16 @@ export const metadata: Metadata = {
   title: { default: 'تاجر تراك | نظام تتبع طلبيات جاهظ', template: '%s | تاجر تراك' },
   description: 'اربط متجرك عبر SDK أو Webhook، أرسل روابط التتبّع عبر Telegram، وتابع حالات الطلب يدوياً أو عبر شركات توصيل جزائرية مدعومة.',
   applicationName: 'تاجر تراك',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'تاجر تراك',
+  },
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/apple-touch-icon.png',
+  },
   openGraph: {
     type: 'website',
     locale: 'ar_DZ',

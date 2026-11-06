@@ -74,6 +74,7 @@ export default async function TrackingPage({ params }: PageProps) {
   return (
     <TrackingLiveView
       orderId={order.id}
+      trackingUuid={uuid}
       externalOrderId={order.external_order_id}
       customerName={order.customer_name}
       productName={order.product_name}

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@saas/database';
 import { TimelineEvent, BrandSettings, DEFAULT_BRAND_SETTINGS } from '@saas/ui';
+import { PushNotificationControl } from './PushNotificationControl';
 import styles from './t.module.css';
 
 type TimelineLineStyle = 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none';
@@ -10,6 +11,7 @@ type TrackingBrandSettings = BrandSettings & { showWhatsAppButton?: boolean; ani
 
 interface Props {
   orderId: string;
+  trackingUuid?: string;
   externalOrderId: string;
   customerName: string | null;
   productName: string | null;
@@ -124,6 +126,7 @@ function statusTone(title: string | undefined): string {
 
 export function TrackingLiveView({
   orderId,
+  trackingUuid,
   externalOrderId,
   customerName,
   productName,
@@ -436,6 +439,10 @@ export function TrackingLiveView({
                   <span>{copied ? 'تم النسخ' : 'نسخ'}</span>
                 </button>
               </div>
+            )}
+
+            {trackingUuid && (
+              <PushNotificationControl trackingUuid={trackingUuid} brandColor={settings.brandColor} />
             )}
 
             <div className={styles.timelineHeading}>

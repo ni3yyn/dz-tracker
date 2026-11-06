@@ -118,6 +118,7 @@ export type Database = {
           status_title: string;
           status_raw: string;
           description: string | null;
+          event_type: 'order_created' | 'status_changed';
           created_at: string;
         };
         Insert: {
@@ -126,6 +127,7 @@ export type Database = {
           status_title: string;
           status_raw: string;
           description?: string | null;
+          event_type?: 'order_created' | 'status_changed';
           created_at?: string;
         };
         Update: {
@@ -134,6 +136,7 @@ export type Database = {
           status_title?: string;
           status_raw?: string;
           description?: string | null;
+          event_type?: 'order_created' | 'status_changed';
           created_at?: string;
         };
         Relationships: [
@@ -386,6 +389,248 @@ export type Database = {
         };
         Relationships: [];
       };
+      web_push_subscriptions: {
+        Row: {
+          id: string;
+          endpoint: string;
+          endpoint_hash: string;
+          p256dh: string;
+          auth_secret: string;
+          expiration_time: string | null;
+          status: 'active' | 'expired' | 'revoked';
+          user_agent: string | null;
+          created_at: string;
+          updated_at: string;
+          last_seen_at: string | null;
+          last_success_at: string | null;
+          revoked_at: string | null;
+          last_error_code: string | null;
+        };
+        Insert: {
+          id?: string;
+          endpoint: string;
+          endpoint_hash: string;
+          p256dh: string;
+          auth_secret: string;
+          expiration_time?: string | null;
+          status?: 'active' | 'expired' | 'revoked';
+          user_agent?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          last_seen_at?: string | null;
+          last_success_at?: string | null;
+          revoked_at?: string | null;
+          last_error_code?: string | null;
+        };
+        Update: {
+          id?: string;
+          endpoint?: string;
+          endpoint_hash?: string;
+          p256dh?: string;
+          auth_secret?: string;
+          expiration_time?: string | null;
+          status?: 'active' | 'expired' | 'revoked';
+          user_agent?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          last_seen_at?: string | null;
+          last_success_at?: string | null;
+          revoked_at?: string | null;
+          last_error_code?: string | null;
+        };
+        Relationships: [];
+      };
+      order_push_subscriptions: {
+        Row: {
+          id: string;
+          order_id: string;
+          push_subscription_id: string;
+          created_at: string;
+          subscribed_at: string;
+          revoked_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          push_subscription_id: string;
+          created_at?: string;
+          subscribed_at?: string;
+          revoked_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          push_subscription_id?: string;
+          created_at?: string;
+          subscribed_at?: string;
+          revoked_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: string;
+            columns: ['order_id'];
+            isOneToOne: false;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: string;
+            columns: ['push_subscription_id'];
+            isOneToOne: false;
+            referencedRelation: 'web_push_subscriptions';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      web_push_outbox: {
+        Row: {
+          id: string;
+          order_history_id: string;
+          order_push_subscription_id: string;
+          idempotency_key: string;
+          status: 'pending' | 'processing' | 'retry' | 'sent' | 'failed' | 'cancelled' | 'dead_letter';
+          attempt_count: number;
+          max_attempts: number;
+          available_at: string;
+          locked_by: string | null;
+          locked_at: string | null;
+          lease_expires_at: string | null;
+          result_code: string | null;
+          last_error_code: string | null;
+          last_error_message: string | null;
+          created_at: string;
+          updated_at: string;
+          sent_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          order_history_id: string;
+          order_push_subscription_id: string;
+          idempotency_key: string;
+          status?: 'pending' | 'processing' | 'retry' | 'sent' | 'failed' | 'cancelled' | 'dead_letter';
+          attempt_count?: number;
+          max_attempts?: number;
+          available_at?: string;
+          locked_by?: string | null;
+          locked_at?: string | null;
+          lease_expires_at?: string | null;
+          result_code?: string | null;
+          last_error_code?: string | null;
+          last_error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          sent_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          order_history_id?: string;
+          order_push_subscription_id?: string;
+          idempotency_key?: string;
+          status?: 'pending' | 'processing' | 'retry' | 'sent' | 'failed' | 'cancelled' | 'dead_letter';
+          attempt_count?: number;
+          max_attempts?: number;
+          available_at?: string;
+          locked_by?: string | null;
+          locked_at?: string | null;
+          lease_expires_at?: string | null;
+          result_code?: string | null;
+          last_error_code?: string | null;
+          last_error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          sent_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: string;
+            columns: ['order_history_id'];
+            isOneToOne: false;
+            referencedRelation: 'order_history';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: string;
+            columns: ['order_push_subscription_id'];
+            isOneToOne: false;
+            referencedRelation: 'order_push_subscriptions';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      web_push_attempts: {
+        Row: {
+          id: string;
+          job_id: string;
+          attempt_number: number;
+          operation: string;
+          outcome: string;
+          response_status: number | null;
+          error_code: string | null;
+          error_message: string | null;
+          duration_ms: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          job_id: string;
+          attempt_number: number;
+          operation?: string;
+          outcome: string;
+          response_status?: number | null;
+          error_code?: string | null;
+          error_message?: string | null;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          job_id?: string;
+          attempt_number?: number;
+          operation?: string;
+          outcome?: string;
+          response_status?: number | null;
+          error_code?: string | null;
+          error_message?: string | null;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: string;
+            columns: ['job_id'];
+            isOneToOne: false;
+            referencedRelation: 'web_push_outbox';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      web_push_worker_state: {
+        Row: {
+          id: number;
+          is_enabled: boolean;
+          lease_owner: string | null;
+          lease_expires_at: string | null;
+          paused_until: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          is_enabled?: boolean;
+          lease_owner?: string | null;
+          lease_expires_at?: string | null;
+          paused_until?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          is_enabled?: boolean;
+          lease_owner?: string | null;
+          lease_expires_at?: string | null;
+          paused_until?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -404,6 +649,25 @@ export type Database = {
           p_lease_seconds?: number;
         };
         Returns: boolean;
+      };
+      record_order_status_change: {
+        Args: {
+          p_order_id: string;
+          p_status_raw: string;
+          p_status_title: string;
+          p_description?: string | null;
+        };
+        Returns: {
+          changed: boolean;
+          history_id: string | null;
+        }[];
+      };
+      claim_next_web_push_job: {
+        Args: {
+          p_worker_id: string;
+          p_lease_seconds?: number;
+        };
+        Returns: Database['public']['Tables']['web_push_outbox']['Row'][];
       };
     };
     Enums: {
