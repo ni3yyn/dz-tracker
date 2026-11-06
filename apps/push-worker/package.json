@@ -12,6 +12,7 @@
     "test": "node --import tsx/esm --test src/__tests__/*.test.ts"
   },
   "dependencies": {
+    "@saas/database": "workspace:*",
     "@supabase/supabase-js": "^2.117.3",
     "dotenv": "^16.4.7",
     "web-push": "^3.6.7"
