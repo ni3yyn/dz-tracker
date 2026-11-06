@@ -122,3 +122,21 @@
   .dashboardMenuToggle { display: flex; }
   .dashboardContent:global(.dz-header), .dashboardContent:global(.topBar) { min-width: 0; }
 }
+
+@media (max-width: 860px) {
+  .dashboardHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 12px;
+    column-gap: 12px;
+  }
+  .dashboardMenuToggle {
+    order: 1;
+    flex: 0 0 42px;
+    margin: 0;
+  }
+  .dashboardContent {
+    display: contents;
+  }
+}

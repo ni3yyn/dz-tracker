@@ -1409,7 +1409,7 @@ export async function processOrderAction(formData: FormData) {
         .dz-filter-btn.active { background: var(--ink-main); color: #fff; border-color: var(--ink-main); }
 
         /* BRANDING STUDIO — focused categories + persistent save */
-        .dz-branding-workspace { padding-bottom: 104px; }
+        .dz-branding-workspace { padding-bottom: 120px; transform: none !important; animation: none !important; }
         .dz-branding-panel-head { margin: 0 0 18px; }
         .dz-branding-kicker { display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: .12em; color: #6b7a6e; margin-bottom: 8px; }
         .dz-branding-panel-head h2 { margin: 0 0 7px; font-size: 20px; line-height: 1.45; font-weight: 750; letter-spacing: -.04em; color: var(--ink-main); }
@@ -1424,13 +1424,35 @@ export async function processOrderAction(formData: FormData) {
         .dz-brand-category-copy strong { font-size: 11px; font-weight: 750; line-height: 1.45; }
         .dz-brand-category-copy small { font-size: 9px; line-height: 1.55; color: var(--ink-muted); }
         .dz-brand-category-mark { margin-inline-start: auto; font-size: 15px; color: #819085; line-height: 1; }
-        .dz-brand-savebar { position: fixed; z-index: 1000; bottom: 16px; left: clamp(330px, 32vw, 520px); right: 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 12px; border: 1px solid #dfe2d9; border-radius: 12px; background: rgba(255,254,250,.97); box-shadow: 0 10px 28px rgba(28,40,31,.10); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .dz-brand-savebar {
+          position: fixed;
+          z-index: 1000;
+          bottom: 20px;
+          right: calc(280px + 48px);
+          left: calc(360px + 48px + 26px);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 12px 18px;
+          border: 1px solid #dfe2d9;
+          border-radius: 14px;
+          background: rgba(255, 254, 250, 0.98);
+          box-shadow: 0 10px 30px rgba(28, 40, 31, 0.12), 0 2px 8px rgba(28, 40, 31, 0.04);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .dz-brand-savebar.is-dirty {
+          border-color: #c18435;
+          box-shadow: 0 12px 32px rgba(193, 132, 53, 0.16), 0 2px 8px rgba(28, 40, 31, 0.04);
+        }
         .dz-brand-savebar-copy { display: flex; align-items: center; gap: 10px; min-width: 0; }
         .dz-brand-savebar-copy > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-        .dz-brand-savebar-copy strong { font-size: 11px; font-weight: 800; line-height: 1.5; color: var(--ink-main); }
-        .dz-brand-savebar-copy span:not(.dz-brand-save-indicator) { font-size: 10px; color: var(--ink-muted); line-height: 1.5; }
+        .dz-brand-savebar-copy strong { font-size: 11px; font-weight: 800; line-height: 1.5; color: var(--ink-main); white-space: nowrap; }
+        .dz-brand-savebar-copy span:not(.dz-brand-save-indicator) { font-size: 10px; color: var(--ink-muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
         .dz-brand-save-indicator { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: #7b927f; box-shadow: 0 0 0 4px rgba(123,146,127,.12); }
-        .dz-brand-save-indicator.is-dirty { background: #c18435; box-shadow: 0 0 0 4px rgba(193,132,53,.13); }
+        .dz-brand-save-indicator.is-dirty { background: #c18435; box-shadow: 0 0 0 4px rgba(193, 132, 53, 0.13); }
         .dz-brand-save-button { flex: 0 0 auto; min-width: 145px; padding: 12px 18px; border-radius: 9px !important; box-shadow: none !important; font-size: 12px !important; }
         .dz-brand-save-button:disabled { opacity: .48; cursor: not-allowed; transform: none !important; }
         .dz-brand-save-button:hover:not(:disabled) { filter: brightness(.94); }
@@ -1445,7 +1467,7 @@ export async function processOrderAction(formData: FormData) {
           .dz-customizer-grid { grid-template-columns: 1fr; }
           .dz-branding-preview-sticky { position: relative; top: auto; }
           .dz-phone-chassis { height: min(680px, calc(100svh - 120px)); min-height: 500px; }
-          .dz-brand-savebar { left: 12px; right: 12px; bottom: 10px; }
+          .dz-brand-savebar { left: 48px; right: calc(280px + 48px); bottom: 16px; }
         }
         @media (min-width: 1101px) and (max-height: 760px) {
           .dz-phone-chassis { height: min(680px, calc(100svh - 70px)); min-height: 480px; }
@@ -1811,14 +1833,14 @@ export async function processOrderAction(formData: FormData) {
           .dz-admin-root .dz-main { padding: 24px 18px 36px; }
         }
         @media (max-width: 1024px) {
-          .dz-brand-savebar { left: 12px; right: 12px; bottom: 10px; }
-          .dz-branding-workspace { padding-bottom: 104px; }
+          .dz-brand-savebar { left: 18px; right: 18px; bottom: 14px; }
+          .dz-branding-workspace { padding-bottom: 110px; }
           .dz-branding-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 560px) {
           .dz-phone-chassis { width: min(342px, 100%); height: min(700px, calc(100svh - 125px)); min-height: 500px; border-width: 7px; border-radius: 29px; }
           .dz-branding-preview-sticky { margin-top: 8px; }
-          .dz-brand-savebar { gap: 10px; padding: 10px; border-radius: 11px; }
+          .dz-brand-savebar { gap: 10px; padding: 10px; border-radius: 11px; left: 12px; right: 12px; bottom: 10px; }
           .dz-brand-savebar-copy strong { font-size: 10px; }
           .dz-brand-savebar-copy span:not(.dz-brand-save-indicator) { font-size: 9px; }
           .dz-brand-save-button { min-width: 112px; padding: 11px 12px; font-size: 11px !important; }
@@ -1880,22 +1902,22 @@ export async function processOrderAction(formData: FormData) {
 
         /* Operational dashboard: open layout, strong hierarchy, responsive shipment records. */
         .dz-overview-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--border-soft); margin: 2px 0 30px; background: rgba(255,254,250,.52); }
-        .dz-overview-kpi { min-width: 0; text-align: right; padding: 20px 22px; border: 0; border-inline-start: 1px solid var(--border-soft); background: transparent; color: var(--ink-main); cursor: pointer; transition: background .16s ease; }
+        .dz-overview-kpi { min-width: 0; text-align: right; padding: 22px 24px; border: 0; border-inline-start: 1px solid var(--border-soft); background: transparent; color: var(--ink-main); cursor: pointer; transition: background .16s ease; }
         .dz-overview-kpi:last-child { border-inline-start: 0; }
         .dz-overview-kpi:hover { background: rgba(73,101,79,.055); }
         .dz-overview-kpi:focus-visible, .dz-overview-action:focus-visible, .dz-overview-item-action:focus-visible { outline: 3px solid rgba(53,88,70,.25); outline-offset: 2px; }
-        .dz-overview-kpi-label { display: block; color: var(--ink-muted); font-size: 11px; font-weight: 650; line-height: 1.6; margin-bottom: 8px; }
-        .dz-overview-kpi-value { display: block; font-size: clamp(24px, 2.5vw, 34px); line-height: 1.2; font-weight: 750; letter-spacing: -.055em; font-variant-numeric: tabular-nums; }
-        .dz-overview-kpi-note { display: block; margin-top: 7px; font-size: 10px; line-height: 1.55; color: var(--ink-light); }
+        .dz-overview-kpi-label { display: block; color: var(--ink-muted); font-size: 13px; font-weight: 650; line-height: 1.6; margin-bottom: 8px; }
+        .dz-overview-kpi-value { display: block; font-size: clamp(26px, 2.6vw, 36px); line-height: 1.2; font-weight: 800; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+        .dz-overview-kpi-note { display: block; margin-top: 7px; font-size: 12px; line-height: 1.55; color: var(--ink-light); }
         .dz-overview-kpi.is-alert .dz-overview-kpi-value { color: #b44e3e; }
         .dz-overview-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(245px, .72fr); gap: clamp(24px, 3.5vw, 52px); align-items: start; }
         .dz-overview-main { min-width: 0; }
         .dz-overview-section { padding: 22px 0 18px; border-top: 1px solid var(--border-soft); min-width: 0; }
         .dz-overview-section:first-child { padding-top: 0; border-top: 0; }
         .dz-overview-section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .dz-overview-section-title { margin: 0; font-size: 15px; line-height: 1.5; font-weight: 750; letter-spacing: -.03em; color: var(--ink-main); }
-        .dz-overview-section-subtitle { display: block; margin-top: 3px; font-size: 10px; color: var(--ink-muted); line-height: 1.65; }
-        .dz-overview-text-link { border: 0; padding: 5px 0; background: transparent; color: #416B52; font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+        .dz-overview-section-title { margin: 0; font-size: 16px; line-height: 1.5; font-weight: 750; letter-spacing: -.03em; color: var(--ink-main); }
+        .dz-overview-section-subtitle { display: block; margin-top: 3px; font-size: 12.5px; color: var(--ink-muted); line-height: 1.65; }
+        .dz-overview-text-link { border: 0; padding: 5px 0; background: transparent; color: #416B52; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
         .dz-overview-text-link:hover { text-decoration: underline; text-underline-offset: 3px; }
         .dz-overview-item { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border-soft); }
         .dz-overview-item:last-child { border-bottom: 0; }
@@ -1904,43 +1926,220 @@ export async function processOrderAction(formData: FormData) {
         .dz-overview-item-mark.is-delivered { background: #5a8767; box-shadow: 0 0 0 4px rgba(90,135,103,.10); }
         .dz-overview-item-mark.is-moving { background: #5e8290; box-shadow: 0 0 0 4px rgba(94,130,144,.10); }
         .dz-overview-item-copy { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
-        .dz-overview-item-copy strong { min-width: 0; color: var(--ink-main); font-size: 12px; font-weight: 750; line-height: 1.6; overflow-wrap: anywhere; }
-        .dz-overview-item-copy span { min-width: 0; color: var(--ink-muted); font-size: 10px; line-height: 1.65; overflow-wrap: anywhere; }
+        .dz-overview-item-copy strong { min-width: 0; color: var(--ink-main); font-size: 13px; font-weight: 750; line-height: 1.6; overflow-wrap: anywhere; }
+        .dz-overview-item-copy span { min-width: 0; color: var(--ink-muted); font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
         .dz-overview-item-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; white-space: nowrap; }
-        .dz-overview-item-meta time { color: var(--ink-light); font-size: 9px; }
-        .dz-overview-item-action { border: 0; background: transparent; color: #416B52; padding: 4px; font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }
-        .dz-overview-empty { padding: 25px 0; color: var(--ink-muted); font-size: 11px; line-height: 1.8; }
+        .dz-overview-item-meta time { color: var(--ink-light); font-size: 11px; }
+        .dz-overview-item-action { border: 0; background: transparent; color: #416B52; padding: 4px; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+        .dz-overview-empty { padding: 25px 0; color: var(--ink-muted); font-size: 12.5px; line-height: 1.8; }
         .dz-overview-aside { min-width: 0; }
         .dz-overview-actions { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--border-soft); }
         .dz-overview-action { display: flex; align-items: center; gap: 11px; width: 100%; text-align: right; padding: 14px 0; border: 0; border-bottom: 1px solid var(--border-soft); background: transparent; color: var(--ink-main); cursor: pointer; font: inherit; }
         .dz-overview-action:hover .dz-overview-action-copy strong { color: #416B52; }
         .dz-overview-action-icon { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 9px; color: #416B52; background: #edf1eb; }
         .dz-overview-action-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-        .dz-overview-action-copy strong { font-size: 11px; line-height: 1.5; font-weight: 750; }
-        .dz-overview-action-copy small { color: var(--ink-muted); font-size: 9px; line-height: 1.6; }
+        .dz-overview-action-copy strong { font-size: 13px; line-height: 1.5; font-weight: 750; }
+        .dz-overview-action-copy small { color: var(--ink-muted); font-size: 11.5px; line-height: 1.6; }
         .dz-orders-mobile { display: none; }
-        .dz-orders-count { color: var(--ink-muted); font-size: 10px; white-space: nowrap; }
+        .dz-orders-count { color: var(--ink-muted); font-size: 12px; white-space: nowrap; }
         .dz-orders-load-more { display: flex; justify-content: center; padding: 16px; }
-        .dz-orders-load-more button { border: 1px solid var(--border-soft); background: #fffefa; border-radius: 8px; padding: 10px 16px; color: var(--ink-main); font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+        .dz-orders-load-more button { border: 1px solid var(--border-soft); background: #fffefa; border-radius: 8px; padding: 10px 16px; color: var(--ink-main); font: inherit; font-size: 12.5px; font-weight: 750; cursor: pointer; }
         .dz-orders-load-more button:hover { border-color: #8ca391; }
-        .dz-analytics-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: clamp(24px, 4vw, 54px); }
-        .dz-analytics-section { border-top: 1px solid var(--border-soft); }
-        .dz-analytics-total { flex: 0 0 auto; border: 1px solid var(--border-soft); border-radius: 8px; padding: 7px 10px; color: var(--ink-muted); font-size: 10px; white-space: nowrap; }
-        .dz-analytics-bars, .dz-analytics-status-list { display: flex; flex-direction: column; gap: 17px; padding-top: 10px; }
-        .dz-analytics-bar-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) 27px; align-items: center; gap: 12px; }
-        .dz-analytics-day { display: flex; flex-direction: column; gap: 2px; font-size: 10px; font-weight: 750; color: var(--ink-main); }
-        .dz-analytics-day small { font-size: 9px; color: var(--ink-light); font-weight: 500; }
-        .dz-analytics-bar-track { height: 7px; border-radius: 99px; overflow: hidden; background: #e9ece5; }
-        .dz-analytics-bar-fill { height: 100%; border-radius: inherit; min-width: 0; background: #5e7c65; transition: width .25s ease; }
-        .dz-analytics-bar-count { text-align: left; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-main); }
-        .dz-analytics-status-item { display: flex; flex-direction: column; gap: 8px; }
-        .dz-analytics-status-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 10px; color: var(--ink-muted); }
-        .dz-analytics-status-heading > span { display: flex; align-items: center; gap: 8px; }
-        .dz-analytics-status-heading i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
-        .dz-analytics-status-heading strong { color: var(--ink-main); font-size: 11px; white-space: nowrap; }
-        .dz-analytics-status-heading small { color: var(--ink-light); font-size: 9px; font-weight: 500; }
-        .dz-analytics-footnote { margin-top: 25px; padding: 13px 15px; border-inline-start: 2px solid #8fa390; background: rgba(143,163,144,.08); color: var(--ink-muted); font-size: 10px; line-height: 1.85; }
-        .dz-analytics-action-row { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 20px; }
+
+        /* Dedicated Analytics Tab Styles */
+        .dz-analytics { display: flex; flex-direction: column; gap: 0; animation: dz-tab-fade-up .3s ease both; }
+        .dz-analytics-kpis {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          border: 1px solid var(--border-soft);
+          border-radius: 14px;
+          margin: 4px 0 28px;
+          background: #ffffff;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+          overflow: hidden;
+        }
+        .dz-analytics-kpis .dz-overview-kpi {
+          padding: 24px 26px;
+          border: 0;
+          border-inline-start: 1px solid var(--border-soft);
+          cursor: default;
+        }
+        .dz-analytics-kpis .dz-overview-kpi:last-child { border-inline-start: 0; }
+        .dz-analytics-kpis .dz-overview-kpi-label {
+          font-size: 13.5px;
+          font-weight: 650;
+          color: var(--ink-muted);
+          margin-bottom: 8px;
+        }
+        .dz-analytics-kpis .dz-overview-kpi-value {
+          font-size: clamp(30px, 3.2vw, 40px);
+          font-weight: 800;
+          color: var(--ink-main);
+          letter-spacing: -0.04em;
+        }
+        .dz-analytics-kpis .dz-overview-kpi-note {
+          font-size: 12.5px;
+          color: var(--ink-light);
+          margin-top: 8px;
+          line-height: 1.55;
+        }
+        .dz-analytics-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+          gap: clamp(20px, 3vw, 36px);
+        }
+        .dz-analytics-section {
+          background: #ffffff;
+          border: 1px solid var(--border-soft);
+          border-radius: 16px;
+          padding: 24px 28px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+          border-top: 1px solid var(--border-soft);
+        }
+        .dz-analytics-section .dz-overview-section-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+        .dz-analytics-section .dz-overview-section-title {
+          font-size: 18px;
+          font-weight: 800;
+          color: var(--ink-main);
+          letter-spacing: -0.02em;
+          line-height: 1.4;
+        }
+        .dz-analytics-section .dz-overview-section-subtitle {
+          font-size: 13px;
+          color: var(--ink-muted);
+          line-height: 1.6;
+          margin-top: 4px;
+        }
+        .dz-analytics-total {
+          flex: 0 0 auto;
+          border: 1px solid rgba(65, 107, 82, 0.2);
+          background: #edf5ef;
+          border-radius: 10px;
+          padding: 7px 14px;
+          color: #245838;
+          font-size: 13px;
+          font-weight: 750;
+          white-space: nowrap;
+        }
+        .dz-analytics-bars, .dz-analytics-status-list {
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+          padding-top: 6px;
+        }
+        .dz-analytics-bar-row {
+          display: grid;
+          grid-template-columns: 120px minmax(0, 1fr) 40px;
+          align-items: center;
+          gap: 16px;
+        }
+        .dz-analytics-day {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          font-size: 13.5px;
+          font-weight: 750;
+          color: var(--ink-main);
+          line-height: 1.35;
+        }
+        .dz-analytics-day small {
+          font-size: 12px;
+          color: var(--ink-light);
+          font-weight: 500;
+        }
+        .dz-analytics-bar-track {
+          height: 10px;
+          border-radius: 999px;
+          overflow: hidden;
+          background: #eef2ed;
+        }
+        .dz-analytics-bar-fill {
+          height: 100%;
+          border-radius: inherit;
+          min-width: 0;
+          background: #416B52;
+          transition: width .25s ease;
+        }
+        .dz-analytics-bar-count {
+          text-align: left;
+          font-size: 14px;
+          font-weight: 750;
+          font-variant-numeric: tabular-nums;
+          color: var(--ink-main);
+        }
+        .dz-analytics-status-item {
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+        }
+        .dz-analytics-status-heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          font-size: 13.5px;
+          color: var(--ink-main);
+        }
+        .dz-analytics-status-heading > span {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-weight: 650;
+          font-size: 13.5px;
+        }
+        .dz-analytics-status-heading i {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          display: inline-block;
+          flex: 0 0 auto;
+          box-shadow: 0 0 0 2px rgba(0,0,0,0.04);
+        }
+        .dz-analytics-status-heading strong {
+          color: var(--ink-main);
+          font-size: 14px;
+          font-weight: 750;
+          white-space: nowrap;
+        }
+        .dz-analytics-status-heading small {
+          color: var(--ink-muted);
+          font-size: 12.5px;
+          font-weight: 600;
+          margin-inline-start: 4px;
+        }
+        .dz-analytics-footnote {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin-top: 26px;
+          padding: 16px 20px;
+          border-inline-start: 3px solid #5a8767;
+          border-radius: 12px;
+          background: rgba(90, 135, 103, 0.08);
+          color: var(--ink-muted);
+          font-size: 13px;
+          line-height: 1.8;
+          font-weight: 500;
+        }
+        .dz-analytics-action-row {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin-top: 22px;
+        }
+        .dz-analytics-action-row .dz-btn {
+          font-size: 13.5px;
+          font-weight: 700;
+          padding: 10px 22px;
+          min-height: 42px;
+          border-radius: 10px;
+        }
         .dz-order-detail-backdrop { position: fixed; inset: 0; z-index: 2147483000; display: flex; justify-content: flex-start; background: rgba(16,24,19,.34); backdrop-filter: blur(3px); }
         .dz-order-detail-panel { width: min(460px, 100%); height: 100%; max-height: 100dvh; overflow-y: auto; padding: 27px; background: #fffefa; color: var(--ink-main); border-inline-start: 1px solid var(--border-soft); box-shadow: 0 20px 70px rgba(20,30,23,.2); animation: dz-detail-in .22s ease-out; }
         @keyframes dz-detail-in { from { opacity: .6; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
@@ -1965,7 +2164,11 @@ export async function processOrderAction(formData: FormData) {
         .dz-admin-root .dz-orders-desktop td { vertical-align: middle; }
         .dz-admin-root .dz-orders-desktop .dz-table-header { background: transparent; }
         .dz-admin-root .dz-orders-desktop .dz-table-scroll tr:hover td { background: #f7f8f3; }
-        @media (max-width: 1100px) { .dz-overview-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; } .dz-overview-aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 26px; } .dz-analytics-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+        @media (max-width: 1100px) {
+          .dz-overview-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+          .dz-overview-aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 26px; }
+          .dz-analytics-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+        }
         @media (max-width: 760px) {
           .dz-overview-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 22px; }
           .dz-overview-kpi { padding: 16px 13px; border-bottom: 1px solid var(--border-soft); }
@@ -1977,6 +2180,9 @@ export async function processOrderAction(formData: FormData) {
           .dz-overview-item { gap: 6px; }
           .dz-overview-item-meta { align-items: flex-end; }
           .dz-overview-item-action { min-height: 32px; }
+          .dz-analytics-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .dz-analytics-kpis .dz-overview-kpi:nth-child(2) { border-inline-start: 0; }
+          .dz-analytics-kpis .dz-overview-kpi:last-child { grid-column: span 2; border-inline-start: 0; border-top: 1px solid var(--border-soft); }
           .dz-admin-root .dz-orders-desktop { display: none; }
           .dz-orders-mobile { display: grid; gap: 10px; }
           .dz-order-mobile-card { min-width: 0; padding: 14px; border-block: 1px solid var(--border-soft); background: rgba(255,254,250,.72); }
@@ -1997,11 +2203,21 @@ export async function processOrderAction(formData: FormData) {
           .dz-admin-root .dz-shipment-filters select { flex: 1 1 auto; min-width: 0; }
           .dz-admin-root .dz-filter-btn { min-height: 36px; }
         }
+        @media (max-width: 520px) {
+          .dz-analytics-kpis { grid-template-columns: minmax(0, 1fr); }
+          .dz-analytics-kpis .dz-overview-kpi { border-inline-start: 0; border-bottom: 1px solid var(--border-soft); padding: 18px 20px; }
+          .dz-analytics-kpis .dz-overview-kpi:last-child { grid-column: span 1; border-top: 0; border-bottom: 0; }
+          .dz-analytics-section { padding: 18px 18px; }
+          .dz-analytics-bar-row { grid-template-columns: 92px minmax(0, 1fr) 30px; gap: 10px; }
+          .dz-analytics-day { font-size: 12.5px; }
+          .dz-analytics-day small { font-size: 11px; }
+          .dz-analytics-bar-count { font-size: 13px; }
+        }
         @media (max-width: 460px) {
           .dz-order-mobile-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .dz-order-detail-panel { padding: 20px; }
           .dz-order-detail-fields { grid-template-columns: minmax(0, 1fr); }
-          .dz-analytics-bar-row { grid-template-columns: 66px minmax(0, 1fr) 24px; gap: 8px; }
+          .dz-analytics-bar-row { grid-template-columns: 82px minmax(0, 1fr) 26px; gap: 8px; }
           .dz-overview-section-head { align-items: flex-start; }
           .dz-orders-count { white-space: normal; text-align: left; }
         }
@@ -2347,7 +2563,7 @@ export async function processOrderAction(formData: FormData) {
           cursor: pointer;
         }
         .dz-support-copy svg { width: 14px; height: 14px; }
-        @keyframes dz-tab-fade-up { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes dz-tab-fade-up { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
         .dz-main > div:not(.dz-toast) { animation: dz-tab-fade-up .52s cubic-bezier(.2,.65,.25,1) both; }
         .dz-main > header { animation: dz-tab-fade-up .45s cubic-bezier(.2,.65,.25,1) both; }
         .dz-mobile-menu-toggle { display:none; align-items:center; justify-content:center; gap:5px; width:42px; height:42px; flex:0 0 42px; padding:0; border:1px solid var(--border-soft); border-radius:12px; background:rgba(255,254,250,.88); color:var(--ink-main); cursor:pointer; }
@@ -2454,11 +2670,24 @@ export async function processOrderAction(formData: FormData) {
           .dz-header { flex-direction:row; align-items:center; justify-content:space-between; gap:12px; }
           .dz-header > div:first-child { flex:1; min-width:0; }
           .dz-header h1 { font-size:clamp(20px,4vw,28px); }
+          .dz-search-box { width: min(320px, 42%); min-width: 180px; }
           .dz-billing-plan-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        }
+        @media (max-width: 860px) {
+          .dz-header { display: contents !important; }
+          .dz-header > div:first-child { order: 2 !important; flex: 1 1 0px !important; min-width: 0 !important; width: auto !important; }
+          .dz-header h1 { margin: 0 !important; font-size: clamp(19px, 4.5vw, 24px) !important; }
+          .dz-search-box {
+            order: 3 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 0 0 100% !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+          }
         }
         @media (max-width: 560px) {
           .dz-sidebar { top:82px; right:10px; width:calc(100vw - 20px); max-height:calc(100dvh - 94px); }
-          .dz-header { align-items:flex-start; }
           .dz-header p { font-size:11px; }
           .dz-billing-plan-list { grid-template-columns:minmax(0,1fr); }
           .dz-billing-plan { min-height:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px 12px; }
@@ -3027,7 +3256,13 @@ export async function processOrderAction(formData: FormData) {
                   </div>
                 </section>
               </div>
-              <p className="dz-analytics-footnote">ملاحظة: هذه الشاشة تعتمد على تاريخ تسجيل الطلب والحالة الحالية في قاعدة البيانات. لا تعرض متوسط مدة التوصيل أو نسبة الالتزام بموعد التسليم لأن بيانات بداية ونهاية النقل اللازمة لحسابهما غير متاحة في هذا العرض.</p>
+              <div className="dz-analytics-footnote">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px', color: '#416B52' }}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
+                <div>
+                  <strong style={{ display: 'inline-block', marginInlineEnd: '6px', color: 'var(--ink-main)' }}>ملاحظة تحليلية:</strong>
+                  هذه الشاشة تعتمد على تاريخ تسجيل الطلب والحالة الحالية في قاعدة البيانات. لا تعرض متوسط مدة التوصيل أو نسبة الالتزام بموعد التسليم لأن بيانات بداية ونهاية النقل اللازمة لحسابهما غير متاحة في هذا العرض.
+                </div>
+              </div>
               <div className="dz-analytics-action-row"><button type="button" className="dz-btn dz-btn-outline" onClick={() => openShipmentList('all')}>عرض الشحنات</button><button type="button" className="dz-btn" onClick={() => openShipmentList('alerts')}>مراجعة التنبيهات ({alertCount})</button></div>
             </section>
           )}
