@@ -1,5 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database } from './database.types.js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { PushDatabase } from './database.types.js';
 import { PushWorkerConfig } from './config.js';
 import {
   PushOutboxJob,
@@ -43,10 +43,10 @@ export interface PushJobContext {
 }
 
 export class PushQueueManager {
-  private readonly supabase: SupabaseClient<Database>;
+  private readonly supabase: SupabaseClient<PushDatabase>;
 
   constructor(private readonly config: PushWorkerConfig) {
-    this.supabase = createClient<Database>(
+    this.supabase = createClient<PushDatabase>(
       this.config.supabaseUrl,
       this.config.supabaseSecretKey,
       {

@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // تعريف هيكل قاعدة البيانات بالكامل لضمان Type Safety في جميع الحزم والتطبيقات
-export type Database = {
+export type PushDatabase = {
   public: {
     Tables: {
       merchants: {
@@ -641,7 +641,7 @@ export type Database = {
           p_worker_id: string;
           p_lease_seconds?: number;
         };
-        Returns: Database['public']['Tables']['telegram_tracking_outbox']['Row'][];
+        Returns: PushDatabase['public']['Tables']['telegram_tracking_outbox']['Row'][];
       };
       acquire_telegram_worker_lease: {
         Args: {
@@ -667,7 +667,7 @@ export type Database = {
           p_worker_id: string;
           p_lease_seconds?: number;
         };
-        Returns: Database['public']['Tables']['web_push_outbox']['Row'][];
+        Returns: PushDatabase['public']['Tables']['web_push_outbox']['Row'][];
       };
     };
     Enums: {
@@ -679,44 +679,4 @@ export type Database = {
   };
 };
 
-// 1. عميل الواجهات العامة (Browser Client)
-// يدعم: sb_publishable_* أو مفتاح anon القديم
-export const getSupabaseBrowserClient = (): SupabaseClient<Database> => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const publishableKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !publishableKey) {
-    throw new Error(
-      '[Supabase Browser Client Error]: Missing NEXT_PUBLIC_SUPABASE_URL or Publishable/Anon key in environment variables.'
-    );
-  }
-
-  return createClient<Database>(supabaseUrl, publishableKey);
-};
-
-// 2. عميل السيرفر والـ Backend (Admin Client)
-// يدعم: sb_secret_* أو مفتاح service_role القديم (لتجاوز الـ RLS)
-export const getSupabaseAdminClient = (): SupabaseClient<Database> => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const secretKey =
-    process.env.SUPABASE_SECRET_KEY ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_KEY;
-
-  if (!supabaseUrl || !secretKey) {
-    throw new Error(
-      '[Supabase Admin Client Error]: Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SECRET_KEY/SERVICE_ROLE_KEY in environment variables.'
-    );
-  }
-
-  return createClient<Database>(supabaseUrl, secretKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-};
+export type Database = PushDatabase;
