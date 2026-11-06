@@ -202,7 +202,21 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 200px' }}>
           <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', color: 'var(--ink-main, #111827)' }}>
-            <span>{isSubscribed ? '🔔' : '📬'}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', color: isSubscribed ? '#059669' : 'currentColor' }}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+              </svg>
+            </span>
             <span>{isSubscribed ? 'الإشعارات مفعلة لهذه الشحنة' : 'إشعارات الشحنة المباشرة'}</span>
           </strong>
           <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: 'var(--ink-muted, #6b7280)', lineHeight: 1.5 }}>
@@ -253,7 +267,26 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
                 transition: '0.2s',
               }}
             >
-              {isLoading ? 'جاري التفعيل...' : 'تفعيل إشعارات الشحنة 🔔'}
+              {isLoading ? (
+                'جاري التفعيل...'
+              ) : (
+                <>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                  </svg>
+                  <span>تفعيل إشعارات الشحنة</span>
+                </>
+              )}
             </button>
           )}
         </div>
