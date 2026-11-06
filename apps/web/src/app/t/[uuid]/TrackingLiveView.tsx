@@ -9,6 +9,15 @@ import styles from './t.module.css';
 type TimelineLineStyle = 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none';
 type TrackingBrandSettings = BrandSettings & { showWhatsAppButton?: boolean; animateBackgroundBlobs?: boolean; backgroundBlur?: boolean; timelineLineStyle?: TimelineLineStyle };
 
+export interface UpsellItem {
+  id: string;
+  title: string;
+  image_url: string;
+  product_url: string;
+  price?: string | null;
+  currency?: string | null;
+}
+
 interface Props {
   orderId: string;
   trackingUuid?: string;
@@ -22,6 +31,7 @@ interface Props {
   brandColor?: string;
   brandSubtitle?: string;
   initialEvents: TimelineEvent[];
+  upsells?: UpsellItem[];
 }
 
 const Icons = {
@@ -137,6 +147,7 @@ export function TrackingLiveView({
   brandColor,
   brandSubtitle,
   initialEvents,
+  upsells = [],
 }: Props) {
   const [events, setEvents] = useState<TimelineEvent[]>(initialEvents);
   const [isLive, setIsLive] = useState(false);
@@ -483,6 +494,52 @@ export function TrackingLiveView({
               </p>
             )}
           </section>
+
+          {upsells && upsells.length > 0 && (
+            <section className={styles.upsellSection} aria-label="منتجات قد تعجبك">
+              <div className={styles.upsellHeading}>
+                <span className={styles.upsellIcon} aria-hidden="true">🛍️</span>
+                <div>
+                  <h2 className={styles.upsellTitle}>قد يعجبك أيضاً</h2>
+                  <p className={styles.upsellSubtitle}>منتجات مختارة لك من متجر {storeName}</p>
+                </div>
+              </div>
+
+              <div className={styles.upsellGrid}>
+                {upsells.map((item) => (
+                  <a
+                    key={item.id}
+                    href={item.product_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.upsellCard}
+                  >
+                    <div className={styles.upsellImageWrapper}>
+                      <img
+                        src={item.image_url}
+                        alt={item.title}
+                        className={styles.upsellImage}
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className={styles.upsellContent}>
+                      <h3 className={styles.upsellItemTitle} title={item.title}>
+                        {item.title}
+                      </h3>
+                      {item.price && (
+                        <span className={styles.upsellPrice}>
+                          {item.price} {item.currency || 'دج'}
+                        </span>
+                      )}
+                      <span className={styles.upsellCta}>
+                        عرض المنتج <span aria-hidden="true">↗</span>
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
 

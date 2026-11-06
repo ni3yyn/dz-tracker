@@ -631,6 +631,56 @@ export type Database = {
         };
         Relationships: [];
       };
+      merchant_upsells: {
+        Row: {
+          id: string;
+          merchant_id: string;
+          title: string;
+          image_url: string;
+          product_url: string;
+          price: string | null;
+          currency: string | null;
+          is_active: boolean;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          merchant_id: string;
+          title: string;
+          image_url: string;
+          product_url: string;
+          price?: string | null;
+          currency?: string | null;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          merchant_id?: string;
+          title?: string;
+          image_url?: string;
+          product_url?: string;
+          price?: string | null;
+          currency?: string | null;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "merchant_upsells_merchant_id_fkey";
+            columns: ["merchant_id"];
+            isOneToOne: false;
+            referencedRelation: "merchants";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

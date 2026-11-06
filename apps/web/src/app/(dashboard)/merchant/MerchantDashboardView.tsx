@@ -5,7 +5,20 @@ import { createPortal } from 'react-dom';
 import { StatusSelector } from './StatusSelector';
 import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
-import { saveBrandSettings, applyPresetMappings, deleteStatusMapping, submitPaymentProof, toggleTelegramTracking, logout, createManualOrder } from './actions';
+import {
+  saveBrandSettings,
+  applyPresetMappings,
+  deleteStatusMapping,
+  submitPaymentProof,
+  toggleTelegramTracking,
+  logout,
+  createManualOrder,
+  fetchProductUrlMetadata,
+  getMerchantUpsells,
+  saveMerchantUpsell,
+  deleteMerchantUpsell,
+  toggleMerchantUpsell,
+} from './actions';
 import {
   TimelineEvent,
   BrandSettings,
@@ -92,6 +105,19 @@ type BrandPreset = {
   settings: Partial<EditableBrandSettings>;
 };
 
+export interface MerchantUpsellItem {
+  id: string;
+  merchant_id: string;
+  title: string;
+  image_url: string;
+  product_url: string;
+  price: string | null;
+  is_active: boolean;
+  display_order?: number;
+  created_at: string;
+  updated_at?: string;
+}
+
 interface Props {
   storeName: string;
   apiKey: string;
@@ -105,6 +131,7 @@ interface Props {
   subscription?: SubscriptionInfo;
   payments?: PaymentRecord[];
   telegramTrackingLinkEnabled?: boolean;
+  initialUpsells?: MerchantUpsellItem[];
 }
 
 const SAMPLE_PREVIEW_EVENTS: TimelineEvent[] = [
@@ -576,6 +603,10 @@ const Icons = {
   Shield: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   Key: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>,
   Send: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>,
+  ShoppingBag: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
+  Trash: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
+  Sparkles: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>,
+  Link: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
 };
 
 export function MerchantDashboardView({
@@ -591,6 +622,7 @@ export function MerchantDashboardView({
   subscription = { tier: 'starter', status: 'active', limit: 30, used: 0, expiresAt: null },
   payments = [],
   telegramTrackingLinkEnabled = false,
+  initialUpsells = [],
 }: Props) {
   const isUnlimitedPlan = subscription.tier === 'scale' || (subscription.limit !== undefined && subscription.limit >= 999999);
   const tierDefaults: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
@@ -607,9 +639,26 @@ export function MerchantDashboardView({
     ? new Date(subscription.expiresAt).toLocaleDateString('ar-DZ')
     : null;
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'alerts' | 'analytics' | 'branding' | 'integrations' | 'mappings' | 'billing'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'alerts' | 'analytics' | 'branding' | 'upsells' | 'integrations' | 'mappings' | 'billing'>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
+
+  // Upsell Features State
+  const [upsellsList, setUpsellsList] = useState<MerchantUpsellItem[]>(initialUpsells);
+  const [upsellScrapeUrl, setUpsellScrapeUrl] = useState('');
+  const [isScrapingUpsell, setIsScrapingUpsell] = useState(false);
+  const [scrapeUpsellError, setScrapeUpsellError] = useState<string | null>(null);
+
+  const [editingUpsellId, setEditingUpsellId] = useState<string | null>(null);
+  const [upsellTitle, setUpsellTitle] = useState('');
+  const [upsellImageUrl, setUpsellImageUrl] = useState('');
+  const [upsellProductUrl, setUpsellProductUrl] = useState('');
+  const [upsellPrice, setUpsellPrice] = useState('');
+  const [upsellIsActive, setUpsellIsActive] = useState(true);
+  const [isSavingUpsell, setIsSavingUpsell] = useState(false);
+  const [saveUpsellError, setSaveUpsellError] = useState<string | null>(null);
+  const [togglingUpsellId, setTogglingUpsellId] = useState<string | null>(null);
+  const [deletingUpsellId, setDeletingUpsellId] = useState<string | null>(null);
   const [brandingCategory, setBrandingCategory] = useState<BrandingCategory>('identity');
   const [hasUnsavedBrandChanges, setHasUnsavedBrandChanges] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -768,6 +817,192 @@ export function MerchantDashboardView({
       setAddOrderError(err?.message || 'حدث خطأ غير متوقع أثناء إضافة الطلب');
     } finally {
       setIsCreatingOrder(false);
+    }
+  };
+
+  const handleScrapeProductUrl = async () => {
+    if (!upsellScrapeUrl.trim()) {
+      setScrapeUpsellError('يرجى لصق رابط المنتج أولاً');
+      return;
+    }
+    try {
+      setIsScrapingUpsell(true);
+      setScrapeUpsellError(null);
+      const res = await fetchProductUrlMetadata(upsellScrapeUrl.trim());
+      if (res.error) {
+        setScrapeUpsellError(res.error);
+        setUpsellProductUrl(upsellScrapeUrl.trim());
+      } else {
+        if (res.title) setUpsellTitle(res.title);
+        if (res.image_url) setUpsellImageUrl(res.image_url);
+        if (res.price) setUpsellPrice(res.price);
+        setUpsellProductUrl(upsellScrapeUrl.trim());
+        showToast('تم جلب تفاصيل المنتج بنجاح! ⚡');
+      }
+    } catch (err: any) {
+      setScrapeUpsellError('تعذر جلب البيانات تلقائياً، يمكنك إدخالها يدوياً');
+    } finally {
+      setIsScrapingUpsell(false);
+    }
+  };
+
+  const handleSaveUpsellSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!upsellTitle.trim() || !upsellImageUrl.trim() || !upsellProductUrl.trim()) {
+      setSaveUpsellError('يرجى ملء جميع الحقول المطلوبة: العنوان، الصورة، ورابط المنتج');
+      return;
+    }
+
+    try {
+      setIsSavingUpsell(true);
+      setSaveUpsellError(null);
+
+      const formData = new FormData();
+      if (editingUpsellId) {
+        formData.append('id', editingUpsellId);
+      }
+      formData.append('title', upsellTitle.trim());
+      formData.append('image_url', upsellImageUrl.trim());
+      formData.append('product_url', upsellProductUrl.trim());
+      if (upsellPrice.trim()) {
+        formData.append('price', upsellPrice.trim());
+      }
+      formData.append('is_active', upsellIsActive ? 'true' : 'false');
+
+      const res = await saveMerchantUpsell(formData);
+      if (res.error) {
+        setSaveUpsellError(res.error);
+        return;
+      }
+
+      if (editingUpsellId) {
+        setUpsellsList((prev) =>
+          prev.map((item) =>
+            item.id === editingUpsellId
+              ? {
+                  ...item,
+                  title: upsellTitle.trim(),
+                  image_url: upsellImageUrl.trim(),
+                  product_url: upsellProductUrl.trim(),
+                  price: upsellPrice.trim() || null,
+                  is_active: upsellIsActive,
+                }
+              : item
+          )
+        );
+        showToast('تم تعديل المنتج بنجاح');
+      } else {
+        const fresh = await getMerchantUpsells();
+        if (fresh.success && fresh.upsells) {
+          setUpsellsList(fresh.upsells as any);
+        } else {
+          const tempItem: MerchantUpsellItem = {
+            id: 'temp-' + Date.now(),
+            merchant_id: merchantId,
+            title: upsellTitle.trim(),
+            image_url: upsellImageUrl.trim(),
+            product_url: upsellProductUrl.trim(),
+            price: upsellPrice.trim() || null,
+            is_active: upsellIsActive,
+            created_at: new Date().toISOString(),
+          };
+          setUpsellsList((prev) => [tempItem, ...prev]);
+        }
+        showToast('تمت إضافة المنتج بنجاح! سيظهر لزبائنك في صفحة التتبع');
+      }
+
+      setEditingUpsellId(null);
+      setUpsellScrapeUrl('');
+      setUpsellTitle('');
+      setUpsellImageUrl('');
+      setUpsellProductUrl('');
+      setUpsellPrice('');
+      setUpsellIsActive(true);
+    } catch (err: any) {
+      setSaveUpsellError('حدث خطأ أثناء حفظ المنتج');
+    } finally {
+      setIsSavingUpsell(false);
+    }
+  };
+
+  const handleEditUpsell = (item: MerchantUpsellItem) => {
+    setEditingUpsellId(item.id);
+    setUpsellTitle(item.title);
+    setUpsellImageUrl(item.image_url);
+    setUpsellProductUrl(item.product_url);
+    setUpsellPrice(item.price || '');
+    setUpsellIsActive(item.is_active);
+    setUpsellScrapeUrl(item.product_url);
+    setSaveUpsellError(null);
+    setScrapeUpsellError(null);
+    const formElem = document.getElementById('dz-upsell-form-anchor');
+    if (formElem) {
+      formElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleCancelEditUpsell = () => {
+    setEditingUpsellId(null);
+    setUpsellScrapeUrl('');
+    setUpsellTitle('');
+    setUpsellImageUrl('');
+    setUpsellProductUrl('');
+    setUpsellPrice('');
+    setUpsellIsActive(true);
+    setSaveUpsellError(null);
+    setScrapeUpsellError(null);
+  };
+
+  const handleToggleUpsell = async (item: MerchantUpsellItem) => {
+    const nextState = !item.is_active;
+    try {
+      setTogglingUpsellId(item.id);
+      setUpsellsList((prev) =>
+        prev.map((u) => (u.id === item.id ? { ...u, is_active: nextState } : u))
+      );
+      const res = await toggleMerchantUpsell(item.id, nextState);
+      if (res.error) {
+        setUpsellsList((prev) =>
+          prev.map((u) => (u.id === item.id ? { ...u, is_active: !nextState } : u))
+        );
+        showToast(res.error);
+      } else {
+        showToast(nextState ? 'تم تفعيل ظهور المنتج' : 'تم إخفاء المنتج من صفحة التتبع');
+      }
+    } catch (err) {
+      setUpsellsList((prev) =>
+        prev.map((u) => (u.id === item.id ? { ...u, is_active: !nextState } : u))
+      );
+      showToast('تعذر تحديث حالة المنتج');
+    } finally {
+      setTogglingUpsellId(null);
+    }
+  };
+
+  const handleDeleteUpsell = async (id: string) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا المنتج؟ لن يظهر مجدداً في صفحة التتبع.')) {
+      return;
+    }
+    try {
+      setDeletingUpsellId(id);
+      setUpsellsList((prev) => prev.filter((u) => u.id !== id));
+      const res = await deleteMerchantUpsell(id);
+      if (res.error) {
+        showToast(res.error);
+        const fresh = await getMerchantUpsells();
+        if (fresh.success && fresh.upsells) setUpsellsList(fresh.upsells as any);
+      } else {
+        showToast('تم حذف المنتج بنجاح');
+        if (editingUpsellId === id) {
+          handleCancelEditUpsell();
+        }
+      }
+    } catch (err) {
+      showToast('تعذر حذف المنتج');
+      const fresh = await getMerchantUpsells();
+      if (fresh.success && fresh.upsells) setUpsellsList(fresh.upsells as any);
+    } finally {
+      setDeletingUpsellId(null);
     }
   };
 
@@ -2783,6 +3018,58 @@ export async function processOrderAction(formData: FormData) {
         @media (max-width: 560px) {
           .dz-admin-root .dz-sidebar { top: 70px; max-height: calc(100dvh - 82px); }
         }
+
+        /* UPSELL FEATURE STYLES */
+        .dz-upsell-container { display:flex; flex-direction:column; gap:24px; max-width:1100px; padding-bottom:60px; animation:dz-tab-fade-up .35s ease; }
+        .dz-upsell-hero-banner { background:linear-gradient(135deg, #18201a 0%, #27342d 100%); border-radius:18px; padding:24px 28px; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; box-shadow:0 10px 30px rgba(0,0,0,0.08); }
+        .dz-upsell-hero-text h3 { margin:0 0 6px; font-size:18px; font-weight:850; display:flex; align-items:center; gap:8px; }
+        .dz-upsell-hero-text p { margin:0; font-size:13px; color:#d1d5db; line-height:1.6; max-width:620px; }
+        .dz-upsell-hero-badge { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:rgba(255,255,255,0.12); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.18); border-radius:12px; font-size:12px; font-weight:750; color:#a7f3d0; white-space:nowrap; }
+        
+        .dz-upsell-form-card { background:#fff; border:1px solid rgba(9,9,11,0.09); border-radius:18px; padding:26px; box-shadow:0 8px 24px rgba(9,9,11,0.03); }
+        .dz-upsell-form-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid rgba(9,9,11,0.07); flex-wrap:wrap; gap:10px; }
+        .dz-upsell-form-head h3 { margin:0; font-size:16px; font-weight:800; color:#111827; display:flex; align-items:center; gap:8px; }
+        
+        .dz-smart-fetch-box { background:#f8faf8; border:1.5px dashed #27342d40; border-radius:14px; padding:16px 20px; margin-bottom:22px; }
+        .dz-smart-fetch-label { display:block; font-size:12px; font-weight:800; color:#27342d; margin-bottom:8px; }
+        .dz-smart-fetch-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+        .dz-smart-fetch-input { flex:1; min-width:260px; background:#fff; border:1px solid rgba(9,9,11,0.14); border-radius:10px; padding:10px 14px; font-size:13px; font-family:inherit; outline:none; direction:ltr; transition:border-color .15s; }
+        .dz-smart-fetch-input:focus { border-color:#27342d; box-shadow:0 0 0 3px rgba(39,52,45,0.12); }
+        .dz-smart-fetch-btn { display:inline-flex; align-items:center; gap:6px; background:#27342d; color:#fff; border:none; border-radius:10px; padding:10px 18px; font-size:13px; font-weight:750; cursor:pointer; white-space:nowrap; transition:all 0.2s ease; }
+        .dz-smart-fetch-btn:hover:not(:disabled) { opacity:0.92; transform:translateY(-1px); }
+        .dz-smart-fetch-btn:disabled { opacity:0.6; cursor:not-allowed; }
+        
+        .dz-upsell-inputs-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:18px; }
+        .dz-upsell-field { display:flex; flex-direction:column; gap:6px; }
+        .dz-upsell-field label { font-size:12px; font-weight:750; color:#374151; }
+        .dz-upsell-field small { font-size:11px; color:#6b7280; }
+        .dz-upsell-field input { background:#fff; border:1px solid rgba(9,9,11,0.14); border-radius:10px; padding:10px 13px; font-size:13px; font-family:inherit; outline:none; transition:border-color .15s; }
+        .dz-upsell-field input:focus { border-color:#27342d; box-shadow:0 0 0 3px rgba(39,52,45,0.1); }
+        
+        .dz-upsell-preview-thumbnail { width:64px; height:64px; border-radius:10px; object-fit:cover; border:1px solid rgba(9,9,11,0.1); background:#f3f4f6; flex-shrink:0; }
+        
+        .dz-upsell-list-card { background:#fff; border:1px solid rgba(9,9,11,0.09); border-radius:18px; padding:26px; box-shadow:0 8px 24px rgba(9,9,11,0.03); }
+        .dz-upsell-list-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid rgba(9,9,11,0.07); flex-wrap:wrap; gap:10px; }
+        .dz-upsell-list-head h3 { margin:0; font-size:16px; font-weight:800; color:#111827; }
+        
+        .dz-upsell-cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+        .dz-upsell-item-card { background:#fcfdfc; border:1px solid rgba(9,9,11,0.09); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px; transition:all 0.2s ease; position:relative; }
+        .dz-upsell-item-card:hover { border-color:rgba(39,52,45,0.3); box-shadow:0 6px 20px rgba(0,0,0,0.04); }
+        .dz-upsell-item-card.is-inactive { opacity:0.65; background:#f9fafb; }
+        .dz-upsell-item-card-top { display:flex; gap:14px; align-items:flex-start; }
+        .dz-upsell-item-card-img { width:74px; height:74px; border-radius:10px; object-fit:cover; background:#f3f4f6; border:1px solid rgba(9,9,11,0.08); flex-shrink:0; }
+        .dz-upsell-item-card-meta { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+        .dz-upsell-item-card-title { font-size:13.5px; font-weight:800; color:#111827; line-height:1.45; margin:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .dz-upsell-item-card-price { font-size:12.5px; font-weight:800; color:#059669; }
+        .dz-upsell-item-card-noprice { font-size:11px; color:#9ca3af; font-style:italic; }
+        .dz-upsell-item-card-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:12px; border-top:1px solid rgba(9,9,11,0.06); flex-wrap:wrap; }
+        .dz-upsell-toggle-btn { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; padding:6px 11px; border-radius:8px; border:1px solid transparent; cursor:pointer; transition:all 0.15s; }
+        .dz-upsell-toggle-btn.active { background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
+        .dz-upsell-toggle-btn.inactive { background:#f3f4f6; color:#6b7280; border-color:#e5e7eb; }
+        .dz-upsell-action-btns { display:flex; align-items:center; gap:6px; }
+        .dz-upsell-action-btn { width:30px; height:30px; border-radius:8px; border:1px solid rgba(9,9,11,0.12); background:#fff; color:#4b5563; display:grid; place-items:center; cursor:pointer; transition:all 0.15s; }
+        .dz-upsell-action-btn:hover { background:#f9fafb; color:#111827; }
+        .dz-upsell-action-btn.danger:hover { background:#fee2e2; color:#dc2626; border-color:#fca5a5; }
       `}} />
 
       <div className="dz-admin-root">
@@ -2822,6 +3109,14 @@ export async function processOrderAction(formData: FormData) {
             </button>
             <button className={`dz-nav-item ${activeTab === 'branding' ? 'active' : ''}`} onClick={() => { setActiveTab('branding'); setMobileMenuOpen(false); }}>
               <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Palette /></span> الهوية البصرية</span>
+            </button>
+            <button className={`dz-nav-item ${activeTab === 'upsells' ? 'active' : ''}`} onClick={() => { setActiveTab('upsells'); setMobileMenuOpen(false); }}>
+              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.ShoppingBag /></span> زيادة المبيعات (Upsells)</span>
+              {upsellsList.filter((u) => u.is_active).length > 0 && (
+                <span className="dz-alert-badge" style={{ background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0' }}>
+                  {upsellsList.filter((u) => u.is_active).length}
+                </span>
+              )}
             </button>
             <button className={`dz-nav-item ${activeTab === 'integrations' ? 'active' : ''}`} onClick={() => { setActiveTab('integrations'); setMobileMenuOpen(false); }}>
               <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Plug /></span> بوابات الربط</span>
@@ -2869,6 +3164,7 @@ export async function processOrderAction(formData: FormData) {
                 {activeTab === 'alerts' && 'رادار تنبيهات الـ COD'}
                 {activeTab === 'analytics' && 'تحليلات الشحنات'}
                 {activeTab === 'branding' && 'تخصيص صفحة الزبون'}
+                {activeTab === 'upsells' && 'زيادة المبيعات (قد يعجبك أيضاً)'}
                 {activeTab === 'integrations' && 'بوابات الربط (Webhooks)'}
                 {activeTab === 'mappings' && 'مطابقة الحالات والترجمة'}
                 {activeTab === 'billing' && 'الاشتراك والفوترة'}
@@ -2879,6 +3175,7 @@ export async function processOrderAction(formData: FormData) {
                 {activeTab === 'alerts' && 'طلبات مهددة بالإرجاع (عدم الرد/مؤجل). تواصل معهم فوراً.'}
                 {activeTab === 'analytics' && 'مؤشرات مبنية على الشحنات المسجلة والحالات الحالية، دون تقديرات غير متاحة.'}
                 {activeTab === 'branding' && 'عزز ولاء زبائنك بصفحة تتبع تحمل هويتك البصرية.'}
+                {activeTab === 'upsells' && 'اعرض منتجات إضافية للزبون في أسفل صفحة التتبع لزيادة متوسط قيمة الطلب بدون إعلانات مدفوعة.'}
                 {activeTab === 'integrations' && 'أجب عن سؤالين لنحدد مسار Shopify أو SDK، وخطوات ربط شركة التوصيل إذا احتجت تحديثاً آلياً.'}
                 {activeTab === 'mappings' && 'حدد ما يراه الزبون لكل حالة برمجية معقدة.'}
                 {activeTab === 'billing' && (
@@ -3963,6 +4260,306 @@ export async function processOrderAction(formData: FormData) {
                 >
                   {isSavingBrand ? 'جارٍ الحفظ…' : 'حفظ التغييرات'}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: UPSELLS (YOU MAY ALSO LIKE) */}
+          {activeTab === 'upsells' && (
+            <div className="dz-upsell-container" aria-label="زيادة المبيعات وعرض المنتجات التكميلية">
+              {/* HERO BANNER */}
+              <div className="dz-upsell-hero-banner">
+                <div className="dz-upsell-hero-text">
+                  <h3>
+                    <Icons.ShoppingBag /> زيادة المبيعات (قد يعجبك أيضاً)
+                  </h3>
+                  <p>
+                    تظهر هذه المنتجات في أسفل صفحة التتبع لزبائنك عندما يتابعون مسار شحنتهم. الصق رابط أي منتج من متجرك (Shopify، YouCan، WooCommerce، WordPress، أو متجر مبرمج) لجلبه تلقائياً بنقرة واحدة!
+                  </p>
+                </div>
+                {orders.length > 0 && orders[0].tracking_uuid && (
+                  <a
+                    href={`${siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/${orders[0].tracking_uuid}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="dz-upsell-hero-badge"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <Icons.ExternalLink /> معاينة صفحة التتبع الحية
+                  </a>
+                )}
+              </div>
+
+              {/* FORM CARD: SMART SCRAPER & MANUAL EDIT */}
+              <div id="dz-upsell-form-anchor" className="dz-upsell-form-card">
+                <div className="dz-upsell-form-head">
+                  <div>
+                    <h3>
+                      {editingUpsellId ? <Icons.Edit /> : <Icons.Plus />}
+                      {editingUpsellId ? 'تعديل بيانات المنتج' : 'إضافة منتج جديد'}
+                    </h3>
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {editingUpsellId ? 'قم بتعديل بيانات المنتج ثم اضغط على حفظ التعديلات' : 'يمكنك جلب المنتج تلقائياً بالرابط أو كتابة تفاصيله يدوياً'}
+                    </span>
+                  </div>
+                  {editingUpsellId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEditUpsell}
+                      className="dz-btn dz-btn-outline"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                    >
+                      إلغاء التعديل
+                    </button>
+                  )}
+                </div>
+
+                {/* SMART SCRAPER BAR */}
+                <div className="dz-smart-fetch-box">
+                  <label className="dz-smart-fetch-label">
+                    ⚡ جلب تلقائي بالرابط (Shopify, YouCan, WooCommerce, متجر خاص)
+                  </label>
+                  <div className="dz-smart-fetch-row">
+                    <input
+                      type="url"
+                      className="dz-smart-fetch-input"
+                      placeholder="https://mystore.com/products/example-product"
+                      value={upsellScrapeUrl}
+                      onChange={(e) => setUpsellScrapeUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleScrapeProductUrl();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="dz-smart-fetch-btn"
+                      onClick={handleScrapeProductUrl}
+                      disabled={isScrapingUpsell || !upsellScrapeUrl.trim()}
+                    >
+                      <Icons.Sparkles />
+                      {isScrapingUpsell ? 'جاري الاستخراج...' : 'جلب تلقائي ⚡'}
+                    </button>
+                  </div>
+                  {scrapeUpsellError && (
+                    <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Icons.AlertTriangle /> {scrapeUpsellError}
+                    </div>
+                  )}
+                </div>
+
+                {/* PRODUCT FORM */}
+                <form onSubmit={handleSaveUpsellSubmit}>
+                  {saveUpsellError && (
+                    <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '12px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Icons.AlertTriangle /> {saveUpsellError}
+                    </div>
+                  )}
+
+                  <div className="dz-upsell-inputs-grid">
+                    <div className="dz-upsell-field">
+                      <label>عنوان المنتج *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="مثال: حقيبة ظهر كلاسيكية مضادة للماء"
+                        value={upsellTitle}
+                        onChange={(e) => setUpsellTitle(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="dz-upsell-field">
+                      <label>رابط صفحة المنتج (Destination URL) *</label>
+                      <input
+                        type="url"
+                        required
+                        dir="ltr"
+                        placeholder="https://mystore.com/products/bag"
+                        value={upsellProductUrl}
+                        onChange={(e) => setUpsellProductUrl(e.target.value)}
+                      />
+                      <small>الرابط الذي سيفتح للعميل في نافذة جديدة عند النقر على المنتج</small>
+                    </div>
+
+                    <div className="dz-upsell-field">
+                      <label>رابط الصورة (Image URL) *</label>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <input
+                          type="url"
+                          required
+                          dir="ltr"
+                          style={{ flex: 1 }}
+                          placeholder="https://mystore.com/cdn/bag.jpg"
+                          value={upsellImageUrl}
+                          onChange={(e) => setUpsellImageUrl(e.target.value)}
+                        />
+                        {upsellImageUrl && (
+                          <img
+                            src={upsellImageUrl}
+                            alt="معاينة"
+                            className="dz-upsell-preview-thumbnail"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="dz-upsell-field">
+                      <label>السعر (اختياري)</label>
+                      <input
+                        type="text"
+                        placeholder="مثال: 3,500 د.ج (اتركه فارغاً إذا كنت لا ترغب بعرض السعر)"
+                        value={upsellPrice}
+                        onChange={(e) => setUpsellPrice(e.target.value)}
+                      />
+                      <small>إذا تركته فارغاً سيظهر المنتج بصورته وعنوانه فقط دون سعر</small>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', paddingTop: '10px', borderTop: '1px solid rgba(9, 9, 11, 0.06)' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: '#374151' }}>
+                      <input
+                        type="checkbox"
+                        checked={upsellIsActive}
+                        onChange={(e) => setUpsellIsActive(e.target.checked)}
+                        style={{ width: '18px', height: '18px', accentColor: '#27342d', cursor: 'pointer' }}
+                      />
+                      تفعيل ظهور هذا المنتج في صفحة التتبع (نشط)
+                    </label>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      {editingUpsellId && (
+                        <button
+                          type="button"
+                          onClick={handleCancelEditUpsell}
+                          className="dz-btn dz-btn-outline"
+                        >
+                          إلغاء
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={isSavingUpsell}
+                        className="dz-btn"
+                        style={{ background: '#27342d', color: '#fff', padding: '10px 22px' }}
+                      >
+                        {isSavingUpsell
+                          ? 'جاري الحفظ...'
+                          : editingUpsellId
+                          ? '✓ حفظ التعديلات'
+                          : '✓ إضافة المنتج وعرضه للزبائن'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              {/* PRODUCTS LIST */}
+              <div className="dz-upsell-list-card">
+                <div className="dz-upsell-list-head">
+                  <div>
+                    <h3>
+                      منتجاتك المضافة ({upsellsList.length})
+                    </h3>
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                      النشط حالياً: {upsellsList.filter((u) => u.is_active).length} منتج
+                    </span>
+                  </div>
+                </div>
+
+                {upsellsList.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6b7280' }}>
+                    <div style={{ width: '56px', height: '56px', margin: '0 auto 14px', borderRadius: '50%', background: '#f3f4f6', display: 'grid', placeItems: 'center', color: '#9ca3af' }}>
+                      <Icons.ShoppingBag />
+                    </div>
+                    <strong style={{ display: 'block', fontSize: '15px', color: '#111827', marginBottom: '6px' }}>
+                      لا توجد منتجات مضافة بعد
+                    </strong>
+                    <p style={{ margin: '0 auto', maxWidth: '440px', fontSize: '13px', lineHeight: 1.6 }}>
+                      الصق رابط أي منتج من متجرك في الحقل أعلاه واضغط على «جلب تلقائي ⚡» لتظهر اقتراحات الشراء لزبائنك في صفحة التتبع فوراً!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="dz-upsell-cards-grid">
+                    {upsellsList.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`dz-upsell-item-card ${!item.is_active ? 'is-inactive' : ''}`}
+                      >
+                        <div className="dz-upsell-item-card-top">
+                          <img
+                            src={item.image_url}
+                            alt={item.title}
+                            className="dz-upsell-item-card-img"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="%239ca3af" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+                            }}
+                          />
+                          <div className="dz-upsell-item-card-meta">
+                            <h4 className="dz-upsell-item-card-title" title={item.title}>
+                              {item.title}
+                            </h4>
+                            {item.price ? (
+                              <span className="dz-upsell-item-card-price">{item.price}</span>
+                            ) : (
+                              <span className="dz-upsell-item-card-noprice">بدون سعر</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="dz-upsell-item-card-bottom">
+                          <button
+                            type="button"
+                            className={`dz-upsell-toggle-btn ${item.is_active ? 'active' : 'inactive'}`}
+                            onClick={() => handleToggleUpsell(item)}
+                            disabled={togglingUpsellId === item.id}
+                            title={item.is_active ? 'اضغط لإخفائه من صفحة التتبع' : 'اضغط لإظهاره في صفحة التتبع'}
+                          >
+                            {togglingUpsellId === item.id
+                              ? '...'
+                              : item.is_active
+                              ? '✓ معروض'
+                              : 'مخفي'}
+                          </button>
+
+                          <div className="dz-upsell-action-btns">
+                            <a
+                              href={item.product_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="dz-upsell-action-btn"
+                              title="فتح رابط المنتج في نافذة جديدة"
+                            >
+                              <Icons.ExternalLink />
+                            </a>
+                            <button
+                              type="button"
+                              className="dz-upsell-action-btn"
+                              onClick={() => handleEditUpsell(item)}
+                              title="تعديل بيانات المنتج"
+                            >
+                              <Icons.Edit />
+                            </button>
+                            <button
+                              type="button"
+                              className="dz-upsell-action-btn danger"
+                              onClick={() => handleDeleteUpsell(item.id)}
+                              disabled={deletingUpsellId === item.id}
+                              title="حذف المنتج"
+                            >
+                              <Icons.Trash />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

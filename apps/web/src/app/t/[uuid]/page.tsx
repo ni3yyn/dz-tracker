@@ -71,6 +71,16 @@ export default async function TrackingPage({ params }: PageProps) {
     ? order.merchants[0]?.store_name
     : (order.merchants as any)?.store_name || 'المتجر';
 
+  // 4. جلب المنتجات المقترحة (قد يعجبك أيضاً)
+  const { data: upsells } = await supabase
+    .from('merchant_upsells')
+    .select('id, title, image_url, product_url, price, currency')
+    .eq('merchant_id', order.merchant_id)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+    .limit(8);
+
   return (
     <TrackingLiveView
       orderId={order.id}
@@ -85,6 +95,7 @@ export default async function TrackingPage({ params }: PageProps) {
       brandColor={fallbackColor}
       brandSubtitle={fallbackSubtitle}
       initialEvents={formattedEvents}
+      upsells={upsells || []}
     />
   );
 }

@@ -404,3 +404,252 @@ export async function createManualOrder(formData: FormData) {
   };
 }
 
+
+// ============================================================================
+// Upsell / "You May Also Like" Feature Server Actions
+// ============================================================================
+
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'");
+}
+
+export async function fetchProductUrlMetadata(url: string) {
+  if (!url || typeof url !== 'string') {
+    return { error: 'يرجى إدخال رابط المنتج' };
+  }
+
+  let validUrl: URL;
+  try {
+    validUrl = new URL(url.trim());
+    if (!['http:', 'https:'].includes(validUrl.protocol)) {
+      return { error: 'يجب أن يبدأ الرابط بـ http:// أو https://' };
+    }
+  } catch {
+    return { error: 'الرابط غير صالح، يرجى التأكد منه' };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
+    const response = await fetch(validUrl.href, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ar,en-US,en;q=0.9,fr;q=0.8',
+      },
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return { error: `تعذر الاتصال بصفحة المنتج (رمز الحالة: ${response.status})` };
+    }
+
+    const html = await response.text();
+
+    // 1. Extract Title
+    let title =
+      html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/<meta\s+name=["']twitter:title["']\s+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ||
+      '';
+
+    title = decodeHtmlEntities(title).trim();
+
+    // 2. Extract Image
+    let imageUrl =
+      html.match(/<meta\s+property=["']og:image:secure_url["']\s+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/<link\s+rel=["']image_src["']\s+href=["']([^"']+)["']/i)?.[1] ||
+      '';
+
+    imageUrl = decodeHtmlEntities(imageUrl).trim();
+    if (imageUrl && !imageUrl.startsWith('http')) {
+      try {
+        imageUrl = new URL(imageUrl, validUrl.origin).href;
+      } catch {
+        // keep as is
+      }
+    }
+
+    // 3. Extract Price (Optional)
+    let price =
+      html.match(/<meta\s+property=["']product:price:amount["']\s+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/<meta\s+property=["']og:price:amount["']\s+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/"price":\s*"?([0-9.,]+)"?/i)?.[1] ||
+      '';
+
+    price = price.trim();
+
+    return {
+      success: true,
+      title: title || 'منتج جديد',
+      image_url: imageUrl || '',
+      price: price || null,
+      product_url: validUrl.href,
+    };
+  } catch (err: any) {
+    console.warn('[MetadataScraper]: Error fetching URL:', err?.message || err);
+    return {
+      error: 'تعذر جلب البيانات تلقائياً، يمكنك إدخال اسم وصورة المنتج يدوياً',
+    };
+  }
+}
+
+export async function getMerchantUpsells() {
+  const supabaseAuth = await createClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) return { error: 'غير مصرح' };
+
+  const supabaseAdmin = getSupabaseAdminClient();
+  const { data: merchant } = await supabaseAdmin
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  if (!merchant) return { error: 'ملف التاجر غير موجود' };
+
+  const { data: upsells, error } = await supabaseAdmin
+    .from('merchant_upsells')
+    .select('*')
+    .eq('merchant_id', merchant.id)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching upsells:', error);
+    return { error: 'فشل جلب المنتجات' };
+  }
+
+  return { success: true, upsells: upsells || [] };
+}
+
+export async function saveMerchantUpsell(formData: FormData) {
+  const supabaseAuth = await createClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) return { error: 'غير مصرح' };
+
+  const supabaseAdmin = getSupabaseAdminClient();
+  const { data: merchant } = await supabaseAdmin
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  if (!merchant) return { error: 'ملف التاجر غير موجود' };
+
+  const id = (formData.get('id') as string)?.trim() || undefined;
+  const title = (formData.get('title') as string)?.trim();
+  const imageUrl = (formData.get('image_url') as string)?.trim();
+  const productUrl = (formData.get('product_url') as string)?.trim();
+  const price = (formData.get('price') as string)?.trim() || null;
+  const isActive = formData.get('is_active') === 'true' || formData.get('is_active') === 'on';
+
+  if (!title || !imageUrl || !productUrl) {
+    return { error: 'يرجى ملء الحقول الأساسية: العنوان، الصورة، ورابط المنتج' };
+  }
+
+  const payload: any = {
+    merchant_id: merchant.id,
+    title,
+    image_url: imageUrl,
+    product_url: productUrl,
+    price: price || null,
+    is_active: isActive !== false,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (id) {
+    const { error } = await supabaseAdmin
+      .from('merchant_upsells')
+      .update(payload)
+      .eq('id', id)
+      .eq('merchant_id', merchant.id);
+
+    if (error) {
+      console.error('Error updating upsell:', error);
+      return { error: 'فشل تعديل المنتج' };
+    }
+  } else {
+    const { error } = await supabaseAdmin
+      .from('merchant_upsells')
+      .insert(payload);
+
+    if (error) {
+      console.error('Error inserting upsell:', error);
+      return { error: 'فشل إضافة المنتج' };
+    }
+  }
+
+  revalidatePath('/merchant');
+  return { success: true };
+}
+
+export async function deleteMerchantUpsell(id: string) {
+  const supabaseAuth = await createClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) return { error: 'غير مصرح' };
+
+  const supabaseAdmin = getSupabaseAdminClient();
+  const { data: merchant } = await supabaseAdmin
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  if (!merchant) return { error: 'ملف التاجر غير موجود' };
+
+  const { error } = await supabaseAdmin
+    .from('merchant_upsells')
+    .delete()
+    .eq('id', id)
+    .eq('merchant_id', merchant.id);
+
+  if (error) {
+    console.error('Error deleting upsell:', error);
+    return { error: 'فشل حذف المنتج' };
+  }
+
+  revalidatePath('/merchant');
+  return { success: true };
+}
+
+export async function toggleMerchantUpsell(id: string, isActive: boolean) {
+  const supabaseAuth = await createClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) return { error: 'غير مصرح' };
+
+  const supabaseAdmin = getSupabaseAdminClient();
+  const { data: merchant } = await supabaseAdmin
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  if (!merchant) return { error: 'ملف التاجر غير موجود' };
+
+  const { error } = await supabaseAdmin
+    .from('merchant_upsells')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('merchant_id', merchant.id);
+
+  if (error) {
+    console.error('Error toggling upsell:', error);
+    return { error: 'فشل تحديث حالة المنتج' };
+  }
+
+  revalidatePath('/merchant');
+  return { success: true };
+}

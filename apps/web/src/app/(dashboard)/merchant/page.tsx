@@ -124,6 +124,14 @@ export default async function MerchantDashboardPage() {
     .eq('merchant_id', merchant.id)
     .order('created_at', { ascending: false });
 
+  // جلب المنتجات المقترحة (قد يعجبك أيضاً)
+  const { data: upsells } = await supabaseAdmin
+    .from('merchant_upsells')
+    .select('*')
+    .eq('merchant_id', merchant.id)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false });
+
   // جلب مطابقات الحالات وإعدادات الهوية البصرية
   const { data: mappings } = await supabaseAdmin
     .from('status_mappings')
@@ -198,6 +206,7 @@ export default async function MerchantDashboardPage() {
       }}
       payments={(payments || []) as any}
       telegramTrackingLinkEnabled={merchant.telegram_tracking_link_enabled ?? false}
+      initialUpsells={(upsells || []) as any}
     />
   );
 }
