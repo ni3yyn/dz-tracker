@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { StatusSelector } from './StatusSelector';
 import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
-import { saveBrandSettings, applyPresetMappings, deleteStatusMapping, submitPaymentProof, logout } from './actions';
+import { saveBrandSettings, applyPresetMappings, deleteStatusMapping, submitPaymentProof, toggleTelegramTracking, logout, createManualOrder } from './actions';
 import {
   TimelineEvent,
   BrandSettings,
@@ -104,6 +104,7 @@ interface Props {
   siteUrl: string;
   subscription?: SubscriptionInfo;
   payments?: PaymentRecord[];
+  telegramTrackingLinkEnabled?: boolean;
 }
 
 const SAMPLE_PREVIEW_EVENTS: TimelineEvent[] = [
@@ -547,6 +548,7 @@ const BRAND_CATEGORY_DEFAULT_KEYS: Record<BrandingCategory, (keyof EditableBrand
 };
 
 const Icons = {
+  Plus: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
   Dashboard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="14" y="10" width="7" height="11" rx="1"/><rect x="3" y="13" width="7" height="8" rx="1"/></svg>,
   Chart: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 3 5-7"/></svg>,
   Box: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>,
@@ -573,6 +575,7 @@ const Icons = {
   Zap: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
   Shield: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   Key: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>,
+  Send: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>,
 };
 
 export function MerchantDashboardView({
@@ -587,6 +590,7 @@ export function MerchantDashboardView({
   siteUrl,
   subscription = { tier: 'starter', status: 'active', limit: 30, used: 0, expiresAt: null },
   payments = [],
+  telegramTrackingLinkEnabled = false,
 }: Props) {
   const isUnlimitedPlan = subscription.tier === 'scale' || (subscription.limit !== undefined && subscription.limit >= 999999);
   const tierDefaults: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
@@ -617,10 +621,17 @@ export function MerchantDashboardView({
   const [integrationPlatform, setIntegrationPlatform] = useState<'shopify' | 'website' | null>(null);
   const [trackingSource, setTrackingSource] = useState<'carrier' | 'manual' | 'unsure' | null>(null);
   const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'maystro' | 'other' | null>(null);
-  const [integrationSection, setIntegrationSection] = useState<'sdk' | 'carriers' | 'shopify' | 'wizard'>('sdk');
+  const [integrationSection, setIntegrationSection] = useState<'sdk' | 'carriers' | 'shopify' | 'telegram' | 'wizard'>('sdk');
+  const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
+  const [isSavingTelegram, startTransitionTelegram] = useTransition();
+  const [telegramFeedback, setTelegramFeedback] = useState<string | null>(null);
   const [sdkCodeTab, setSdkCodeTab] = useState<'html' | 'react' | 'node' | 'curl' | 'agent'>('html');
   const [packageManager, setPackageManager] = useState<'npm' | 'pnpm' | 'yarn' | 'bun'>('npm');
   const [apiKeyRevealed, setApiKeyRevealed] = useState(false);
+  const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [addOrderError, setAddOrderError] = useState<string | null>(null);
+  const [newOrderSuccess, setNewOrderSuccess] = useState<{ trackingUuid: string; externalOrderId: string } | null>(null);
 
   // Full Brand Customization State
   const [brandConfig, setBrandConfig] = useState<EditableBrandSettings>(() => ({
@@ -732,6 +743,32 @@ export function MerchantDashboardView({
     navigator.clipboard.writeText(text);
     setCopiedKey(id);
     setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const handleCreateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsCreatingOrder(true);
+    setAddOrderError(null);
+
+    const formData = new FormData(e.currentTarget);
+    formData.append('merchant_id', merchantId);
+
+    try {
+      const res = await createManualOrder(formData);
+      if (res?.error) {
+        setAddOrderError(res.error);
+      } else if (res?.success) {
+        setNewOrderSuccess({
+          trackingUuid: res.trackingUuid!,
+          externalOrderId: res.externalOrderId!,
+        });
+        showToast('تم إنشاء الطلب بنجاح! تم جدولة التتبع في طابور تيليجرام 🚀');
+      }
+    } catch (err: any) {
+      setAddOrderError(err?.message || 'حدث خطأ غير متوقع أثناء إضافة الطلب');
+    } finally {
+      setIsCreatingOrder(false);
+    }
   };
 
   const handleSubmitProof = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -2164,6 +2201,44 @@ export async function processOrderAction(formData: FormData) {
         .dz-admin-root .dz-orders-desktop td { vertical-align: middle; }
         .dz-admin-root .dz-orders-desktop .dz-table-header { background: transparent; }
         .dz-admin-root .dz-orders-desktop .dz-table-scroll tr:hover td { background: #f7f8f3; }
+        .dz-add-order-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          border-radius: 8px;
+          background: #10b981;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 700;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+          white-space: nowrap;
+        }
+        .dz-add-order-btn:hover {
+          background: #059669;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+        }
+        .dz-input-field {
+          width: 100%;
+          padding: 9px 12px;
+          border-radius: 8px;
+          border: 1px solid var(--border-soft);
+          background: #fff;
+          color: var(--ink-main);
+          font-size: 12px;
+          font-family: inherit;
+          outline: none;
+          transition: border-color 0.2s;
+          box-sizing: border-box;
+        }
+        .dz-input-field:focus {
+          border-color: #10b981;
+          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+        }
         @media (max-width: 1100px) {
           .dz-overview-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
           .dz-overview-aside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 26px; }
@@ -2815,22 +2890,37 @@ export async function processOrderAction(formData: FormData) {
             </div>
 
             {(activeTab === 'overview' || activeTab === 'orders' || activeTab === 'alerts') && (
-              <div className="dz-search-box" role="search">
-                <Icons.Search />
-                <input
-                  type="text"
-                  aria-label="البحث في الشحنات برقم الطلب أو الهاتف أو اسم العميل"
-                  placeholder="رقم الطلب، الهاتف، العميل..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && activeTab === 'overview') {
-                      event.preventDefault();
-                      setActiveTab('orders');
-                      setStatusFilter('all');
-                    }
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="dz-search-box" role="search">
+                  <Icons.Search />
+                  <input
+                    type="text"
+                    aria-label="البحث في الشحنات برقم الطلب أو الهاتف أو اسم العميل"
+                    placeholder="رقم الطلب، الهاتف، العميل..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && activeTab === 'overview') {
+                        event.preventDefault();
+                        setActiveTab('orders');
+                        setStatusFilter('all');
+                      }
+                    }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="dz-add-order-btn"
+                  onClick={() => {
+                    setIsAddOrderModalOpen(true);
+                    setAddOrderError(null);
+                    setNewOrderSuccess(null);
                   }}
-                />
+                  title="إضافة طلب يدوي لاختبار التتبع وتيليجرام"
+                >
+                  <Icons.Plus />
+                  <span>إضافة طلب جديد</span>
+                </button>
               </div>
             )}
           </SiteHeader>
@@ -3130,7 +3220,21 @@ export async function processOrderAction(formData: FormData) {
                     <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 750, color: 'var(--ink-main)' }}>قائمة الشحنات</h3>
                     <span className="dz-overview-section-subtitle">بيانات الطلب والعميل والحالة التشغيلية</span>
                   </div>
-                  <span className="dz-orders-count">{filteredOrders.length} نتيجة من {orders.length}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button
+                      type="button"
+                      className="dz-add-order-btn"
+                      onClick={() => {
+                        setIsAddOrderModalOpen(true);
+                        setAddOrderError(null);
+                        setNewOrderSuccess(null);
+                      }}
+                    >
+                      <Icons.Plus />
+                      <span>إضافة طلب جديد</span>
+                    </button>
+                    <span className="dz-orders-count">{filteredOrders.length} نتيجة من {orders.length}</span>
+                  </div>
                 </div>
                 <div className="dz-table-scroll">
                   <table>
@@ -3973,6 +4077,13 @@ export async function processOrderAction(formData: FormData) {
                 </button>
                 <button
                   type="button"
+                  className={`dz-int-nav-btn ${integrationSection === 'telegram' ? 'active' : ''}`}
+                  onClick={() => setIntegrationSection('telegram')}
+                >
+                  <Icons.Send /> إرسال رابط التتبع عبر تيليجرام (MTProto)
+                </button>
+                <button
+                  type="button"
                   className={`dz-int-nav-btn ${integrationSection === 'wizard' ? 'active' : ''}`}
                   onClick={() => setIntegrationSection('wizard')}
                 >
@@ -4248,6 +4359,185 @@ export async function processOrderAction(formData: FormData) {
                     <p className="dz-guide-note">
                       ملاحظة: بمجرد حفظ الإعداد، ستدخل كافة الطلبات الجديدة في Shopify إلى تاجر تراك تلقائياً لتوليد روابط تتبع مخصصة لكل زبون.
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* SUBTAB 4: TELEGRAM AUTOMATED DELIVERY (MTPROTO) */}
+              {integrationSection === 'telegram' && (
+                <div className="dz-int-panel">
+                  {/* FEATURE TOGGLE CARD */}
+                  <div className="dz-card-box" style={{ padding: '24px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(39, 52, 45, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#27342d' }}>
+                          <Icons.Send />
+                        </div>
+                        <div>
+                          <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 700 }}>
+                            التوصيل التلقائي لروابط التتبع عبر تيليجرام
+                          </h3>
+                          <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink-muted)' }}>
+                            إرسال رابط التتبع فوراً إلى تيليجرام الزبون برقم هاتفه مباشرة دون الحاجة لبوت أو اشتراك مسبق.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{
+                          padding: '4px 10px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          background: telegramEnabled ? 'rgba(34, 197, 94, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                          color: telegramEnabled ? '#15803d' : '#64748b'
+                        }}>
+                          {telegramEnabled ? '● الخدمة مفعّلة' : '○ الخدمة معطّلة'}
+                        </span>
+                        <button
+                          type="button"
+                          className="dz-btn"
+                          style={{
+                            background: telegramEnabled ? '#dc2626' : '#27342d',
+                            color: '#fff',
+                            fontSize: '13px',
+                            padding: '8px 16px',
+                            borderRadius: '10px',
+                            cursor: isSavingTelegram ? 'wait' : 'pointer',
+                            opacity: isSavingTelegram ? 0.7 : 1,
+                          }}
+                          disabled={isSavingTelegram}
+                          onClick={() => {
+                            startTransitionTelegram(async () => {
+                              const next = !telegramEnabled;
+                              setTelegramEnabled(next);
+                              const res = await toggleTelegramTracking(merchantId, next);
+                              if (res?.error) {
+                                setTelegramEnabled(!next);
+                                alert(res.error);
+                              } else {
+                                setTelegramFeedback(next ? 'تم تفعيل التوصيل التلقائي عبر تيليجرام بنجاح!' : 'تم تعطيل التوصيل عبر تيليجرام.');
+                                setTimeout(() => setTelegramFeedback(null), 3500);
+                              }
+                            });
+                          }}
+                        >
+                          {isSavingTelegram ? 'جاري التحديث...' : (telegramEnabled ? 'تعطيل الخدمة' : 'تفعيل الخدمة الآن')}
+                        </button>
+                      </div>
+                    </div>
+
+                    {telegramFeedback && (
+                      <div style={{ marginTop: '16px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(34, 197, 94, 0.1)', color: '#15803d', fontSize: '13px', fontWeight: 600 }}>
+                        ✓ {telegramFeedback}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* GUARANTEES / HIGHLIGHT PILLS */}
+                  <div className="dz-features-badges" style={{ marginBottom: '24px' }}>
+                    <div className="dz-feature-pill">
+                      <div className="dz-feature-pill-icon"><Icons.Shield /></div>
+                      <div>
+                        <strong style={{ display: 'block', fontSize: '13px' }}>بدون بوت نهائياً (Zero-Bot)</strong>
+                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>لا نطلب من الزبون الدخول في بوت أو الضغط على /start؛ الإرسال مباشر عبر حساب MTProto مخصص.</span>
+                      </div>
+                    </div>
+                    <div className="dz-feature-pill">
+                      <div className="dz-feature-pill-icon"><Icons.Zap /></div>
+                      <div>
+                        <strong style={{ display: 'block', fontSize: '13px' }}>إرسال لمرة واحدة فقط</strong>
+                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>رسالة ترحيبية واحدة فقط تحتوي على رابط التتبع فور تسجيل الطلب، دون إزعاج الزبون عند تغير الحالات.</span>
+                      </div>
+                    </div>
+                    <div className="dz-feature-pill">
+                      <div className="dz-feature-pill-icon">🇩🇿</div>
+                      <div>
+                        <strong style={{ display: 'block', fontSize: '13px' }}>معالجة ذكية لأرقام الجزائر</strong>
+                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>يتعرف تلقائياً على أرقام موبيليس (06)، جيزي (07)، وأوريدو (05) ويحوّلها للمعيار الدولي (+213).</span>
+                      </div>
+                    </div>
+                    <div className="dz-feature-pill">
+                      <div className="dz-feature-pill-icon"><Icons.Check /></div>
+                      <div>
+                        <strong style={{ display: 'block', fontSize: '13px' }}>موافقة صريحة وحماية الخصوصية</strong>
+                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>يعمل النظام بالتكامل مع خيار موافقة الزبون أثناء الشراء لضمان الامتثال وموثوقية الوصول.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MESSAGE PREVIEW CARD */}
+                  <div className="dz-card-box" style={{ padding: '20px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700 }}>معاينة الرسالة النصية المرسلة للزبون</h4>
+                      <span style={{ fontSize: '11px', color: 'var(--ink-muted)', background: 'rgba(0,0,0,0.04)', padding: '2px 8px', borderRadius: '4px' }}>صيغة نصية واضحة بدون روابط معقدة</span>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', maxWidth: '520px', lineHeight: 1.7, fontSize: '13.5px', color: '#1e293b', direction: 'rtl' }}>
+                      <p style={{ margin: '0 0 10px 0' }}>
+                        مرحباً <strong>أحمد</strong> 👋 شكراً لطلبك من متجر <strong>{storeName || 'متجرك'}</strong>! 📦
+                      </p>
+                      <p style={{ margin: '0 0 10px 0' }}>
+                        تم تسجيل طلبك بنجاح. يمكنك متابعة شحنتك ومعرفة جميع تفاصيل التوصيل وموقع المندوب من خلال الرابط التالي:
+                      </p>
+                      <p style={{ margin: '0 0 10px 0', wordBreak: 'break-all' }}>
+                        <code style={{ background: '#fff', border: '1px solid #cbd5e1', padding: '2px 8px', borderRadius: '6px', color: '#0284c7', fontSize: '12px' }}>
+                          {`${siteUrl}/t/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`}
+                        </code>
+                      </p>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>
+                        شكراً لثقتك بنا. <strong>TajerTrack</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* HOW TO PASS CONSENT DEVELOPER GUIDES */}
+                  <div className="dz-card-box" style={{ padding: '20px' }}>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700 }}>
+                      كيفية تسجيل موافقة العميل برمجياً (Consent Registration)
+                    </h4>
+                    <p style={{ fontSize: '12.5px', color: 'var(--ink-muted)', marginBottom: '16px', lineHeight: 1.6 }}>
+                      لكي يقوم النظام بجدولة الرسالة تلقائياً، قم بتمرير حقل الموافقة (Consent) في طلب إنشاء الشحنة:
+                    </p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                      {/* DIRECT API */}
+                      <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <strong style={{ display: 'block', fontSize: '12.5px', marginBottom: '8px' }}>1. عبر الـ Webhook المباشر (Direct API)</strong>
+                        <pre style={{ margin: 0, padding: '10px', background: '#0f172a', color: '#f8fafc', borderRadius: '6px', fontSize: '11px', overflowX: 'auto', direction: 'ltr' }}>
+{`// POST ${siteUrl}/api/webhooks
+{
+  "order_id": "#1042",
+  "customer_name": "أحمد بلقاسم",
+  "customer_phone": "0555123456",
+  "telegram_consent": true
+}`}
+                        </pre>
+                      </div>
+
+                      {/* JS SDK */}
+                      <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <strong style={{ display: 'block', fontSize: '12.5px', marginBottom: '8px' }}>2. عبر حزمة الـ SDK (dz-tracking-sdk)</strong>
+                        <pre style={{ margin: 0, padding: '10px', background: '#0f172a', color: '#f8fafc', borderRadius: '6px', fontSize: '11px', overflowX: 'auto', direction: 'ltr' }}>
+{`await tracker.trackOrder({
+  orderId: "#1042",
+  name: "أحمد بلقاسم",
+  phone: "0555123456",
+  telegramConsent: true
+});`}
+                        </pre>
+                      </div>
+
+                      {/* SHOPIFY */}
+                      <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <strong style={{ display: 'block', fontSize: '12.5px', marginBottom: '8px' }}>3. عبر متجر Shopify</strong>
+                        <p style={{ margin: 0, fontSize: '11.5px', color: '#475569', lineHeight: 1.6 }}>
+                          أضف خاصية إضافية في حقول ملاحظات الطلب (Cart / Order Attributes):<br />
+                          الاسم: <code style={{ color: '#0284c7' }}>telegram_tracking_consent</code><br />
+                          القيمة: <code style={{ color: '#16a34a' }}>true</code>
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -4721,6 +5011,285 @@ export async function processOrderAction(formData: FormData) {
                   <a href={`/t/${selectedOrder.tracking_uuid}`} target="_blank" rel="noreferrer" className="dz-btn dz-btn-outline"><Icons.ExternalLink /> صفحة التتبع</a>
                   {selectedOrder.customer_phone && <a href={getWhatsAppRecoveryUrl(selectedOrder)} target="_blank" rel="noreferrer" className={`dz-btn ${isAttentionStatus(selectedOrder.current_status) ? 'dz-btn-wa-urgent' : 'dz-btn-wa'}`}><Icons.MessageCircle /> التواصل عبر واتساب</a>}
                 </div>
+              </aside>
+            </div>
+          ), document.body)}
+
+          {isAddOrderModalOpen && typeof document !== 'undefined' && createPortal((
+            <div
+              className="dz-order-detail-backdrop"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget && !isCreatingOrder) {
+                  setIsAddOrderModalOpen(false);
+                }
+              }}
+            >
+              <aside
+                className="dz-order-detail-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="add-order-title"
+                onMouseDown={(event) => event.stopPropagation()}
+                style={{ width: 'min(500px, 100%)' }}
+              >
+                <div className="dz-order-detail-head">
+                  <div>
+                    <span className="dz-order-detail-kicker">شحنة تجريبية / يدوية</span>
+                    <h2 id="add-order-title" style={{ fontSize: '18px', fontWeight: 800 }}>إضافة طلب جديد</h2>
+                    <p>أدخل بيانات الطلب لتجربة التتبع المباشر وإرسال رابط تيليجرام</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="dz-order-detail-close"
+                    aria-label="إغلاق النافذة"
+                    onClick={() => setIsAddOrderModalOpen(false)}
+                    disabled={isCreatingOrder}
+                  >
+                    <Icons.X />
+                  </button>
+                </div>
+
+                {newOrderSuccess ? (
+                  <div style={{ padding: '24px 0', textAlign: 'center' }}>
+                    <div style={{
+                      width: '56px',
+                      height: '56px',
+                      borderRadius: '50%',
+                      background: '#dcfce7',
+                      color: '#16a34a',
+                      display: 'grid',
+                      placeItems: 'center',
+                      margin: '0 auto 16px',
+                      fontSize: '24px',
+                    }}>
+                      ✓
+                    </div>
+                    <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 800, color: 'var(--ink-main)' }}>
+                      تم تسجيل الطلب بنجاح!
+                    </h3>
+                    <p style={{ margin: '0 0 18px', fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+                      رقم الطلب: <strong>{newOrderSuccess.externalOrderId}</strong><br />
+                      تم إدراج مهمة الإرسال في طابور تيليجرام (Outbox). سيتولى العامل إرسالها فور تشغيله.
+                    </p>
+
+                    <div style={{
+                      background: 'var(--bg-base, #f4f5f1)',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontFamily: 'monospace',
+                      wordBreak: 'break-all',
+                      marginBottom: '16px',
+                      border: '1px solid var(--border-soft)',
+                      textAlign: 'left',
+                      direction: 'ltr',
+                    }}>
+                      {`${siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/${newOrderSuccess.trackingUuid}`}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <a
+                        href={`/t/${newOrderSuccess.trackingUuid}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="dz-btn"
+                        style={{ flex: 1, textDecoration: 'none' }}
+                      >
+                        <Icons.ExternalLink /> فتح صفحة التتبع
+                      </a>
+                      <button
+                        type="button"
+                        className="dz-btn dz-btn-outline"
+                        style={{ flex: 1 }}
+                        onClick={() => {
+                          const url = `${siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/${newOrderSuccess.trackingUuid}`;
+                          copyToClipboard(url, 'new-tracking-link');
+                          showToast('تم نسخ رابط التتبع');
+                        }}
+                      >
+                        <Icons.Copy /> نسخ الرابط
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="dz-btn dz-btn-outline"
+                      style={{ width: '100%', marginTop: '12px' }}
+                      onClick={() => {
+                        setNewOrderSuccess(null);
+                        setIsAddOrderModalOpen(false);
+                      }}
+                    >
+                      إغلاق
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCreateOrder} style={{ padding: '16px 0' }}>
+                    {addOrderError && (
+                      <div style={{
+                        background: '#fee2e2',
+                        color: '#991b1b',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        marginBottom: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}>
+                        <Icons.AlertTriangle /> {addOrderError}
+                      </div>
+                    )}
+
+                    <input type="hidden" name="auto_enable_telegram" value="true" />
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                          رقم الطلب (Order ID) *
+                        </label>
+                        <input
+                          type="text"
+                          name="external_order_id"
+                          defaultValue={`ORD-${Math.floor(100000 + Math.random() * 900000)}`}
+                          required
+                          className="dz-input-field"
+                          placeholder="ORD-123456"
+                          dir="ltr"
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                            اسم العميل *
+                          </label>
+                          <input
+                            type="text"
+                            name="customer_name"
+                            placeholder="محمد عبد الله"
+                            required
+                            className="dz-input-field"
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                            رقم الهاتف *
+                          </label>
+                          <input
+                            type="text"
+                            name="customer_phone"
+                            placeholder="0550123456"
+                            required
+                            className="dz-input-field"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                            شركة الشحن
+                          </label>
+                          <select name="carrier_name" className="dz-input-field" defaultValue="Yalidine Express">
+                            <option value="Yalidine Express">Yalidine Express (ياليدين)</option>
+                            <option value="ZR Express">ZR Express</option>
+                            <option value="Maystro Delivery">Maystro Delivery</option>
+                            <option value="EcoTrack">EcoTrack</option>
+                            <option value="توصيل خاص">توصيل خاص (متجرنا)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                            رقم التتبع لشركة الشحن
+                          </label>
+                          <input
+                            type="text"
+                            name="carrier_tracking_number"
+                            placeholder="اختياري (YAL-1234)"
+                            className="dz-input-field"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                            اسم المنتج (اختياري)
+                          </label>
+                          <input
+                            type="text"
+                            name="product_name"
+                            placeholder="ساعة ذكية Ultra"
+                            className="dz-input-field"
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                            حالة الشحنة الأولية
+                          </label>
+                          <select name="status_raw" className="dz-input-field" defaultValue="order_placed">
+                            <option value="order_placed">تم استلام الطلب 📝 (order_placed)</option>
+                            <option value="processing">قيد التجهيز 📦 (processing)</option>
+                            <option value="shipped">خرج للشحن والتوصيل 🚚 (shipped)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* TELEGRAM CARD */}
+                      <div style={{
+                        background: '#f0f9ff',
+                        border: '1px solid #bae6fd',
+                        borderRadius: '10px',
+                        padding: '13px',
+                        marginTop: '4px',
+                      }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            name="telegram_consent"
+                            defaultChecked={true}
+                            style={{ marginTop: '3px', width: '18px', height: '18px', accentColor: '#0284c7' }}
+                          />
+                          <div>
+                            <strong style={{ display: 'block', fontSize: '13px', color: '#0369a1' }}>
+                              إرسال رابط التتبع فوراً عبر تيليجرام ✈️
+                            </strong>
+                            <span style={{ fontSize: '11px', color: '#0c4a6e', lineHeight: 1.55, display: 'block', marginTop: '2px' }}>
+                              يسجل موافقة العميل ويدرج رسالة التتبع في طابور <code>telegram_tracking_outbox</code> ليقوم العامل بتسليمها إلى هاتف العميل عبر تيليجرام تلقائياً.
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                      <button
+                        type="submit"
+                        className="dz-btn"
+                        disabled={isCreatingOrder}
+                        style={{ flex: 2, background: '#10b981' }}
+                      >
+                        {isCreatingOrder ? 'جاري إنشاء الطلب...' : '✓ إنشاء الطلب وجدولة التتبع'}
+                      </button>
+                      <button
+                        type="button"
+                        className="dz-btn dz-btn-outline"
+                        onClick={() => setIsAddOrderModalOpen(false)}
+                        disabled={isCreatingOrder}
+                        style={{ flex: 1 }}
+                      >
+                        إلغاء
+                      </button>
+                    </div>
+                  </form>
+                )}
               </aside>
             </div>
           ), document.body)}

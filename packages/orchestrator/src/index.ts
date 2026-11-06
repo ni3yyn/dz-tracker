@@ -30,6 +30,9 @@ export interface TrackingEvent {
   description?: string;
   carrierName?: string;
   carrierTrackingNumber?: string;
+  customerTelegramConsent?: boolean;
+  telegramConsentSource?: string;
+  telegramConsentVersion?: string;
 }
 
 export interface ProcessEventOptions {
@@ -240,6 +243,9 @@ export class TrackingOrchestrator {
             current_status: event.statusRaw,
             carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,
+            telegram_consent_at: event.customerTelegramConsent ? new Date().toISOString() : null,
+            telegram_consent_source: event.customerTelegramConsent ? (event.telegramConsentSource || 'checkout') : null,
+            telegram_consent_version: event.customerTelegramConsent ? (event.telegramConsentVersion || 'v1') : null,
           })
           .select('id, tracking_uuid')
           .single();

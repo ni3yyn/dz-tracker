@@ -1,0 +1,27 @@
+{
+  "name": "telegram-worker",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "login": "node dist/login-cli.js",
+    "dev": "tsx watch src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mtcute/core": "^0.32.7",
+    "@mtcute/node": "^0.32.7",
+    "@saas/database": "workspace:*",
+    "@supabase/supabase-js": "^2.117.3",
+    "dotenv": "^16.4.7",
+    "long": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/long": "^4.0.2",
+    "@types/node": "^22.13.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  }
+}

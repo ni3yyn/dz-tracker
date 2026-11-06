@@ -1,0 +1,240 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@saas/database';
+import { WorkerConfig } from './config.js';
+import { OutboxJob, OutboxStatus, AttemptOperation } from './delivery-state.js';
+
+export interface OrderWithMerchant {
+  id: string;
+  merchant_id: string;
+  external_order_id: string;
+  customer_phone: string | null;
+  customer_name: string | null;
+  tracking_uuid: string;
+  telegram_consent_at: string | null;
+  merchant: {
+    id: string;
+    store_name: string;
+    telegram_tracking_link_enabled: boolean;
+  } | null;
+}
+
+export class TelegramQueueManager {
+  private readonly supabase: SupabaseClient<Database>;
+
+  constructor(private readonly config: WorkerConfig) {
+    this.supabase = createClient<Database>(
+      this.config.supabaseUrl,
+      this.config.supabaseSecretKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+  }
+
+  async acquireLease(workerId: string, leaseSeconds: number): Promise<boolean> {
+    const { data, error } = await this.supabase.rpc('acquire_telegram_worker_lease', {
+      p_worker_id: workerId,
+      p_lease_seconds: leaseSeconds,
+    });
+
+    if (error) {
+      console.error('[QueueManager]: Failed to acquire worker lease:', error.message);
+      return false;
+    }
+
+    return Boolean(data);
+  }
+
+  async claimNextJob(workerId: string, leaseSeconds: number): Promise<OutboxJob | null> {
+    const { data, error } = await this.supabase.rpc('claim_next_telegram_tracking_job', {
+      p_worker_id: workerId,
+      p_lease_seconds: leaseSeconds,
+    });
+
+    if (error) {
+      console.error('[QueueManager]: Failed to claim next outbox job:', error.message);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    return data[0] as OutboxJob;
+  }
+
+  async fetchOrderDetails(orderId: string): Promise<OrderWithMerchant | null> {
+    const { data: order, error: orderErr } = await this.supabase
+      .from('orders')
+      .select('id, merchant_id, external_order_id, customer_phone, customer_name, tracking_uuid, telegram_consent_at')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (orderErr || !order) {
+      console.warn(`[QueueManager]: Could not fetch order ${orderId}:`, orderErr?.message);
+      return null;
+    }
+
+    const { data: merchant } = await this.supabase
+      .from('merchants')
+      .select('id, store_name, telegram_tracking_link_enabled')
+      .eq('id', order.merchant_id)
+      .maybeSingle();
+
+    return {
+      ...order,
+      merchant: merchant
+        ? {
+            id: merchant.id,
+            store_name: merchant.store_name,
+            telegram_tracking_link_enabled: Boolean(merchant.telegram_tracking_link_enabled),
+          }
+        : null,
+    };
+  }
+
+  async recordAttempt(params: {
+    jobId: string;
+    attemptNumber: number;
+    operation: AttemptOperation;
+    outcome: string;
+    errorCode?: string;
+    errorMessage?: string;
+    durationMs?: number;
+  }): Promise<void> {
+    try {
+      await this.supabase.from('telegram_tracking_attempts').insert({
+        job_id: params.jobId,
+        attempt_number: params.attemptNumber,
+        operation: params.operation,
+        outcome: params.outcome,
+        error_code: params.errorCode || null,
+        error_message: params.errorMessage ? params.errorMessage.slice(0, 500) : null,
+        duration_ms: params.durationMs || null,
+      });
+    } catch (err: any) {
+      console.warn('[QueueManager]: Error recording attempt history:', err?.message);
+    }
+  }
+
+  async updateJob(
+    jobId: string,
+    updates: {
+      status?: OutboxStatus;
+      resultCode?: string;
+      errorCode?: string;
+      errorMessage?: string;
+      randomId?: bigint;
+      telegramUserId?: number;
+      telegramMessageId?: number;
+      availableAt?: string;
+      sentAt?: string;
+    }
+  ): Promise<void> {
+    const payload: any = {
+      updated_at: new Date().toISOString(),
+      locked_by: null,
+      lease_expires_at: null,
+    };
+
+    if (updates.status) payload.status = updates.status;
+    if (updates.resultCode) payload.result_code = updates.resultCode;
+    if (updates.errorCode !== undefined) payload.last_error_code = updates.errorCode;
+    if (updates.errorMessage !== undefined) {
+      payload.last_error_message = updates.errorMessage ? updates.errorMessage.slice(0, 500) : null;
+    }
+    if (updates.randomId !== undefined) {
+      payload.telegram_random_id = Number(updates.randomId);
+    }
+    if (updates.telegramUserId !== undefined) {
+      payload.telegram_user_id = updates.telegramUserId;
+    }
+    if (updates.telegramMessageId !== undefined) {
+      payload.telegram_message_id = updates.telegramMessageId;
+    }
+    if (updates.availableAt) payload.available_at = updates.availableAt;
+    if (updates.sentAt) payload.sent_at = updates.sentAt;
+
+    const { error } = await this.supabase
+      .from('telegram_tracking_outbox')
+      .update(payload)
+      .eq('id', jobId);
+
+    if (error) {
+      console.error(`[QueueManager]: Error updating outbox job ${jobId}:`, error.message);
+    }
+  }
+
+  async pauseWorkerUntil(pausedUntil: Date): Promise<void> {
+    await this.supabase
+      .from('telegram_worker_state')
+      .update({
+        paused_until: pausedUntil.toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', 1);
+  }
+
+  async setWorkerEnabled(enabled: boolean): Promise<void> {
+    const { error } = await this.supabase
+      .from('telegram_worker_state')
+      .update({
+        is_enabled: enabled,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', 1);
+
+    if (error) {
+      console.warn('[QueueManager]: Failed to update worker is_enabled state:', error.message);
+    }
+  }
+
+  /**
+   * Enforces global, multi-worker persistent rate limiting for contacts.resolvePhone
+   * Spaced by at least minIntervalMs (3.5s per Telegram recommendation)
+   */
+  async reservePhoneResolutionSlot(minIntervalMs: number): Promise<void> {
+    try {
+      const { data } = await this.supabase
+        .from('telegram_worker_state')
+        .select('next_phone_resolution_at, paused_until')
+        .eq('id', 1)
+        .maybeSingle();
+
+      const now = Date.now();
+      let waitMs = 0;
+
+      if (data?.paused_until) {
+        const pauseEnd = new Date(data.paused_until).getTime();
+        if (pauseEnd > now) {
+          waitMs = Math.max(waitMs, pauseEnd - now);
+        }
+      }
+
+      if (data?.next_phone_resolution_at) {
+        const nextAllowed = new Date(data.next_phone_resolution_at).getTime();
+        if (nextAllowed > now) {
+          waitMs = Math.max(waitMs, nextAllowed - now);
+        }
+      }
+
+      if (waitMs > 0) {
+        await new Promise((r) => setTimeout(r, waitMs));
+      }
+
+      const nextSlot = new Date(Date.now() + minIntervalMs).toISOString();
+      await this.supabase
+        .from('telegram_worker_state')
+        .update({
+          next_phone_resolution_at: nextSlot,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', 1);
+    } catch (err: any) {
+      console.warn('[QueueManager]: Warning while reserving phone resolution slot:', err?.message || err);
+    }
+  }
+}

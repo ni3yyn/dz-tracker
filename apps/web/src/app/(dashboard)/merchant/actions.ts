@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
+import { TrackingOrchestrator } from '@saas/orchestrator';
 import { BrandSettings, DEFAULT_BRAND_SETTINGS } from '@saas/ui';
 
 type PersistedBrandSettings = BrandSettings & { showWhatsAppButton?: boolean; animateBackgroundBlobs?: boolean; backgroundBlur?: boolean; timelineLineStyle?: 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none' };
@@ -313,10 +314,87 @@ export async function submitPaymentProof(formData: FormData) {
   return { success: true };
 }
 
-// 5. تسجيل الخروج من لوحة التاجر
+// 5. تفعيل أو تعطيل إرسال رابط التتبع تلقائياً عبر تيليجرام
+export async function toggleTelegramTracking(merchantId: string, enabled: boolean) {
+  if (!merchantId) return { error: 'معرّف المتجر غير موجود' };
+
+  const supabase = getSupabaseAdminClient();
+  const { error } = await supabase
+    .from('merchants')
+    .update({ telegram_tracking_link_enabled: enabled })
+    .eq('id', merchantId);
+
+  if (error) {
+    console.error('Error toggling telegram tracking:', error);
+    return { error: 'حدث خطأ أثناء تحديث إعدادات تيليجرام' };
+  }
+
+  revalidatePath('/merchant');
+  return { success: true };
+}
+
+// 6. تسجيل الخروج من لوحة التاجر
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect('/login');
+}
+
+// 7. إنشاء طلب يدوي من لوحة تحكم التاجر (للاختبار والطلبات اليدوية)
+export async function createManualOrder(formData: FormData) {
+  const merchantId = formData.get('merchant_id') as string;
+  const externalOrderId = (formData.get('external_order_id') as string)?.trim() || `ORD-${Date.now().toString().slice(-6)}`;
+  const customerName = (formData.get('customer_name') as string)?.trim() || '';
+  const customerPhone = (formData.get('customer_phone') as string)?.trim() || '';
+  const productName = (formData.get('product_name') as string)?.trim() || '';
+  const carrierName = (formData.get('carrier_name') as string)?.trim() || 'Yalidine Express';
+  const carrierTrackingNumber = (formData.get('carrier_tracking_number') as string)?.trim() || '';
+  const statusRaw = (formData.get('status_raw') as string)?.trim() || 'order_placed';
+  const telegramConsent = formData.get('telegram_consent') === 'true' || formData.get('telegram_consent') === 'on';
+  const autoEnableTelegram = formData.get('auto_enable_telegram') === 'true' || formData.get('auto_enable_telegram') === 'on';
+
+  if (!merchantId) {
+    return { error: 'معرّف المتجر غير موجود' };
+  }
+  if (!customerPhone) {
+    return { error: 'يرجى إدخال رقم هاتف العميل' };
+  }
+
+  const supabase = getSupabaseAdminClient();
+
+  // إذا تم اختيار تيليجرام وكان خيار المتجر معطلاً، نقوم بتفعيله لضمان إدراج مهمة الإرسال في الـ Outbox
+  if (telegramConsent || autoEnableTelegram) {
+    await supabase
+      .from('merchants')
+      .update({ telegram_tracking_link_enabled: true })
+      .eq('id', merchantId);
+  }
+
+  const orchestrator = new TrackingOrchestrator();
+  const result = await orchestrator.processEvent({
+    merchantId,
+    externalOrderId,
+    customerName: customerName || undefined,
+    customerPhone: customerPhone || undefined,
+    productName: productName || undefined,
+    carrierName: carrierName || undefined,
+    carrierTrackingNumber: carrierTrackingNumber || undefined,
+    statusRaw,
+    description: 'تم تسجيل الطلب يدوياً من لوحة التاجر',
+    customerTelegramConsent: telegramConsent,
+    telegramConsentSource: 'merchant_manual_test',
+    telegramConsentVersion: 'v1',
+  });
+
+  if (!result.success) {
+    return { error: result.message || 'حدث خطأ أثناء إضافة الطلب' };
+  }
+
+  revalidatePath('/merchant');
+  return {
+    success: true,
+    trackingUuid: result.trackingUuid,
+    externalOrderId,
+  };
 }
 

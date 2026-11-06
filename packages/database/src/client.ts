@@ -16,6 +16,7 @@ export type Database = {
           max_orders_limit?: number | null;
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
+          telegram_tracking_link_enabled: boolean;
         };
         Insert: {
           id?: string;
@@ -28,6 +29,7 @@ export type Database = {
           max_orders_limit?: number | null;
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
+          telegram_tracking_link_enabled?: boolean;
         };
         Update: {
           id?: string;
@@ -40,6 +42,7 @@ export type Database = {
           max_orders_limit?: number | null;
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
+          telegram_tracking_link_enabled?: boolean;
         };
         Relationships: [];
       };
@@ -58,6 +61,9 @@ export type Database = {
           carrier_tracking_number: string | null;
           created_at: string;
           updated_at: string;
+          telegram_consent_at?: string | null;
+          telegram_consent_source?: string | null;
+          telegram_consent_version?: string | null;
         };
         Insert: {
           id?: string;
@@ -73,6 +79,9 @@ export type Database = {
           carrier_tracking_number?: string | null;
           created_at?: string;
           updated_at?: string;
+          telegram_consent_at?: string | null;
+          telegram_consent_source?: string | null;
+          telegram_consent_version?: string | null;
         };
         Update: {
           id?: string;
@@ -88,6 +97,9 @@ export type Database = {
           carrier_tracking_number?: string | null;
           created_at?: string;
           updated_at?: string;
+          telegram_consent_at?: string | null;
+          telegram_consent_source?: string | null;
+          telegram_consent_version?: string | null;
         };
         Relationships: [
           {
@@ -216,12 +228,183 @@ export type Database = {
           }
         ];
       };
+      telegram_tracking_outbox: {
+        Row: {
+          id: string;
+          order_id: string;
+          merchant_id: string;
+          idempotency_key: string;
+          status: 'pending' | 'processing' | 'retry' | 'sent' | 'skipped' | 'failed' | 'dead_letter';
+          attempt_count: number;
+          max_attempts: number;
+          available_at: string;
+          locked_by: string | null;
+          locked_at: string | null;
+          lease_expires_at: string | null;
+          telegram_random_id: number | null;
+          telegram_user_id: number | null;
+          telegram_message_id: number | null;
+          result_code: string | null;
+          last_error_code: string | null;
+          last_error_message: string | null;
+          created_at: string;
+          updated_at: string;
+          sent_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          merchant_id: string;
+          idempotency_key: string;
+          status?: 'pending' | 'processing' | 'retry' | 'sent' | 'skipped' | 'failed' | 'dead_letter';
+          attempt_count?: number;
+          max_attempts?: number;
+          available_at?: string;
+          locked_by?: string | null;
+          locked_at?: string | null;
+          lease_expires_at?: string | null;
+          telegram_random_id?: number | null;
+          telegram_user_id?: number | null;
+          telegram_message_id?: number | null;
+          result_code?: string | null;
+          last_error_code?: string | null;
+          last_error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          sent_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          merchant_id?: string;
+          idempotency_key?: string;
+          status?: 'pending' | 'processing' | 'retry' | 'sent' | 'skipped' | 'failed' | 'dead_letter';
+          attempt_count?: number;
+          max_attempts?: number;
+          available_at?: string;
+          locked_by?: string | null;
+          locked_at?: string | null;
+          lease_expires_at?: string | null;
+          telegram_random_id?: number | null;
+          telegram_user_id?: number | null;
+          telegram_message_id?: number | null;
+          result_code?: string | null;
+          last_error_code?: string | null;
+          last_error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          sent_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: string;
+            columns: ['order_id'];
+            isOneToOne: true;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: string;
+            columns: ['merchant_id'];
+            isOneToOne: false;
+            referencedRelation: 'merchants';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      telegram_tracking_attempts: {
+        Row: {
+          id: string;
+          job_id: string;
+          attempt_number: number;
+          operation: 'phone_resolution' | 'message_send' | 'session_check';
+          outcome: string;
+          error_code: string | null;
+          error_message: string | null;
+          duration_ms: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          job_id: string;
+          attempt_number: number;
+          operation: 'phone_resolution' | 'message_send' | 'session_check';
+          outcome: string;
+          error_code?: string | null;
+          error_message?: string | null;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          job_id?: string;
+          attempt_number?: number;
+          operation?: 'phone_resolution' | 'message_send' | 'session_check';
+          outcome?: string;
+          error_code?: string | null;
+          error_message?: string | null;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: string;
+            columns: ['job_id'];
+            isOneToOne: false;
+            referencedRelation: 'telegram_tracking_outbox';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      telegram_worker_state: {
+        Row: {
+          id: number;
+          lease_owner: string | null;
+          lease_expires_at: string | null;
+          next_phone_resolution_at: string;
+          paused_until: string | null;
+          is_enabled: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          lease_owner?: string | null;
+          lease_expires_at?: string | null;
+          next_phone_resolution_at?: string;
+          paused_until?: string | null;
+          is_enabled?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          lease_owner?: string | null;
+          lease_expires_at?: string | null;
+          next_phone_resolution_at?: string;
+          paused_until?: string | null;
+          is_enabled?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      claim_next_telegram_tracking_job: {
+        Args: {
+          p_worker_id: string;
+          p_lease_seconds?: number;
+        };
+        Returns: Database['public']['Tables']['telegram_tracking_outbox']['Row'][];
+      };
+      acquire_telegram_worker_lease: {
+        Args: {
+          p_worker_id: string;
+          p_lease_seconds?: number;
+        };
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;

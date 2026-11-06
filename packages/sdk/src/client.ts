@@ -49,6 +49,8 @@ export class DZTrackerClient {
       description: params.description || null,
       total_price: params.totalPrice || null,
       wilaya: params.wilaya || null,
+      telegram_consent: params.telegramConsent === true,
+      telegram_consent_source: params.telegramConsent ? (params.telegramConsentSource || 'sdk') : null,
     };
 
     const url = `${this.baseUrl}/api/webhooks`;

@@ -40,6 +40,10 @@ export interface TrackOrderParams {
   carrierTrackingNumber?: string;
   /** Status description */
   description?: string;
+  /** Whether the customer explicitly consented to receiving their tracking URL via Telegram */
+  telegramConsent?: boolean;
+  /** Source of customer consent (e.g. 'checkout_checkbox', 'sdk_form') */
+  telegramConsentSource?: string;
 }
 
 export interface TrackOrderResult {
