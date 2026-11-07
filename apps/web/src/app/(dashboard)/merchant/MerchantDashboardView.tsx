@@ -3442,8 +3442,75 @@ export async function processOrderAction(formData: FormData) {
           .dz-int-guided-copy { align-items:stretch; flex-direction:column; }
           .dz-int-guided-copy button { align-self:flex-start; }
         }
-        @media (prefers-reduced-motion: reduce) {
-          .dz-int-guided-option, .dz-int-guided-result { transition:none !important; animation:none !important; }
+        /* Integrations: readable type scale */
+        .dz-int-guided-heading h2 { font-size: clamp(25px, 2.3vw, 29px); line-height: 1.35; }
+        .dz-int-guided-heading p { font-size: 15px; line-height: 1.85; }
+        .dz-int-guided-reset { font-size: 13px; min-height: 42px; padding: 10px 14px; }
+        .dz-int-guided-loading { font-size: 15px; padding: 28px; }
+        .dz-int-guided-step-label { font-size: 12px; }
+        .dz-int-guided-card h3 { font-size: 23px; line-height: 1.45; }
+        .dz-int-guided-help { font-size: 15px; line-height: 1.85; margin-bottom: 20px; }
+        .dz-int-guided-option { min-height: 92px; padding: 16px; gap: 13px; }
+        .dz-int-guided-option-icon { width: 42px; height: 42px; flex-basis: 42px; }
+        .dz-int-guided-option-icon svg { width: 21px; height: 21px; }
+        .dz-int-guided-option strong { font-size: 15px; line-height: 1.5; }
+        .dz-int-guided-option small { font-size: 13px; line-height: 1.7; }
+        .dz-int-guided-actions > span { font-size: 13px; line-height: 1.6; }
+        .dz-int-guided-actions .dz-btn { min-height: 44px; padding: 10px 17px; font-size: 14px; }
+        .dz-int-guided-completed { font-size: 13px; gap: 11px; padding: 12px 14px; }
+        .dz-int-guided-completed strong { font-size: 14px; }
+        .dz-int-guided-completed button, .dz-int-guided-summary button { font-size: 13px; }
+        .dz-int-guided-carrier-select { grid-template-columns: 170px minmax(0,1fr); padding: 15px; }
+        .dz-int-guided-carrier-select label { font-size: 14px; }
+        .dz-int-guided-carrier-select select { min-height: 44px; font-size: 14px; padding: 10px 12px; }
+        .dz-int-guided-result-head h3 { font-size: 25px; line-height: 1.4; }
+        .dz-int-guided-result-head p { font-size: 14px; line-height: 1.85; }
+        .dz-int-guided-ready { font-size: 12px; padding: 7px 10px; }
+        .dz-int-guided-summary { gap: 26px; padding: 15px 17px; }
+        .dz-int-guided-summary small { font-size: 12px; }
+        .dz-int-guided-summary strong { font-size: 14px; }
+        .dz-int-guided-panel-title h4 { font-size: 17px; line-height: 1.5; }
+        .dz-int-guided-panel-title p { font-size: 14px; line-height: 1.85; }
+        .dz-int-guided-number { font-size: 12px; width: 34px; height: 34px; flex-basis: 34px; }
+        .dz-int-guided-copy small { font-size: 12px; }
+        .dz-int-guided-copy code, .dz-int-guided-credential code, .dz-int-guided-meta code { font-size: 12px; line-height: 1.8; }
+        .dz-int-guided-copy button, .dz-int-guided-copy-link, .dz-int-guided-agent-row button { min-height: 38px; padding: 9px 12px; font-size: 13px; }
+        .dz-int-guided-steps { font-size: 14px; line-height: 1.95; gap: 10px; }
+        .dz-int-guided-note { font-size: 13px; line-height: 1.9; padding: 12px 14px; }
+        .dz-int-guided-credential { padding: 14px; gap: 10px; }
+        .dz-int-guided-credential-head small { font-size: 13px; }
+        .dz-int-guided-credential-head button { font-size: 13px; }
+        .dz-int-guided-recommended { padding: 17px; gap: 13px; }
+        .dz-int-guided-recommended h4 { font-size: 17px; }
+        .dz-int-guided-recommended p { font-size: 13px; line-height: 1.85; }
+        .dz-int-guided-package-select button { font-size: 12px; padding: 7px 9px; }
+        .dz-int-guided-package-row > code, .dz-int-guided-agent-row > code { font-size: 12px; padding: 10px 11px; }
+        .dz-int-guided-package-row > button { min-height: 39px; font-size: 12px; padding: 9px 12px; }
+        .dz-int-guided-details summary { font-size: 14px; padding: 15px 0; }
+        .dz-int-guided-details > p { font-size: 13px; line-height: 1.9; }
+        .dz-int-guided-doc-link { font-size: 13px; }
+        .dz-int-guided-meta { font-size: 13px; grid-template-columns: 125px minmax(0,1fr); padding: 12px 14px; }
+        .dz-int-guided-footer { font-size: 12px; line-height: 1.7; }
+        .dz-int-guided-footer button { font-size: 13px; }
+        @media (max-width: 760px) {
+          .dz-int-guided-heading h2 { font-size: 25px; }
+          .dz-int-guided-heading p { font-size: 14px; }
+          .dz-int-guided-card h3 { font-size: 21px; }
+          .dz-int-guided-help { font-size: 14px; }
+          .dz-int-guided-option { min-height: 78px; padding: 14px; }
+          .dz-int-guided-option strong { font-size: 15px; }
+          .dz-int-guided-option small { font-size: 13px; }
+          .dz-int-guided-actions > span { font-size: 12px; }
+          .dz-int-guided-carrier-select { grid-template-columns: minmax(0,1fr); }
+          .dz-int-guided-carrier-select label, .dz-int-guided-carrier-select select { font-size: 14px; }
+          .dz-int-guided-result-head h3 { font-size: 23px; }
+          .dz-int-guided-result-head p { font-size: 13px; }
+          .dz-int-guided-summary { gap: 10px; }
+          .dz-int-guided-panel-title h4 { font-size: 16px; }
+          .dz-int-guided-panel-title p { font-size: 13px; }
+          .dz-int-guided-copy code, .dz-int-guided-credential code, .dz-int-guided-meta code { font-size: 11.5px; }
+          .dz-int-guided-steps { font-size: 13px; }
+          .dz-int-guided-meta { grid-template-columns: 105px minmax(0,1fr); font-size: 12px; }
         }
 
         /* Integration Hub */
