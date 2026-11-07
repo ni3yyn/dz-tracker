@@ -149,9 +149,13 @@ const { track, isLoading, error } = useTracker({
   apiKey: process.env.NEXT_PUBLIC_DZ_TRACKER_KEY,
 });
 
-const result = await track({ orderId: existingSavedOrderId });
-if (result.success && result.trackingUrl) {
-  window.location.assign(result.trackingUrl);
+async function registerExistingOrder(existingSavedOrderId: string) {
+  const result = await track({ orderId: existingSavedOrderId });
+  if (result.success && result.trackingUrl) {
+    window.location.assign(result.trackingUrl);
+    return;
+  }
+  console.error(result.error || error?.message || 'Tracking registration failed');
 }
 ~~~
 

@@ -1440,7 +1440,8 @@ export function MerchantDashboardView({
   const sdkInstallCommand = installCommands[packageManager];
   const sdkAgentPrompt = [
     `Read ${siteUrl}/skill.md completely before changing code.`,
-    'Inspect the existing checkout and the actually installed dz-tracking-sdk version and .d.ts exports.',
+    'Run npm view dz-tracking-sdk version, install with the project package manager, then inspect the installed package.json and .d.ts exports before writing SDK code.',
+    'The repository source declares SDK 2.0.0. If the installed npm version does not expose dz-tracking-sdk/core and the signatures in the skill, do not invent them; use the documented POST /api/webhooks REST contract instead or a verified local build.',
     'Preserve the store order-creation flow. Register tracking only after the store has successfully saved its order.',
     'Keep the merchant key in a private server-only variable named DZ_TRACKER_API_KEY. Never include a key in this prompt, NEXT_PUBLIC_*, browser source, generated snippets, or logs.',
     'If the key is needed for local testing, ask me to configure it in .env.local; do not ask me to paste it into this AI chat.',
@@ -5632,7 +5633,7 @@ export async function registerSavedOrder(savedOrder) {
                             </div>
                           </div>
                           <div className="dz-int-guided-recommended">
-                            <div><span className="dz-setup-eyebrow">الطريقة الموصى بها</span><h4>استخدم SDK ومساعد البرمجة</h4><p>انسخ أمر التثبيت ثم التوجيه الجاهز إلى Cursor أو Claude Code أو وكيل البرمجة الذي تستخدمه.</p></div>
+                            <div><span className="dz-setup-eyebrow">الطريقة الموصى بها</span><h4>اربطه عبر SDK أو REST بمساعدة البرمجة</h4><p>انسخ أمر التثبيت والتوجيه. على الوكيل فحص النسخة المنشورة أولاً؛ إن لم تدعم واجهة المصدر الحالية، فعليه استخدام REST دون تخمين.</p></div>
                             <div className="dz-int-guided-package-row">
                               <div className="dz-int-guided-package-select">
                                 {(['npm', 'pnpm', 'yarn', 'bun'] as const).map((pm) => <button key={pm} type="button" className={packageManager === pm ? 'is-active' : ''} onClick={() => setPackageManager(pm)}>{pm}</button>)}
@@ -5641,7 +5642,7 @@ export async function registerSavedOrder(savedOrder) {
                               <button type="button" onClick={() => copyToClipboard(installCommands[packageManager], 'guided-sdk-install')}>{copiedKey === 'guided-sdk-install' ? <Icons.Check /> : <Icons.Copy />} نسخ الأمر</button>
                             </div>
                             <div className="dz-int-guided-agent-row"><code dir="ltr">{sdkAgentPrompt}</code><button type="button" onClick={() => copyToClipboard(sdkAgentPrompt, 'guided-sdk-agent')}>{copiedKey === 'guided-sdk-agent' ? <Icons.Check /> : <Icons.Copy />} نسخ التوجيه</button></div>
-                            <p className="dz-int-guided-note">راجع الملفات التي يقترحها وكيل البرمجة واختبر طلباً تجريبياً. لا تضع مفتاح API في كود المتصفح أو في مستودع عام؛ يجب أن يبقى على الخادم.</p>
+                            <p className="dz-int-guided-note">قد تختلف نسخة npm عن مصدر SDK في المستودع. افحص رقم النسخة وملفات الأنواع قبل كتابة الكود؛ عند غياب واجهة core استخدم REST. لا تضع مفتاح API في المتصفح أو مستودع عام.</p>
                           </div>
                           <details className="dz-int-guided-details">
                             <summary>أمثلة المطور والتوثيق المتقدم</summary>

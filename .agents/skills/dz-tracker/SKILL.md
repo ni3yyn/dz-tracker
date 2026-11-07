@@ -1,8 +1,6 @@
 ---
 name: dz-tracker
 description: Integrate TajerTrack / DZ Tracker order tracking into an existing e-commerce checkout, storefront, backend, or courier webhook. Use when a developer asks to install DZ Tracking, send orders to TajerTrack, connect Shopify or a custom website, or synchronize shipment statuses.
-risk: safe
-source: project
 ---
 
 # DZ Tracker integration skill
@@ -46,7 +44,7 @@ pnpm add dz-tracking-sdk
 # or npm install dz-tracking-sdk / yarn add dz-tracking-sdk / bun add dz-tracking-sdk
 ~~~
 
-The GitHub source tree currently declares SDK version **2.0.0**. The public npm release may be behind that source version. **Do not assume that installing the npm package gives you the current repository-source exports.** Verify package.json, lockfile, and node_modules declarations. If npm resolves an older version without the documented v2 APIs, either use the direct REST API below or stop and report the mismatch. Do not invent an import path to make the sample compile.
+The GitHub source tree currently declares SDK version **2.0.0**. The public npm release may be behind that source version. A third-party npm package index showed **1.1.0** for this package when checked on **November 7, 2026**; that index may lag, so the authoritative check before implementation is `npm view dz-tracking-sdk version` followed by inspection of the installed package's declarations. **Do not assume that installing the npm package gives you the current repository-source exports.** Verify package.json, lockfile, and node_modules declarations. If npm resolves an older version without the documented v2 APIs, either use the direct REST API below or stop and report the mismatch. Do not invent an import path to make the sample compile.
 
 Current repository-source package entry points (available once this source version is built and published):
 
