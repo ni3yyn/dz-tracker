@@ -1,4 +1,5 @@
 import '../styles/globals.css';
+import { GlobalDialogProvider } from '../components/GlobalDialogProvider';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -37,7 +38,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl">
-      <body>{children}</body>
+      <body><GlobalDialogProvider>{children}</GlobalDialogProvider></body>
     </html>
   );
 }
