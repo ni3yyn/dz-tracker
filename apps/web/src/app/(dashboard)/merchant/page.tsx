@@ -22,7 +22,7 @@ export default async function MerchantDashboardPage() {
   // جلب ملف التاجر الحالي مع تفاصيل الاشتراك
   let { data: merchant } = await supabaseAdmin
     .from('merchants')
-    .select('id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled')
+    .select('id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
@@ -32,6 +32,7 @@ export default async function MerchantDashboardPage() {
       ? 'متجر الإدارة (Admin Store)'
       : (user.user_metadata?.store_name || user.email?.split('@')[0] || 'متجري');
 
+  // Also update the select for the insert path
     const { data: newMerchant } = await supabaseAdmin
       .from('merchants')
       .insert({
@@ -41,7 +42,7 @@ export default async function MerchantDashboardPage() {
         subscription_status: 'active',
         max_orders_limit: isAdmin ? 999999 : 30,
       })
-      .select('id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled')
+      .select('id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url')
       .single();
 
     if (newMerchant) {
@@ -152,6 +153,8 @@ export default async function MerchantDashboardPage() {
   const brandSubtitleRow = mappings?.find((m) => m.source_status === '__brand_subtitle__');
   const brandColor = brandSettings?.brandColor || brandColorRow?.display_status || '#09090B';
   const brandSubtitle = brandSettings?.brandSubtitle || brandSubtitleRow?.display_status || '';
+  // logo_url is stored inside brandSettings JSON (and optionally mirrored to merchants.logo_url)
+  const logoUrl: string | null = brandSettings?.logoUrl || (merchant as any)?.logo_url || null;
 
   const cleanMappings = (mappings || []).filter((m) => !m.source_status.startsWith('__brand_'));
 
@@ -196,6 +199,7 @@ export default async function MerchantDashboardPage() {
       brandSettings={brandSettings}
       brandColor={brandColor}
       brandSubtitle={brandSubtitle}
+      logoUrl={logoUrl}
       siteUrl={siteUrl}
       subscription={{
         tier: currentTier,

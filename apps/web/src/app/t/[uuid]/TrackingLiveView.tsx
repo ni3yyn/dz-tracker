@@ -28,6 +28,7 @@ interface Props {
   carrierName?: string | null;
   carrierTrackingNumber?: string | null;
   storeName: string;
+  logoUrl?: string | null;
   brandSettings?: BrandSettings;
   brandColor?: string;
   brandSubtitle?: string;
@@ -144,6 +145,7 @@ export function TrackingLiveView({
   carrierName,
   carrierTrackingNumber,
   storeName,
+  logoUrl,
   brandSettings,
   brandColor,
   brandSubtitle,
@@ -397,7 +399,26 @@ export function TrackingLiveView({
 
             <div className={styles.brandHeaderRow}>
               <div className={styles.brandAvatar} aria-hidden="true">
-                {cleanName(storeName).charAt(0) || 'م'}
+                {logoUrl ? (
+                  <img
+                    src={toCachedImageUrl(logoUrl)}
+                    alt={storeName}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      borderRadius: 'inherit',
+                    }}
+                    onError={(e) => {
+                      // Fallback to letter avatar if image fails
+                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      (e.currentTarget.parentElement as HTMLElement).textContent =
+                        cleanName(storeName).charAt(0) || 'م';
+                    }}
+                  />
+                ) : (
+                  cleanName(storeName).charAt(0) || 'م'
+                )}
               </div>
               <div className={styles.brandTextGroup}>
                 <h1 className={styles.storeName}>{storeName}</h1>

@@ -279,6 +279,13 @@ export async function saveBrandSettings(formData: FormData) {
     return { error: 'حدث خطأ أثناء حفظ إعدادات الهوية البصرية' };
   }
 
+  // Also persist logo_url directly on the merchant row for fast lookups
+  const logoUrl = settingsObj.logoUrl ?? null;
+  await supabase
+    .from('merchants')
+    .update({ logo_url: logoUrl })
+    .eq('id', merchantId);
+
   revalidatePath('/merchant');
   revalidatePath('/t/[uuid]', 'page');
   return { success: true };

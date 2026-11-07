@@ -71,6 +71,14 @@ export default async function TrackingPage({ params }: PageProps) {
     ? order.merchants[0]?.store_name
     : (order.merchants as any)?.store_name || 'المتجر';
 
+  // logo_url: prefer brandSettings JSON (always up-to-date), fallback to merchants column
+  const merchantLogoUrl: string | null =
+    (brandSettings as any)?.logoUrl ||
+    (Array.isArray(order.merchants)
+      ? (order.merchants[0] as any)?.logo_url
+      : (order.merchants as any)?.logo_url) ||
+    null;
+
   // 4. جلب المنتجات المقترحة (قد يعجبك أيضاً)
   const { data: upsells } = await supabase
     .from('merchant_upsells')
@@ -91,6 +99,7 @@ export default async function TrackingPage({ params }: PageProps) {
       carrierName={order.carrier_name}
       carrierTrackingNumber={order.carrier_tracking_number}
       storeName={storeName}
+      logoUrl={merchantLogoUrl}
       brandSettings={brandSettings}
       brandColor={fallbackColor}
       brandSubtitle={fallbackSubtitle}

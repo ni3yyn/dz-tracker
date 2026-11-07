@@ -23,6 +23,7 @@ export interface BrandSettings {
   /* ── Brand identity ─────────────────────────── */
   brandColor:       string;
   brandSubtitle:    string;
+  logoUrl?:         string;
 
   /* ── Visual theme ───────────────────────────── */
   bgStyle:          BackgroundStyle;

@@ -132,6 +132,7 @@ interface Props {
   brandSettings?: BrandSettings;
   brandColor?: string;
   brandSubtitle?: string;
+  logoUrl?: string | null;
   siteUrl: string;
   subscription?: SubscriptionInfo;
   payments?: PaymentRecord[];
@@ -345,8 +346,17 @@ const BrandingPhonePreview = memo(function BrandingPhonePreview({
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: density.gap, minWidth: 0 }}>
-              <div style={{ width: density.avatar, height: density.avatar, borderRadius: density.avatarRadius, background: brandConfig.brandColor, color: getReadableOnBrand(brandConfig.brandColor), display: 'grid', placeItems: 'center', flexShrink: 0, fontWeight: 800, fontSize: '17px' }}>
-                {storeName.trim().charAt(0) || 'م'}
+              <div style={{ width: density.avatar, height: density.avatar, borderRadius: density.avatarRadius, background: brandConfig.brandColor, color: getReadableOnBrand(brandConfig.brandColor), display: 'grid', placeItems: 'center', flexShrink: 0, fontWeight: 800, fontSize: '17px', overflow: 'hidden' }}>
+                {brandConfig.logoUrl ? (
+                  <img
+                    src={toCachedImageUrl(brandConfig.logoUrl)}
+                    alt={storeName}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                ) : (
+                  storeName.trim().charAt(0) || 'م'
+                )}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontWeight: 800, fontSize: '15px', lineHeight: 1.5, overflowWrap: 'anywhere' }}>{storeName}</div>
@@ -626,6 +636,7 @@ export function MerchantDashboardView({
   brandSettings,
   brandColor = '#09090B',
   brandSubtitle = '',
+  logoUrl,
   siteUrl,
   subscription = { tier: 'starter', status: 'active', limit: 30, used: 0, expiresAt: null },
   payments = [],
@@ -717,6 +728,7 @@ export function MerchantDashboardView({
     ...(brandSettings || {}),
     ...(brandColor ? { brandColor } : {}),
     ...(brandSubtitle ? { brandSubtitle } : {}),
+    ...(logoUrl ? { logoUrl } : {}),
     showWhatsAppButton: (brandSettings as EditableBrandSettings | undefined)?.showWhatsAppButton ?? true,
     backgroundBlur: (brandSettings as EditableBrandSettings | undefined)?.backgroundBlur ?? true,
     animateBackgroundBlobs: (brandSettings as EditableBrandSettings | undefined)?.animateBackgroundBlobs ?? false,
@@ -3288,8 +3300,20 @@ export async function processOrderAction(formData: FormData) {
         {/* SIDEBAR */}
         <aside id="dz-merchant-sidebar" className={`dz-sidebar ${mobileMenuOpen ? 'dz-mobile-nav-open' : ''}`}>
           <div className="dz-brand">
-            <div className="dz-avatar-box" style={{ background: brandConfig.brandColor, color: getReadableOnBrand(brandConfig.brandColor) }}>
-              {storeName.charAt(0)}
+            <div className="dz-avatar-box" style={{ background: brandConfig.brandColor, color: getReadableOnBrand(brandConfig.brandColor), overflow: 'hidden', padding: brandConfig.logoUrl ? '0' : undefined }}>
+              {brandConfig.logoUrl ? (
+                <img
+                  src={toCachedImageUrl(brandConfig.logoUrl)}
+                  alt={storeName}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    (e.currentTarget.parentElement as HTMLElement).textContent = storeName.charAt(0);
+                  }}
+                />
+              ) : (
+                storeName.charAt(0)
+              )}
             </div>
             <div className="dz-brand-text">
               <span className="dz-brand-title">{storeName}</span>
@@ -3358,10 +3382,6 @@ export async function processOrderAction(formData: FormData) {
         {/* MAIN */}
         <main className="dz-main dz-scrollable">
           
-          <div className={`dz-toast ${toastMsg ? 'show' : ''}`}>
-            {toastMsg}
-          </div>
-
 
           <SiteHeader
             variant="dashboard"
@@ -4003,6 +4023,22 @@ export async function processOrderAction(formData: FormData) {
                       placeholder="مثال: متجركم الموثوق للتسوق الإلكتروني في 58 ولاية..."
                       className="input"
                     />
+                  </div>
+
+                  {/* Logo Upload */}
+                  <div style={{ marginTop: '20px' }}>
+                    <ImageUploadField
+                      label="شعار المتجر (Logo)"
+                      value={brandConfig.logoUrl || ''}
+                      onChange={(url) => updateBrandConfig('logoUrl', url)}
+                      merchantId={merchantId}
+                      folder="upsell-products"
+                      quality={0.9}
+                      placeholder="ارفع شعار متجرك (PNG شفاف مفضّل)"
+                    />
+                    <small style={{ display: 'block', marginTop: '6px', fontSize: '11px', color: 'var(--ink-muted)' }}>
+                      يظهر في صفحة التتبع بدلاً من حرف اسم المتجر • PNG بخلفية شفافة مُفضَّل
+                    </small>
                   </div>
                 </div>
 

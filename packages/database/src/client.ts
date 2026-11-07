@@ -17,6 +17,7 @@ export type Database = {
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
           telegram_tracking_link_enabled: boolean;
+          logo_url?: string | null;
         };
         Insert: {
           id?: string;
@@ -30,6 +31,7 @@ export type Database = {
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
           telegram_tracking_link_enabled?: boolean;
+          logo_url?: string | null;
         };
         Update: {
           id?: string;
@@ -43,6 +45,7 @@ export type Database = {
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
           telegram_tracking_link_enabled?: boolean;
+          logo_url?: string | null;
         };
         Relationships: [];
       };
