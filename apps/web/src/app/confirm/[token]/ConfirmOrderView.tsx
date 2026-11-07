@@ -30,8 +30,8 @@ export function ConfirmOrderView({
   const handleResponse = (action: 'confirm' | 'cancel') => {
     startTransition(async () => {
       const result = await respondToConfirmation(token, action);
-      if (result.success) {
-        setStatus(action === 'confirm' ? 'confirmed' : 'cancelled');
+      if (result.success && result.status) {
+        setStatus(result.status);
       }
     });
   };
@@ -108,8 +108,8 @@ export function ConfirmOrderView({
         {status === 'cancelled' && (
           <ResponseView
             icon="❌"
-            title="تم إلغاء الطلب"
-            message="تم تسجيل طلبك للإلغاء. سيتواصل معك فريق المتجر إن احتجت مساعدة."
+            title="تم تسجيل طلب الإلغاء"
+            message="تم إرسال طلب الإلغاء إلى المتجر لمراجعته. هذا لا يوقف الشحنة تلقائياً؛ سيتواصل معك المتجر لتأكيد إمكانية الإيقاف."
             color="#dc2626"
             bg="rgba(220,38,38,0.08)"
           />
@@ -236,7 +236,7 @@ function PendingView({
             width: '100%',
           }}
         >
-          ❌ إلغاء الطلب
+          ⚠️ طلب إلغاء الطلب
         </button>
       </div>
     </>
