@@ -4352,7 +4352,7 @@ export async function processOrderAction(formData: FormData) {
                 /* 1. BRAND COLORS & IDENTITY */
                 <div className="dz-card-box" style={{ marginBottom: '24px' }}>
                   <h3 style={{ margin: '0 0 14px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span aria-hidden="true" style={{ color: 'var(--ink-muted)', fontSize: '18px' }}>◉</span> <span>الألوان وهوية المتجر</span>
+                    <span aria-hidden="true" style={{ color: 'var(--ink-muted)', fontSize: '18px' }}>◉</span> <span>ألوان صفحة التتبع</span>
                   </h3>
                   <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginBottom: '18px' }}>
                     اختر اللون الأساسي لزر التأكيد، شريط التقدم، وأيقونات التتبع المعبرة:
@@ -4398,7 +4398,7 @@ export async function processOrderAction(formData: FormData) {
                   </div>
 
                   <div>
-                    <label className="formLabel">شعار أو وصف المتجر (Subtitle)</label>
+                    <label className="formLabel">وصف المتجر (Subtitle)</label>
                     <input
                       type="text"
                       value={brandConfig.brandSubtitle}
