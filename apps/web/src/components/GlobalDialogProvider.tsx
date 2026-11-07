@@ -39,6 +39,7 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
   const [queue, setQueue] = useState<DialogRequest[]>([]);
   const [activeDialog, setActiveDialog] = useState<DialogRequest | null>(null);
   const nextId = useRef(0);
+  const dialogRef = useRef<HTMLElement>(null);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   const enqueue = useCallback(
@@ -83,6 +84,7 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
     if (!activeDialog) return;
 
     const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     document.body.style.overflow = 'hidden';
     confirmButtonRef.current?.focus();
 
@@ -91,6 +93,24 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
         event.preventDefault();
         activeDialog.resolve(false);
         setActiveDialog(null);
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable?.length) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
 
@@ -98,6 +118,7 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus();
     };
   }, [activeDialog]);
 
@@ -124,6 +145,7 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
           }}
         >
           <section
+            ref={dialogRef}
             className={styles.dialog}
             role={activeDialog.type === 'confirm' ? 'alertdialog' : 'dialog'}
             aria-modal="true"
