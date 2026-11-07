@@ -22,6 +22,7 @@ import {
   toggleMerchantUpsell,
   reorderMerchantUpsell,
   toggleConfirmationTelegram,
+  deleteMerchantOrders,
 } from './actions';
 import {
   TimelineEvent,
@@ -711,6 +712,8 @@ export function MerchantDashboardView({
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'risk'>('newest');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [isDeletingOrders, setIsDeletingOrders] = useState(false);
   const [integrationPlatform, setIntegrationPlatform] = useState<'shopify' | 'website' | null>(null);
   const [trackingSource, setTrackingSource] = useState<'carrier' | 'manual' | 'unsure' | null>(null);
   const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'maystro' | 'other' | null>(null);
@@ -834,6 +837,61 @@ export function MerchantDashboardView({
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const toggleOrderSelection = (orderId: string, checked: boolean) => {
+    setSelectedOrderIds((current) => {
+      if (checked) {
+        return current.includes(orderId) ? current : [...current, orderId];
+      }
+      return current.filter((id) => id !== orderId);
+    });
+  };
+
+  const allFilteredOrdersSelected =
+    filteredOrders.length > 0 &&
+    filteredOrders.every((order) => selectedOrderIds.includes(order.id));
+
+  const toggleFilteredOrderSelection = (checked: boolean) => {
+    setSelectedOrderIds((current) => {
+      const next = new Set(current);
+      for (const order of filteredOrders) {
+        if (checked) next.add(order.id);
+        else next.delete(order.id);
+      }
+      return Array.from(next);
+    });
+  };
+
+  const handleDeleteOrders = async (orderIds: string[]) => {
+    const ids = Array.from(new Set(orderIds));
+    if (ids.length === 0 || isDeletingOrders) return;
+
+    const confirmationMessage =
+      ids.length === 1
+        ? 'هل أنت متأكد من حذف هذا الطلب نهائياً؟ سيتم حذف سجل تحديثاته وروابط الإشعارات المرتبطة به أيضاً.'
+        : `هل أنت متأكد من حذف ${ids.length} طلباً نهائياً؟ سيتم حذف سجلات التحديثات وروابط الإشعارات المرتبطة بها أيضاً.`;
+
+    if (!window.confirm(confirmationMessage)) return;
+
+    setIsDeletingOrders(true);
+    try {
+      const result = await deleteMerchantOrders(ids);
+
+      if ('error' in result) {
+        showToast(result.error);
+        return;
+      }
+
+      setSelectedOrderIds((current) => current.filter((id) => !ids.includes(id)));
+      setSelectedOrderId((current) => (current && ids.includes(current) ? null : current));
+      showToast(`تم حذف ${result.deletedCount} طلب بنجاح.`);
+    } catch (error) {
+      console.error('[MerchantDashboard]: Order deletion failed:', error);
+      showToast('تعذر حذف الطلبات حالياً. يرجى المحاولة مجدداً.');
+    } finally {
+      setIsDeletingOrders(false);
+    }
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -3759,6 +3817,70 @@ export async function processOrderAction(formData: FormData) {
                 </div>
               </div>
 
+              {filteredOrders.length > 0 && (
+                <div
+                  role="group"
+                  aria-label="إجراءات الحذف الجماعي"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    flexWrap: 'wrap',
+                    padding: '12px 14px',
+                    marginBottom: 12,
+                    border: '1px solid var(--border-soft)',
+                    borderRadius: 12,
+                    background: 'var(--surface)',
+                  }}
+                >
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 650, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={allFilteredOrdersSelected}
+                      disabled={isDeletingOrders}
+                      onChange={(event) => toggleFilteredOrderSelection(event.target.checked)}
+                    />
+                    تحديد كل النتائج ({filteredOrders.length})
+                  </label>
+                  {selectedOrderIds.length > 0 && (
+                    <>
+                      <span style={{ color: 'var(--ink-muted)', fontSize: 12 }}>
+                        تم تحديد {selectedOrderIds.length} طلب
+                      </span>
+                      <button
+                        type="button"
+                        className="dz-btn"
+                        disabled={isDeletingOrders}
+                        onClick={() => void handleDeleteOrders(selectedOrderIds)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 7,
+                          padding: '8px 12px',
+                          fontSize: 12,
+                          background: '#dc2626',
+                          color: '#fff',
+                          borderColor: '#dc2626',
+                          opacity: isDeletingOrders ? 0.65 : 1,
+                        }}
+                      >
+                        <Icons.Trash />
+                        {isDeletingOrders ? 'جارٍ الحذف...' : `حذف المحدد (${selectedOrderIds.length})`}
+                      </button>
+                      <button
+                        type="button"
+                        className="dz-btn dz-btn-outline"
+                        disabled={isDeletingOrders}
+                        onClick={() => setSelectedOrderIds([])}
+                        style={{ padding: '8px 12px', fontSize: 12 }}
+                      >
+                        إلغاء التحديد
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="dz-table-wrap dz-orders-desktop">
                 <div className="dz-table-header">
                   <div>
@@ -3785,6 +3907,7 @@ export async function processOrderAction(formData: FormData) {
                   <table>
                     <thead>
                       <tr>
+                        <th aria-label="تحديد الطلبات" style={{ width: 42 }} />
                         <th>الطلب</th>
                         <th>العميل</th>
                         <th>شركة الشحن</th>
@@ -3794,12 +3917,21 @@ export async function processOrderAction(formData: FormData) {
                     </thead>
                     <tbody>
                       {filteredOrders.length === 0 ? (
-                        <tr><td colSpan={5} style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--ink-muted)' }}>{orders.length === 0 ? 'لا توجد شحنات مسجلة بعد.' : 'لا توجد نتائج تطابق البحث والفلاتر الحالية.'}</td></tr>
+                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--ink-muted)' }}>{orders.length === 0 ? 'لا توجد شحنات مسجلة بعد.' : 'لا توجد نتائج تطابق البحث والفلاتر الحالية.'}</td></tr>
                       ) : filteredOrders.slice(0, visibleOrders).map((order) => {
                         const isAlert = isAttentionStatus(order.current_status);
                         const badgeStyle = getStatusBadgeStyle(order.current_status);
                         return (
                           <tr key={order.id} className={isAlert ? 'row-alert' : ''}>
+                            <td>
+                              <input
+                                type="checkbox"
+                                aria-label={`تحديد الطلب ${order.external_order_id}`}
+                                checked={selectedOrderIds.includes(order.id)}
+                                disabled={isDeletingOrders}
+                                onChange={(event) => toggleOrderSelection(order.id, event.target.checked)}
+                              />
+                            </td>
                             <td>
                               <strong style={{ display: 'block', fontSize: '12px', marginBottom: '5px', overflowWrap: 'anywhere' }}>{order.external_order_id}</strong>
                               <span style={{ color: 'var(--ink-light)', fontSize: '10px' }}>{formatOrderDate(order.created_at)} · تاريخ التسجيل</span>
@@ -3829,6 +3961,15 @@ export async function processOrderAction(formData: FormData) {
                               <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
                                 <button type="button" className="dz-btn dz-btn-outline" style={{ padding: '7px 10px', fontSize: '11px' }} onClick={() => setSelectedOrderId(order.id)}>التفاصيل</button>
                                 <a href={`/t/${order.tracking_uuid}`} target="_blank" rel="noreferrer" className="dz-btn dz-btn-outline" style={{ padding: '7px 10px', fontSize: '11px' }}><Icons.ExternalLink /> صفحة التتبع</a>
+                                <button
+                                  type="button"
+                                  className="dz-btn dz-btn-outline"
+                                  disabled={isDeletingOrders}
+                                  onClick={() => void handleDeleteOrders([order.id])}
+                                  style={{ padding: '7px 10px', fontSize: '11px', color: '#dc2626', borderColor: 'rgba(220,38,38,.28)' }}
+                                >
+                                  <Icons.Trash /> حذف
+                                </button>
                                 {order.customer_phone && <a href={getWhatsAppRecoveryUrl(order)} target="_blank" rel="noreferrer" className={`dz-btn ${isAlert ? 'dz-btn-wa-urgent' : 'dz-btn-wa'}`} style={{ padding: '7px 10px', fontSize: '11px' }}><Icons.MessageCircle /> {isAlert ? 'تواصل عاجل' : 'واتساب'}</a>}
                               </div>
                             </td>
@@ -3848,6 +3989,16 @@ export async function processOrderAction(formData: FormData) {
                   const badgeStyle = getStatusBadgeStyle(order.current_status);
                   return (
                     <article key={`mobile-${order.id}`} className="dz-order-mobile-card">
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 9, fontSize: 12, fontWeight: 650, cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          aria-label={`تحديد الطلب ${order.external_order_id}`}
+                          checked={selectedOrderIds.includes(order.id)}
+                          disabled={isDeletingOrders}
+                          onChange={(event) => toggleOrderSelection(order.id, event.target.checked)}
+                        />
+                        تحديد الطلب
+                      </label>
                       <div className="dz-order-mobile-top">
                         <div className="dz-order-mobile-number"><strong>{order.external_order_id}</strong><small>تاريخ التسجيل: {formatOrderDate(order.created_at)}</small></div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -3867,6 +4018,15 @@ export async function processOrderAction(formData: FormData) {
                       <div className="dz-order-mobile-actions">
                         <button type="button" className="dz-btn dz-btn-outline" onClick={() => setSelectedOrderId(order.id)}>التفاصيل</button>
                         <a href={`/t/${order.tracking_uuid}`} target="_blank" rel="noreferrer" className="dz-btn dz-btn-outline"><Icons.ExternalLink /> صفحة التتبع</a>
+                        <button
+                          type="button"
+                          className="dz-btn dz-btn-outline"
+                          disabled={isDeletingOrders}
+                          onClick={() => void handleDeleteOrders([order.id])}
+                          style={{ color: '#dc2626', borderColor: 'rgba(220,38,38,.28)' }}
+                        >
+                          <Icons.Trash /> حذف
+                        </button>
                         {order.customer_phone && <a href={getWhatsAppRecoveryUrl(order)} target="_blank" rel="noreferrer" className={`dz-btn ${isAlert ? 'dz-btn-wa-urgent' : 'dz-btn-wa'}`}><Icons.MessageCircle /> {isAlert ? 'تواصل عاجل' : 'واتساب'}</a>}
                       </div>
                     </article>
