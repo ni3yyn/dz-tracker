@@ -1213,7 +1213,7 @@ export function MerchantDashboardView({
     if (isSavingBrand || (!hasUnsavedBrandChanges && !hasUnsavedStoreNameChanges)) return;
     setIsSavingBrand(true);
     const configBeingSaved = { ...brandConfigRef.current };
-    const nextStoreName = storeNameDraft.trim();
+    const nextStoreName = storeNameDraft.trim() || savedStoreName;
 
     try {
       const fd = new FormData();
@@ -3546,7 +3546,7 @@ export async function processOrderAction(formData: FormData) {
               {alertCount > 0 && <span className="dz-alert-badge">{alertCount}</span>}
             </button>
             <button className={`dz-nav-item ${activeTab === 'branding' ? 'active' : ''}`} onClick={() => { setActiveTab('branding'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Palette /></span> الهوية البصرية</span>
+              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Palette /></span> تصميم صفحة التتبع</span>
             </button>
             <button className={`dz-nav-item ${activeTab === 'upsells' ? 'active' : ''}`} onClick={() => { setActiveTab('upsells'); setMobileMenuOpen(false); }}>
               <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.ShoppingBag /></span> زيادة المبيعات (Upsells)</span>
@@ -4408,21 +4408,9 @@ export async function processOrderAction(formData: FormData) {
                     />
                   </div>
 
-                  {/* Logo Upload */}
-                  <div style={{ marginTop: '20px' }}>
-                    <ImageUploadField
-                      label="شعار المتجر (Logo)"
-                      value={brandConfig.logoUrl || ''}
-                      onChange={(url) => updateBrandConfig('logoUrl', url)}
-                      merchantId={merchantId}
-                      folder="upsell-products"
-                      quality={0.9}
-                      placeholder="ارفع شعار متجرك (PNG شفاف مفضّل)"
-                    />
-                    <small style={{ display: 'block', marginTop: '6px', fontSize: '11px', color: 'var(--ink-muted)' }}>
-                      يظهر في صفحة التتبع بدلاً من حرف اسم المتجر • PNG بخلفية شفافة مُفضَّل
-                    </small>
-                  </div>
+                  <p style={{ margin: '15px 0 0', fontSize: '11px', color: 'var(--ink-muted)' }}>
+                    يُدار شعار المتجر من صفحة الإعدادات، ويظهر هنا تلقائياً في المعاينة.
+                  </p>
                 </div>
 
                 )}
