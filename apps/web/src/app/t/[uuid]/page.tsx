@@ -16,7 +16,7 @@ export default async function TrackingPage({ params }: PageProps) {
   // 1. جلب الطلب
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, merchant_id, external_order_id, customer_name, product_name, product_image, carrier_name, carrier_tracking_number, confirmation_status, merchants(store_name)')
+    .select('id, merchant_id, external_order_id, customer_name, product_name, product_image, carrier_name, carrier_tracking_number, confirmation_status, merchants(store_name, logo_url)')
     .eq('tracking_uuid', uuid)
     .maybeSingle();
 
@@ -71,12 +71,12 @@ export default async function TrackingPage({ params }: PageProps) {
     ? order.merchants[0]?.store_name
     : (order.merchants as any)?.store_name || 'المتجر';
 
-  // logo_url: prefer brandSettings JSON (always up-to-date), fallback to merchants column
+  // merchants.logo_url is canonical; use the previous JSON value only for legacy records.
   const merchantLogoUrl: string | null =
-    (brandSettings as any)?.logoUrl ||
     (Array.isArray(order.merchants)
       ? (order.merchants[0] as any)?.logo_url
       : (order.merchants as any)?.logo_url) ||
+    (brandSettings as any)?.logoUrl ||
     null;
 
   // 4. جلب المنتجات المقترحة (قد يعجبك أيضاً)
