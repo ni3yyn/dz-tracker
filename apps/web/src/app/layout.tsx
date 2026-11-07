@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://tajertrack.vercel.app'),
-  title: { default: 'تاجر تراك | نظام تتبع طلبيات جاهظ', template: '%s | تاجر تراك' },
+  title: { default: 'تاجر تراك | نظام تتبع طلبيات جاهز', template: '%s | تاجر تراك' },
   description: 'اربط متجرك عبر SDK أو Webhook، أرسل روابط التتبّع عبر Telegram، وتابع حالات الطلب يدوياً أو عبر شركات توصيل جزائرية مدعومة.',
   applicationName: 'تاجر تراك',
   manifest: '/manifest.webmanifest',

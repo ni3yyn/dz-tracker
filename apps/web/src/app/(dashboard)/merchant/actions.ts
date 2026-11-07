@@ -648,6 +648,19 @@ export async function saveMerchantUpsell(formData: FormData) {
       return { error: 'فشل تعديل المنتج' };
     }
   } else {
+    // Determine the next display order for the merchant
+    const { data: lastItem } = await supabaseAdmin
+      .from('merchant_upsells')
+      .select('display_order')
+      .eq('merchant_id', merchant.id)
+      .order('display_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    payload.display_order = (lastItem?.display_order !== undefined && lastItem?.display_order !== null)
+      ? lastItem.display_order + 1
+      : 0;
+
     const { error } = await supabaseAdmin
       .from('merchant_upsells')
       .insert(payload);
@@ -655,6 +668,60 @@ export async function saveMerchantUpsell(formData: FormData) {
     if (error) {
       console.error('Error inserting upsell:', error);
       return { error: 'فشل إضافة المنتج' };
+    }
+  }
+
+  revalidatePath('/merchant');
+  return { success: true };
+}
+
+export async function reorderMerchantUpsell(id: string, direction: 'up' | 'down') {
+  const supabaseAuth = await createClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) return { error: 'غير مصرح' };
+
+  const supabaseAdmin = getSupabaseAdminClient();
+  const { data: merchant } = await supabaseAdmin
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  if (!merchant) return { error: 'ملف التاجر غير موجود' };
+
+  const { data: upsells, error } = await supabaseAdmin
+    .from('merchant_upsells')
+    .select('id, display_order, created_at')
+    .eq('merchant_id', merchant.id)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  if (error || !upsells || upsells.length <= 1) {
+    return { success: true };
+  }
+
+  const currentIndex = upsells.findIndex((u) => u.id === id);
+  if (currentIndex === -1) return { error: 'المنتج غير موجود' };
+
+  const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= upsells.length) {
+    return { success: true };
+  }
+
+  // Swap items in memory
+  const reordered = [...upsells];
+  const [targetItem] = reordered.splice(currentIndex, 1);
+  reordered.splice(targetIndex, 0, targetItem);
+
+  // Update display_order sequentially
+  for (let i = 0; i < reordered.length; i++) {
+    const item = reordered[i];
+    if (item.display_order !== i) {
+      await supabaseAdmin
+        .from('merchant_upsells')
+        .update({ display_order: i, updated_at: new Date().toISOString() })
+        .eq('id', item.id)
+        .eq('merchant_id', merchant.id);
     }
   }
 

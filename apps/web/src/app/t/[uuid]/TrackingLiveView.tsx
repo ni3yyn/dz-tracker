@@ -214,6 +214,26 @@ export function TrackingLiveView({
     if (didCopy) window.setTimeout(() => setCopied(false), 1800);
   };
 
+  const handleUpsellClick = (item: UpsellItem) => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        navigator.sendBeacon(
+          '/api/upsell/click',
+          new Blob([JSON.stringify({ id: item.id })], { type: 'application/json' })
+        );
+      } else {
+        fetch('/api/upsell/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: item.id }),
+          keepalive: true,
+        }).catch(() => {});
+      }
+    } catch {
+      // Non-blocking for seamless shopper navigation
+    }
+  };
+
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
     const channel = supabase
@@ -518,6 +538,11 @@ export function TrackingLiveView({
                   <h2 className={styles.upsellTitle}>قد يعجبك أيضاً</h2>
                   <p className={styles.upsellSubtitle}>منتجات مختارة لك من متجر {storeName}</p>
                 </div>
+                {upsells.length > 2 && (
+                  <span className={styles.upsellSwipeHint} aria-hidden="true">
+                    اسحب للتصفح ←
+                  </span>
+                )}
               </div>
 
               <div className={styles.upsellGrid}>
@@ -528,6 +553,7 @@ export function TrackingLiveView({
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.upsellCard}
+                    onClick={() => handleUpsellClick(item)}
                   >
                     <div className={styles.upsellImageWrapper}>
                       <img

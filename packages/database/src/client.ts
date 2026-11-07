@@ -642,6 +642,7 @@ export type Database = {
           currency: string | null;
           is_active: boolean;
           display_order: number;
+          clicks_count: number;
           created_at: string;
           updated_at: string;
         };
@@ -655,6 +656,7 @@ export type Database = {
           currency?: string | null;
           is_active?: boolean;
           display_order?: number;
+          clicks_count?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -668,6 +670,7 @@ export type Database = {
           currency?: string | null;
           is_active?: boolean;
           display_order?: number;
+          clicks_count?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -718,6 +721,12 @@ export type Database = {
           p_lease_seconds?: number;
         };
         Returns: Database['public']['Tables']['web_push_outbox']['Row'][];
+      };
+      increment_merchant_upsell_clicks: {
+        Args: {
+          upsell_id: string;
+        };
+        Returns: void;
       };
     };
     Enums: {

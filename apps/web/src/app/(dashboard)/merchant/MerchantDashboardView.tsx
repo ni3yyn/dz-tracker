@@ -18,6 +18,7 @@ import {
   saveMerchantUpsell,
   deleteMerchantUpsell,
   toggleMerchantUpsell,
+  reorderMerchantUpsell,
 } from './actions';
 import {
   TimelineEvent,
@@ -112,8 +113,10 @@ export interface MerchantUpsellItem {
   image_url: string;
   product_url: string;
   price: string | null;
+  currency?: string | null;
   is_active: boolean;
   display_order?: number;
+  clicks_count?: number;
   created_at: string;
   updated_at?: string;
 }
@@ -607,6 +610,9 @@ const Icons = {
   Trash: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
   Sparkles: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>,
   Link: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
+  ArrowUp: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>,
+  ArrowDown: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
+  MousePointer: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg>,
 };
 
 export function MerchantDashboardView({
@@ -679,6 +685,7 @@ export function MerchantDashboardView({
   const [saveUpsellError, setSaveUpsellError] = useState<string | null>(null);
   const [togglingUpsellId, setTogglingUpsellId] = useState<string | null>(null);
   const [deletingUpsellId, setDeletingUpsellId] = useState<string | null>(null);
+  const [reorderingUpsellId, setReorderingUpsellId] = useState<string | null>(null);
   const [brandingCategory, setBrandingCategory] = useState<BrandingCategory>('identity');
   const [hasUnsavedBrandChanges, setHasUnsavedBrandChanges] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1023,6 +1030,35 @@ export function MerchantDashboardView({
       if (fresh.success && fresh.upsells) setUpsellsList(fresh.upsells as any);
     } finally {
       setDeletingUpsellId(null);
+    }
+  };
+
+  const handleReorderUpsell = async (id: string, direction: 'up' | 'down') => {
+    const currentIndex = upsellsList.findIndex((u) => u.id === id);
+    if (currentIndex === -1) return;
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= upsellsList.length) return;
+
+    // Optimistically swap in the UI for instantaneous feedback
+    const nextList = [...upsellsList];
+    const [moved] = nextList.splice(currentIndex, 1);
+    nextList.splice(targetIndex, 0, moved);
+    setUpsellsList(nextList);
+    setReorderingUpsellId(id);
+
+    try {
+      const res = await reorderMerchantUpsell(id, direction);
+      if (res.error) {
+        showToast(res.error);
+        const fresh = await getMerchantUpsells();
+        if (fresh.success && fresh.upsells) setUpsellsList(fresh.upsells as any);
+      }
+    } catch {
+      showToast('تعذر تغيير ترتيب المنتج');
+      const fresh = await getMerchantUpsells();
+      if (fresh.success && fresh.upsells) setUpsellsList(fresh.upsells as any);
+    } finally {
+      setReorderingUpsellId(null);
     }
   };
 
@@ -3207,7 +3243,18 @@ export async function processOrderAction(formData: FormData) {
         .dz-upsell-item-card-title { font-size:13.5px; font-weight:800; color:#111827; line-height:1.45; margin:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
         .dz-upsell-item-card-price { font-size:12.5px; font-weight:800; color:#059669; }
         .dz-upsell-item-card-noprice { font-size:11px; color:#9ca3af; font-style:italic; }
+        .dz-upsell-stats-pills { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .dz-upsell-stat-pill { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:#f4f5f1; border-radius:999px; font-size:12px; color:#4b5563; border:1px solid rgba(9,9,11,0.08); font-weight:700; }
+        .dz-upsell-stat-pill b { color:#111827; font-weight:850; }
+        .dz-upsell-stat-pill.active { background:#ecfdf5; border-color:#a7f3d0; color:#065f46; }
+        .dz-upsell-stat-pill.active b { color:#047857; }
+        .dz-upsell-order-badge { font-size:11px; font-weight:800; background:#f3f4f6; color:#4b5563; padding:2px 8px; border-radius:6px; border:1px solid rgba(0,0,0,0.06); }
+        .dz-upsell-clicks-badge { display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:800; color:#047857; background:#ecfdf5; border:1px solid #a7f3d0; padding:2px 9px; border-radius:999px; }
         .dz-upsell-item-card-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:12px; border-top:1px solid rgba(9,9,11,0.06); flex-wrap:wrap; }
+        .dz-upsell-order-controls { display:flex; align-items:center; gap:4px; }
+        .dz-upsell-action-btn.reorder-btn { width:28px; height:28px; color:#374151; }
+        .dz-upsell-action-btn.reorder-btn:hover:not(:disabled) { background:#f3f4f6; color:#111827; border-color:rgba(9,9,11,0.2); }
+        .dz-upsell-action-btn.reorder-btn:disabled { opacity:0.3; cursor:not-allowed; background:#f9fafb; color:#9ca3af; }
         .dz-upsell-toggle-btn { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; padding:6px 11px; border-radius:8px; border:1px solid transparent; cursor:pointer; transition:all 0.15s; }
         .dz-upsell-toggle-btn.active { background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
         .dz-upsell-toggle-btn.inactive { background:#f3f4f6; color:#6b7280; border-color:#e5e7eb; }
@@ -4620,8 +4667,18 @@ export async function processOrderAction(formData: FormData) {
                       منتجاتك المضافة ({upsellsList.length})
                     </h3>
                     <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                      النشط حالياً: {upsellsList.filter((u) => u.is_active).length} منتج
+                      النشط حالياً: {upsellsList.filter((u) => u.is_active).length} منتج · تحكم بترتيب الظهور بالأسهم
                     </span>
+                  </div>
+
+                  <div className="dz-upsell-stats-pills">
+                    <div className="dz-upsell-stat-pill" title="إجمالي عدد نقرات الزبائن على المنتجات المقترحة">
+                      <Icons.MousePointer />
+                      <span>إجمالي النقرات: <b>{upsellsList.reduce((acc, u) => acc + (Number(u.clicks_count) || 0), 0)}</b></span>
+                    </div>
+                    <div className="dz-upsell-stat-pill active" title="عدد المنتجات النشطة والمعروضة في صفحة التتبع">
+                      <span>المعروضة: <b>{upsellsList.filter((u) => u.is_active).length}</b></span>
+                    </div>
                   </div>
                 </div>
 
@@ -4639,7 +4696,7 @@ export async function processOrderAction(formData: FormData) {
                   </div>
                 ) : (
                   <div className="dz-upsell-cards-grid">
-                    {upsellsList.map((item) => (
+                    {upsellsList.map((item, index) => (
                       <div
                         key={item.id}
                         className={`dz-upsell-item-card ${!item.is_active ? 'is-inactive' : ''}`}
@@ -4655,6 +4712,14 @@ export async function processOrderAction(formData: FormData) {
                             }}
                           />
                           <div className="dz-upsell-item-card-meta">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                              <span className="dz-upsell-order-badge" title="ترتيب ظهور المنتج للزبون">
+                                #{index + 1}
+                              </span>
+                              <span className="dz-upsell-clicks-badge" title={`تم النقر على هذا المنتج ${item.clicks_count || 0} مرة من قبل الزبائن`}>
+                                <Icons.MousePointer /> {item.clicks_count || 0} نقرة
+                              </span>
+                            </div>
                             <h4 className="dz-upsell-item-card-title" title={item.title}>
                               {item.title}
                             </h4>
@@ -4667,6 +4732,29 @@ export async function processOrderAction(formData: FormData) {
                         </div>
 
                         <div className="dz-upsell-item-card-bottom">
+                          <div className="dz-upsell-order-controls" aria-label="ترتيب ظهور المنتج">
+                            <button
+                              type="button"
+                              className="dz-upsell-action-btn reorder-btn"
+                              disabled={index === 0 || reorderingUpsellId !== null}
+                              onClick={() => handleReorderUpsell(item.id, 'up')}
+                              title={index === 0 ? 'هذا أول منتج' : 'تقديم ترتيب المنتج للأعلى'}
+                              aria-label="تقديم ترتيب المنتج للأعلى"
+                            >
+                              <Icons.ArrowUp />
+                            </button>
+                            <button
+                              type="button"
+                              className="dz-upsell-action-btn reorder-btn"
+                              disabled={index === upsellsList.length - 1 || reorderingUpsellId !== null}
+                              onClick={() => handleReorderUpsell(item.id, 'down')}
+                              title={index === upsellsList.length - 1 ? 'هذا آخر منتج' : 'تأخير ترتيب المنتج للأسفل'}
+                              aria-label="تأخير ترتيب المنتج للأسفل"
+                            >
+                              <Icons.ArrowDown />
+                            </button>
+                          </div>
+
                           <button
                             type="button"
                             className={`dz-upsell-toggle-btn ${item.is_active ? 'active' : 'inactive'}`}
