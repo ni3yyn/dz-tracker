@@ -82,6 +82,26 @@ export default function SiteHeader({
     };
   }, [effectiveMenuOpen, isDashboard, menuId, onMenuToggle]);
 
+  // Mobile Back Button Handler for public site menu: pressing back closes menu instead of leaving page
+  useEffect(() => {
+    if (isDashboard || !siteMenuOpen) return;
+
+    window.history.pushState({ tajerSiteMobileMenu: true }, '');
+
+    const handlePopState = () => {
+      setSiteMenuOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (window.history.state?.tajerSiteMobileMenu) {
+        window.history.back();
+      }
+    };
+  }, [siteMenuOpen, isDashboard]);
+
   if (isDashboard) {
     return (
       <header ref={headerRef} className={styles.dashboardHeader}>
