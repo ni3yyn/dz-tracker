@@ -1577,17 +1577,33 @@ export async function processOrderAction(formData: FormData) {
   };
 
   const getStatusLabel = (status: string) => {
-    const customLabel = mappings.find((mapping) => mapping.source_status === status)?.display_status;
+    const normalizedStatus = (status || '').trim().toLowerCase();
+    const customLabel = mappings.find(
+      (mapping) => mapping.source_status.trim().toLowerCase() === normalizedStatus
+    )?.display_status;
     if (customLabel) return customLabel;
+
     const labels: Record<string, string> = {
-      created: 'تم التسجيل', pending: 'قيد المعالجة', confirmed: 'تم التأكيد',
-      processing: 'قيد التجهيز', shipped: 'تم الشحن', dispatched: 'غادرت المستودع',
-      in_transit: 'في الطريق', out_for_delivery: 'خرجت للتوصيل', delivered: 'تم التسليم',
-      ready_for_pickup: 'جاهزة للاستلام', postponed: 'مؤجلة', returned: 'مرتجعة',
-      cancelled: 'ملغاة', attempt_failed_no_answer: 'تعذر الاتصال بالعميل',
-      attempt_failed: 'فشلت محاولة التوصيل', alerte: 'تحتاج إلى متابعة',
+      created: 'تم التسجيل',
+      order_placed: 'تم استلام الطلب',
+      'order placed': 'تم استلام الطلب',
+      pending: 'قيد المعالجة',
+      confirmed: 'تم التأكيد',
+      processing: 'قيد التجهيز',
+      shipped: 'تم الشحن',
+      dispatched: 'غادرت المستودع',
+      in_transit: 'في الطريق',
+      out_for_delivery: 'خرجت للتوصيل',
+      delivered: 'تم التسليم',
+      ready_for_pickup: 'جاهزة للاستلام',
+      postponed: 'مؤجلة',
+      returned: 'مرتجعة',
+      cancelled: 'ملغاة',
+      attempt_failed_no_answer: 'تعذر الاتصال بالعميل',
+      attempt_failed: 'فشلت محاولة التوصيل',
+      alerte: 'تحتاج إلى متابعة',
     };
-    return labels[status] || status.replace(/_/g, ' ');
+    return labels[normalizedStatus] || normalizedStatus.replace(/_/g, ' ');
   };
 
   const openShipmentList = (filter: 'all' | 'transit' | 'stopdesk' | 'alerts' | 'delivered' | 'returned', query = '') => {
@@ -3964,28 +3980,61 @@ export async function processOrderAction(formData: FormData) {
                             </td>
                             <td>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
-                                {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600 }}>⏳ الطلب مسجل — بانتظار تأكيد العميل</span>}
-                                {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600 }}>✅ العميل أكد الطلب</span>}
-                                {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600 }}>⚠️ العميل طلب الإلغاء</span>}
+                                {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600 }}>بانتظار تأكيد العميل</span>}
+                                {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600 }}>أكد العميل الطلب</span>}
+                                {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600 }}>طلب العميل إلغاء الطلب</span>}
                                 <span style={{ fontSize: 10, color: 'var(--ink-muted)', fontWeight: 600 }}>حالة الشحنة</span>
                                 <span className={`dz-pill dz-pill-${badgeStyle}`}>{getStatusLabel(order.current_status)}</span>
                                 <StatusSelector orderId={order.id} currentStatus={order.current_status} />
                               </div>
                             </td>
-                            <td>
-                              <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
-                                <button type="button" className="dz-btn dz-btn-outline" style={{ padding: '7px 10px', fontSize: '11px' }} onClick={() => setSelectedOrderId(order.id)}>التفاصيل</button>
-                                <a href={`/t/${order.tracking_uuid}`} target="_blank" rel="noreferrer" className="dz-btn dz-btn-outline" style={{ padding: '7px 10px', fontSize: '11px' }}><Icons.ExternalLink /> صفحة التتبع</a>
+                            <td style={{ minWidth: 116 }}>
+                              <div className="dz-order-action-grid" role="group" aria-label={`إجراءات الطلب ${order.external_order_id}`}>
                                 <button
                                   type="button"
-                                  className="dz-btn dz-btn-outline"
+                                  className="dz-order-action-btn"
+                                  aria-label={`تفاصيل الطلب ${order.external_order_id}`}
+                                  title="تفاصيل الطلب"
+                                  onClick={() => setSelectedOrderId(order.id)}
+                                >
+                                  <Icons.Eye />
+                                </button>
+                                <a
+                                  href={`/t/${order.tracking_uuid}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="dz-order-action-btn"
+                                  aria-label={`فتح صفحة تتبع ${order.external_order_id}`}
+                                  title="صفحة التتبع"
+                                >
+                                  <Icons.ExternalLink />
+                                </a>
+                                {order.customer_phone ? (
+                                  <a
+                                    href={getWhatsAppRecoveryUrl(order)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={`dz-order-action-btn dz-order-action-whatsapp ${isAlert ? 'is-urgent' : ''}`}
+                                    aria-label="التواصل مع العميل عبر واتساب"
+                                    title="واتساب"
+                                  >
+                                    <Icons.MessageCircle />
+                                  </a>
+                                ) : (
+                                  <span className="dz-order-action-btn is-disabled" aria-label="رقم العميل غير متوفر" title="رقم العميل غير متوفر">
+                                    <Icons.MessageCircle />
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  className="dz-order-action-btn dz-order-action-delete"
+                                  aria-label={`حذف الطلب ${order.external_order_id}`}
+                                  title="حذف الطلب"
                                   disabled={isDeletingOrders}
                                   onClick={() => void handleDeleteOrders([order.id])}
-                                  style={{ padding: '7px 10px', fontSize: '11px', color: '#dc2626', borderColor: 'rgba(220,38,38,.28)' }}
                                 >
-                                  <Icons.Trash /> حذف
+                                  <Icons.Trash />
                                 </button>
-                                {order.customer_phone && <a href={getWhatsAppRecoveryUrl(order)} target="_blank" rel="noreferrer" className={`dz-btn ${isAlert ? 'dz-btn-wa-urgent' : 'dz-btn-wa'}`} style={{ padding: '7px 10px', fontSize: '11px' }}><Icons.MessageCircle /> {isAlert ? 'تواصل عاجل' : 'واتساب'}</a>}
                               </div>
                             </td>
                           </tr>
@@ -4017,9 +4066,9 @@ export async function processOrderAction(formData: FormData) {
                       <div className="dz-order-mobile-top">
                         <div className="dz-order-mobile-number"><strong>{order.external_order_id}</strong><small>تاريخ التسجيل: {formatOrderDate(order.created_at)}</small></div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600, whiteSpace: 'nowrap' }}>⏳ الطلب مسجل — بانتظار تأكيد العميل</span>}
-                          {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600, whiteSpace: 'nowrap' }}>✅ العميل أكد الطلب</span>}
-                          {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600, whiteSpace: 'nowrap' }}>⚠️ العميل طلب الإلغاء</span>}
+                          {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600, whiteSpace: 'nowrap' }}>بانتظار تأكيد العميل</span>}
+                          {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600, whiteSpace: 'nowrap' }}>أكد العميل الطلب</span>}
+                          {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600, whiteSpace: 'nowrap' }}>طلب العميل إلغاء الطلب</span>}
                           <span className={`dz-pill dz-pill-${badgeStyle}`}>الشحنة: {getStatusLabel(order.current_status)}</span>
                         </div>
                       </div>
@@ -4030,19 +4079,52 @@ export async function processOrderAction(formData: FormData) {
                       </div>
                       <div className="dz-order-mobile-meta"><span>{order.carrier_name || 'شركة الشحن غير محددة'}</span><span>{order.carrier_tracking_number || 'لا يوجد رقم تتبع'}</span></div>
                       <div style={{ marginTop: '10px' }}><StatusSelector orderId={order.id} currentStatus={order.current_status} /></div>
-                      <div className="dz-order-mobile-actions">
-                        <button type="button" className="dz-btn dz-btn-outline" onClick={() => setSelectedOrderId(order.id)}>التفاصيل</button>
-                        <a href={`/t/${order.tracking_uuid}`} target="_blank" rel="noreferrer" className="dz-btn dz-btn-outline"><Icons.ExternalLink /> صفحة التتبع</a>
+                      <div className="dz-order-action-grid" role="group" aria-label={`إجراءات الطلب ${order.external_order_id}`}>
                         <button
                           type="button"
-                          className="dz-btn dz-btn-outline"
+                          className="dz-order-action-btn"
+                          aria-label={`تفاصيل الطلب ${order.external_order_id}`}
+                          title="تفاصيل الطلب"
+                          onClick={() => setSelectedOrderId(order.id)}
+                        >
+                          <Icons.Eye />
+                        </button>
+                        <a
+                          href={`/t/${order.tracking_uuid}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="dz-order-action-btn"
+                          aria-label={`فتح صفحة تتبع ${order.external_order_id}`}
+                          title="صفحة التتبع"
+                        >
+                          <Icons.ExternalLink />
+                        </a>
+                        {order.customer_phone ? (
+                          <a
+                            href={getWhatsAppRecoveryUrl(order)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`dz-order-action-btn dz-order-action-whatsapp ${isAlert ? 'is-urgent' : ''}`}
+                            aria-label="التواصل مع العميل عبر واتساب"
+                            title="واتساب"
+                          >
+                            <Icons.MessageCircle />
+                          </a>
+                        ) : (
+                          <span className="dz-order-action-btn is-disabled" aria-label="رقم العميل غير متوفر" title="رقم العميل غير متوفر">
+                            <Icons.MessageCircle />
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="dz-order-action-btn dz-order-action-delete"
+                          aria-label={`حذف الطلب ${order.external_order_id}`}
+                          title="حذف الطلب"
                           disabled={isDeletingOrders}
                           onClick={() => void handleDeleteOrders([order.id])}
-                          style={{ color: '#dc2626', borderColor: 'rgba(220,38,38,.28)' }}
                         >
-                          <Icons.Trash /> حذف
+                          <Icons.Trash />
                         </button>
-                        {order.customer_phone && <a href={getWhatsAppRecoveryUrl(order)} target="_blank" rel="noreferrer" className={`dz-btn ${isAlert ? 'dz-btn-wa-urgent' : 'dz-btn-wa'}`}><Icons.MessageCircle /> {isAlert ? 'تواصل عاجل' : 'واتساب'}</a>}
                       </div>
                     </article>
                   );
