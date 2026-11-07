@@ -1,4 +1,5 @@
-:global(*) {
+.page,
+.page * {
   box-sizing: border-box;
 }
 
