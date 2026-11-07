@@ -1,11 +1,12 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { getSupabaseAdminClient } from '@saas/database';
 
 export async function respondToConfirmation(
   token: string,
   action: 'confirm' | 'cancel'
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; status?: 'confirmed' | 'cancelled' }> {
   if (!token || !action) return { success: false, error: 'بيانات غير مكتملة' };
 
   const supabase = getSupabaseAdminClient();
@@ -23,7 +24,7 @@ export async function respondToConfirmation(
 
   // Guard: already responded
   if (order.confirmation_status === 'confirmed' || order.confirmation_status === 'cancelled') {
-    return { success: true }; // idempotent — treat as OK
+    return { success: true, status: order.confirmation_status }; // Preserve the first customer response.
   }
 
   // Guard: expired
@@ -49,6 +50,8 @@ export async function respondToConfirmation(
     return { success: false, error: 'حدث خطأ، يرجى المحاولة مجدداً' };
   }
 
-  return { success: true };
+  // Refresh the merchant dashboard data; current_status remains owned by the shipment workflow.
+  revalidatePath('/merchant');
+  return { success: true, status: newStatus };
 }
 
