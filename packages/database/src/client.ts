@@ -825,6 +825,13 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['order_confirmation_outbox']['Row'][];
       };
+      delete_merchant_orders: {
+        Args: {
+          p_merchant_id: string;
+          p_order_ids: string[];
+        };
+        Returns: number;
+      };
     };
     Enums: {
       [_ in never]: never;
