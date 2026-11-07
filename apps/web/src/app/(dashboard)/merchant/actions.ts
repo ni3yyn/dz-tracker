@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
 import { TrackingOrchestrator } from '@saas/orchestrator';
+import { enqueueOrderConfirmationForNewOrder } from '../../../lib/order-confirmation';
 import { BrandSettings, DEFAULT_BRAND_SETTINGS } from '@saas/ui';
 
 type PersistedBrandSettings = BrandSettings & { showWhatsAppButton?: boolean; animateBackgroundBlobs?: boolean; backgroundBlur?: boolean; timelineLineStyle?: 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none' };
@@ -409,45 +410,17 @@ export async function createManualOrder(formData: FormData) {
     };
   }
 
-  // Queue the customer confirmation message using the same eligibility rules as webhooks.
+  // Queue confirmation and mark the customer-confirmation stage without changing carrier status.
   let confirmationQueued = false;
   let confirmationQueueError = false;
 
   try {
-    const { data: merchantSettings, error: merchantSettingsError } = await supabase
-      .from('merchants')
-      .select('confirmation_telegram_enabled, subscription_tier, subscription_status')
-      .eq('id', merchantId)
-      .maybeSingle();
-
-    if (merchantSettingsError) {
-      throw merchantSettingsError;
-    }
-
-    const isPaidActivePlan =
-      (merchantSettings?.subscription_tier || 'starter') !== 'starter' &&
-      merchantSettings?.subscription_status === 'active';
-
-    const confirmationEnabled = Boolean(
-      (merchantSettings as any)?.confirmation_telegram_enabled
-    );
-
-    if (isPaidActivePlan && confirmationEnabled && customerPhone) {
-      const { error: enqueueError } = await supabase
-        .from('order_confirmation_outbox')
-        .insert({
-          order_id: result.orderId,
-          merchant_id: merchantId,
-          idempotency_key: `confirm:${merchantId}:${result.orderId}`,
-        });
-
-      // A unique-key conflict means this order already has a confirmation job.
-      if (enqueueError && enqueueError.code !== '23505') {
-        throw enqueueError;
-      }
-
-      confirmationQueued = true;
-    }
+    const confirmationResult = await enqueueOrderConfirmationForNewOrder({
+      merchantId,
+      orderId: result.orderId,
+      customerPhone,
+    });
+    confirmationQueued = confirmationResult.queued;
   } catch (confirmErr: any) {
     // The order was already created; do not report creation failure or encourage duplicate retries.
     confirmationQueueError = true;
