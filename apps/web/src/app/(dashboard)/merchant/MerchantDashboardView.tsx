@@ -683,6 +683,58 @@ export function MerchantDashboardView({
     setSavedStoreName(storeName);
   }, [storeName]);
 
+  // Mobile Back Button Handler: when mobile menu drawer is open, back button closes it instead of leaving dashboard
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    window.history.pushState({ tajerMobileMenu: true }, '');
+
+    const handlePopState = () => {
+      setMobileMenuOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (window.history.state?.tajerMobileMenu) {
+        window.history.back();
+      }
+    };
+  }, [mobileMenuOpen]);
+
+  // Upsell Features State
+  const [upsellsList, setUpsellsList] = useState<MerchantUpsellItem[]>(initialUpsells);
+  const [upsellScrapeUrl, setUpsellScrapeUrl] = useState('');
+  const [isScrapingUpsell, setIsScrapingUpsell] = useState(false);
+  const [scrapeUpsellError, setScrapeUpsellError] = useState<string | null>(null);
+
+  const [editingUpsellId, setEditingUpsellId] = useState<string | null>(null);
+  const [upsellTitle, setUpsellTitle] = useState('');
+  const [upsellImageUrl, setUpsellImageUrl] = useState('');
+  const [upsellProductUrl, setUpsellProductUrl] = useState('');
+  const [upsellPrice, setUpsellPrice] = useState('');
+  const [upsellIsActive, setUpsellIsActive] = useState(true);
+  const [isSavingUpsell, setIsSavingUpsell] = useState(false);
+  const [saveUpsellError, setSaveUpsellError] = useState<string | null>(null);
+  const [togglingUpsellId, setTogglingUpsellId] = useState<string | null>(null);
+  const [deletingUpsellId, setDeletingUpsellId] = useState<string | null>(null);
+  const [reorderingUpsellId, setReorderingUpsellId] = useState<string | null>(null);
+  const [brandingCategory, setBrandingCategory] = useState<BrandingCategory>('identity');
+  const [hasUnsavedBrandChanges, setHasUnsavedBrandChanges] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'transit' | 'stopdesk' | 'alerts' | 'delivered' | 'returned'>('all');
+  const [carrierFilter, setCarrierFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'risk'>('newest');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [isDeletingOrders, setIsDeletingOrders] = useState(false);
+  const [integrationPlatform, setIntegrationPlatform] = useState<'shopify' | 'website' | 'manual' | null>(null);
+  const [trackingSource, setTrackingSource] = useState<'carrier' | 'manual' | 'unsure' | null>(null);
+  const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'other' | null>(null);
+  const [integrationStep, setIntegrationStep] = useState<1 | 2 | 3>(1);
+  const [integrationChoicesHydratedFor, setIntegrationChoicesHydratedFor] = useState<string | null>(null);
   // Persist integration choices locally per merchant, without sending preferences to the server.
   useEffect(() => {
     setIntegrationChoicesHydratedFor(null);
@@ -753,58 +805,6 @@ export function MerchantDashboardView({
     }
   }, [merchantId, integrationChoicesHydratedFor, integrationPlatform, trackingSource, selectedCarrier]);
 
-  // Mobile Back Button Handler: when mobile menu drawer is open, back button closes it instead of leaving dashboard
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-
-    window.history.pushState({ tajerMobileMenu: true }, '');
-
-    const handlePopState = () => {
-      setMobileMenuOpen(false);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      if (window.history.state?.tajerMobileMenu) {
-        window.history.back();
-      }
-    };
-  }, [mobileMenuOpen]);
-
-  // Upsell Features State
-  const [upsellsList, setUpsellsList] = useState<MerchantUpsellItem[]>(initialUpsells);
-  const [upsellScrapeUrl, setUpsellScrapeUrl] = useState('');
-  const [isScrapingUpsell, setIsScrapingUpsell] = useState(false);
-  const [scrapeUpsellError, setScrapeUpsellError] = useState<string | null>(null);
-
-  const [editingUpsellId, setEditingUpsellId] = useState<string | null>(null);
-  const [upsellTitle, setUpsellTitle] = useState('');
-  const [upsellImageUrl, setUpsellImageUrl] = useState('');
-  const [upsellProductUrl, setUpsellProductUrl] = useState('');
-  const [upsellPrice, setUpsellPrice] = useState('');
-  const [upsellIsActive, setUpsellIsActive] = useState(true);
-  const [isSavingUpsell, setIsSavingUpsell] = useState(false);
-  const [saveUpsellError, setSaveUpsellError] = useState<string | null>(null);
-  const [togglingUpsellId, setTogglingUpsellId] = useState<string | null>(null);
-  const [deletingUpsellId, setDeletingUpsellId] = useState<string | null>(null);
-  const [reorderingUpsellId, setReorderingUpsellId] = useState<string | null>(null);
-  const [brandingCategory, setBrandingCategory] = useState<BrandingCategory>('identity');
-  const [hasUnsavedBrandChanges, setHasUnsavedBrandChanges] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'transit' | 'stopdesk' | 'alerts' | 'delivered' | 'returned'>('all');
-  const [carrierFilter, setCarrierFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'risk'>('newest');
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
-  const [isDeletingOrders, setIsDeletingOrders] = useState(false);
-  const [integrationPlatform, setIntegrationPlatform] = useState<'shopify' | 'website' | 'manual' | null>(null);
-  const [trackingSource, setTrackingSource] = useState<'carrier' | 'manual' | 'unsure' | null>(null);
-  const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'other' | null>(null);
-  const [integrationStep, setIntegrationStep] = useState<1 | 2 | 3>(1);
-  const [integrationChoicesHydratedFor, setIntegrationChoicesHydratedFor] = useState<string | null>(null);
   const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
   const [isSavingTelegram, startTransitionTelegram] = useTransition();
   const [confirmationEnabled, setConfirmationEnabled] = useState(confirmationTelegramEnabled);
@@ -1401,7 +1401,6 @@ export function MerchantDashboardView({
   ];
 
   const activeCarrierConnection = carrierConnections.find((carrier) => carrier.id === selectedCarrier) ?? null;
-  const integrationReady = Boolean(integrationPlatform && trackingSource && (trackingSource !== 'carrier' || selectedCarrier));
 
   const installCommands = {
     npm: 'npm install dz-tracking-sdk',
