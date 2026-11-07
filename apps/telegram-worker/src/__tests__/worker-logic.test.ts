@@ -84,6 +84,12 @@ test('Error classification', () => {
   const resAuth = classifyTelegramError(errAuth);
   assert.equal(resAuth.category, 'fatal_auth');
 
+  const duplicateAuth = classifyTelegramError(
+    new Error('Telegram API error 406: AUTH_KEY_DUPLICATED')
+  );
+  assert.equal(duplicateAuth.category, 'fatal_auth');
+  assert.equal(duplicateAuth.code, 'AUTH_KEY_DUPLICATED');
+
   // Retryable transient errors
   const errTimeout = new Error('ETIMEDOUT: Connection lost');
   const resTimeout = classifyTelegramError(errTimeout);

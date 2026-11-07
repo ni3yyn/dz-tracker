@@ -5,7 +5,7 @@ import { TelegramQueueManager } from './queue.js';
 import { ConfirmationJob } from './delivery-state.js';
 import { normalizePhoneForTelegram } from './phone.js';
 import { renderConfirmationMessage } from './confirmation-template.js';
-import { classifyTelegramError } from './error-classifier.js';
+import { classifyTelegramError, ClassifiedError } from './error-classifier.js';
 
 const RETRY_DELAYS_SECONDS = [120, 600, 1800, 3600]; // 2m, 10m, 30m, 1h
 const CONFIRMATION_EXPIRY_HOURS = 24;
@@ -26,7 +26,8 @@ export class TelegramConfirmationWorker {
   constructor(
     private readonly config: WorkerConfig,
     private readonly queue: TelegramQueueManager,
-    private readonly sender: TelegramSender
+    private readonly sender: TelegramSender,
+    private readonly onFatalAuth: (error: ClassifiedError) => void = () => {}
   ) {}
 
   async start(): Promise<void> {
@@ -36,7 +37,7 @@ export class TelegramConfirmationWorker {
     while (this.isRunning) {
       try {
         const job = await this.queue.claimNextConfirmationJob(
-          this.config.workerId,
+          this.config.instanceId,
           this.config.leaseDurationSeconds
         );
 
@@ -124,6 +125,13 @@ export class TelegramConfirmationWorker {
         return;
       }
 
+      if (classified.category === 'fatal_auth') {
+        console.error('[ConfirmationWorker]: FATAL Telegram authorization error. Halting all MTProto work.');
+        this.stop();
+        this.onFatalAuth(classified);
+        return;
+      }
+
       await this.handleRetry(job, classified.code, classified.message);
       return;
     }
@@ -176,7 +184,7 @@ export class TelegramConfirmationWorker {
       });
       console.log(`[ConfirmationWorker]: Sent confirmation request for order ${orderData.external_order_id}`);
     } else {
-      const classified = classifyTelegramError(sendResult.errorMessage || sendResult.errorCode);
+      const classified = classifyTelegramError(sendResult.errorCode || sendResult.errorMessage);
 
       if (classified.category === 'skip_permanent') {
         await this.queue.updateConfirmationJob(job.id, {
@@ -185,6 +193,10 @@ export class TelegramConfirmationWorker {
           errorCode: sendResult.errorCode,
           errorMessage: sendResult.errorMessage,
         });
+      } else if (classified.category === 'fatal_auth') {
+        console.error('[ConfirmationWorker]: FATAL Telegram authorization error returned while sending. Halting all MTProto work.');
+        this.stop();
+        this.onFatalAuth(classified);
       } else {
         await this.handleRetry(job, sendResult.errorCode, sendResult.errorMessage);
       }

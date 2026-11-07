@@ -6,7 +6,7 @@ import { WorkerHealthMonitor } from './health.js';
 import { OutboxJob } from './delivery-state.js';
 import { normalizePhoneForTelegram } from './phone.js';
 import { renderTrackingMessage } from './message-template.js';
-import { classifyTelegramError } from './error-classifier.js';
+import { classifyTelegramError, ClassifiedError } from './error-classifier.js';
 
 const RETRY_DELAYS_SECONDS = [60, 300, 900, 1800]; // 1m, 5m, 15m, 30m
 
@@ -18,7 +18,8 @@ export class TelegramTrackingWorker {
     private readonly config: WorkerConfig,
     private readonly queue: TelegramQueueManager,
     private readonly sender: TelegramSender,
-    private readonly health: WorkerHealthMonitor
+    private readonly health: WorkerHealthMonitor,
+    private readonly onFatalAuth: (error: ClassifiedError) => void = () => {}
   ) {}
 
   async start(): Promise<void> {
@@ -27,22 +28,10 @@ export class TelegramTrackingWorker {
 
     while (this.isRunning) {
       try {
-        // 1. Maintain or acquire worker lease
-        const leaseAcquired = await this.queue.acquireLease(
-          this.config.workerId,
-          this.config.leaseDurationSeconds
-        );
-        this.health.setLeaseStatus(leaseAcquired);
-
-        if (!leaseAcquired) {
-          console.log('[TelegramWorker]: Another worker holds the active lease. Sleeping...');
-          await this.sleep(this.config.pollIntervalMs);
-          continue;
-        }
-
-        // 2. Claim next available job atomically (FOR UPDATE SKIP LOCKED)
+        // The process-wide lease is acquired before Telegram authentication in main.ts.
+        // The database RPC also verifies this unique instance token before returning work.
         const job = await this.queue.claimNextJob(
-          this.config.workerId,
+          this.config.instanceId,
           this.config.leaseDurationSeconds
         );
 
@@ -182,8 +171,9 @@ export class TelegramTrackingWorker {
       }
 
       if (classified.category === 'fatal_auth') {
-        console.error('[TelegramWorker]: FATAL: Session revoked. Stopping worker loop.');
+        console.error('[TelegramWorker]: FATAL Telegram authorization error. Halting all MTProto work.');
         this.stop();
+        this.onFatalAuth(classified);
         return;
       }
 
@@ -266,7 +256,7 @@ export class TelegramTrackingWorker {
       this.health.recordJobProcessed('sent');
       console.log(`[TelegramWorker]: Successfully delivered tracking link for order ${orderData.external_order_id}`);
     } else {
-      const classified = classifyTelegramError(sendResult.errorMessage || sendResult.errorCode);
+      const classified = classifyTelegramError(sendResult.errorCode || sendResult.errorMessage);
 
       await this.queue.recordAttempt({
         jobId: job.id,
@@ -286,6 +276,10 @@ export class TelegramTrackingWorker {
           errorMessage: sendResult.errorMessage,
         });
         this.health.recordJobProcessed('skipped');
+      } else if (classified.category === 'fatal_auth') {
+        console.error('[TelegramWorker]: FATAL Telegram authorization error returned while sending. Halting all MTProto work.');
+        this.stop();
+        this.onFatalAuth(classified);
       } else {
         await this.handleRetry(job, sendResult.errorCode, sendResult.errorMessage);
       }

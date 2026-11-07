@@ -12,6 +12,7 @@ dotenv.config();
 
 export interface WorkerConfig {
   workerId: string;
+  instanceId: string;
   isEnabled: boolean;
   telegramApiId: number;
   telegramApiHash: string;
@@ -60,13 +61,17 @@ export function loadConfig(): WorkerConfig {
     'https://tajertrack.com'
   ).replace(/\/+$/, '');
 
-  const workerId = process.env.TELEGRAM_WORKER_ID || process.env.WORKER_ID || `worker-${crypto.randomUUID().slice(0, 8)}`;
+  // workerId is a stable human-readable service label. instanceId is a fresh
+  // per-process fencing token and MUST never be shared by Railway replicas.
+  const workerId = process.env.TELEGRAM_WORKER_ID || process.env.WORKER_ID || 'telegram-worker';
+  const instanceId = crypto.randomUUID();
   const pollIntervalMs = Math.max(1000, Number(process.env.POLL_INTERVAL_MS || '3500'));
   const leaseDurationSeconds = Math.max(15, Number(process.env.LEASE_DURATION_SECONDS || '60'));
   const minResolutionIntervalMs = Math.max(3000, Number(process.env.MIN_RESOLUTION_INTERVAL_MS || '3500'));
 
   return {
     workerId,
+    instanceId,
     isEnabled,
     telegramApiId,
     telegramApiHash,

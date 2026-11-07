@@ -67,12 +67,22 @@ export function classifyTelegramError(err: any): ClassifiedError {
     };
   }
 
-  // 4. Authentication / Session failures (Fatal)
+  // 4. Duplicate MTProto authorization is fatal: stop the entire sender process.
+  if (upper.includes('AUTH_KEY_DUPLICATED')) {
+    return {
+      category: 'fatal_auth',
+      code: 'AUTH_KEY_DUPLICATED',
+      message: 'Telegram rejected this authorization because the same MTProto auth key was used by simultaneous connections. Stop duplicate processes and replace the revoked session.',
+    };
+  }
+
+  // 5. Authentication / Session failures (Fatal)
   if (
     upper.includes('AUTH_KEY_UNREGISTERED') ||
     upper.includes('AUTH_KEY_INVALID') ||
     upper.includes('SESSION_REVOKED') ||
     upper.includes('SESSION_EXPIRED') ||
+    upper.includes('SESSION_INVALID') ||
     upper.includes('USER_DEACTIVATED_BAN')
   ) {
     return {

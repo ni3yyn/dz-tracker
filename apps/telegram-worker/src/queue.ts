@@ -37,18 +37,53 @@ export class TelegramQueueManager {
     );
   }
 
-  async acquireLease(workerId: string, leaseSeconds: number): Promise<boolean> {
-    const { data, error } = await this.supabase.rpc('acquire_telegram_worker_lease', {
-      p_worker_id: workerId,
-      p_lease_seconds: leaseSeconds,
-    });
+  async acquireLease(instanceId: string, leaseSeconds: number): Promise<boolean> {
+    try {
+      const { data, error } = await this.supabase.rpc('acquire_telegram_worker_lease', {
+        p_worker_id: instanceId,
+        p_lease_seconds: leaseSeconds,
+      });
 
-    if (error) {
-      console.error('[QueueManager]: Failed to acquire worker lease:', error.message);
+      if (error) {
+        console.error('[QueueManager]: Failed to acquire/renew process lease:', error.message);
+        return false;
+      }
+
+      return data === true;
+    } catch (err: any) {
+      console.error('[QueueManager]: Lease acquisition request failed:', err?.message || err);
       return false;
     }
+  }
 
-    return Boolean(data);
+  /**
+   * Releases only this process's lease. The owner predicate is essential:
+   * a stale process must never clear a newer process's lease.
+   */
+  async releaseLease(instanceId: string): Promise<boolean> {
+    try {
+      const { data, error } = await this.supabase
+        .from('telegram_worker_state')
+        .update({
+          lease_owner: null,
+          lease_expires_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', 1)
+        .eq('lease_owner', instanceId)
+        .select('id')
+        .maybeSingle();
+
+      if (error) {
+        console.error('[QueueManager]: Failed to release process lease:', error.message);
+        return false;
+      }
+
+      return Boolean(data);
+    } catch (err: any) {
+      console.error('[QueueManager]: Lease release request failed:', err?.message || err);
+      return false;
+    }
   }
 
   async claimNextJob(workerId: string, leaseSeconds: number): Promise<OutboxJob | null> {
@@ -165,7 +200,8 @@ export class TelegramQueueManager {
     const { error } = await this.supabase
       .from('telegram_tracking_outbox')
       .update(payload)
-      .eq('id', jobId);
+      .eq('id', jobId)
+      .eq('locked_by', this.config.instanceId);
 
     if (error) {
       console.error(`[QueueManager]: Error updating outbox job ${jobId}:`, error.message);
@@ -182,17 +218,25 @@ export class TelegramQueueManager {
       .eq('id', 1);
   }
 
-  async setWorkerEnabled(enabled: boolean): Promise<void> {
-    const { error } = await this.supabase
-      .from('telegram_worker_state')
-      .update({
-        is_enabled: enabled,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', 1);
+  async setWorkerEnabled(enabled: boolean): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from('telegram_worker_state')
+        .update({
+          is_enabled: enabled,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', 1);
 
-    if (error) {
-      console.warn('[QueueManager]: Failed to update worker is_enabled state:', error.message);
+      if (error) {
+        console.error('[QueueManager]: Failed to update worker is_enabled state:', error.message);
+        return false;
+      }
+
+      return true;
+    } catch (err: any) {
+      console.error('[QueueManager]: Worker state update failed:', err?.message || err);
+      return false;
     }
   }
 
@@ -294,7 +338,8 @@ export class TelegramQueueManager {
     const { error } = await this.supabase
       .from('order_confirmation_outbox')
       .update(payload)
-      .eq('id', jobId);
+      .eq('id', jobId)
+      .eq('locked_by', this.config.instanceId);
 
     if (error) {
       console.error(`[QueueManager]: Error updating confirmation job ${jobId}:`, error.message);
