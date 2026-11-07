@@ -5,7 +5,9 @@
   "packageManager": "pnpm@12.11.2",
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev",
+    "dev": "pnpm --filter web dev",
+    "dev:telegram-worker": "pnpm --filter telegram-worker dev",
+    "dev:push-worker": "pnpm --filter push-worker dev",
     "lint": "turbo lint",
     "start:push-worker": "node apps/push-worker/dist/main.js",
     "start:telegram-worker": "node apps/telegram-worker/dist/main.js"
