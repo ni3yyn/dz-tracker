@@ -21,7 +21,7 @@ export default async function ConfirmOrderPage({ params }: Props) {
   }
 
   // Load merchant identity before resolving status so every valid state stays branded.
-  const [{ data: merchant }, { data: brandColorRow }] = await Promise.all([
+  const [{ data: merchant }, { data: brandColorRow }, { data: legacyBrandSettingsRow }] = await Promise.all([
     supabase
       .from('merchants')
       .select('store_name, logo_url')
@@ -33,7 +33,24 @@ export default async function ConfirmOrderPage({ params }: Props) {
       .eq('merchant_id', order.merchant_id)
       .eq('source_status', '__brand_primary_color__')
       .maybeSingle(),
+    supabase
+      .from('status_mappings')
+      .select('display_status')
+      .eq('merchant_id', order.merchant_id)
+      .eq('source_status', '__brand_settings_json__')
+      .maybeSingle(),
   ]);
+
+  // Compatibility only: merchants.logo_url is canonical; older rows may still
+  // have a logo saved exclusively in the previous brand-settings JSON.
+  let legacyLogoUrl: string | undefined;
+  if (legacyBrandSettingsRow?.display_status) {
+    try {
+      legacyLogoUrl = JSON.parse(legacyBrandSettingsRow.display_status)?.logoUrl;
+    } catch {
+      legacyLogoUrl = undefined;
+    }
+  }
 
   const isExpired =
     order.confirmation_expires_at &&
@@ -54,7 +71,7 @@ export default async function ConfirmOrderPage({ params }: Props) {
       productName={order.product_name ?? undefined}
       productImage={order.product_image ?? undefined}
       storeName={merchant?.store_name ?? undefined}
-      logoUrl={merchant?.logo_url ?? undefined}
+      logoUrl={merchant?.logo_url || legacyLogoUrl}
       brandColor={brandColorRow?.display_status ?? '#273b30'}
     />
   );
