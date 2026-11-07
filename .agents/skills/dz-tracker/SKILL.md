@@ -298,7 +298,7 @@ Use the endpoint matching the actual event source:
 | Maystro | /api/webhooks/maystro |
 | Odoo carrier normalization | /api/webhooks/odoo |
 
-The courier adapters are provider-specific. Inspect the selected repository adapter and the provider's current documented payload before changing anything. Do not send a generic payload to all carrier endpoints.
+The courier adapters are provider-specific. Inspect the selected repository adapter and the provider's current documented payload before changing anything. Do not send a generic payload to all carrier endpoints. **Procolis implementation caveat:** the current `/api/webhooks/procolis` route imports `ProcolisAdapter`, but that export is currently an alias of `ZRExpressAdapter`; both use the same normalizer and it emits `carrierName: 'ZR Express'`. Do not claim a distinct Procolis normalizer exists. The Odoo route also has explicit string-based adapter selection; read its source before assuming it chooses a carrier correctly.
 
 Courier webhook URLs can use **?key={merchantApiKey}** when the provider cannot send a custom header. Treat the complete URL as a secret; don't commit it or put it into prompts/issues/logs.
 
@@ -340,3 +340,13 @@ Before declaring the task complete:
 
 Summarize the detected stack, order-intake and status-update paths, installed SDK version, changed files, API-key storage location, stable ID strategy, failure/retry behavior, checks actually run, and any unresolved limitation. Clearly distinguish repository-source capabilities from the currently published npm package.
 
+
+
+## Repository reference files
+
+When working from a checkout of this repository, also read these supporting references before implementing a carrier-specific or SDK-specific change:
+
+- `.agents/skills/dz-tracker/references/sdk-cookbook.md` — SDK source v2 entry points, safe server-side patterns, direct REST fallback, real result checks, and CLI behavior.
+- `.agents/skills/dz-tracker/references/carrier-matrix.md` — exact route-to-adapter map and field candidates read by the current source. It explicitly distinguishes repository code from vendor API guarantees.
+
+Treat source code, installed package declarations, and a real redacted provider payload as authoritative. A prose reference never overrides the implementation.

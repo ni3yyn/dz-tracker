@@ -1,146 +1,106 @@
-# Algerian Carrier Normalization Matrix
+# Carrier webhook adapter inventory (repository-verified)
 
-This reference documents exact raw status payloads from Algerian couriers and how they map to standard DZ Tracking statuses.
+**This is a map of what the current TajerTrack repository code reads and normalizes. It is not a carrier's official webhook specification.** Candidate field names below are taken from the adapters' `extractFirst` calls. They do not prove that a provider will send those fields in every account, region, or webhook event. Before configuring a live courier integration, obtain a real sample payload or consult the provider's current documentation and compare it with the corresponding adapter.
 
----
+Snapshot checked: 2026-11-07.
 
-## 1. Yalidine Express Adapter (Guepex API Engine)
+## 1. Implemented webhook routes
 
-- **Official Base URLs**: `https://api.yalidine.app/v1` and `https://api.guepex.app/v1`
-- **Authentication**: `X-API-ID`, `X-API-TOKEN`, `X-Yalidine-Secret` ("Clé secrète Webhook" configured in *Développement ➔ Gérer les Webhooks*).
-- **Stopdesk Bureau Detection**: `is_stopdesk` (`true` or `1`), `stopdesk_name`, `agency_name`, `bureau`.
-
-| Raw Status (`tracking.status`) | Reason / Motif (`tracking.reason`) | Standard Status | Triggers | Notes & Fields |
-|---|---|---|---|---|
-| `Nouveau` / `En attente` / `En préparation` | - | `order_created` | - | Parcel registered in merchant center |
-| `Récupéré` / `En transit` / `Ramassé` | - | `dispatched` | - | Handed over at merchant depot |
-| `Vers Wilaya` / `Transfert inter-wilayas` | - | `in_transit` | - | Moving between regional hubs |
-| `Sorti en livraison` / `En cours de livraison` | - | `out_for_delivery` | - | Courier has parcel in van |
-| `Disponible au bureau` / `En attente de retrait` | - | `ready_for_pickup` | Stopdesk Bureau Alert | `is_stopdesk: true` or arrived at `stopdesk_name` |
-| `Tentative Échouée` / `Tentative Echouee` | `Client ne répond pas` / `Injoignable` / `Client absent (échoué)` | `attempt_failed_no_answer` | WhatsApp Recovery Alert | Courier made contact call, no pickup / customer absent |
-| `Tentative Échouée` | `Numéro erroné` / `Téléphone fermé` | `attempt_failed_unreachable` | WhatsApp Recovery Alert | Invalid phone or out of coverage |
-| `Tentative Échouée` | `Reporté par le client` / `Client demande report` | `attempt_failed_rescheduled` | Reschedule Notification | Customer asked to postpone |
-| `Livré` / `Livre` / `Encaissement effectué` | - | `delivered` | Post-Purchase Review Link | Cash collected successfully |
-| `Retourné au centre` / `Retour expéditeur` | - | `returned` | COD Return Logged | Return package moving back to store |
-
----
-
-## 2. EcoTrack Multi-Courier Network (80+ Wilaya Couriers)
-
-- **Universal Public Tracking Portal**: `https://suivi.ecotrack.dz/suivi/{tracking_code}`
-- **Verified Subdomains**:
-  - `conexlog.ecotrack.dz` (Conexlog / UPS Algeria Exclusive Agent)
-  - `dhd.ecotrack.dz` (DHD Express)
-  - `rex.ecotrack.dz` (Rex Livraison)
-  - `speeddelivery.ecotrack.dz` (Speed Delivery)
-  - `rblivraison.ecotrack.dz` (RB Livraison)
-  - `msmgo.ecotrack.dz` (MSM Go)
-  - `areex.ecotrack.dz` (Areex)
-  - `prest.ecotrack.dz` (Prest)
-  - `rocketdelivery.ecotrack.dz` (Rocket Delivery)
-  - `worldexpress.ecotrack.dz` (World Express)
-  - `anderson.ecotrack.dz` (Anderson Delivery)
-  - `coyote.ecotrack.dz` (Coyote Express)
-  - `salva.ecotrack.dz` (Salva Delivery)
-- **Endpoints**: `POST /api/v1/create/order`, `GET /api/v1/get/fees`, `GET /api/v1/get/order/label?tracking={code}`. *(Note: EcoTrack does not provide a getOrder endpoint; updates are entirely webhook-driven).*
-
-| Raw Status Payload | Inferred Standard Status | Inferred Courier Attribution |
+| TajerTrack route | Route imports / calls | Repository source |
 |---|---|---|
-| `CREATION` / `PENDING` | `order_created` | From `carrier_name` / `provider` header |
-| `EXPEDIE` / `TRANSIT` / `CENTRE` | `in_transit` | Dynamic provider name |
-| `DISTRIBUTION` / `EN_DISTRIBUTION` | `out_for_delivery` | Dynamic provider name |
-| `EN_BUREAU` / `STOPDESK` | `ready_for_pickup` | Stopdesk Bureau Address |
-| `ECHEC_CLIENT_INJOIGNABLE` | `attempt_failed_no_answer` | WhatsApp Recovery Alert |
-| `ECHEC_HORS_ZONE` | `attempt_failed_unreachable` | WhatsApp Recovery Alert |
-| `LIVRE` / `SOLDE` | `delivered` | Success Webhook |
-| `RETOUR_DEFINITIF` | `returned` | Carrier Return |
+| `POST /api/webhooks` | Direct merchant API; normalizes direct order/status fields | `apps/web/src/app/api/webhooks/route.ts` |
+| `POST /api/webhooks/yalidine` | `YalidineAdapter.normalize()` | `apps/web/src/app/api/webhooks/yalidine/route.ts` → `packages/orchestrator/src/carriers/yalidine.adapter.ts` |
+| `POST /api/webhooks/ecotrack` | `EcoTrackAdapter.normalize()` | `apps/web/src/app/api/webhooks/ecotrack/route.ts` → `packages/orchestrator/src/carriers/ecotrack.adapter.ts` |
+| `POST /api/webhooks/zrexpress` | `ZRExpressAdapter.normalize()` | `apps/web/src/app/api/webhooks/zrexpress/route.ts` → `packages/orchestrator/src/carriers/zrexpress.adapter.ts` |
+| `POST /api/webhooks/procolis` | `ProcolisAdapter.normalize()` | `apps/web/src/app/api/webhooks/procolis/route.ts` → same ZR Express source |
+| `POST /api/webhooks/maystro` | `MaystroAdapter.normalize()` | `apps/web/src/app/api/webhooks/maystro/route.ts` → `packages/orchestrator/src/carriers/maystro.adapter.ts` |
+| `POST /api/webhooks/odoo` | Chooses ZR, EcoTrack, or Yalidine adapter from carrier text | `apps/web/src/app/api/webhooks/odoo/route.ts` |
+| `POST /api/webhooks/shopify` | `ShopifyAdapter.normalize()` | `apps/web/src/app/api/webhooks/shopify/route.ts` → `packages/orchestrator/src/sources/shopify.adapter.ts` |
 
----
+### Important Procolis implementation detail
 
-## 3. ZR Express Adapter (Procolis API Engine - `procolis.com/api_v1`)
+The route is separate, but `ProcolisAdapter` is currently exported as an alias of `ZRExpressAdapter` in `packages/orchestrator/src/carriers/zrexpress.adapter.ts`. Both therefore run the same normalizer, which sets the normalized `carrierName` to **ZR Express**. Do not describe the current code as having an independent Procolis normalizer or claim its resulting carrier label is Procolis. This is an implementation fact to account for, not a statement about the provider's external API.
 
-- **Credentials Test**: `GET https://procolis.com/api_v1/token` ➔ `{ Statut: "Accès activé" }`
-- **Duplicate Prevention**: `MessageRetour: "Double Tracking"`
-- **Rate Calculation**: `POST https://procolis.com/api_v1/tarification` (All 58 wilayas)
+### Odoo route selection
 
-| Raw Situation (`Situation` / `Statut`) | Motif / Note (`Motif`) | Standard Status | Triggers | Notes & Procolis Fields |
-|---|---|---|---|---|
-| `Créé` / `Prêt à expédier` / `En attente` | - | `processing` | - | `Confrimee: 1` creates direct ready parcel |
-| `Ramassé` / `Reçu au centre` | - | `dispatched` | - | Handed over to ZR Express courier |
-| `En transit` / `Vers wilaya` | - | `in_transit` | - | Moving to destination `IDWilaya` hub |
-| `Au bureau` / `En agence` / `Stopdesk` | - | `ready_for_pickup` | Stopdesk Bureau Alert | `TypeLivraison: "1"` (Stopdesk pickup) |
-| `En cours de livraison` / `Sorti` | - | `out_for_delivery` | - | Courier on route to `Adresse` |
-| `Tentative échouée` / `Echec livraison` | `Client ne répond pas` / `Injoignable` | `attempt_failed_no_answer` | WhatsApp Recovery Alert | Checks `MobileA` and `MobileB` |
-| `Tentative échouée` | `Téléphone éteint` / `Hors zone` | `attempt_failed_unreachable` | WhatsApp Recovery Alert | Invalid phone or off |
-| `Tentative échouée` / `Reporté` | `Reporté par client` | `postponed` | Reschedule Notification | Delivery postponed |
-| `Livré` / `Soldé` / `Encaissé` | - | `delivered` | Review Link | Cash `Total` collected |
-| `Retourné` / `Retour expéditeur` | `Refusé` / `Annulé` | `returned` | COD Return Logged | Parcel heading back to merchant |
+The Odoo route reads the first available carrier text from `carrier_name`, `delivery_type`, `carrier`, or `transporteur`:
 
----
+- contains `zr` or `procolis` → `ZRExpressAdapter`
+- contains `ecotrack`, `noest`, `dhd`, or `conexlog` → `EcoTrackAdapter`
+- otherwise → defaults to `YalidineAdapter`
 
-## 4. Odoo ERP Integration (DZ Yalidine Connector / Digitaliac)
+This is the actual repository routing logic. Verify the merchant's carrier field values match these checks; an unknown value defaults to Yalidine.
 
-- **Connector Endpoint**: `/api/webhooks/odoo`
-- **Field Mappings**:
-  - `carrier_tracking_ref` ➔ `carrierTrackingNumber`
-  - `origin` / `sale_order` ➔ `externalOrderId`
-  - `partner_name` / `partner_id` ➔ `customerName`
-  - `carrier_name` / `delivery_type` ➔ Dynamic router to Yalidine, ZR Express, or EcoTrack adapters.
+## 2. Candidate fields currently read by each adapter
 
----
+These are code-level extraction candidates, not a promise that all are present or officially supported in live provider payloads.
 
-## 5. Maystro Delivery Adapter (`backend.maystro-delivery.com/api/`)
+### Yalidine
 
-- **Connector Endpoint**: `/api/webhooks/maystro`
-- **Authentication**: `Authorization: Token <token>` or `x-api-key` or `?key=<apiKey>`
-- **Stopdesk Detection**: `delivery_type: 1` (`0` = Domicile, `1` = Point de retrait / Stopdesk)
-- **Wilaya Mapping**: Integer IDs 1 to 58 mapped to canonical Algerian wilaya names.
+Source: `packages/orchestrator/src/carriers/yalidine.adapter.ts`
 
-| Raw Status (`status`) | Reason / Note (`reason` / `note_to_driver`) | Standard Status | Triggers | Notes & Maystro Fields |
-|---|---|---|---|---|
-| `created` / `draft` / `starter` | - | `processing` | - | Parcel created in Maystro merchant portal |
-| `ramasse` / `picked_up` / `collecte` | - | `dispatched` | - | Courier picked up parcel from merchant |
-| `in_transit` / `en_transit` / `vers` | - | `in_transit` | - | Moving across wilayas to destination hub |
-| `point_de_retrait` / `stopdesk` / `au_bureau` | - | `ready_for_pickup` | Stopdesk Pickup Alert | `delivery_type: 1` ready at pickup branch |
-| `hub` / `centre_tri` / `arrive` | - | `at_local_hub` | - | Arrived at local destination wilaya hub |
-| `en_cours_de_livraison` / `dispatch` | - | `out_for_delivery` | - | Courier out with package for delivery |
-| `client_ne_repond_pas` / `injoignable` | `repond_pas` / `absent` / `ferme` | `attempt_failed_no_answer` | WhatsApp Recovery Alert | Generates 1-click WhatsApp retry link |
-| `reporte` / `postponed` | `demande_client` | `postponed` | Reschedule Notification | Customer postponed delivery |
-| `livre` / `delivered` / `paye` | - | `delivered` | Review / Thank You Link | Delivery completed and COD paid |
-| `retourne` / `returned` / `annule` | `refus` / `annule` | `returned` | COD Return Logged | Parcel moving back to seller |
+- Tracking number candidates: `tracking`, `tracking_number`, `carrier_tracking_ref`, `trackingNumber`, `id`, `code_suivi`, `barcode`, `Tracking`.
+- External order ID candidates include: `order_id`, `external_order_id`, `order_number`, `origin`, `sale_order`, `picking_name`, `orderId`, `orderNumber`, `reference`.
+- Customer name candidates include `customer_name`, `firstname`, `client_name`, `partner_name`, `recipient_name`, `nom`, `client`; phone candidates include `customer_phone`, `contact_phone`, `phone`, `telephone`, `tel`, `client_phone`, `mobile`.
+- Status candidates: `last_status`, `status`, `statut`, `current_status`, `etat`; reason candidates: `reason`, `sub_status`, `motif`, `commentaire`, `comment`.
+- Stopdesk hints read include `is_stopdesk`, `delivery_type`, `type_livraison`, plus center/agency/wilaya text fields.
 
----
+### EcoTrack
 
-## 6. Field Notes & Operational Traps (from Live DZBuild / dzship Operations)
+Source: `packages/orchestrator/src/carriers/ecotrack.adapter.ts`
 
-### A. The 2026 69-Wilaya Division Trap (Loi n° 26-06)
-- On April 4, 2026, Algeria legally created 11 new wilayas (codes 59 to 69).
-- **CRITICAL TRAP**: **ZERO Algerian couriers accept wilaya codes > 58.** Article 54 keeps parent wilayas running logistics until December 31, 2026. Sending `wilayaCode: 68` causes parcels to be rejected.
-- **The Solution (`shipAs`)**:
-  - `59` Aflou (أفلو) ➔ ship as `3` (Laghouat)
-  - `60` Barika (بريكة) ➔ ship as `5` (Batna)
-  - `61` El Kantara (القنطرة) ➔ ship as `7` (Biskra)
-  - `62` Bir El Ater (بئر العاتر) ➔ ship as `12` (Tébessa)
-  - `63` El Aricha (العريشة) ➔ ship as `13` (Tlemcen)
-  - `64` Ksar Chellala (قصر الشلالة) ➔ ship as `14` (Tiaret)
-  - `65` Aïn Ouessara (عين وسارة) ➔ ship as `17` (Djelfa)
-  - `66` Messaad (مسعد) ➔ ship as `17` (Djelfa)
-  - `67` Ksar El Boukhari (قصر البخاري) ➔ ship as `26` (Médéa)
-  - `68` Bou Saâda (بوسعادة) ➔ ship as `28` (M'Sila)
-  - `69` El Abiodh Sidi Cheikh (الأبيض سيدي الشيخ) ➔ ship as `32` (El Bayadh)
+- Tracking number candidates: `tracking_code`, `trackingCode`, `tracking`, `barcode`, `code`, `code_suivi`, `id`.
+- External order ID candidates include `reference`, `order_id`, `order_number`, `orderId`, `orderNumber`, `external_id`, `code_commande`.
+- Carrier name candidates: `carrier_name`, `carrierName`, `company_name`, `transporteur`, `societe`.
+- Customer fields include `client_name` / `customer_name` / `name` and `client_phone` / `customer_phone` / `phone` / `telephone` / `tel` / `mobile`.
+- Status candidates: `status`, `current_status`, `statut`, `etat`; reason candidates include `reason`, `motif`, `sub_status`, `comment`, `remarque`, `observation`.
 
-### B. `delivery_attempted` is the "Money Status"
-- *“The courier tried, the customer didn't pick up. Stores that call the customer within the hour recover a large share of these; stores that wait for the courier's second attempt mostly get returns.”*
-- In DZ Tracker, this triggers the **COD Risk Radar** and generates the **1-Click WhatsApp Rescue link** immediately.
+### ZR Express / Procolis adapter
 
-### C. NOEST Express Trap: Draft vs. Validated
-- Creating a parcel on NOEST puts it in a draft state. Without an explicit secondary validation step, logistics never schedules pickup and parcels sit stranded indefinitely.
+Source: `packages/orchestrator/src/carriers/zrexpress.adapter.ts`
 
-### D. Maystro Delivery Anti-Duplicate Policy
-- Maystro automatically rejects duplicate orders for the same customer name + phone on the same calendar day.
+- The normalizer unwraps the first item from `Colis: [...]` or a top-level array.
+- Tracking number candidates include `Tracking`, `tracking`, `tracking_number`, `id_colis`, `code_suivi`, `barcode`, `id`.
+- External order ID candidates include `id_Externe`, `id_externe`, `idExterne`, `order_id`, `external_order_id`, `order_number`, `reference`.
+- Customer fields include `Client`, `client`, `customer_name`, `nom`, `destinataire`, `nom_client`; phone fields include `MobileA` / `MobileB` and fallback phone aliases.
+- Product candidates include `TProduit`, `tProduit`, `t_produit`, `product_name`, `product`, `produit`, `article`.
+- Status candidates include `Situation`, `situation`, `Situation_Colis`, `status`, `statut`, `etat`, `last_status`; reason candidates include `Motif`, `motif`, `motif_retour`, `reason`, `Note`, `note`, `commentaire`.
+- Stopdesk detection reads `TypeLivraison`, `type_livraison`, or `typeLivraison`.
 
-### E. Complete 82 EcoTrack Network Directory
-All run on the EcoTrack engine and accept unified tracking webhooks:
-`48hrlivraison`, `abdelivery`, `alania`, `allolivraison`, `amana`, `andersondelivery`, `aranex`, `areex`, `assildelivery`, `atlasexpress`, `baconsult`, `bfkexpress`, `boogi`, `championlogistics`, `chronorex`, `cirtaexpress`, `colex`, `colireli`, `colizone`, `conexlog`, `coyoteexpress`, `delivromail`, `dhd`, `distazero`, `ecorapideexpress`, `elguidedelivery`, `expediachrono`, `fasthorse`, `fretdirect`, `fzdelivery`, `golivri`, `gsecommerce`, `hhdexpress`, `imir`, `jaguar`, `joexpress`, `lihlihexpress`, `lynx`, `majorex`, `mazaya`, `medexpress`, `monohub`, `msmgo`, `navexdelivery`, `negmarexpress`, `oksbox`, `omexpress`, `ontimeexpress`, `oneexpress`, `ovred`, `packers`, `pdex`, `prest`, `quickdeliverydz`, `rblivraison`, `redex`, `rexlivraison`, `rihalexpress`, `rj360express`, `rmexpress`, `rocketdelivery`, `royaumedelivery`, `rsexpress`, `rutaexpress`, `salvadelivery`, `samex`, `sbl`, `siexpress`, `speeddelivery`, `speedmail`, `sultancolisexpress`, `swiftexpress`, `tawsilstar`, `tslexpress`, `ultraexpress`, `univerdelivery`, `vitrans`, `wassimexpress`, `weeweedelivery`, `windelivery`, `worldexpress`, `zinyatec`.
+### Maystro
 
+Source: `packages/orchestrator/src/carriers/maystro.adapter.ts`
 
+- The normalizer unwraps `order`, `data`, or the first element of a top-level array.
+- Tracking candidates include `tracking_id`, `tracking_number`, `tracking`, `barcode`, `code_suivi`, `id`, `order_id`.
+- External order candidates include `external_order_id`, `external_id`, `order_number`, `order_id`, `reference`, `id`.
+- Customer, phone, and product aliases are read from the source. A `products` array may supply the first product name when a direct product field is absent.
+- Delivery type recognizes `delivery_type`, `type_livraison`, or `type` and treats a numeric/string `1` or stopdesk/retrait wording as pickup.
+- Status candidates include `status`, `current_status`, `statut`, `etat`, `state`, `order_status`; reason candidates include `reason`, `motif`, `motif_retour`, `sub_status`, `note_to_driver`, `note`, `comment`, `commentaire`.
+
+## 3. Status normalization and event behavior
+
+The adapters use fuzzy string matching, diacritic normalization, and their own status/reason parser. Depending on the input, they emit values such as `processing`, `dispatched`, `in_transit`, `at_local_hub`, `ready_for_pickup`, `out_for_delivery`, `attempt_failed`, `attempt_failed_no_answer`, `attempt_failed_unreachable`, `postponed`, `delivered`, or `returned`.
+
+Do not copy a guessed exhaustive vendor status dictionary into a courier configuration. To add a new raw status:
+1. Capture a real, redacted webhook payload from that carrier/account.
+2. Add a representative fixture/test.
+3. Check the adapter's exact parser ordering so a broad substring does not misclassify another state.
+4. Confirm the emitted status against the dashboard's supported status mapping and customer-facing labels.
+5. Verify repeat events do not create duplicate orders and that updates use the same external order ID or carrier tracking number.
+
+## 4. New Wilaya resolver: scope and caution
+
+The repository exports `ALGERIA_WILAYAS_58`, `ALGERIA_NEW_WILAYAS_2026`, and `resolveCourierWilayaCode()` from `packages/orchestrator/src/carriers/maystro.adapter.ts`. The latter maps configured codes 59–69 to a `shipAs` code.
+
+This is an internal code mapping. It is **not** evidence that every carrier currently accepts only codes 1–58, that a particular statute or transition date is in force, or that the mapping is universal across couriers. Check current official legal and provider documentation before making those claims or using a converted code for a real shipment. Do not apply this Maystro-oriented resolver to another carrier without explicit support.
+
+## 5. Shopify security note
+
+`ShopifyAdapter.verifyHmac()` exists in `packages/orchestrator/src/sources/shopify.adapter.ts`, but the current route `apps/web/src/app/api/webhooks/shopify/route.ts` only calls `ShopifyAdapter.normalize()` through the shared handler and does not call `verifyHmac()`. Do not claim the current Shopify webhook route validates Shopify HMAC signatures.
+
+## 6. Authentication and testing
+
+All carrier webhook routes use the shared `createWebhookHandler` in `apps/web/src/lib/webhook-handler.ts`. It resolves the merchant from the API key and passes a normalized `TrackingEvent` into the orchestrator. The shared handler accepts API key headers and legacy query parameters such as `?key=`; a query-bearing webhook URL is a secret and may be logged by intermediaries.
+
+Use a redacted payload captured from the exact provider integration when testing. Do not assume the adapter's candidate field names are a guarantee of provider behavior.

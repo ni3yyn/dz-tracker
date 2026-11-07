@@ -43,7 +43,16 @@ export class DZTrackerClient {
       telegram_consent_source: params.telegramConsent === true ? (params.telegramConsentSource || 'sdk') : null,
     };
     const url = `${this.baseUrl}/api/webhooks`;
-    if (this.debug) console.log('[DZTrackerClient] Sending tracking payload:', payload);
+    if (this.debug) {
+      console.log('[DZTrackerClient] Sending tracking request:', {
+        orderId: payload.order_id,
+        status: payload.status,
+        hasCustomerName: Boolean(payload.customer_name),
+        hasCustomerPhone: Boolean(payload.customer_phone),
+        hasProduct: Boolean(payload.product_name),
+        hasCarrierTrackingNumber: Boolean(payload.carrier_tracking_number),
+      });
+    }
 
     const result = await OfflineQueue.send(url, this.apiKey, payload, this.timeoutMs);
     const data = result.data || {};

@@ -312,3 +312,8 @@ npx dz-tracker install-skill
 ## License
 
 MIT
+
+
+### Debug logging and privacy
+
+Debug mode logs request metadata only (order ID, status, and whether optional fields are present). It does not log customer name, customer phone, the merchant API key, or the complete payload. Avoid logging the SDK client object or the value returned by getConfig(), because that contains the API key.
