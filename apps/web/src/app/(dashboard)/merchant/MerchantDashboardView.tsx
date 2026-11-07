@@ -848,10 +848,6 @@ export function MerchantDashboardView({
     });
   };
 
-  const allFilteredOrdersSelected =
-    filteredOrders.length > 0 &&
-    filteredOrders.every((order) => selectedOrderIds.includes(order.id));
-
   const toggleFilteredOrderSelection = (checked: boolean) => {
     setSelectedOrderIds((current) => {
       const next = new Set(current);
@@ -1529,6 +1525,10 @@ export async function processOrderAction(formData: FormData) {
 
     return list;
   }, [orders, searchTerm, statusFilter, carrierFilter, sortBy, activeTab]);
+
+  const allFilteredOrdersSelected =
+    filteredOrders.length > 0 &&
+    filteredOrders.every((order) => selectedOrderIds.includes(order.id));
 
   useEffect(() => {
     setVisibleOrders(20);
