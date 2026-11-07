@@ -153,8 +153,8 @@ export default async function MerchantDashboardPage() {
   const brandSubtitleRow = mappings?.find((m) => m.source_status === '__brand_subtitle__');
   const brandColor = brandSettings?.brandColor || brandColorRow?.display_status || '#09090B';
   const brandSubtitle = brandSettings?.brandSubtitle || brandSubtitleRow?.display_status || '';
-  // logo_url is stored inside brandSettings JSON (and optionally mirrored to merchants.logo_url)
-  const logoUrl: string | null = brandSettings?.logoUrl || (merchant as any)?.logo_url || null;
+  // merchants.logo_url is canonical; retain the JSON fallback for pre-migration data.
+  const logoUrl: string | null = (merchant as any)?.logo_url || brandSettings?.logoUrl || null;
 
   const cleanMappings = (mappings || []).filter((m) => !m.source_status.startsWith('__brand_'));
 
