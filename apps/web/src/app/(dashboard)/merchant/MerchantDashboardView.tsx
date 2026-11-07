@@ -1347,7 +1347,6 @@ export function MerchantDashboardView({
       name: 'Yalidine Express',
       symbol: 'Y',
       url: yalidineUrl,
-      header: `x-yalidine-secret: ${apiKey}`,
       method: 'POST (JSON)',
       hint: 'أضف هذا الرابط في لوحة ياليدين (Settings > Webhooks) أو اطلب من الدعم تفعيل Webhook لتغيير حالات الطرود تلقائياً.',
       caveat: 'تحقق من تفعيل Webhook الخارجي في حسابك لدى ياليدين لضمان وصول الأحداث الحية.',
@@ -1359,7 +1358,6 @@ export function MerchantDashboardView({
       symbol: 'E',
       subname: 'DHD, Conexlog, Noest, World Express...',
       url: ecotrackUrl,
-      header: `x-security-token: ${apiKey}`,
       method: 'POST (JSON)',
       hint: 'يدعم جميع شركات الشحن التي تعمل بنظام EcoTrack في الجزائر. ضع الرابط في خانة Webhook URL في لوحة حساب الشركة.',
       caveat: 'يدعم جميع أحداث شبكة إيكوتراك (cree, ramasse, transit, en_livraison, stopdesk, livre, retour).',
@@ -1370,7 +1368,6 @@ export function MerchantDashboardView({
       name: 'ZR Express',
       symbol: 'ZR',
       url: zrexpressUrl,
-      header: `Token ${apiKey}`,
       method: 'POST (JSON)',
       hint: 'من لوحة تحكم ZR Express، ابحث عن قسم Webhooks أو إشعارات الحالات، وأضف رابط تاجر تراك.',
       caveat: 'احفظ الإعدادات واطلب إرسال إشعار تجريبي للتأكد من المزامنة الفورية.',
@@ -1392,7 +1389,6 @@ export function MerchantDashboardView({
       name: 'Maystro Delivery',
       symbol: 'M',
       url: maystroUrl,
-      header: `x-api-key: ${apiKey}`,
       method: 'POST (JSON)',
       hint: 'من إعدادات Maystro Delivery، أضف رابط تاجر تراك في قسم Webhooks لتحديث حالات التوصيل عبر 58 ولاية.',
       caveat: 'يدعم مزامنة حالات ramasse, in_transit, at_local_hub, out_for_delivery, delivered, returned.',
@@ -1459,7 +1455,7 @@ export function CheckoutForm() {
       status: 'order_placed',
     });
 
-    // 🚀 التوجيه الفوري لصفحة التتبع بهويتك البصرية
+    // Redirect to the merchant-branded tracking page
     window.location.href = result.trackingUrl;
   };
 
@@ -1485,7 +1481,7 @@ export function CheckoutForm() {
       />
       
       <button type="submit" disabled={isLoading}>
-        {isLoading ? 'جاري التأكيد...' : 'تأكيد الطلب والدفع عند الاستلام 🚚'}
+        {isLoading ? 'جاري التأكيد...' : 'تأكيد الطلب والدفع عند الاستلام'}
       </button>
 
       {error && <p style={{ color: '#ef4444', fontSize: '13px' }}>{error.message}</p>}
@@ -5594,6 +5590,23 @@ export async function processOrderAction(formData: FormData) {
                             <p className="dz-int-guided-doc-link"><a href={`${siteUrl}/skill.md`} target="_blank" rel="noreferrer">فتح توثيق تاجر تراك للمطورين</a></p>
                           </details>
                           <details className="dz-int-guided-details">
+                            <summary>مرجع خصائص HTML للتتبع دون كتابة JavaScript</summary>
+                            <p>أضف خاصية التتبع إلى نموذج الدفع بعد تهيئة SDK في ترويسة الموقع.</p>
+                            <div className="dz-table-container">
+                              <table className="dz-data-table">
+                                <thead><tr><th>الخاصية</th><th>النوع</th><th>الاستخدام</th></tr></thead>
+                                <tbody>
+                                  <tr><td><code>data-dz-checkout</code></td><td>مطلوبة</td><td>تُضاف إلى عنصر form لتفعيل التقاط الطلب.</td></tr>
+                                  <tr><td><code>data-dz-redirect="tracking"</code></td><td>اختيارية</td><td>توجيه العميل إلى صفحة التتبع بعد تسجيل الطلب.</td></tr>
+                                  <tr><td><code>data-dz-field="name"</code></td><td>اختيارية</td><td>تحديد حقل اسم العميل عند اختلاف اسم الحقل في النموذج.</td></tr>
+                                  <tr><td><code>data-dz-field="phone"</code></td><td>اختيارية</td><td>تحديد حقل رقم هاتف العميل.</td></tr>
+                                  <tr><td><code>data-dz-field="wilaya"</code></td><td>اختيارية</td><td>تحديد حقل ولاية التوصيل.</td></tr>
+                                  <tr><td><code>data-dz-prevent-default="false"</code></td><td>اختيارية</td><td>السماح للنموذج بإكمال إرساله الأصلي بالتوازي مع التسجيل في تاجر تراك.</td></tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </details>
+                          <details className="dz-int-guided-details">
                             <summary>ربط Odoo أو نظام ERP مخصص</summary>
                             <p>يمكن إعداد Automated Action أو Webhook في نظام ERP لإرسال الطلبات أو أحداث الشحن إلى نقطة الاستقبال المخصصة.</p>
                             <div className="dz-int-guided-copy">
@@ -5624,12 +5637,12 @@ export async function processOrderAction(formData: FormData) {
 
                       {trackingSource === 'carrier' && selectedCarrier !== 'other' && activeCarrierConnection && (
                         <article className="dz-int-guided-panel">
-                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{integrationPlatform === 'website' ? '02' : '02'}</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
                           <div className="dz-int-guided-copy">
                             <div><small>رابط استقبال تحديثات الشحن</small><code dir="ltr">{activeCarrierConnection.url}</code></div>
                             <button type="button" onClick={() => copyToClipboard(activeCarrierConnection.url, `guided-carrier-${activeCarrierConnection.id}`)}>{copiedKey === `guided-carrier-${activeCarrierConnection.id}` ? <Icons.Check /> : <Icons.Copy />} نسخ الرابط</button>
                           </div>
-                          <div className="dz-int-guided-meta"><span>الطريقة</span><strong>{activeCarrierConnection.method}</strong><span>الترويسة عند طلبها</span><code dir="ltr">{activeCarrierConnection.header}</code></div>
+                          <div className="dz-int-guided-meta"><span>طريقة الإرسال</span><strong>{activeCarrierConnection.method}</strong><span>المصادقة</span><strong>مضمّنة في رابط الاستقبال الخاص بمتجرك</strong></div>
                           <ol className="dz-int-guided-steps">
                             <li>افتح لوحة شركة التوصيل أو تواصل مع دعمها لتفعيل Webhook خارجي.</li>
                             <li>أضف رابط الاستقبال وحدد أحداث تغيّر الحالة التي تريد إرسالها.</li>
