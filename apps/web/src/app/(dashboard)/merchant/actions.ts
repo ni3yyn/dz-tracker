@@ -43,6 +43,79 @@ export async function saveStatusMapping(formData: FormData) {
   return { success: true };
 }
 
+export async function deleteMerchantOrders(orderIds: string[]) {
+  if (!Array.isArray(orderIds) || orderIds.length === 0) {
+    return { error: 'يرجى تحديد طلب واحد على الأقل للحذف' };
+  }
+
+  const uniqueOrderIds = Array.from(new Set(orderIds));
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (uniqueOrderIds.length > 1000) {
+    return { error: 'يمكن حذف 1000 طلب كحد أقصى في العملية الواحدة' };
+  }
+
+  if (uniqueOrderIds.some((id) => typeof id !== 'string' || !uuidPattern.test(id))) {
+    return { error: 'توجد معرّفات طلبات غير صالحة' };
+  }
+
+  // Never trust a merchant ID supplied by the browser for destructive actions.
+  const authSupabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await authSupabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: 'انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مجدداً.' };
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data: merchant, error: merchantError } = await supabase
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  if (merchantError || !merchant) {
+    console.error('[DeleteOrders]: Could not resolve authenticated merchant:', merchantError?.message);
+    return { error: 'تعذر التحقق من ملكية المتجر لهذه الطلبات' };
+  }
+
+  // Verify every requested order belongs to this authenticated merchant.
+  const { data: ownedOrders, error: ownershipError } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('merchant_id', merchant.id)
+    .in('id', uniqueOrderIds);
+
+  if (ownershipError) {
+    console.error('[DeleteOrders]: Ownership verification failed:', ownershipError.message);
+    return { error: 'تعذر التحقق من الطلبات المحددة. لم يتم حذف أي طلب.' };
+  }
+
+  if ((ownedOrders || []).length !== uniqueOrderIds.length) {
+    return { error: 'بعض الطلبات المحددة غير موجودة أو لا تتبع متجرك. لم يتم حذف أي طلب.' };
+  }
+
+  const { data: deletedOrders, error: deleteError } = await supabase
+    .from('orders')
+    .delete()
+    .eq('merchant_id', merchant.id)
+    .in('id', uniqueOrderIds)
+    .select('id');
+
+  if (deleteError) {
+    console.error('[DeleteOrders]: Database deletion failed:', deleteError.message);
+    return { error: 'تعذر حذف الطلبات. لم يتم تأكيد اكتمال العملية.' };
+  }
+
+  const deletedCount = deletedOrders?.length || 0;
+
+  revalidatePath('/merchant');
+  return { success: true, deletedCount };
+}
+
 export async function updateOrderStatus(formData: FormData) {
   const orderId = formData.get('order_id') as string;
   const newStatus = formData.get('status') as string;
