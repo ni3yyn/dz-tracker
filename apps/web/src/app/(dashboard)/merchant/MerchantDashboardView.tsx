@@ -1857,6 +1857,78 @@ export async function processOrderAction(formData: FormData) {
         .dz-icon-btn { background: transparent; border: none; color: var(--ink-muted); cursor: pointer; padding: 4px; border-radius: 4px; transition: 0.2s; }
         .dz-icon-btn:hover { background: var(--border-soft); color: var(--ink-main); }
 
+        /* Compact, consistent 2x2 order action grid */
+        .dz-order-action-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-auto-rows: 40px;
+          gap: 7px;
+          width: 94px;
+          margin-inline: auto;
+          direction: rtl;
+        }
+        .dz-order-action-btn {
+          width: 100%;
+          min-width: 0;
+          height: 40px;
+          display: grid;
+          place-items: center;
+          padding: 0;
+          border: 1px solid #dfe6df;
+          border-radius: 11px;
+          background: #fff;
+          color: #405849;
+          box-shadow: 0 2px 6px rgba(29, 47, 34, .055);
+          text-decoration: none;
+          cursor: pointer;
+          transition: background .16s ease, border-color .16s ease, color .16s ease, transform .16s ease, box-shadow .16s ease;
+        }
+        .dz-order-action-btn svg { width: 17px; height: 17px; display: block; }
+        .dz-order-action-btn:hover {
+          background: #f3f7f2;
+          border-color: #b8c8b8;
+          color: #263f2d;
+          box-shadow: 0 4px 10px rgba(29, 47, 34, .09);
+          transform: translateY(-1px);
+        }
+        .dz-order-action-btn:active { transform: translateY(0); }
+        .dz-order-action-btn:focus-visible {
+          outline: 3px solid rgba(67, 109, 75, .25);
+          outline-offset: 2px;
+        }
+        .dz-order-action-btn.dz-order-action-whatsapp {
+          color: #167b45;
+          background: #f0faf3;
+          border-color: #cce8d4;
+        }
+        .dz-order-action-btn.dz-order-action-whatsapp:hover {
+          background: #e2f5e8;
+          border-color: #a8d9b7;
+        }
+        .dz-order-action-btn.dz-order-action-whatsapp.is-urgent {
+          color: #b42318;
+          background: #fff3f2;
+          border-color: #f4c5c1;
+        }
+        .dz-order-action-btn.dz-order-action-delete {
+          color: #b42318;
+          background: #fff7f6;
+          border-color: #f1d2cf;
+        }
+        .dz-order-action-btn.dz-order-action-delete:hover {
+          color: #fff;
+          background: #b42318;
+          border-color: #b42318;
+        }
+        .dz-order-action-btn.is-disabled {
+          color: #a3aca5;
+          background: #f7f8f6;
+          border-color: #e8ece7;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+
+
         /* FILTERS */
         .dz-filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
         .dz-filter-btn { padding: 8px 16px; border-radius: 99px; background: var(--surface); color: var(--ink-muted); font-size: 12px; font-weight: 600; border: 1px solid var(--border-soft); cursor: pointer; transition: 0.2s; box-shadow: var(--shadow-sm); }
