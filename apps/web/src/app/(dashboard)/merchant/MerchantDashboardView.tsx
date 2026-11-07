@@ -2434,24 +2434,64 @@ export async function processOrderAction(formData: FormData) {
           min-height: 42px;
           border-radius: 10px;
         }
-        .dz-order-detail-backdrop { position: fixed; inset: 0; z-index: 2147483000; display: flex; justify-content: flex-start; background: rgba(16,24,19,.34); backdrop-filter: blur(3px); }
-        .dz-order-detail-panel { width: min(460px, 100%); height: 100%; max-height: 100dvh; overflow-y: auto; padding: 27px; background: #fffefa; color: var(--ink-main); border-inline-start: 1px solid var(--border-soft); box-shadow: 0 20px 70px rgba(20,30,23,.2); animation: dz-detail-in .22s ease-out; }
-        @keyframes dz-detail-in { from { opacity: .6; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
-        .dz-order-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; padding-bottom: 20px; border-bottom: 1px solid var(--border-soft); }
-        .dz-order-detail-kicker { display: block; margin-bottom: 6px; color: var(--ink-muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
-        .dz-order-detail-head h2 { margin: 0; font-size: 22px; line-height: 1.45; letter-spacing: -.04em; overflow-wrap: anywhere; }
-        .dz-order-detail-head p { margin: 5px 0 0; color: var(--ink-muted); font-size: 11px; line-height: 1.7; }
-        .dz-order-detail-close { width: 34px; height: 34px; flex: 0 0 auto; border: 1px solid var(--border-soft); border-radius: 9px; display: grid; place-items: center; background: transparent; color: var(--ink-main); cursor: pointer; }
-        .dz-order-detail-status { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 19px 0; border-bottom: 1px solid var(--border-soft); }
-        .dz-order-detail-status small { display: block; margin-bottom: 5px; font-size: 9px; color: var(--ink-muted); }
-        .dz-order-detail-status strong { display: block; font-size: 14px; line-height: 1.6; }
-        .dz-order-detail-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 22px; }
-        .dz-order-detail-field { min-width: 0; padding: 15px 0; border-bottom: 1px solid var(--border-soft); }
-        .dz-order-detail-field span { display: block; margin-bottom: 5px; font-size: 9px; color: var(--ink-muted); }
-        .dz-order-detail-field strong { display: block; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
-        .dz-order-detail-note { margin-top: 20px; color: var(--ink-muted); font-size: 10px; line-height: 1.8; }
-        .dz-order-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 22px; }
-        .dz-order-detail-actions .dz-btn { flex: 1 1 auto; }
+        .dz-order-detail-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 2147483000;
+          display: flex;
+          justify-content: flex-start;
+          background: rgba(16, 24, 19, 0.45);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+          direction: rtl;
+          --bg-base: #F4F4F5;
+          --surface: #FFFFFF;
+          --surface-hover: #FAFAFA;
+          --ink-main: #09090B;
+          --ink-muted: #52525B;
+          --ink-light: #A1A1AA;
+          --border-soft: rgba(9, 9, 11, 0.08);
+          --border-strong: rgba(9, 9, 11, 0.18);
+        }
+        .dz-order-detail-backdrop input,
+        .dz-order-detail-backdrop select,
+        .dz-order-detail-backdrop button,
+        .dz-order-detail-backdrop textarea {
+          font-family: inherit;
+        }
+        .dz-order-detail-panel {
+          width: min(520px, 100%);
+          height: 100%;
+          max-height: 100dvh;
+          overflow-y: auto;
+          padding: 32px 28px;
+          background: #fffefa;
+          color: var(--ink-main);
+          border-inline-start: 1px solid var(--border-soft);
+          box-shadow: 0 20px 70px rgba(20, 30, 23, 0.25);
+          animation: dz-detail-in 0.22s ease-out;
+          font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+          box-sizing: border-box;
+        }
+        @keyframes dz-detail-in { from { opacity: 0.6; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+        .dz-order-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; padding-bottom: 22px; border-bottom: 1px solid var(--border-soft); }
+        .dz-order-detail-kicker { display: block; margin-bottom: 6px; color: var(--ink-muted); font-size: 12px; font-weight: 750; letter-spacing: 0.04em; }
+        .dz-order-detail-head h2 { margin: 0; font-size: 24px; font-weight: 850; line-height: 1.35; letter-spacing: -0.03em; color: var(--ink-main); overflow-wrap: anywhere; }
+        .dz-order-detail-head p { margin: 6px 0 0; color: var(--ink-muted); font-size: 14px; line-height: 1.6; }
+        .dz-order-detail-close { width: 38px; height: 38px; flex: 0 0 38px; border: 1px solid var(--border-soft); border-radius: 10px; display: grid; place-items: center; background: #f4f4f5; color: var(--ink-main); cursor: pointer; transition: all 0.2s ease; }
+        .dz-order-detail-close:hover { background: #e4e4e7; color: #000; }
+        .dz-order-detail-status { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 20px 0; border-bottom: 1px solid var(--border-soft); }
+        .dz-order-detail-status small { display: block; margin-bottom: 5px; font-size: 12.5px; font-weight: 600; color: var(--ink-muted); }
+        .dz-order-detail-status strong { display: block; font-size: 17px; font-weight: 800; line-height: 1.5; color: var(--ink-main); }
+        .dz-order-detail-status .dz-pill { font-size: 13px; font-weight: 750; padding: 6px 14px; border-radius: 99px; }
+        .dz-order-detail-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 20px; }
+        .dz-order-detail-field { min-width: 0; padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+        .dz-order-detail-field span { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--ink-muted); }
+        .dz-order-detail-field strong { display: block; font-size: 15px; font-weight: 700; line-height: 1.6; color: var(--ink-main); overflow-wrap: anywhere; }
+        .dz-order-detail-note { margin-top: 20px; color: var(--ink-muted); font-size: 13px; line-height: 1.75; }
+        .dz-order-detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+        .dz-order-detail-actions .dz-btn { flex: 1 1 auto; font-size: 14px; font-weight: 700; padding: 12px 18px; min-height: 44px; }
         .dz-admin-root .dz-orders-desktop { box-shadow: none; border-radius: 12px; border-color: var(--border-soft); }
         .dz-admin-root .dz-orders-desktop .dz-table-scroll { max-height: none; overflow-x: auto; overflow-y: visible; }
         .dz-admin-root .dz-orders-desktop th { white-space: nowrap; }
@@ -2461,40 +2501,45 @@ export async function processOrderAction(formData: FormData) {
         .dz-add-order-btn {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 7px;
           padding: 8px 16px;
-          border-radius: 8px;
-          background: #10b981;
-          color: #fff;
+          border-radius: 9px;
+          background: #263b30;
+          color: #fffefa;
           font-size: 12px;
           font-weight: 700;
-          border: none;
+          border: 1px solid #263b30;
           cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+          transition: all 0.2s var(--ease-out);
+          box-shadow: 0 2px 6px rgba(27, 39, 32, 0.12);
           white-space: nowrap;
         }
         .dz-add-order-btn:hover {
-          background: #059669;
+          background: #17231c;
+          border-color: #17231c;
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+          box-shadow: 0 4px 14px rgba(27, 39, 32, 0.22);
+        }
+        .dz-add-order-btn:active {
+          transform: translateY(0);
         }
         .dz-input-field {
           width: 100%;
-          padding: 9px 12px;
-          border-radius: 8px;
+          padding: 11px 14px;
+          border-radius: 9px;
           border: 1px solid var(--border-soft);
           background: #fff;
           color: var(--ink-main);
-          font-size: 12px;
+          font-size: 14px;
           font-family: inherit;
           outline: none;
-          transition: border-color 0.2s;
+          transition: border-color 0.2s, box-shadow 0.2s;
           box-sizing: border-box;
+          min-height: 44px;
         }
         .dz-input-field:focus {
-          border-color: #10b981;
-          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+          border-color: #263b30;
+          box-shadow: 0 0 0 3px rgba(38, 59, 48, 0.12);
         }
         @media (max-width: 1100px) {
           .dz-overview-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
@@ -5742,7 +5787,7 @@ export async function processOrderAction(formData: FormData) {
                 <div className="dz-order-detail-head">
                   <div>
                     <span className="dz-order-detail-kicker">شحنة تجريبية / يدوية</span>
-                    <h2 id="add-order-title" style={{ fontSize: '18px', fontWeight: 800 }}>إضافة طلب جديد</h2>
+                    <h2 id="add-order-title" style={{ fontSize: '22px', fontWeight: 850 }}>إضافة طلب جديد</h2>
                     <p>أدخل بيانات الطلب لتجربة التتبع المباشر وإرسال رابط تيليجرام</p>
                   </div>
                   <button
@@ -5759,34 +5804,35 @@ export async function processOrderAction(formData: FormData) {
                 {newOrderSuccess ? (
                   <div style={{ padding: '24px 0', textAlign: 'center' }}>
                     <div style={{
-                      width: '56px',
-                      height: '56px',
+                      width: '58px',
+                      height: '58px',
                       borderRadius: '50%',
                       background: '#dcfce7',
                       color: '#16a34a',
                       display: 'grid',
                       placeItems: 'center',
                       margin: '0 auto 16px',
-                      fontSize: '24px',
                     }}>
-                      ✓
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
                     </div>
-                    <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 800, color: 'var(--ink-main)' }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 800, color: 'var(--ink-main)' }}>
                       تم تسجيل الطلب بنجاح!
                     </h3>
-                    <p style={{ margin: '0 0 18px', fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+                    <p style={{ margin: '0 0 18px', fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.7 }}>
                       رقم الطلب: <strong>{newOrderSuccess.externalOrderId}</strong><br />
                       تم إدراج مهمة الإرسال في طابور تيليجرام (Outbox). سيتولى العامل إرسالها فور تشغيله.
                     </p>
 
                     <div style={{
                       background: 'var(--bg-base, #f4f5f1)',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      fontSize: '12px',
+                      padding: '14px',
+                      borderRadius: '10px',
+                      fontSize: '13px',
                       fontFamily: 'monospace',
                       wordBreak: 'break-all',
-                      marginBottom: '16px',
+                      marginBottom: '18px',
                       border: '1px solid var(--border-soft)',
                       textAlign: 'left',
                       direction: 'ltr',
@@ -5794,20 +5840,20 @@ export async function processOrderAction(formData: FormData) {
                       {`${siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/${newOrderSuccess.trackingUuid}`}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <a
                         href={`/t/${newOrderSuccess.trackingUuid}`}
                         target="_blank"
                         rel="noreferrer"
                         className="dz-btn"
-                        style={{ flex: 1, textDecoration: 'none' }}
+                        style={{ flex: 1, textDecoration: 'none', fontSize: '14px', padding: '12px 18px', minHeight: '44px' }}
                       >
                         <Icons.ExternalLink /> فتح صفحة التتبع
                       </a>
                       <button
                         type="button"
                         className="dz-btn dz-btn-outline"
-                        style={{ flex: 1 }}
+                        style={{ flex: 1, fontSize: '14px', padding: '12px 18px', minHeight: '44px' }}
                         onClick={() => {
                           const url = `${siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/${newOrderSuccess.trackingUuid}`;
                           copyToClipboard(url, 'new-tracking-link');
@@ -5821,7 +5867,7 @@ export async function processOrderAction(formData: FormData) {
                     <button
                       type="button"
                       className="dz-btn dz-btn-outline"
-                      style={{ width: '100%', marginTop: '12px' }}
+                      style={{ width: '100%', marginTop: '14px', fontSize: '14px', padding: '12px', minHeight: '44px' }}
                       onClick={() => {
                         setNewOrderSuccess(null);
                         setIsAddOrderModalOpen(false);
@@ -5831,15 +5877,16 @@ export async function processOrderAction(formData: FormData) {
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleCreateOrder} style={{ padding: '16px 0' }}>
+                  <form onSubmit={handleCreateOrder} style={{ padding: '18px 0' }}>
                     {addOrderError && (
                       <div style={{
                         background: '#fee2e2',
                         color: '#991b1b',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                        marginBottom: '14px',
+                        padding: '12px 16px',
+                        borderRadius: '9px',
+                        fontSize: '13.5px',
+                        fontWeight: 600,
+                        marginBottom: '16px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
@@ -5850,9 +5897,9 @@ export async function processOrderAction(formData: FormData) {
 
                     <input type="hidden" name="auto_enable_telegram" value="true" />
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                        <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
                           رقم الطلب (Order ID) *
                         </label>
                         <input
@@ -5866,9 +5913,9 @@ export async function processOrderAction(formData: FormData) {
                         />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                         <div>
-                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
                             اسم العميل *
                           </label>
                           <input
@@ -5881,7 +5928,7 @@ export async function processOrderAction(formData: FormData) {
                         </div>
 
                         <div>
-                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
                             رقم الهاتف *
                           </label>
                           <input
@@ -5895,9 +5942,9 @@ export async function processOrderAction(formData: FormData) {
                         </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                         <div>
-                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
                             شركة الشحن
                           </label>
                           <select name="carrier_name" className="dz-input-field" defaultValue="Yalidine Express">
@@ -5910,7 +5957,7 @@ export async function processOrderAction(formData: FormData) {
                         </div>
 
                         <div>
-                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
                             رقم التتبع لشركة الشحن
                           </label>
                           <input
@@ -5923,9 +5970,9 @@ export async function processOrderAction(formData: FormData) {
                         </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                         <div>
-                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
                             اسم المنتج (اختياري)
                           </label>
                           <input
@@ -5937,13 +5984,13 @@ export async function processOrderAction(formData: FormData) {
                         </div>
 
                         <div>
-                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink-main)' }}>
+                          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
                             حالة الشحنة الأولية
                           </label>
                           <select name="status_raw" className="dz-input-field" defaultValue="order_placed">
-                            <option value="order_placed">تم استلام الطلب 📝 (order_placed)</option>
-                            <option value="processing">قيد التجهيز 📦 (processing)</option>
-                            <option value="shipped">خرج للشحن والتوصيل 🚚 (shipped)</option>
+                            <option value="order_placed">تم استلام الطلب (order_placed)</option>
+                            <option value="processing">قيد التجهيز (processing)</option>
+                            <option value="shipped">خرج للشحن والتوصيل (shipped)</option>
                           </select>
                         </div>
                       </div>
@@ -5952,22 +5999,22 @@ export async function processOrderAction(formData: FormData) {
                       <div style={{
                         background: '#f0f9ff',
                         border: '1px solid #bae6fd',
-                        borderRadius: '10px',
-                        padding: '13px',
-                        marginTop: '4px',
+                        borderRadius: '11px',
+                        padding: '16px',
+                        marginTop: '6px',
                       }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
                           <input
                             type="checkbox"
                             name="telegram_consent"
                             defaultChecked={true}
-                            style={{ marginTop: '3px', width: '18px', height: '18px', accentColor: '#0284c7' }}
+                            style={{ marginTop: '3px', width: '20px', height: '20px', accentColor: '#0284c7' }}
                           />
                           <div>
-                            <strong style={{ display: 'block', fontSize: '13px', color: '#0369a1' }}>
-                              إرسال رابط التتبع فوراً عبر تيليجرام ✈️
+                            <strong style={{ display: 'block', fontSize: '14.5px', fontWeight: 800, color: '#0369a1' }}>
+                              إرسال رابط التتبع فوراً عبر تيليجرام
                             </strong>
-                            <span style={{ fontSize: '11px', color: '#0c4a6e', lineHeight: 1.55, display: 'block', marginTop: '2px' }}>
+                            <span style={{ fontSize: '13px', color: '#0c4a6e', lineHeight: 1.6, display: 'block', marginTop: '4px' }}>
                               يسجل موافقة العميل ويدرج رسالة التتبع في طابور <code>telegram_tracking_outbox</code> ليقوم العامل بتسليمها إلى هاتف العميل عبر تيليجرام تلقائياً.
                             </span>
                           </div>
@@ -5975,21 +6022,21 @@ export async function processOrderAction(formData: FormData) {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
                       <button
                         type="submit"
                         className="dz-btn"
                         disabled={isCreatingOrder}
-                        style={{ flex: 2, background: '#10b981' }}
+                        style={{ flex: 2, background: '#263b30', fontSize: '14px', fontWeight: 750, padding: '12px 20px', minHeight: '46px' }}
                       >
-                        {isCreatingOrder ? 'جاري إنشاء الطلب...' : '✓ إنشاء الطلب وجدولة التتبع'}
+                        {isCreatingOrder ? 'جاري إنشاء الطلب...' : 'إنشاء الطلب وجدولة التتبع'}
                       </button>
                       <button
                         type="button"
                         className="dz-btn dz-btn-outline"
                         onClick={() => setIsAddOrderModalOpen(false)}
                         disabled={isCreatingOrder}
-                        style={{ flex: 1 }}
+                        style={{ flex: 1, fontSize: '14px', fontWeight: 750, padding: '12px 20px', minHeight: '46px' }}
                       >
                         إلغاء
                       </button>

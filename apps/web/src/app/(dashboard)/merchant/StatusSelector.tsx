@@ -71,10 +71,10 @@ export function StatusSelector({ orderId, currentStatus }: Props) {
         style={{
           appearance: 'none',
           WebkitAppearance: 'none',
-          padding: '0.4rem 0.75rem 0.4rem 1.9rem',
-          borderRadius: '8px',
-          border: '1px solid rgba(9, 9, 11, 0.1)',
-          fontSize: '0.78rem',
+          padding: '0.55rem 0.9rem 0.55rem 2.2rem',
+          borderRadius: '9px',
+          border: '1px solid rgba(9, 9, 11, 0.12)',
+          fontSize: '0.875rem',
           fontWeight: '600',
           backgroundColor: '#FFFFFF',
           color: '#09090B',
@@ -83,6 +83,7 @@ export function StatusSelector({ orderId, currentStatus }: Props) {
           fontFamily: 'inherit',
           boxShadow: '0 1px 2px rgba(9, 9, 11, 0.03)',
           transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+          minHeight: '40px',
         }}
         onFocus={(e) => {
           e.currentTarget.style.borderColor = '#09090B';

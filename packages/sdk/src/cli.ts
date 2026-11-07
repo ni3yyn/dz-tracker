@@ -123,7 +123,7 @@ function handleTest() {
     }
 
     console.log('\n📡 Pinging DZ Tracking Webhook Gateway...');
-    const baseUrl = process.env.DZ_BASE_URL || 'https://dz-tracker-three.vercel.app';
+    const baseUrl = process.env.DZ_BASE_URL || 'https://tajertrack.vercel.app';
 
     try {
       const res = await fetch(`${baseUrl}/api/webhooks?key=${apiKey}`, {
@@ -167,9 +167,9 @@ function handleInit() {
       process.exit(1);
     }
 
-    rl.question('🌐 Enter Base URL (press Enter for default "https://dz-tracker-three.vercel.app"): ', (rawUrl) => {
+    rl.question('🌐 Enter Base URL (press Enter for default "https://tajertrack.vercel.app"): ', (rawUrl) => {
       rl.close();
-      const baseUrl = rawUrl.trim() || 'https://dz-tracker-three.vercel.app';
+      const baseUrl = rawUrl.trim() || 'https://tajertrack.vercel.app';
 
       // 1. Write to .env.local
       const envPath = path.join(process.cwd(), '.env.local');

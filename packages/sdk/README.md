@@ -51,7 +51,7 @@ Just add `initTracker` once in your app layout or theme header, and annotate you
 
   initTracker({
     apiKey: 'your_merchant_api_key',
-    baseUrl: 'https://dz-tracker-three.vercel.app' // or your custom domain
+    baseUrl: 'https://tajertrack.vercel.app' // or your custom domain
   });
 </script>
 
@@ -145,7 +145,7 @@ import { DZTrackerClient } from 'dz-tracking-sdk';
 
 const tracker = new DZTrackerClient({
   apiKey: process.env.DZ_MERCHANT_KEY!,
-  baseUrl: process.env.DZ_API_URL || 'https://dz-tracker-three.vercel.app',
+  baseUrl: process.env.DZ_API_URL || 'https://tajertrack.vercel.app',
 });
 
 export async function processOrderAction(formData: FormData) {

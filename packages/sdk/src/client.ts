@@ -18,7 +18,7 @@ export class DZTrackerClient {
     }
 
     this.apiKey = config.apiKey.trim();
-    this.baseUrl = (config.baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://dz-tracker-three.vercel.app')).replace(/\/$/, '');
+    this.baseUrl = (config.baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')).replace(/\/$/, '');
     this.timeoutMs = config.timeoutMs || 3500;
     this.debug = !!config.debug;
 
