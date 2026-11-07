@@ -22,7 +22,7 @@ export function renderConfirmationMessage(data: ConfirmationTemplateData): strin
   return (
     `${customerGreeting}\n` +
     `لديك طلب${orderRef} من متجر ${store} بانتظار تأكيدك. ✅\n\n` +
-    `للتأكيد أو الإلغاء، اضغط على الرابط التالي:\n` +
+    `لتأكيد الطلب أو طلب إلغائه، اضغط على الرابط التالي:\n` +
     `${data.confirmationUrl}\n\n` +
     (expiryNote ? `${expiryNote}\n\n` : '') +
     `شكراً لك.\n` +
