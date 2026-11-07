@@ -650,7 +650,7 @@ export function MerchantDashboardView({
   confirmationTelegramEnabled = false,
   initialUpsells = [],
 }: Props) {
-  const { confirm: confirmDialog } = useGlobalDialog();
+  const { alert: alertDialog, confirm: confirmDialog } = useGlobalDialog();
   const isUnlimitedPlan = subscription.tier === 'scale' || (subscription.limit !== undefined && subscription.limit >= 999999);
   const tierDefaults: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
   const normalizedLimit = isUnlimitedPlan 
@@ -886,7 +886,12 @@ export function MerchantDashboardView({
       const result = await deleteMerchantOrders(ids);
 
       if ('error' in result) {
-        showToast(result.error);
+        await alertDialog({
+          title: 'تعذر حذف الطلبات',
+          message: result.error,
+          confirmLabel: 'حسناً',
+          tone: 'warning',
+        });
         return;
       }
 
@@ -895,7 +900,12 @@ export function MerchantDashboardView({
       showToast(`تم حذف ${result.deletedCount} طلب بنجاح.`);
     } catch (error) {
       console.error('[MerchantDashboard]: Order deletion failed:', error);
-      showToast('تعذر حذف الطلبات حالياً. يرجى المحاولة مجدداً.');
+      await alertDialog({
+        title: 'حدث خطأ أثناء الحذف',
+        message: 'تعذر حذف الطلبات حالياً. يرجى المحاولة مجدداً.',
+        confirmLabel: 'حسناً',
+        tone: 'warning',
+      });
     } finally {
       setIsDeletingOrders(false);
     }
