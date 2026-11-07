@@ -2350,6 +2350,8 @@ export async function processOrderAction(formData: FormData) {
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
           border-top: 1px solid var(--border-soft);
         }
+        /* Override the first-child padding reset — analytics cards always need top padding */
+        .dz-analytics-section.dz-overview-section:first-child { padding-top: 24px; border-top: 1px solid var(--border-soft); }
         .dz-analytics-section .dz-overview-section-head {
           display: flex;
           justify-content: space-between;
@@ -2645,6 +2647,7 @@ export async function processOrderAction(formData: FormData) {
           .dz-analytics-kpis .dz-overview-kpi { border-inline-start: 0; border-bottom: 1px solid var(--border-soft); padding: 18px 20px; }
           .dz-analytics-kpis .dz-overview-kpi:last-child { grid-column: span 1; border-top: 0; border-bottom: 0; }
           .dz-analytics-section { padding: 18px 18px; }
+          .dz-analytics-section.dz-overview-section:first-child { padding-top: 18px; }
           .dz-analytics-bar-row { grid-template-columns: 92px minmax(0, 1fr) 30px; gap: 10px; }
           .dz-analytics-day { font-size: 12.5px; }
           .dz-analytics-day small { font-size: 11px; }
