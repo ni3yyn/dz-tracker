@@ -4317,7 +4317,7 @@ export async function processOrderAction(formData: FormData) {
                 {/* SMART SCRAPER BAR */}
                 <div className="dz-smart-fetch-box">
                   <label className="dz-smart-fetch-label">
-                    ⚡ جلب تلقائي بالرابط (Shopify, YouCan, WooCommerce, متجر خاص)
+                   جلب تلقائي بالرابط (Shopify, YouCan, WooCommerce, متجر خاص)
                   </label>
                   <div className="dz-smart-fetch-row">
                     <input
@@ -4340,7 +4340,7 @@ export async function processOrderAction(formData: FormData) {
                       disabled={isScrapingUpsell || !upsellScrapeUrl.trim()}
                     >
                       <Icons.Sparkles />
-                      {isScrapingUpsell ? 'جاري الاستخراج...' : 'جلب تلقائي ⚡'}
+                      {isScrapingUpsell ? 'جاري الاستخراج...' : 'جلب تلقائي'}
                     </button>
                   </div>
                   {scrapeUpsellError && (
