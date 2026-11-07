@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from 'react';
 import { respondToConfirmation } from './actions';
+import styles from './confirm.module.css';
 
 type ConfirmStatus = 'pending' | 'confirmed' | 'cancelled' | 'expired' | 'invalid';
 
@@ -11,8 +12,10 @@ interface Props {
   orderNumber?: string;
   customerName?: string;
   productName?: string;
+  productImage?: string;
   storeName?: string;
   logoUrl?: string;
+  brandColor?: string;
 }
 
 export function ConfirmOrderView({
@@ -21,264 +24,232 @@ export function ConfirmOrderView({
   orderNumber,
   customerName,
   productName,
+  productImage,
   storeName,
   logoUrl,
+  brandColor = '#273b30',
 }: Props) {
   const [status, setStatus] = useState<ConfirmStatus>(initialStatus);
   const [isPending, startTransition] = useTransition();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const accent = /^#[0-9a-f]{6}$/i.test(brandColor) ? brandColor : '#273b30';
 
   const handleResponse = (action: 'confirm' | 'cancel') => {
+    setActionError(null);
     startTransition(async () => {
       const result = await respondToConfirmation(token, action);
       if (result.success && result.status) {
         setStatus(result.status);
+      } else {
+        setActionError(result.error || 'تعذر تسجيل ردك. يرجى المحاولة مجدداً.');
       }
     });
   };
 
-  const storeLetter = storeName?.trim()[0]?.toUpperCase() || 'م';
-
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: '#f4f7f4',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px 16px',
-      fontFamily: "'Readex Pro', 'Noto Sans Arabic', system-ui, sans-serif",
-      direction: 'rtl',
-    }}>
-      {/* Card */}
-      <div style={{
-        background: '#fff',
-        borderRadius: '20px',
-        padding: '32px 24px',
-        maxWidth: '420px',
-        width: '100%',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-        textAlign: 'center',
-      }}>
-        {/* Logo / Avatar */}
-        <div style={{
-          width: 64,
-          height: 64,
-          borderRadius: '50%',
-          background: '#27342d',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: '0 auto 20px',
-          overflow: 'hidden',
-        }}>
-          {logoUrl ? (
-            <img src={logoUrl} alt={storeName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+    <main className={styles.page} dir="rtl" style={{ ['--confirm-brand' as string]: accent } as React.CSSProperties}>
+      <div className={styles.ambient} aria-hidden="true">
+        <span className={styles.ambientOrbOne} />
+        <span className={styles.ambientOrbTwo} />
+      </div>
+
+      <section className={styles.shell} aria-labelledby="confirm-title">
+        <header className={styles.merchantHeader}>
+          <div className={styles.logoFrame}>
+            {logoUrl ? (
+              <img className={styles.logo} src={logoUrl} alt={storeName ? `شعار ${storeName}` : 'شعار المتجر'} />
+            ) : (
+              <StoreMark />
+            )}
+          </div>
+          <div className={styles.merchantIdentity}>
+            <div className={styles.storeName}>{storeName || 'متجرك'}</div>
+            <div className={styles.storeCaption}>تجربة تأكيد الطلب</div>
+          </div>
+        </header>
+
+        <div className={styles.content}>
+          {status === 'pending' ? (
+            <>
+              <div className={styles.intro}>
+                <div className={styles.statusIcon}><PackageCheckIcon /></div>
+                <span className={styles.eyebrow}>مراجعة الطلب</span>
+                <h1 id="confirm-title" className={styles.title}>تأكيد طلبك</h1>
+                <p className={styles.description}>
+                  {customerName ? `مرحباً ${customerName}، راجع تفاصيل طلبك قبل التأكيد.` : 'يرجى مراجعة تفاصيل طلبك قبل التأكيد.'}
+                </p>
+              </div>
+
+              <OrderSummary
+                orderNumber={orderNumber}
+                productName={productName}
+                productImage={productImage}
+              />
+
+              <p className={styles.question}>هل ترغب في تأكيد هذا الطلب والمتابعة؟</p>
+              {actionError && <p className={styles.errorMessage} role="alert">{actionError}</p>}
+
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={styles.confirmButton}
+                  onClick={() => handleResponse('confirm')}
+                  disabled={isPending}
+                >
+                  {isPending ? <Spinner /> : <CheckCircleIcon />}
+                  <span>{isPending ? 'جارٍ تسجيل التأكيد...' : 'نعم، أؤكد طلبي'}</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.cancelButton}
+                  onClick={() => handleResponse('cancel')}
+                  disabled={isPending}
+                >
+                  <XCircleIcon />
+                  <span>أطلب إلغاء الطلب</span>
+                </button>
+              </div>
+            </>
           ) : (
-            <span style={{ color: '#fff', fontSize: 24, fontWeight: 700 }}>{storeLetter}</span>
+            <ResponseState status={status} orderNumber={orderNumber} />
           )}
         </div>
 
-        {storeName && (
-          <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 4px' }}>{storeName}</p>
-        )}
+        <footer className={styles.footer}>
+          <span>مشغّل بواسطة</span>
+          <strong>TajerTrack</strong>
+        </footer>
+      </section>
+    </main>
+  );
+}
 
-        {/* Status-specific content */}
-        {status === 'pending' && (
-          <PendingView
-            orderNumber={orderNumber}
-            customerName={customerName}
-            productName={productName}
-            isPending={isPending}
-            onConfirm={() => handleResponse('confirm')}
-            onCancel={() => handleResponse('cancel')}
-          />
-        )}
+function OrderSummary({
+  orderNumber,
+  productName,
+  productImage,
+}: {
+  orderNumber?: string;
+  productName?: string;
+  productImage?: string;
+}) {
+  if (!orderNumber && !productName && !productImage) return null;
 
-        {status === 'confirmed' && (
-          <ResponseView
-            icon="✅"
-            title="تم تأكيد طلبك"
-            message="شكراً! تم تأكيد طلبك بنجاح وسيتم التواصل معك قريباً."
-            color="#15803d"
-            bg="rgba(21,128,61,0.08)"
-          />
-        )}
+  return (
+    <section className={styles.orderSummary} aria-label="تفاصيل الطلب">
+      <div className={styles.summaryHeading}>تفاصيل الطلب</div>
+      {productImage && (
+        <div className={styles.productRow}>
+          <img className={styles.productImage} src={productImage} alt={productName || 'صورة المنتج'} />
+          {productName && <strong className={styles.productName}>{productName}</strong>}
+        </div>
+      )}
+      {!productImage && productName && <div className={styles.productText}>{productName}</div>}
+      {orderNumber && (
+        <div className={styles.orderNumberRow}>
+          <span>رقم الطلب</span>
+          <strong dir="ltr">#{orderNumber}</strong>
+        </div>
+      )}
+    </section>
+  );
+}
 
-        {status === 'cancelled' && (
-          <ResponseView
-            icon="❌"
-            title="تم تسجيل طلب الإلغاء"
-            message="تم إرسال طلب الإلغاء إلى المتجر لمراجعته. هذا لا يوقف الشحنة تلقائياً؛ سيتواصل معك المتجر لتأكيد إمكانية الإيقاف."
-            color="#dc2626"
-            bg="rgba(220,38,38,0.08)"
-          />
-        )}
+function ResponseState({ status, orderNumber }: { status: Exclude<ConfirmStatus, 'pending'>; orderNumber?: string }) {
+  const content = {
+    confirmed: {
+      title: 'تم تأكيد طلبك',
+      message: 'شكراً لك. تم تسجيل تأكيدك بنجاح، وسيتم التواصل معك عند تجهيز الطلب.',
+      tone: 'success',
+      icon: <CheckCircleIcon />,
+    },
+    cancelled: {
+      title: 'تم تسجيل طلب الإلغاء',
+      message: 'وصل طلب الإلغاء إلى المتجر لمراجعته. هذا الإجراء لا يوقف الشحنة تلقائياً؛ سيتواصل معك المتجر لتأكيد إمكانية الإيقاف.',
+      tone: 'danger',
+      icon: <XCircleIcon />,
+    },
+    expired: {
+      title: 'انتهت صلاحية الرابط',
+      message: 'انتهت صلاحية رابط التأكيد. يرجى التواصل مع المتجر مباشرة.',
+      tone: 'warning',
+      icon: <ClockIcon />,
+    },
+    invalid: {
+      title: 'الرابط غير صالح',
+      message: 'تعذر العثور على طلب مرتبط بهذا الرابط، أو أن الرابط غير صالح.',
+      tone: 'muted',
+      icon: <LinkOffIcon />,
+    },
+  }[status];
 
-        {status === 'expired' && (
-          <ResponseView
-            icon="⏰"
-            title="انتهت صلاحية الرابط"
-            message="انتهت صلاحية رابط التأكيد. يرجى التواصل مع المتجر مباشرة."
-            color="#d97706"
-            bg="rgba(217,119,6,0.08)"
-          />
-        )}
-
-        {status === 'invalid' && (
-          <ResponseView
-            icon="🔗"
-            title="رابط غير صالح"
-            message="هذا الرابط غير صالح أو تم استخدامه من قبل."
-            color="#64748b"
-            bg="rgba(100,116,139,0.08)"
-          />
-        )}
-
-        {/* Footer */}
-        <p style={{ color: '#94a3b8', fontSize: 11, marginTop: 24, marginBottom: 0 }}>
-          مشغّل بواسطة TajerTrack
-        </p>
-      </div>
+  return (
+    <div className={styles.responseState} data-tone={content.tone}>
+      <div className={styles.responseIcon}>{content.icon}</div>
+      <span className={styles.eyebrow}>حالة الطلب</span>
+      <h1 id="confirm-title" className={styles.title}>{content.title}</h1>
+      {orderNumber && <div className={styles.responseOrder}>طلب رقم <strong dir="ltr">#{orderNumber}</strong></div>}
+      <p className={styles.responseMessage}>{content.message}</p>
     </div>
   );
 }
 
-function PendingView({
-  orderNumber,
-  customerName,
-  productName,
-  isPending,
-  onConfirm,
-  onCancel,
-}: {
-  orderNumber?: string;
-  customerName?: string;
-  productName?: string;
-  isPending: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
+function StoreMark() {
   return (
-    <>
-      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>
-        تأكيد الطلب
-      </h1>
-      {customerName && (
-        <p style={{ color: '#475569', fontSize: 14, margin: '0 0 16px' }}>
-          مرحباً {customerName} 👋
-        </p>
-      )}
-
-      {/* Order summary box */}
-      <div style={{
-        background: '#f8fafc',
-        border: '1px solid #e2e8f0',
-        borderRadius: 12,
-        padding: '14px 16px',
-        marginBottom: 24,
-        textAlign: 'right',
-      }}>
-        {orderNumber && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#475569', marginBottom: productName ? 6 : 0 }}>
-            <span style={{ color: '#94a3b8' }}>رقم الطلب</span>
-            <span style={{ fontWeight: 600, color: '#0f172a' }}>#{orderNumber}</span>
-          </div>
-        )}
-        {productName && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#475569' }}>
-            <span style={{ color: '#94a3b8' }}>المنتج</span>
-            <span style={{ fontWeight: 500, color: '#0f172a', maxWidth: 180, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{productName}</span>
-          </div>
-        )}
-      </div>
-
-      <p style={{ color: '#475569', fontSize: 14, margin: '0 0 20px', lineHeight: 1.6 }}>
-        هل تريد تأكيد هذا الطلب والمتابعة؟
-      </p>
-
-      {/* Action buttons */}
-      <div style={{ display: 'flex', gap: 10, flexDirection: 'column' }}>
-        <button
-          onClick={onConfirm}
-          disabled={isPending}
-          style={{
-            background: isPending ? '#94a3b8' : '#15803d',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 12,
-            padding: '14px 20px',
-            fontSize: 15,
-            fontWeight: 700,
-            cursor: isPending ? 'not-allowed' : 'pointer',
-            fontFamily: 'inherit',
-            transition: 'background 0.2s',
-            width: '100%',
-          }}
-        >
-          {isPending ? 'جاري المعالجة...' : '✅ نعم، أؤكد طلبي'}
-        </button>
-
-        <button
-          onClick={onCancel}
-          disabled={isPending}
-          style={{
-            background: 'transparent',
-            color: isPending ? '#94a3b8' : '#dc2626',
-            border: `1.5px solid ${isPending ? '#e2e8f0' : '#fecaca'}`,
-            borderRadius: 12,
-            padding: '13px 20px',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: isPending ? 'not-allowed' : 'pointer',
-            fontFamily: 'inherit',
-            transition: 'all 0.2s',
-            width: '100%',
-          }}
-        >
-          ⚠️ طلب إلغاء الطلب
-        </button>
-      </div>
-    </>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 9.5 4.6 4h14.8L21 9.5" />
+      <path d="M3 9.5c0 1.7 1.2 2.8 2.7 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.6 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.7 2.8S19 11.2 19 9.5" />
+      <path d="M5.2 12.2V20h13.6v-7.8M9 20v-5h6v5" />
+    </svg>
   );
 }
 
-function ResponseView({
-  icon,
-  title,
-  message,
-  color,
-  bg,
-}: {
-  icon: string;
-  title: string;
-  message: string;
-  color: string;
-  bg: string;
-}) {
+function PackageCheckIcon() {
   return (
-    <>
-      <div style={{
-        fontSize: 48,
-        lineHeight: 1,
-        margin: '0 0 16px',
-      }}>
-        {icon}
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 700, color, margin: '0 0 12px' }}>
-        {title}
-      </h1>
-      <div style={{
-        background: bg,
-        borderRadius: 10,
-        padding: '12px 16px',
-        marginBottom: 8,
-      }}>
-        <p style={{ color: '#475569', fontSize: 14, margin: 0, lineHeight: 1.6 }}>
-          {message}
-        </p>
-      </div>
-    </>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+      <path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12.1V21" />
+      <path d="m9 15 1.8 1.8 4.2-4.2" />
+    </svg>
   );
 }
 
+function CheckCircleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 12 2.6 2.6L16.5 9" />
+    </svg>
+  );
+}
+
+function XCircleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="m9 9 6 6m0-6-6 6" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" />
+    </svg>
+  );
+}
+
+function LinkOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m10 13.5 4-4m-7.5 7.5-1 1a4 4 0 0 1-5.7-5.7l4-4a4 4 0 0 1 5.7 0M14 10.5l1-1a4 4 0 0 1 5.7 5.7l-2 2" transform="translate(2 -1)" />
+      <path d="M4 4 20 20" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return <span className={styles.spinner} aria-hidden="true" />;
+}
