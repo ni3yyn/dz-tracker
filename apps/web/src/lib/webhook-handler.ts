@@ -192,6 +192,37 @@ export function createWebhookHandler(options: WebhookHandlerOptions) {
         );
       }
 
+      // 8. إذا كان طلباً جديداً، تحقق من إعدادات التأكيد وأضفه لقائمة الانتظار
+      if (result.isNewOrder && result.orderId) {
+        try {
+          const { data: merchantFull } = await supabase
+            .from('merchants')
+            .select('confirmation_telegram_enabled, subscription_tier, subscription_status')
+            .eq('id', merchant.id)
+            .maybeSingle();
+
+          const isPaid =
+            (merchantFull?.subscription_tier || 'starter') !== 'starter' &&
+            merchantFull?.subscription_status === 'active';
+
+          if (isPaid && (merchantFull as any)?.confirmation_telegram_enabled && normalizedEvent.customerPhone) {
+            const idempotencyKey = `confirm:${merchant.id}:${result.orderId}`;
+            await supabase
+              .from('order_confirmation_outbox')
+              .insert({
+                order_id: result.orderId,
+                merchant_id: merchant.id,
+                idempotency_key: idempotencyKey,
+              })
+              .select()
+              .maybeSingle(); // ignore duplicate key errors — job already enqueued
+          }
+        } catch (confirmErr: any) {
+          // Non-fatal: log and continue — confirmation is optional
+          console.warn('[ConfirmEnqueue]: Failed to enqueue confirmation job:', confirmErr?.message);
+        }
+      }
+
       // حفظ النتيجة بنجاح في سجل الـ Idempotency
       IdempotencyEngine.complete(fingerprint, {
         trackingUuid: result.trackingUuid,

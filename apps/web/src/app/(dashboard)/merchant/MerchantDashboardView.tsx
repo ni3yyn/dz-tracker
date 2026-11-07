@@ -21,6 +21,7 @@ import {
   deleteMerchantUpsell,
   toggleMerchantUpsell,
   reorderMerchantUpsell,
+  toggleConfirmationTelegram,
 } from './actions';
 import {
   TimelineEvent,
@@ -48,6 +49,7 @@ interface OrderItem {
   carrier_tracking_number: string | null;
   tracking_uuid: string;
   created_at: string;
+  confirmation_status?: 'pending' | 'confirmed' | 'cancelled' | null;
 }
 
 interface MappingItem {
@@ -137,6 +139,7 @@ interface Props {
   subscription?: SubscriptionInfo;
   payments?: PaymentRecord[];
   telegramTrackingLinkEnabled?: boolean;
+  confirmationTelegramEnabled?: boolean;
   initialUpsells?: MerchantUpsellItem[];
 }
 
@@ -641,6 +644,7 @@ export function MerchantDashboardView({
   subscription = { tier: 'starter', status: 'active', limit: 30, used: 0, expiresAt: null },
   payments = [],
   telegramTrackingLinkEnabled = false,
+  confirmationTelegramEnabled = false,
   initialUpsells = [],
 }: Props) {
   const isUnlimitedPlan = subscription.tier === 'scale' || (subscription.limit !== undefined && subscription.limit >= 999999);
@@ -713,6 +717,8 @@ export function MerchantDashboardView({
   const [integrationSection, setIntegrationSection] = useState<'sdk' | 'carriers' | 'shopify' | 'telegram' | 'wizard'>('sdk');
   const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
   const [isSavingTelegram, startTransitionTelegram] = useTransition();
+  const [confirmationEnabled, setConfirmationEnabled] = useState(confirmationTelegramEnabled);
+  const [isSavingConfirmation, startTransitionConfirmation] = useTransition();
   const [telegramFeedback, setTelegramFeedback] = useState<string | null>(null);
   const [sdkCodeTab, setSdkCodeTab] = useState<'html' | 'react' | 'node' | 'curl' | 'agent'>('html');
   const [packageManager, setPackageManager] = useState<'npm' | 'pnpm' | 'yarn' | 'bun'>('npm');
@@ -3806,6 +3812,9 @@ export async function processOrderAction(formData: FormData) {
                             <td>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
                                 <span className={`dz-pill dz-pill-${badgeStyle}`}>{getStatusLabel(order.current_status)}</span>
+                                {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600 }}>✅ مؤكد</span>}
+                                {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600 }}>❌ ملغي</span>}
+                                {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600 }}>⏳ بانتظار التأكيد</span>}
                                 <StatusSelector orderId={order.id} currentStatus={order.current_status} />
                               </div>
                             </td>
@@ -3834,7 +3843,12 @@ export async function processOrderAction(formData: FormData) {
                     <article key={`mobile-${order.id}`} className="dz-order-mobile-card">
                       <div className="dz-order-mobile-top">
                         <div className="dz-order-mobile-number"><strong>{order.external_order_id}</strong><small>تاريخ التسجيل: {formatOrderDate(order.created_at)}</small></div>
-                        <span className={`dz-pill dz-pill-${badgeStyle}`}>{getStatusLabel(order.current_status)}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span className={`dz-pill dz-pill-${badgeStyle}`}>{getStatusLabel(order.current_status)}</span>
+                          {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600, whiteSpace: 'nowrap' }}>✅ مؤكد</span>}
+                          {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600, whiteSpace: 'nowrap' }}>❌ ملغي</span>}
+                          {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600, whiteSpace: 'nowrap' }}>⏳ بانتظار التأكيد</span>}
+                        </div>
                       </div>
                       <div className="dz-order-mobile-customer">{order.customer_name || 'عميل'}</div>
                       <div className="dz-order-mobile-phone">
@@ -5307,6 +5321,63 @@ export async function processOrderAction(formData: FormData) {
                     {telegramFeedback && (
                       <div style={{ marginTop: '16px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(34, 197, 94, 0.1)', color: '#15803d', fontSize: '13px', fontWeight: 600 }}>
                         ✓ {telegramFeedback}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Confirmation Request Toggle ── */}
+                  <div style={{ padding: '20px', border: '1px solid var(--border-soft)', borderRadius: '14px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '16px' }}>
+                      <div style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>✅</div>
+                      <div style={{ flex: 1 }}>
+                        <strong style={{ display: 'block', fontSize: '15px', color: 'var(--ink-main)', marginBottom: '4px' }}>
+                          طلب تأكيد الطلب من الزبون
+                        </strong>
+                        <p style={{ fontSize: '13px', color: 'var(--ink-muted)', margin: 0, lineHeight: 1.6 }}>
+                          عند تسجيل طلب جديد، يتلقى الزبون رسالة تيليجرام برابط تأكيد مؤمّن. بضغطة واحدة يؤكد أو يلغي الطلب — وتصلك النتيجة فوراً في لوحة التحكم.
+                        </p>
+                      </div>
+                    </div>
+
+                    {!hasActivePaidPlan ? (
+                      <div style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: '10px', padding: '12px 14px', fontSize: '13px', color: '#92400e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🔒 هذه الميزة متاحة للباقات المدفوعة فقط (Basic، Growth، Scale)
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '20px', background: confirmationEnabled ? 'rgba(34, 197, 94, 0.12)' : 'rgba(100, 116, 139, 0.1)', color: confirmationEnabled ? '#15803d' : '#64748b', fontWeight: 600 }}>
+                          {confirmationEnabled ? '● مفعّل' : '○ معطّل'}
+                        </span>
+                        <button
+                          style={{
+                            background: confirmationEnabled ? '#dc2626' : '#27342d',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '8px 18px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: isSavingConfirmation ? 'wait' : 'pointer',
+                            opacity: isSavingConfirmation ? 0.7 : 1,
+                            fontFamily: 'inherit',
+                          }}
+                          disabled={isSavingConfirmation}
+                          onClick={() => {
+                            const next = !confirmationEnabled;
+                            startTransitionConfirmation(async () => {
+                              setConfirmationEnabled(next);
+                              const res = await toggleConfirmationTelegram(next);
+                              if (res?.error) {
+                                setConfirmationEnabled(!next);
+                                showToast(res.error);
+                              } else {
+                                showToast(next ? 'تم تفعيل طلب التأكيد بنجاح!' : 'تم تعطيل طلب التأكيد.');
+                              }
+                            });
+                          }}
+                        >
+                          {isSavingConfirmation ? 'جاري التحديث...' : (confirmationEnabled ? 'تعطيل' : 'تفعيل الآن')}
+                        </button>
                       </div>
                     )}
                   </div>

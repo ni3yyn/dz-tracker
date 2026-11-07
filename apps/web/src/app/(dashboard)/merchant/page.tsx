@@ -22,7 +22,7 @@ export default async function MerchantDashboardPage() {
   // جلب ملف التاجر الحالي مع تفاصيل الاشتراك
   let { data: merchant } = await supabaseAdmin
     .from('merchants')
-    .select('id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url')
+    .select('id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url, confirmation_telegram_enabled')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
@@ -42,7 +42,7 @@ export default async function MerchantDashboardPage() {
         subscription_status: 'active',
         max_orders_limit: isAdmin ? 999999 : 30,
       })
-      .select('id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url')
+      .select('id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url, confirmation_telegram_enabled')
       .single();
 
     if (newMerchant) {
@@ -78,7 +78,7 @@ export default async function MerchantDashboardPage() {
   // جلب جميع الطلبات
   const { data: orders } = await supabaseAdmin
     .from('orders')
-    .select('id, external_order_id, customer_name, customer_phone, current_status, carrier_name, carrier_tracking_number, tracking_uuid, created_at')
+    .select('id, external_order_id, customer_name, customer_phone, current_status, carrier_name, carrier_tracking_number, tracking_uuid, created_at, confirmation_status')
     .eq('merchant_id', merchant.id)
     .order('created_at', { ascending: false });
 
@@ -210,6 +210,7 @@ export default async function MerchantDashboardPage() {
       }}
       payments={(payments || []) as any}
       telegramTrackingLinkEnabled={merchant.telegram_tracking_link_enabled ?? false}
+      confirmationTelegramEnabled={(merchant as any).confirmation_telegram_enabled ?? false}
       initialUpsells={(upsells || []) as any}
     />
   );

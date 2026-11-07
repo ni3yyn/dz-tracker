@@ -43,6 +43,7 @@ export interface ProcessEventOptions {
 export interface ProcessEventResult {
   success: boolean;
   trackingUuid?: string;
+  orderId?: string;
   deduplicated?: boolean;
   isNewOrder?: boolean;
   triggers?: TriggerResult[];
@@ -331,6 +332,7 @@ export class TrackingOrchestrator {
         return {
           success: true,
           trackingUuid,
+          orderId,
           deduplicated: false,
           isNewOrder: true,
           triggers,

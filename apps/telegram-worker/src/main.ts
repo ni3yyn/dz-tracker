@@ -3,6 +3,7 @@ import { MtcuteTelegramSender } from './telegram-client.js';
 import { TelegramQueueManager } from './queue.js';
 import { WorkerHealthMonitor } from './health.js';
 import { TelegramTrackingWorker } from './worker.js';
+import { TelegramConfirmationWorker } from './confirmation-worker.js';
 
 async function bootstrap(): Promise<void> {
   console.log('====================================================');
@@ -59,6 +60,7 @@ async function bootstrap(): Promise<void> {
   const shutdown = async (signal: string) => {
     console.log(`\n[Bootstrap]: Caught signal ${signal}. Initiating graceful shutdown...`);
     worker.stop();
+    confirmationWorker.stop();
     await sender.close();
     console.log('[Bootstrap]: Teardown complete. Exiting.');
     process.exit(0);
@@ -77,7 +79,13 @@ async function bootstrap(): Promise<void> {
 
   // 6. Ensure database worker state is active and start queue processing
   await queue.setWorkerEnabled(true);
-  await worker.start();
+
+  // Start both workers in parallel (they share the MTProto session + phone resolution throttle)
+  const confirmationWorker = new TelegramConfirmationWorker(config, queue, sender);
+  await Promise.all([
+    worker.start(),
+    confirmationWorker.start(),
+  ]);
 }
 
 bootstrap().catch((err) => {

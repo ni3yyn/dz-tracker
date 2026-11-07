@@ -17,6 +17,7 @@ export type Database = {
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
           telegram_tracking_link_enabled: boolean;
+          confirmation_telegram_enabled?: boolean;
           logo_url?: string | null;
         };
         Insert: {
@@ -31,6 +32,7 @@ export type Database = {
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
           telegram_tracking_link_enabled?: boolean;
+          confirmation_telegram_enabled?: boolean;
           logo_url?: string | null;
         };
         Update: {
@@ -45,6 +47,7 @@ export type Database = {
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
           telegram_tracking_link_enabled?: boolean;
+          confirmation_telegram_enabled?: boolean;
           logo_url?: string | null;
         };
         Relationships: [];
@@ -67,6 +70,11 @@ export type Database = {
           telegram_consent_at?: string | null;
           telegram_consent_source?: string | null;
           telegram_consent_version?: string | null;
+          confirmation_status?: 'pending' | 'confirmed' | 'cancelled' | null;
+          confirmation_token?: string | null;
+          confirmation_expires_at?: string | null;
+          confirmation_sent_at?: string | null;
+          confirmation_responded_at?: string | null;
         };
         Insert: {
           id?: string;
@@ -85,6 +93,11 @@ export type Database = {
           telegram_consent_at?: string | null;
           telegram_consent_source?: string | null;
           telegram_consent_version?: string | null;
+          confirmation_status?: 'pending' | 'confirmed' | 'cancelled' | null;
+          confirmation_token?: string | null;
+          confirmation_expires_at?: string | null;
+          confirmation_sent_at?: string | null;
+          confirmation_responded_at?: string | null;
         };
         Update: {
           id?: string;
@@ -103,6 +116,11 @@ export type Database = {
           telegram_consent_at?: string | null;
           telegram_consent_source?: string | null;
           telegram_consent_version?: string | null;
+          confirmation_status?: 'pending' | 'confirmed' | 'cancelled' | null;
+          confirmation_token?: string | null;
+          confirmation_expires_at?: string | null;
+          confirmation_sent_at?: string | null;
+          confirmation_responded_at?: string | null;
         };
         Relationships: [
           {
@@ -687,6 +705,75 @@ export type Database = {
           }
         ];
       };
+      order_confirmation_outbox: {
+        Row: {
+          id: string;
+          order_id: string;
+          merchant_id: string;
+          idempotency_key: string;
+          status: 'pending' | 'processing' | 'sent' | 'retry' | 'skipped' | 'failed' | 'dead_letter';
+          attempt_count: number;
+          max_attempts: number;
+          available_at: string;
+          locked_by: string | null;
+          locked_at: string | null;
+          lease_expires_at: string | null;
+          telegram_random_id: number | null;
+          telegram_user_id: number | null;
+          telegram_message_id: number | null;
+          result_code: string | null;
+          last_error_code: string | null;
+          last_error_message: string | null;
+          sent_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          merchant_id: string;
+          idempotency_key: string;
+          status?: 'pending' | 'processing' | 'sent' | 'retry' | 'skipped' | 'failed' | 'dead_letter';
+          attempt_count?: number;
+          max_attempts?: number;
+          available_at?: string;
+          locked_by?: string | null;
+          locked_at?: string | null;
+          lease_expires_at?: string | null;
+          telegram_random_id?: number | null;
+          telegram_user_id?: number | null;
+          telegram_message_id?: number | null;
+          result_code?: string | null;
+          last_error_code?: string | null;
+          last_error_message?: string | null;
+          sent_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          merchant_id?: string;
+          idempotency_key?: string;
+          status?: 'pending' | 'processing' | 'sent' | 'retry' | 'skipped' | 'failed' | 'dead_letter';
+          attempt_count?: number;
+          max_attempts?: number;
+          available_at?: string;
+          locked_by?: string | null;
+          locked_at?: string | null;
+          lease_expires_at?: string | null;
+          telegram_random_id?: number | null;
+          telegram_user_id?: number | null;
+          telegram_message_id?: number | null;
+          result_code?: string | null;
+          last_error_code?: string | null;
+          last_error_message?: string | null;
+          sent_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -730,6 +817,13 @@ export type Database = {
           upsell_id: string;
         };
         Returns: void;
+      };
+      claim_next_confirmation_job: {
+        Args: {
+          p_worker_id: string;
+          p_lease_seconds?: number;
+        };
+        Returns: Database['public']['Tables']['order_confirmation_outbox']['Row'][];
       };
     };
     Enums: {

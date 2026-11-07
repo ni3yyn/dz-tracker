@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@saas/database';
 import { WorkerConfig } from './config.js';
-import { OutboxJob, OutboxStatus, AttemptOperation } from './delivery-state.js';
+import { OutboxJob, OutboxStatus, AttemptOperation, ConfirmationJob } from './delivery-state.js';
 
 export interface OrderWithMerchant {
   id: string;
@@ -15,6 +15,9 @@ export interface OrderWithMerchant {
     id: string;
     store_name: string;
     telegram_tracking_link_enabled: boolean;
+    confirmation_telegram_enabled?: boolean;
+    subscription_tier?: string;
+    subscription_status?: string;
   } | null;
 }
 
@@ -237,5 +240,98 @@ export class TelegramQueueManager {
     } catch (err: any) {
       console.warn('[QueueManager]: Warning while reserving phone resolution slot:', err?.message || err);
     }
+  }
+
+  // ─── Confirmation Outbox ───────────────────────────────────────────────────
+
+  async claimNextConfirmationJob(workerId: string, leaseSeconds: number): Promise<ConfirmationJob | null> {
+    const { data, error } = await this.supabase.rpc('claim_next_confirmation_job', {
+      p_worker_id: workerId,
+      p_lease_seconds: leaseSeconds,
+    });
+
+    if (error) {
+      console.error('[QueueManager]: Failed to claim next confirmation job:', error.message);
+      return null;
+    }
+
+    if (!data || data.length === 0) return null;
+    return data[0] as ConfirmationJob;
+  }
+
+  async updateConfirmationJob(
+    jobId: string,
+    updates: {
+      status?: ConfirmationJob['status'];
+      resultCode?: string;
+      errorCode?: string;
+      errorMessage?: string;
+      randomId?: bigint;
+      telegramUserId?: number;
+      telegramMessageId?: number;
+      availableAt?: string;
+      sentAt?: string;
+    }
+  ): Promise<void> {
+    const payload: any = {
+      updated_at: new Date().toISOString(),
+      locked_by: null,
+      lease_expires_at: null,
+    };
+
+    if (updates.status) payload.status = updates.status;
+    if (updates.resultCode) payload.result_code = updates.resultCode;
+    if (updates.errorCode !== undefined) payload.last_error_code = updates.errorCode;
+    if (updates.errorMessage !== undefined) {
+      payload.last_error_message = updates.errorMessage ? updates.errorMessage.slice(0, 500) : null;
+    }
+    if (updates.randomId !== undefined) payload.telegram_random_id = Number(updates.randomId);
+    if (updates.telegramUserId !== undefined) payload.telegram_user_id = updates.telegramUserId;
+    if (updates.telegramMessageId !== undefined) payload.telegram_message_id = updates.telegramMessageId;
+    if (updates.availableAt) payload.available_at = updates.availableAt;
+    if (updates.sentAt) payload.sent_at = updates.sentAt;
+
+    const { error } = await this.supabase
+      .from('order_confirmation_outbox')
+      .update(payload)
+      .eq('id', jobId);
+
+    if (error) {
+      console.error(`[QueueManager]: Error updating confirmation job ${jobId}:`, error.message);
+    }
+  }
+
+  async fetchOrderForConfirmation(orderId: string): Promise<OrderWithMerchant | null> {
+    const { data: order, error: orderErr } = await this.supabase
+      .from('orders')
+      .select('id, merchant_id, external_order_id, customer_phone, customer_name, tracking_uuid, telegram_consent_at')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (orderErr || !order) {
+      console.warn(`[QueueManager]: Could not fetch order ${orderId}:`, orderErr?.message);
+      return null;
+    }
+
+    const { data: merchant } = await this.supabase
+      .from('merchants')
+      .select('id, store_name, telegram_tracking_link_enabled, confirmation_telegram_enabled, subscription_tier, subscription_status')
+      .eq('id', order.merchant_id)
+      .maybeSingle();
+
+    return {
+      ...order,
+      telegram_consent_at: order.telegram_consent_at ?? null,
+      merchant: merchant
+        ? {
+            id: merchant.id,
+            store_name: merchant.store_name,
+            telegram_tracking_link_enabled: Boolean(merchant.telegram_tracking_link_enabled),
+            confirmation_telegram_enabled: Boolean((merchant as any).confirmation_telegram_enabled),
+            subscription_tier: (merchant as any).subscription_tier || 'starter',
+            subscription_status: (merchant as any).subscription_status || 'active',
+          }
+        : null,
+    };
   }
 }
