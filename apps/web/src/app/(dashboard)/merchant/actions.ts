@@ -82,38 +82,28 @@ export async function deleteMerchantOrders(orderIds: string[]) {
     return { error: 'تعذر التحقق من ملكية المتجر لهذه الطلبات' };
   }
 
-  // Verify every requested order belongs to this authenticated merchant.
-  const { data: ownedOrders, error: ownershipError } = await supabase
-    .from('orders')
-    .select('id')
-    .eq('merchant_id', merchant.id)
-    .in('id', uniqueOrderIds);
-
-  if (ownershipError) {
-    console.error('[DeleteOrders]: Ownership verification failed:', ownershipError.message);
-    return { error: 'تعذر التحقق من الطلبات المحددة. لم يتم حذف أي طلب.' };
-  }
-
-  if ((ownedOrders || []).length !== uniqueOrderIds.length) {
-    return { error: 'بعض الطلبات المحددة غير موجودة أو لا تتبع متجرك. لم يتم حذف أي طلب.' };
-  }
-
-  const { data: deletedOrders, error: deleteError } = await supabase
-    .from('orders')
-    .delete()
-    .eq('merchant_id', merchant.id)
-    .in('id', uniqueOrderIds)
-    .select('id');
+  // The database function validates ownership and deletes the full selection atomically.
+  const { data: deletedCount, error: deleteError } = await supabase.rpc(
+    'delete_merchant_orders',
+    {
+      p_merchant_id: merchant.id,
+      p_order_ids: uniqueOrderIds,
+    }
+  );
 
   if (deleteError) {
     console.error('[DeleteOrders]: Database deletion failed:', deleteError.message);
-    return { error: 'تعذر حذف الطلبات. لم يتم تأكيد اكتمال العملية.' };
+    return { error: 'تعذر حذف الطلبات. تأكد من تطبيق تحديث قاعدة البيانات ثم حاول مجدداً.' };
   }
 
-  const deletedCount = deletedOrders?.length || 0;
+  if (deletedCount === -1) {
+    return { error: 'بعض الطلبات المحددة غير موجودة أو لا تتبع متجرك. لم يتم حذف أي طلب.' };
+  }
+
+  const confirmedDeletedCount = Number(deletedCount || 0);
 
   revalidatePath('/merchant');
-  return { success: true, deletedCount };
+  return { success: true, deletedCount: confirmedDeletedCount };
 }
 
 export async function updateOrderStatus(formData: FormData) {
