@@ -52,7 +52,6 @@ async function bootstrap(): Promise<void> {
   const shutdown = async (signal: string) => {
     console.log(`\n[Bootstrap]: Caught signal ${signal}. Initiating graceful shutdown...`);
     await worker.stop();
-    await queue.setWorkerEnabled(false);
     console.log('[Bootstrap]: Teardown complete. Exiting.');
     process.exit(0);
   };
