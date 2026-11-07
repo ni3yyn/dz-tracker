@@ -316,11 +316,17 @@ export async function saveBrandSettings(formData: FormData) {
 
   const supabase = getSupabaseAdminClient();
 
+  // merchants.logo_url is the single canonical logo value. Older JSON rows may
+  // still contain logoUrl; read fallbacks keep those logos visible until saved.
+  const logoUrl = settingsObj.logoUrl ?? null;
+  const persistedSettings = { ...settingsObj };
+  delete persistedSettings.logoUrl;
+
   const settingsRows = [
     {
       merchant_id: merchantId,
       source_status: '__brand_settings_json__',
-      display_status: JSON.stringify(settingsObj),
+      display_status: JSON.stringify(persistedSettings),
     },
     {
       merchant_id: merchantId,
@@ -343,12 +349,23 @@ export async function saveBrandSettings(formData: FormData) {
     return { error: 'حدث خطأ أثناء حفظ إعدادات الهوية البصرية' };
   }
 
-  // Also persist logo_url directly on the merchant row for fast lookups
-  const logoUrl = settingsObj.logoUrl ?? null;
-  await supabase
+  const merchantUpdates: { logo_url: string | null; store_name?: string } = { logo_url: logoUrl };
+  const submittedStoreName = formData.get('store_name');
+  if (submittedStoreName !== null) {
+    const normalizedStoreName = String(submittedStoreName).trim();
+    if (!normalizedStoreName) return { error: 'يرجى إدخال اسم المتجر' };
+    merchantUpdates.store_name = normalizedStoreName;
+  }
+
+  const { error: merchantUpdateError } = await supabase
     .from('merchants')
-    .update({ logo_url: logoUrl })
+    .update(merchantUpdates)
     .eq('id', merchantId);
+
+  if (merchantUpdateError) {
+    console.error('Error saving merchant identity:', merchantUpdateError);
+    return { error: 'تعذر حفظ معلومات المتجر حالياً' };
+  }
 
   revalidatePath('/merchant');
   revalidatePath('/t/[uuid]', 'page');
