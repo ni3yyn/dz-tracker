@@ -184,7 +184,7 @@ export class TelegramConfirmationWorker {
       });
       console.log(`[ConfirmationWorker]: Sent confirmation request for order ${orderData.external_order_id}`);
     } else {
-      const classified = classifyTelegramError(sendResult.errorCode || sendResult.errorMessage);
+      const classified = classifyTelegramError([sendResult.errorCode, sendResult.errorMessage].filter(Boolean).join(' '));
 
       if (classified.category === 'skip_permanent') {
         await this.queue.updateConfirmationJob(job.id, {

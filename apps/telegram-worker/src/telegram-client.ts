@@ -78,13 +78,14 @@ export class MtcuteTelegramSender implements TelegramSender {
       throw new Error('[TelegramSender]: Cannot validate a session before a successful connection.');
     }
 
+    const client = this.client;
     try {
-      const me = await this.client.getMe();
+      const me = await client.getMe();
       if (!me) return false;
 
       if (this.config.telegramExpectedUserId && me.id !== this.config.telegramExpectedUserId) {
         throw new Error(
-          '[TelegramSender]: Authenticated Telegram user ID does not match TELEGRAM_EXPECTED_USER_ID.'
+          'SESSION_INVALID: Authenticated Telegram user ID does not match TELEGRAM_EXPECTED_USER_ID.'
         );
       }
 

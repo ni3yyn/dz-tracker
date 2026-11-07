@@ -256,7 +256,7 @@ export class TelegramTrackingWorker {
       this.health.recordJobProcessed('sent');
       console.log(`[TelegramWorker]: Successfully delivered tracking link for order ${orderData.external_order_id}`);
     } else {
-      const classified = classifyTelegramError(sendResult.errorCode || sendResult.errorMessage);
+      const classified = classifyTelegramError([sendResult.errorCode, sendResult.errorMessage].filter(Boolean).join(' '));
 
       await this.queue.recordAttempt({
         jobId: job.id,

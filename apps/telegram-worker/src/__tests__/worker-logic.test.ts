@@ -90,6 +90,14 @@ test('Error classification', () => {
   assert.equal(duplicateAuth.category, 'fatal_auth');
   assert.equal(duplicateAuth.code, 'AUTH_KEY_DUPLICATED');
 
+  // Send-result classification must preserve FLOOD_WAIT seconds even when the
+  // machine-readable code and human-readable message are both supplied.
+  const combinedFlood = classifyTelegramError(
+    'FLOOD_WAIT Telegram rate limit: must wait 120 seconds'
+  );
+  assert.equal(combinedFlood.category, 'flood_wait');
+  assert.equal(combinedFlood.floodWaitSeconds, 120);
+
   // Retryable transient errors
   const errTimeout = new Error('ETIMEDOUT: Connection lost');
   const resTimeout = classifyTelegramError(errTimeout);
