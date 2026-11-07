@@ -58,3 +58,47 @@ BEGIN
   END LOOP;
 END;
 $$;
+
+
+-- 2. Atomic, merchant-scoped deletion. The server action passes only the
+-- merchant ID resolved from the authenticated user's session.
+CREATE OR REPLACE FUNCTION public.delete_merchant_orders(
+  p_merchant_id UUID,
+  p_order_ids UUID[]
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_owned_count INTEGER;
+  v_deleted_count INTEGER;
+BEGIN
+  IF p_merchant_id IS NULL OR p_order_ids IS NULL OR cardinality(p_order_ids) = 0 THEN
+    RETURN 0;
+  END IF;
+
+  -- All-or-nothing ownership guard: do not delete any rows if one ID is
+  -- missing or belongs to another merchant.
+  SELECT COUNT(*)
+  INTO v_owned_count
+  FROM public.orders
+  WHERE merchant_id = p_merchant_id
+    AND id = ANY(p_order_ids);
+
+  IF v_owned_count <> cardinality(p_order_ids) THEN
+    RETURN -1;
+  END IF;
+
+  DELETE FROM public.orders
+  WHERE merchant_id = p_merchant_id
+    AND id = ANY(p_order_ids);
+
+  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+  RETURN v_deleted_count;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.delete_merchant_orders(UUID, UUID[]) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.delete_merchant_orders(UUID, UUID[]) TO service_role;
