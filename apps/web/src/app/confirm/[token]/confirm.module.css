@@ -17,10 +17,10 @@
   font-family: 'Readex Pro', 'Noto Sans Arabic', system-ui, sans-serif;
 }
 
-.ambient {
+ .ambient {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
 }
@@ -50,7 +50,9 @@
   background: #dfe6d9;
 }
 
-.shell {
+ .shell {
+  position: relative;
+  z-index: 1;
   width: min(100%, 470px);
   overflow: hidden;
   border: 1px solid rgba(39, 59, 48, .09);
