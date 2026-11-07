@@ -1903,6 +1903,12 @@ export async function processOrderAction(formData: FormData) {
           transform: translateY(-1px);
         }
         .dz-order-action-btn:active { transform: translateY(0); }
+        .dz-order-action-btn:disabled {
+          opacity: .55;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
         .dz-order-action-btn:focus-visible {
           outline: 3px solid rgba(67, 109, 75, .25);
           outline-offset: 2px;
@@ -4104,8 +4110,8 @@ export async function processOrderAction(formData: FormData) {
                                     <Icons.WhatsApp />
                                   </a>
                                 ) : (
-                                  <span className="dz-order-action-btn is-disabled" aria-label="رقم العميل غير متوفر" title="رقم العميل غير متوفر">
-                                    <Icons.MessageCircle />
+                                  <span className="dz-order-action-btn is-disabled" role="img" aria-label="رقم العميل غير متوفر" title="رقم العميل غير متوفر">
+                                    <Icons.WhatsApp />
                                   </span>
                                 )}
                                 <button
@@ -4194,7 +4200,7 @@ export async function processOrderAction(formData: FormData) {
                             <Icons.WhatsApp />
                           </a>
                         ) : (
-                          <span className="dz-order-action-btn is-disabled" aria-label="رقم العميل غير متوفر" title="رقم العميل غير متوفر">
+                          <span className="dz-order-action-btn is-disabled" role="img" aria-label="رقم العميل غير متوفر" title="رقم العميل غير متوفر">
                             <Icons.WhatsApp />
                           </span>
                         )}
