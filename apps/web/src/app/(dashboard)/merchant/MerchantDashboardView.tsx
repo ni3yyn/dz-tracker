@@ -604,6 +604,8 @@ const Icons = {
   Plug: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22v-5"></path><path d="M9 8V2"></path><path d="M15 8V2"></path><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"></path></svg>,
   Tag: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>,
   CreditCard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>,
+  Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.02a1.7 1.7 0 0 0-1.8.55l-.05.07h-3.4l-.04-.08a1.7 1.7 0 0 0-1.55-1.04 1.7 1.7 0 0 0-.45.06l-.08.02-2.94-1.7.02-.08a1.7 1.7 0 0 0-.55-1.8l-.07-.05v-3.4l.08-.04a1.7 1.7 0 0 0 .98-2l-.02-.08 1.7-2.94.08.02a1.7 1.7 0 0 0 1.8-.55l.05-.07h3.4l.04.08a1.7 1.7 0 0 0 2 .98l.08-.02 2.94 1.7-.02.08a1.7 1.7 0 0 0 .55 1.8l.07.05v3.4l-.08.04a1.7 1.7 0 0 0-.56.78Z"/></svg>,
+  Store: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5 4.6 4h14.8L21 9.5"/><path d="M3 9.5c0 1.7 1.2 2.8 2.7 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.6 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.7 2.8S19 11.2 19 9.5"/><path d="M5.2 12.2V20h13.6v-7.8M9 20v-5h6v5"/></svg>,
   Search: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
   Code: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
   Truck: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/></svg>,
@@ -666,9 +668,17 @@ export function MerchantDashboardView({
     ? new Date(subscription.expiresAt).toLocaleDateString('ar-DZ')
     : null;
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'alerts' | 'analytics' | 'branding' | 'upsells' | 'integrations' | 'mappings' | 'billing'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'alerts' | 'analytics' | 'branding' | 'upsells' | 'integrations' | 'mappings' | 'settings'>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [storeNameDraft, setStoreNameDraft] = useState(storeName);
+  const [savedStoreName, setSavedStoreName] = useState(storeName);
+  const displayStoreName = storeNameDraft.trim() || storeName;
+  const hasUnsavedStoreNameChanges = storeNameDraft.trim() !== savedStoreName;
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
+  useEffect(() => {
+    setStoreNameDraft(storeName);
+    setSavedStoreName(storeName);
+  }, [storeName]);
 
   // Mobile Back Button Handler: when mobile menu drawer is open, back button closes it instead of leaving dashboard
   useEffect(() => {
@@ -720,12 +730,11 @@ export function MerchantDashboardView({
   const [integrationPlatform, setIntegrationPlatform] = useState<'shopify' | 'website' | null>(null);
   const [trackingSource, setTrackingSource] = useState<'carrier' | 'manual' | 'unsure' | null>(null);
   const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'maystro' | 'other' | null>(null);
-  const [integrationSection, setIntegrationSection] = useState<'sdk' | 'carriers' | 'shopify' | 'telegram' | 'wizard'>('sdk');
+  const [integrationSection, setIntegrationSection] = useState<'sdk' | 'carriers' | 'shopify' | 'wizard'>('sdk');
   const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
   const [isSavingTelegram, startTransitionTelegram] = useTransition();
   const [confirmationEnabled, setConfirmationEnabled] = useState(confirmationTelegramEnabled);
   const [isSavingConfirmation, startTransitionConfirmation] = useTransition();
-  const [telegramFeedback, setTelegramFeedback] = useState<string | null>(null);
   const [sdkCodeTab, setSdkCodeTab] = useState<'html' | 'react' | 'node' | 'curl' | 'agent'>('html');
   const [packageManager, setPackageManager] = useState<'npm' | 'pnpm' | 'yarn' | 'bun'>('npm');
   const [apiKeyRevealed, setApiKeyRevealed] = useState(false);
@@ -1201,9 +1210,10 @@ export function MerchantDashboardView({
 
   const handleSaveBranding = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSavingBrand || !hasUnsavedBrandChanges) return;
+    if (isSavingBrand || (!hasUnsavedBrandChanges && !hasUnsavedStoreNameChanges)) return;
     setIsSavingBrand(true);
     const configBeingSaved = { ...brandConfigRef.current };
+    const nextStoreName = storeNameDraft.trim();
 
     try {
       const fd = new FormData();
@@ -1211,6 +1221,7 @@ export function MerchantDashboardView({
       fd.append('brand_settings_json', JSON.stringify(configBeingSaved));
       fd.append('brand_color', configBeingSaved.brandColor);
       fd.append('brand_subtitle', configBeingSaved.brandSubtitle);
+      fd.append('store_name', nextStoreName);
 
       const res = await saveBrandSettings(fd);
       if (res?.error) {
@@ -1218,7 +1229,9 @@ export function MerchantDashboardView({
       } else {
         savedBrandConfigRef.current = { ...configBeingSaved };
         setHasUnsavedBrandChanges(JSON.stringify(brandConfigRef.current) !== JSON.stringify(configBeingSaved));
-        showToast('تم حفظ إعدادات التخصيص وتطبيقها بنجاح.');
+        setStoreNameDraft(nextStoreName);
+        setSavedStoreName(nextStoreName);
+        showToast('تم حفظ معلومات المتجر وشعاره بنجاح.');
       }
     } catch (error) {
       console.error('Failed to save branding settings:', error);
@@ -1567,9 +1580,9 @@ export async function processOrderAction(formData: FormData) {
 
     let msg = '';
     if (order.current_status === 'attempt_failed_no_answer') {
-      msg = `⚠️ تنبيه عاجل من ${storeName}!\nمرحباً ${order.customer_name || ''}، حاول مندوب التوصيل الاتصال بك بخصوص طلبك (${order.external_order_id}) ولم يتم الرد.\nيرجى فتح الرابط لتأكيد توفرك اليوم لتجنب إرجاع الطلب:\n${trackingUrl}`;
+      msg = `⚠️ تنبيه عاجل من ${displayStoreName}!\nمرحباً ${order.customer_name || ''}، حاول مندوب التوصيل الاتصال بك بخصوص طلبك (${order.external_order_id}) ولم يتم الرد.\nيرجى فتح الرابط لتأكيد توفرك اليوم لتجنب إرجاع الطلب:\n${trackingUrl}`;
     } else if (order.current_status === 'ready_for_pickup') {
-      msg = `🏢 إشعار استلام من ${storeName}!\nمرحباً ${order.customer_name || ''}، طردك جاهز للاستلام الآن من مكتب شركة الشحن.\nتفاصيل الاستلام والتتبع:\n${trackingUrl}`;
+      msg = `🏢 إشعار استلام من ${displayStoreName}!\nمرحباً ${order.customer_name || ''}، طردك جاهز للاستلام الآن من مكتب شركة الشحن.\nتفاصيل الاستلام والتتبع:\n${trackingUrl}`;
     } else {
       msg = `مرحباً ${order.customer_name || ''}، يمكنك متابعة شحنتك رقم (${order.external_order_id}) لحظة بلحظة عبر الرابط:\n${trackingUrl}`;
     }
@@ -3497,19 +3510,19 @@ export async function processOrderAction(formData: FormData) {
               {brandConfig.logoUrl ? (
                 <img
                   src={toCachedImageUrl(brandConfig.logoUrl)}
-                  alt={storeName}
+                  alt={displayStoreName}
                   style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = 'none';
-                    (e.currentTarget.parentElement as HTMLElement).textContent = storeName.charAt(0);
+                    (e.currentTarget.parentElement as HTMLElement).textContent = displayStoreName.charAt(0);
                   }}
                 />
               ) : (
-                storeName.charAt(0)
+                displayStoreName.charAt(0)
               )}
             </div>
             <div className="dz-brand-text">
-              <span className="dz-brand-title">{storeName}</span>
+              <span className="dz-brand-title">{displayStoreName}</span>
               <span className="dz-brand-badge">Merchant Portal</span>
             </div>
           </div>
@@ -3545,8 +3558,8 @@ export async function processOrderAction(formData: FormData) {
             <button className={`dz-nav-item ${activeTab === 'mappings' ? 'active' : ''}`} onClick={() => { setActiveTab('mappings'); setMobileMenuOpen(false); }}>
               <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Tag /></span> مسميات الحالات</span>
             </button>
-            <button className={`dz-nav-item ${activeTab === 'billing' ? 'active' : ''}`} onClick={() => { setActiveTab('billing'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.CreditCard /></span> الاشتراك</span>
+            <button className={`dz-nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }}>
+              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Settings /></span> الإعدادات</span>
             </button>
           </nav>
 
@@ -3593,10 +3606,10 @@ export async function processOrderAction(formData: FormData) {
                 {activeTab === 'upsells' && 'زيادة المبيعات (قد يعجبك أيضاً)'}
                 {activeTab === 'integrations' && 'بوابات الربط (Webhooks)'}
                 {activeTab === 'mappings' && 'مطابقة الحالات والترجمة'}
-                {activeTab === 'billing' && 'الاشتراك والفوترة'}
+                {activeTab === 'settings' && 'الإعدادات'}
               </h1>
               <p>
-                {activeTab === 'overview' && `مرحباً ${storeName}، إليك ملخص الشحنات وما يحتاج إلى متابعة.`}
+                {activeTab === 'overview' && `مرحباً ${displayStoreName}، إليك ملخص الشحنات وما يحتاج إلى متابعة.`}
                 {activeTab === 'orders' && 'ابحث عن شحنة، حدّد الحالة، واتخذ الإجراء من مكان واحد.'}
                 {activeTab === 'alerts' && 'طلبات مهددة بالإرجاع (عدم الرد/مؤجل). تواصل معهم فوراً.'}
                 {activeTab === 'analytics' && 'مؤشرات مبنية على الشحنات المسجلة والحالات الحالية، دون تقديرات غير متاحة.'}
@@ -3604,11 +3617,7 @@ export async function processOrderAction(formData: FormData) {
                 {activeTab === 'upsells' && 'اعرض منتجات إضافية للزبون في أسفل صفحة التتبع لزيادة متوسط قيمة الطلب بدون إعلانات مدفوعة.'}
                 {activeTab === 'integrations' && 'أجب عن سؤالين لنحدد مسار Shopify أو SDK، وخطوات ربط شركة التوصيل إذا احتجت تحديثاً آلياً.'}
                 {activeTab === 'mappings' && 'حدد ما يراه الزبون لكل حالة برمجية معقدة.'}
-                {activeTab === 'billing' && (
-                  isUnlimitedPlan 
-                    ? 'باقتك الحالية: غير محدودة (دون سقف شهري للطلبات)' 
-                    : `باقتك الحالية: ${{ starter: 'مجانية (30 طلباً)', basic: '100 طلب', growth: '200 طلب', scale: 'غير محدودة' }[subscription.tier] || subscription.tier}`
-                )}
+                {activeTab === 'settings' && 'إدارة معلومات المتجر وخدمات تيليجرام والاشتراك من مكان واحد.'}
               </p>
             </div>
 
@@ -3665,7 +3674,7 @@ export async function processOrderAction(formData: FormData) {
                       <div style={{ fontSize: '12px', opacity: 0.9 }}>تم إيقاف معالجة واستقبال الطلبات. يرجى التواصل مع الدعم الفني للإدارة.</div>
                     </div>
                   </div>
-                  <button type="button" className="dz-sub-alert-btn" onClick={() => { setActiveTab('billing'); setMobileMenuOpen(false); }}>
+                  <button type="button" className="dz-sub-alert-btn" onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }}>
                     مراجعة حالة الحساب
                   </button>
                 </div>
@@ -3684,7 +3693,7 @@ export async function processOrderAction(formData: FormData) {
                       </div>
                     </div>
                   </div>
-                  <button type="button" className="dz-sub-alert-btn" onClick={() => { setActiveTab('billing'); setMobileMenuOpen(false); }}>
+                  <button type="button" className="dz-sub-alert-btn" onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }}>
                     تجديد الاشتراك
                   </button>
                 </div>
@@ -3703,7 +3712,7 @@ export async function processOrderAction(formData: FormData) {
                       </div>
                     </div>
                   </div>
-                  <button type="button" className="dz-sub-alert-btn" onClick={() => { setActiveTab('billing'); setMobileMenuOpen(false); }}>
+                  <button type="button" className="dz-sub-alert-btn" onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }}>
                     ترقية الباقة
                   </button>
                 </div>
@@ -3722,7 +3731,7 @@ export async function processOrderAction(formData: FormData) {
                       </div>
                     </div>
                   </div>
-                  <button type="button" className="dz-sub-alert-btn" onClick={() => { setActiveTab('billing'); setMobileMenuOpen(false); }}>
+                  <button type="button" className="dz-sub-alert-btn" onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }}>
                     ترقية الباقة
                   </button>
                 </div>
@@ -4856,7 +4865,7 @@ export async function processOrderAction(formData: FormData) {
                 {/* Memoised phone preview — re-renders only when deferred config settles */}
                 <BrandingPhonePreview
                   brandConfig={deferredBrandConfig}
-                  storeName={storeName}
+                  storeName={displayStoreName}
                 />
 
               </div>
@@ -5321,13 +5330,6 @@ export async function processOrderAction(formData: FormData) {
                 </button>
                 <button
                   type="button"
-                  className={`dz-int-nav-btn ${integrationSection === 'telegram' ? 'active' : ''}`}
-                  onClick={() => setIntegrationSection('telegram')}
-                >
-                  <Icons.Send /> إرسال رابط التتبع عبر تيليجرام (MTProto)
-                </button>
-                <button
-                  type="button"
                   className={`dz-int-nav-btn ${integrationSection === 'wizard' ? 'active' : ''}`}
                   onClick={() => setIntegrationSection('wizard')}
                 >
@@ -5607,242 +5609,6 @@ export async function processOrderAction(formData: FormData) {
                 </div>
               )}
 
-              {/* SUBTAB 4: TELEGRAM AUTOMATED DELIVERY (MTPROTO) */}
-              {integrationSection === 'telegram' && (
-                <div className="dz-int-panel">
-                  {/* FEATURE TOGGLE CARD */}
-                  <div className="dz-card-box" style={{ padding: '24px', marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(39, 52, 45, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#27342d' }}>
-                          <Icons.Send />
-                        </div>
-                        <div>
-                          <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 700 }}>
-                            التوصيل التلقائي لروابط التتبع عبر تيليجرام
-                          </h3>
-                          <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink-muted)' }}>
-                            إرسال رابط التتبع فوراً إلى تيليجرام الزبون برقم هاتفه مباشرة دون الحاجة لبوت أو اشتراك مسبق.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{
-                          padding: '4px 10px',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          background: telegramEnabled ? 'rgba(34, 197, 94, 0.12)' : 'rgba(100, 116, 139, 0.12)',
-                          color: telegramEnabled ? '#15803d' : '#64748b'
-                        }}>
-                          {telegramEnabled ? '● الخدمة مفعّلة' : '○ الخدمة معطّلة'}
-                        </span>
-                        <button
-                          type="button"
-                          className="dz-btn"
-                          style={{
-                            background: telegramEnabled ? '#dc2626' : '#27342d',
-                            color: '#fff',
-                            fontSize: '13px',
-                            padding: '8px 16px',
-                            borderRadius: '10px',
-                            cursor: isSavingTelegram ? 'wait' : 'pointer',
-                            opacity: isSavingTelegram ? 0.7 : 1,
-                          }}
-                          disabled={isSavingTelegram}
-                          onClick={() => {
-                            startTransitionTelegram(async () => {
-                              const next = !telegramEnabled;
-                              setTelegramEnabled(next);
-                              const res = await toggleTelegramTracking(merchantId, next);
-                              if (res?.error) {
-                                setTelegramEnabled(!next);
-                                alert(res.error);
-                              } else {
-                                setTelegramFeedback(next ? 'تم تفعيل التوصيل التلقائي عبر تيليجرام بنجاح!' : 'تم تعطيل التوصيل عبر تيليجرام.');
-                                setTimeout(() => setTelegramFeedback(null), 3500);
-                              }
-                            });
-                          }}
-                        >
-                          {isSavingTelegram ? 'جاري التحديث...' : (telegramEnabled ? 'تعطيل الخدمة' : 'تفعيل الخدمة الآن')}
-                        </button>
-                      </div>
-                    </div>
-
-                    {telegramFeedback && (
-                      <div style={{ marginTop: '16px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(34, 197, 94, 0.1)', color: '#15803d', fontSize: '13px', fontWeight: 600 }}>
-                        ✓ {telegramFeedback}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ── Confirmation Request Toggle ── */}
-                  <div style={{ padding: '20px', border: '1px solid var(--border-soft)', borderRadius: '14px', marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '16px' }}>
-                      <div style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>✅</div>
-                      <div style={{ flex: 1 }}>
-                        <strong style={{ display: 'block', fontSize: '15px', color: 'var(--ink-main)', marginBottom: '4px' }}>
-                          طلب تأكيد الطلب من الزبون
-                        </strong>
-                        <p style={{ fontSize: '13px', color: 'var(--ink-muted)', margin: 0, lineHeight: 1.6 }}>
-                          عند تسجيل طلب جديد، يتلقى الزبون رسالة تيليجرام برابط تأكيد مؤمّن. بضغطة واحدة يؤكد أو يلغي الطلب — وتصلك النتيجة فوراً في لوحة التحكم.
-                        </p>
-                      </div>
-                    </div>
-
-                    {!hasActivePaidPlan ? (
-                      <div style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: '10px', padding: '12px 14px', fontSize: '13px', color: '#92400e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        🔒 هذه الميزة متاحة للباقات المدفوعة فقط (Basic، Growth، Scale)
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '20px', background: confirmationEnabled ? 'rgba(34, 197, 94, 0.12)' : 'rgba(100, 116, 139, 0.1)', color: confirmationEnabled ? '#15803d' : '#64748b', fontWeight: 600 }}>
-                          {confirmationEnabled ? '● مفعّل' : '○ معطّل'}
-                        </span>
-                        <button
-                          style={{
-                            background: confirmationEnabled ? '#dc2626' : '#27342d',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '8px',
-                            padding: '8px 18px',
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            cursor: isSavingConfirmation ? 'wait' : 'pointer',
-                            opacity: isSavingConfirmation ? 0.7 : 1,
-                            fontFamily: 'inherit',
-                          }}
-                          disabled={isSavingConfirmation}
-                          onClick={() => {
-                            const next = !confirmationEnabled;
-                            startTransitionConfirmation(async () => {
-                              setConfirmationEnabled(next);
-                              const res = await toggleConfirmationTelegram(next);
-                              if (res?.error) {
-                                setConfirmationEnabled(!next);
-                                showToast(res.error);
-                              } else {
-                                showToast(next ? 'تم تفعيل طلب التأكيد بنجاح!' : 'تم تعطيل طلب التأكيد.');
-                              }
-                            });
-                          }}
-                        >
-                          {isSavingConfirmation ? 'جاري التحديث...' : (confirmationEnabled ? 'تعطيل' : 'تفعيل الآن')}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* GUARANTEES / HIGHLIGHT PILLS */}
-                  <div className="dz-features-badges" style={{ marginBottom: '24px' }}>
-                    <div className="dz-feature-pill">
-                      <div className="dz-feature-pill-icon"><Icons.Shield /></div>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '13px' }}>بدون بوت نهائياً (Zero-Bot)</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>لا نطلب من الزبون الدخول في بوت أو الضغط على /start؛ الإرسال مباشر عبر حساب MTProto مخصص.</span>
-                      </div>
-                    </div>
-                    <div className="dz-feature-pill">
-                      <div className="dz-feature-pill-icon"><Icons.Zap /></div>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '13px' }}>إرسال لمرة واحدة فقط</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>رسالة ترحيبية واحدة فقط تحتوي على رابط التتبع فور تسجيل الطلب، دون إزعاج الزبون عند تغير الحالات.</span>
-                      </div>
-                    </div>
-                    <div className="dz-feature-pill">
-                      <div className="dz-feature-pill-icon">🇩🇿</div>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '13px' }}>معالجة ذكية لأرقام الجزائر</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>يتعرف تلقائياً على أرقام موبيليس (06)، جيزي (07)، وأوريدو (05) ويحوّلها للمعيار الدولي (+213).</span>
-                      </div>
-                    </div>
-                    <div className="dz-feature-pill">
-                      <div className="dz-feature-pill-icon"><Icons.Check /></div>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '13px' }}>موافقة صريحة وحماية الخصوصية</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>يعمل النظام بالتكامل مع خيار موافقة الزبون أثناء الشراء لضمان الامتثال وموثوقية الوصول.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* MESSAGE PREVIEW CARD */}
-                  <div className="dz-card-box" style={{ padding: '20px', marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700 }}>معاينة الرسالة النصية المرسلة للزبون</h4>
-                      <span style={{ fontSize: '11px', color: 'var(--ink-muted)', background: 'rgba(0,0,0,0.04)', padding: '2px 8px', borderRadius: '4px' }}>صيغة نصية واضحة بدون روابط معقدة</span>
-                    </div>
-
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', maxWidth: '520px', lineHeight: 1.7, fontSize: '13.5px', color: '#1e293b', direction: 'rtl' }}>
-                      <p style={{ margin: '0 0 10px 0' }}>
-                        مرحباً <strong>أحمد</strong> 👋 شكراً لطلبك من متجر <strong>{storeName || 'متجرك'}</strong>! 📦
-                      </p>
-                      <p style={{ margin: '0 0 10px 0' }}>
-                        تم تسجيل طلبك بنجاح. يمكنك متابعة شحنتك ومعرفة جميع تفاصيل التوصيل وموقع المندوب من خلال الرابط التالي:
-                      </p>
-                      <p style={{ margin: '0 0 10px 0', wordBreak: 'break-all' }}>
-                        <code style={{ background: '#fff', border: '1px solid #cbd5e1', padding: '2px 8px', borderRadius: '6px', color: '#0284c7', fontSize: '12px' }}>
-                          {`${siteUrl}/t/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`}
-                        </code>
-                      </p>
-                      <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>
-                        شكراً لثقتك بنا. <strong>TajerTrack</strong>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* HOW TO PASS CONSENT DEVELOPER GUIDES */}
-                  <div className="dz-card-box" style={{ padding: '20px' }}>
-                    <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700 }}>
-                      كيفية تسجيل موافقة العميل برمجياً (Consent Registration)
-                    </h4>
-                    <p style={{ fontSize: '12.5px', color: 'var(--ink-muted)', marginBottom: '16px', lineHeight: 1.6 }}>
-                      لكي يقوم النظام بجدولة الرسالة تلقائياً، قم بتمرير حقل الموافقة (Consent) في طلب إنشاء الشحنة:
-                    </p>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                      {/* DIRECT API */}
-                      <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                        <strong style={{ display: 'block', fontSize: '12.5px', marginBottom: '8px' }}>1. عبر الـ Webhook المباشر (Direct API)</strong>
-                        <pre style={{ margin: 0, padding: '10px', background: '#0f172a', color: '#f8fafc', borderRadius: '6px', fontSize: '11px', overflowX: 'auto', direction: 'ltr' }}>
-{`// POST ${siteUrl}/api/webhooks
-{
-  "order_id": "#1042",
-  "customer_name": "أحمد بلقاسم",
-  "customer_phone": "0555123456",
-  "telegram_consent": true
-}`}
-                        </pre>
-                      </div>
-
-                      {/* JS SDK */}
-                      <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                        <strong style={{ display: 'block', fontSize: '12.5px', marginBottom: '8px' }}>2. عبر حزمة الـ SDK (dz-tracking-sdk)</strong>
-                        <pre style={{ margin: 0, padding: '10px', background: '#0f172a', color: '#f8fafc', borderRadius: '6px', fontSize: '11px', overflowX: 'auto', direction: 'ltr' }}>
-{`await tracker.trackOrder({
-  orderId: "#1042",
-  name: "أحمد بلقاسم",
-  phone: "0555123456",
-  telegramConsent: true
-});`}
-                        </pre>
-                      </div>
-
-                      {/* SHOPIFY */}
-                      <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                        <strong style={{ display: 'block', fontSize: '12.5px', marginBottom: '8px' }}>3. عبر متجر Shopify</strong>
-                        <p style={{ margin: 0, fontSize: '11.5px', color: '#475569', lineHeight: 1.6 }}>
-                          أضف خاصية إضافية في حقول ملاحظات الطلب (Cart / Order Attributes):<br />
-                          الاسم: <code style={{ color: '#0284c7' }}>telegram_tracking_consent</code><br />
-                          القيمة: <code style={{ color: '#16a34a' }}>true</code>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* SUBTAB 4: INTERACTIVE WIZARD */}
               {integrationSection === 'wizard' && (
                 <section id="dz-integration-wizard" className="dz-integration-wizard" aria-label="دليل ربط المتجر">
@@ -6039,8 +5805,91 @@ export async function processOrderAction(formData: FormData) {
           )}
 
           {/* TAB: BILLING */}
-          {activeTab === 'billing' && (
+          {activeTab === 'settings' && (
             <div>
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px', marginBottom: '14px', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
+                  <div>
+                    <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>01 / STORE PROFILE</span>
+                    <h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>معلومات المتجر</h2>
+                  </div>
+                  <Icons.Store />
+                </div>
+                <form onSubmit={handleSaveBranding}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(240px, .85fr)', gap: '16px', alignItems: 'end' }}>
+                    <div>
+                      <label htmlFor="merchant-settings-store-name" className="formLabel">اسم المتجر</label>
+                      <input id="merchant-settings-store-name" type="text" className="input" value={storeNameDraft} maxLength={80} required onChange={(event) => setStoreNameDraft(event.target.value)} placeholder="اسم متجرك" />
+                      <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'var(--ink-muted)' }}>يظهر الاسم بجانب شعارك في صفحات العملاء.</p>
+                    </div>
+                    <div>
+                      <ImageUploadField label="شعار المتجر" value={brandConfig.logoUrl || ''} onChange={(url) => updateBrandConfig('logoUrl', url)} merchantId={merchantId} folder="upsell-products" quality={0.9} placeholder="ارفع شعار متجرك" />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--border-soft)', marginTop: '14px', paddingTop: '12px' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>يُستخدم الشعار نفسه في صفحة التتبع وصفحة تأكيد الطلب.</span>
+                    <button type="submit" className="dz-btn" disabled={isSavingBrand || (!hasUnsavedBrandChanges && !hasUnsavedStoreNameChanges)} style={{ minWidth: '132px', padding: '9px 18px', opacity: isSavingBrand || (!hasUnsavedBrandChanges && !hasUnsavedStoreNameChanges) ? .55 : 1 }}>
+                      {isSavingBrand ? 'جارٍ الحفظ...' : 'حفظ التغييرات'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+                  <div>
+                    <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>02 / TELEGRAM SERVICES</span>
+                    <h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>خدمات تيليجرام</h2>
+                    <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--ink-muted)' }}>تحكم في الرسائل التي تصل إلى عملاء متجرك.</p>
+                  </div>
+                  <Icons.Send />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 0 }}>
+                  <div style={{ padding: '11px 16px 8px 8px', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '7px' }}>
+                      <strong style={{ fontSize: '14px', color: 'var(--ink-main)' }}>روابط التتبع</strong>
+                      <span style={{ fontSize: '11px', color: telegramEnabled ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{telegramEnabled ? 'مفعّل' : 'معطّل'}</span>
+                    </div>
+                    <p style={{ minHeight: '34px', margin: '0 0 10px', color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.6 }}>إرسال رابط تتبع الشحنة تلقائياً عند تسجيل الطلب وموافقة العميل.</p>
+                    <button type="button" role="switch" aria-checked={telegramEnabled} aria-label="تفعيل إرسال روابط التتبع عبر تيليجرام" disabled={isSavingTelegram}
+                      onClick={() => startTransitionTelegram(async () => {
+                        const next = !telegramEnabled;
+                        setTelegramEnabled(next);
+                        const result = await toggleTelegramTracking(merchantId, next);
+                        if (result?.error) { setTelegramEnabled(!next); showToast(result.error); }
+                        else showToast(next ? 'تم تفعيل إرسال روابط التتبع.' : 'تم تعطيل إرسال روابط التتبع.');
+                      })}
+                      style={{ width: '48px', height: '27px', border: 0, borderRadius: '99px', padding: '3px', display: 'flex', alignItems: 'center', justifyContent: telegramEnabled ? 'flex-end' : 'flex-start', direction: 'ltr', background: telegramEnabled ? '#273b30' : '#cbd1ca', cursor: isSavingTelegram ? 'wait' : 'pointer', opacity: isSavingTelegram ? .65 : 1, transition: 'background .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}>
+                      <span style={{ width: '21px', height: '21px', display: 'block', borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.18)' }} />
+                    </button>
+                  </div>
+                  <div style={{ padding: '11px 8px 8px 16px', minWidth: 0, borderInlineStart: '1px solid var(--border-soft)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '7px' }}>
+                      <strong style={{ fontSize: '14px', color: 'var(--ink-main)' }}>تأكيد الطلب</strong>
+                      <span style={{ fontSize: '11px', color: confirmationEnabled && hasActivePaidPlan ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{!hasActivePaidPlan ? 'للباقات المدفوعة' : confirmationEnabled ? 'مفعّل' : 'معطّل'}</span>
+                    </div>
+                    <p style={{ minHeight: '34px', margin: '0 0 10px', color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.6 }}>إرسال رابط آمن للعميل لتأكيد الطلب أو طلب إلغائه.</p>
+                    <button type="button" role="switch" aria-checked={confirmationEnabled && hasActivePaidPlan} aria-label="تفعيل طلب تأكيد الطلب عبر تيليجرام" disabled={!hasActivePaidPlan || isSavingConfirmation}
+                      onClick={() => startTransitionConfirmation(async () => {
+                        const next = !confirmationEnabled;
+                        setConfirmationEnabled(next);
+                        const result = await toggleConfirmationTelegram(next);
+                        if (result?.error) { setConfirmationEnabled(!next); showToast(result.error); }
+                        else showToast(next ? 'تم تفعيل طلب تأكيد الطلب.' : 'تم تعطيل طلب تأكيد الطلب.');
+                      })}
+                      style={{ width: '48px', height: '27px', border: 0, borderRadius: '99px', padding: '3px', display: 'flex', alignItems: 'center', justifyContent: confirmationEnabled ? 'flex-end' : 'flex-start', direction: 'ltr', background: confirmationEnabled && hasActivePaidPlan ? '#273b30' : '#cbd1ca', cursor: !hasActivePaidPlan || isSavingConfirmation ? 'not-allowed' : 'pointer', opacity: !hasActivePaidPlan || isSavingConfirmation ? .55 : 1, transition: 'background .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}>
+                      <span style={{ width: '21px', height: '21px', display: 'block', borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.18)' }} />
+                    </button>
+                  </div>
+                </div>
+                {!hasActivePaidPlan && <p style={{ margin: '8px 0 0', paddingTop: '9px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '11px' }}>ميزة تأكيد الطلب متاحة في الباقات المدفوعة Basic وGrowth وScale.</p>}
+              </div>
+
+              <div style={{ margin: '0 0 13px' }}>
+                <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>03 / SUBSCRIPTION</span>
+                <h2 style={{ margin: '3px 0 0', fontSize: '19px', fontWeight: 800, color: 'var(--ink-main)' }}>الاشتراك والاستهلاك</h2>
+              </div>
+
               {/* Unlimited Plan Status Card (brand-aligned, no emoji) */}
               {isUnlimitedPlan && (
                 <div className="dz-unlimited-card" role="status" aria-live="polite">
@@ -6067,7 +5916,7 @@ export async function processOrderAction(formData: FormData) {
                 </div>
               )}
 
-              <div className="dz-stats-bar" style={{ marginBottom: '48px' }}>
+              <div className="dz-stats-bar" style={{ marginBottom: '20px' }}>
                 <div className="dz-stat-item">
                   <span className="dz-stat-title">الباقة الحالية</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
