@@ -27,6 +27,7 @@ interface Props {
   productName: string | null;
   carrierName?: string | null;
   carrierTrackingNumber?: string | null;
+  initialConfirmationStatus?: 'pending' | 'confirmed' | 'cancelled' | null;
   storeName: string;
   logoUrl?: string | null;
   brandSettings?: BrandSettings;
@@ -144,6 +145,7 @@ export function TrackingLiveView({
   productName,
   carrierName,
   carrierTrackingNumber,
+  initialConfirmationStatus,
   storeName,
   logoUrl,
   brandSettings,
@@ -153,6 +155,9 @@ export function TrackingLiveView({
   upsells = [],
 }: Props) {
   const [events, setEvents] = useState<TimelineEvent[]>(initialEvents);
+  const [confirmationStatus, setConfirmationStatus] = useState<
+    'pending' | 'confirmed' | 'cancelled' | null
+  >(initialConfirmationStatus ?? null);
   const [isLive, setIsLive] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -266,6 +271,21 @@ export function TrackingLiveView({
             },
             ...previous.map((event) => ({ ...event, isCurrent: false })),
           ]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          const updatedOrder = payload.new as {
+            confirmation_status?: 'pending' | 'confirmed' | 'cancelled' | null;
+          };
+          setConfirmationStatus(updatedOrder.confirmation_status ?? null);
         }
       )
       .subscribe((status) => setIsLive(status === 'SUBSCRIBED'));
@@ -449,9 +469,56 @@ export function TrackingLiveView({
               </section>
             )}
 
+            {confirmationStatus && (
+              <section
+                aria-label="حالة تأكيد الطلب"
+                aria-live="polite"
+                style={{
+                  padding: '16px 18px',
+                  borderRadius: 16,
+                  marginBottom: 16,
+                  background:
+                    confirmationStatus === 'pending'
+                      ? 'rgba(234,179,8,0.11)'
+                      : confirmationStatus === 'confirmed'
+                        ? 'rgba(21,128,61,0.10)'
+                        : 'rgba(217,119,6,0.10)',
+                  border: `1px solid ${
+                    confirmationStatus === 'pending'
+                      ? 'rgba(202,138,4,0.28)'
+                      : confirmationStatus === 'confirmed'
+                        ? 'rgba(21,128,61,0.24)'
+                        : 'rgba(217,119,6,0.24)'
+                  }`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1.3 }}>
+                    {confirmationStatus === 'pending' ? '⏳' : confirmationStatus === 'confirmed' ? '✅' : '⚠️'}
+                  </span>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: 15, marginBottom: 5 }}>
+                      {confirmationStatus === 'pending'
+                        ? 'تم تسجيل طلبك — بانتظار تأكيدك'
+                        : confirmationStatus === 'confirmed'
+                          ? 'تم تأكيد الطلب'
+                          : 'تم تسجيل طلب الإلغاء'}
+                    </strong>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, opacity: 0.82 }}>
+                      {confirmationStatus === 'pending'
+                        ? 'افتح رسالة التأكيد المرسلة إليك من المتجر لتأكيد الطلب أو طلب إلغائه. حالة الشحنة وتحديثات شركة التوصيل تظهر بشكل منفصل أدناه.'
+                        : confirmationStatus === 'confirmed'
+                          ? 'شكراً لك، تم تسجيل تأكيدك. يمكنك متابعة الشحنة من تحديثات شركة التوصيل أدناه.'
+                          : 'تم إرسال طلب الإلغاء إلى المتجر. هذا لا يوقف الشحنة تلقائياً؛ حالة التوصيل أدناه تعكس آخر تحديث من شركة الشحن. يرجى التواصل مع المتجر لتأكيد إمكانية الإيقاف.'}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
             <section className={`${styles.currentStatusPanel} ${toneClass}`} aria-labelledby="current-shipment-status">
               <div className={styles.currentStatusTop}>
-                <span className={styles.currentStatusLabel}>{latestEvent ? 'آخر تحديث' : 'حالة الطلب'}</span>
+                <span className={styles.currentStatusLabel}>{latestEvent ? 'آخر تحديث للشحنة' : 'حالة الشحنة'}</span>
                 {latestEvent && (
                   <time className={styles.currentStatusTime} dateTime={String(latestEvent.date)}>
                     {latestEventDate}{latestEventTime ? ` · ${latestEventTime}` : ''}
