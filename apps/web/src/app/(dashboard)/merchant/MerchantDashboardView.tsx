@@ -3818,7 +3818,7 @@ export async function processOrderAction(formData: FormData) {
                             <td>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
                                 <span style={{ fontSize: 10, color: 'var(--ink-muted)', fontWeight: 600 }}>حالة الشحنة</span>
-                                <span className={`dz-pill dz-pill-${badgeStyle}`}>الشحنة: {getStatusLabel(order.current_status)}</span>
+                                <span className={`dz-pill dz-pill-${badgeStyle}`}>{getStatusLabel(order.current_status)}</span>
                                 {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600 }}>✅ العميل أكد الطلب</span>}
                                 {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600 }}>⚠️ العميل طلب الإلغاء</span>}
                                 {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600 }}>⏳ الطلب مسجل — بانتظار تأكيد العميل</span>}
@@ -3851,7 +3851,7 @@ export async function processOrderAction(formData: FormData) {
                       <div className="dz-order-mobile-top">
                         <div className="dz-order-mobile-number"><strong>{order.external_order_id}</strong><small>تاريخ التسجيل: {formatOrderDate(order.created_at)}</small></div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <span className={`dz-pill dz-pill-${badgeStyle}`}>{getStatusLabel(order.current_status)}</span>
+                          <span className={`dz-pill dz-pill-${badgeStyle}`}>الشحنة: {getStatusLabel(order.current_status)}</span>
                           {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600, whiteSpace: 'nowrap' }}>✅ العميل أكد الطلب</span>}
                           {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600, whiteSpace: 'nowrap' }}>⚠️ العميل طلب الإلغاء</span>}
                           {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600, whiteSpace: 'nowrap' }}>⏳ الطلب مسجل — بانتظار تأكيد العميل</span>}
