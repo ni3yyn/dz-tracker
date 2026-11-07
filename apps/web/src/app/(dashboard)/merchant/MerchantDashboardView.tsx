@@ -606,6 +606,9 @@ const Icons = {
   CreditCard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>,
   Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.02a1.7 1.7 0 0 0-1.8.55l-.05.07h-3.4l-.04-.08a1.7 1.7 0 0 0-1.55-1.04 1.7 1.7 0 0 0-.45.06l-.08.02-2.94-1.7.02-.08a1.7 1.7 0 0 0-.55-1.8l-.07-.05v-3.4l.08-.04a1.7 1.7 0 0 0 .98-2l-.02-.08 1.7-2.94.08.02a1.7 1.7 0 0 0 1.8-.55l.05-.07h3.4l.04.08a1.7 1.7 0 0 0 2 .98l.08-.02 2.94 1.7-.02.08a1.7 1.7 0 0 0 .55 1.8l.07.05v3.4l-.08.04a1.7 1.7 0 0 0-.56.78Z"/></svg>,
   Store: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5 4.6 4h14.8L21 9.5"/><path d="M3 9.5c0 1.7 1.2 2.8 2.7 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.6 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.7 2.8S19 11.2 19 9.5"/><path d="M5.2 12.2V20h13.6v-7.8M9 20v-5h6v5"/></svg>,
+  Clipboard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 9h6M9 13h6M9 17h4"/></svg>,
+  Refresh: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.7-2L20 12M4 12l2.7 5a7 7 0 0 0 11.7-2"/></svg>,
+  ArrowLeft: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
   Search: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
   Code: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
   Truck: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/></svg>,
@@ -680,6 +683,76 @@ export function MerchantDashboardView({
     setSavedStoreName(storeName);
   }, [storeName]);
 
+  // Persist integration choices locally per merchant, without sending preferences to the server.
+  useEffect(() => {
+    setIntegrationChoicesHydratedFor(null);
+    setIntegrationPlatform(null);
+    setTrackingSource(null);
+    setSelectedCarrier(null);
+    setIntegrationStep(1);
+
+    try {
+      const raw = window.localStorage.getItem(`tajertrack:integration-setup:v1:${merchantId}`);
+      if (raw) {
+        const saved = JSON.parse(raw) as {
+          platform?: string;
+          trackingSource?: string;
+          carrier?: string | null;
+        };
+
+        const validPlatforms = ['shopify', 'website', 'manual'];
+        const validSources = ['carrier', 'manual', 'unsure'];
+        const validCarriers = ['yalidine', 'ecotrack', 'zrexpress', 'procolis', 'maystro', 'other'];
+        const restoredPlatform = validPlatforms.includes(saved.platform || '')
+          ? saved.platform as 'shopify' | 'website' | 'manual'
+          : null;
+        const restoredSource = validSources.includes(saved.trackingSource || '')
+          ? saved.trackingSource as 'carrier' | 'manual' | 'unsure'
+          : null;
+        const restoredCarrier = validCarriers.includes(saved.carrier || '')
+          ? saved.carrier as 'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'other'
+          : null;
+
+        setIntegrationPlatform(restoredPlatform);
+        setTrackingSource(restoredSource);
+        setSelectedCarrier(restoredCarrier);
+        setIntegrationStep(
+          restoredPlatform && restoredSource && (restoredSource !== 'carrier' || restoredCarrier)
+            ? 3
+            : restoredPlatform
+              ? 2
+              : 1
+        );
+      }
+    } catch (error) {
+      console.warn('[Integrations]: Could not restore saved browser choices:', error);
+    }
+
+    setIntegrationChoicesHydratedFor(merchantId);
+  }, [merchantId]);
+
+  useEffect(() => {
+    if (!merchantId || integrationChoicesHydratedFor !== merchantId) return;
+
+    const storageKey = `tajertrack:integration-setup:v1:${merchantId}`;
+    if (!integrationPlatform && !trackingSource && !selectedCarrier) {
+      try { window.localStorage.removeItem(storageKey); } catch { /* Browser storage may be disabled. */ }
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify({
+        version: 1,
+        platform: integrationPlatform,
+        trackingSource,
+        carrier: selectedCarrier,
+        savedAt: new Date().toISOString(),
+      }));
+    } catch (error) {
+      console.warn('[Integrations]: Could not save browser choices:', error);
+    }
+  }, [merchantId, integrationChoicesHydratedFor, integrationPlatform, trackingSource, selectedCarrier]);
+
   // Mobile Back Button Handler: when mobile menu drawer is open, back button closes it instead of leaving dashboard
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -727,15 +800,16 @@ export function MerchantDashboardView({
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
-  const [integrationPlatform, setIntegrationPlatform] = useState<'shopify' | 'website' | null>(null);
+  const [integrationPlatform, setIntegrationPlatform] = useState<'shopify' | 'website' | 'manual' | null>(null);
   const [trackingSource, setTrackingSource] = useState<'carrier' | 'manual' | 'unsure' | null>(null);
-  const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'maystro' | 'other' | null>(null);
-  const [integrationSection, setIntegrationSection] = useState<'sdk' | 'carriers' | 'shopify' | 'wizard'>('sdk');
+  const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'other' | null>(null);
+  const [integrationStep, setIntegrationStep] = useState<1 | 2 | 3>(1);
+  const [integrationChoicesHydratedFor, setIntegrationChoicesHydratedFor] = useState<string | null>(null);
   const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
   const [isSavingTelegram, startTransitionTelegram] = useTransition();
   const [confirmationEnabled, setConfirmationEnabled] = useState(confirmationTelegramEnabled);
   const [isSavingConfirmation, startTransitionConfirmation] = useTransition();
-  const [sdkCodeTab, setSdkCodeTab] = useState<'html' | 'react' | 'node' | 'curl' | 'agent'>('html');
+  const [sdkCodeTab, setSdkCodeTab] = useState<'html' | 'react' | 'node' | 'curl' | 'agent'>('agent');
   const [packageManager, setPackageManager] = useState<'npm' | 'pnpm' | 'yarn' | 'bun'>('npm');
   const [apiKeyRevealed, setApiKeyRevealed] = useState(false);
   const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
@@ -1263,6 +1337,7 @@ export function MerchantDashboardView({
   const yalidineUrl = `${siteUrl}/api/webhooks/yalidine?key=${apiKey}`;
   const ecotrackUrl = `${siteUrl}/api/webhooks/ecotrack?key=${apiKey}`;
   const zrexpressUrl = `${siteUrl}/api/webhooks/zrexpress?key=${apiKey}`;
+  const procolisUrl = `${siteUrl}/api/webhooks/procolis?key=${apiKey}`;
   const odooUrl = `${siteUrl}/api/webhooks/odoo?key=${apiKey}`;
   const maystroUrl = `${siteUrl}/api/webhooks/maystro?key=${apiKey}`;
 
@@ -1292,14 +1367,25 @@ export function MerchantDashboardView({
     },
     {
       id: 'zrexpress' as const,
-      name: 'ZR Express / Procolis',
+      name: 'ZR Express',
       symbol: 'ZR',
       url: zrexpressUrl,
       header: `Token ${apiKey}`,
       method: 'POST (JSON)',
-      hint: 'من لوحة تحكم ZR Express أو محرك Procolis، ابحث عن قسم Webhooks أو إشعارات الحالات، وأضف رابط تاجر تراك.',
+      hint: 'من لوحة تحكم ZR Express، ابحث عن قسم Webhooks أو إشعارات الحالات، وأضف رابط تاجر تراك.',
       caveat: 'احفظ الإعدادات واطلب إرسال إشعار تجريبي للتأكد من المزامنة الفورية.',
       supportQuestion: 'مرحباً، أريد ربط حسابي في ZR Express مع تاجر تراك عبر Webhooks لتحديث مسار التوصيل للزبائن تلقائياً. أين يمكنني تفعيل ذلك في لوحة الحساب؟'
+    },
+    {
+      id: 'procolis' as const,
+      name: 'Procolis',
+      symbol: 'P',
+      url: procolisUrl,
+      header: `Token ${apiKey}`,
+      method: 'POST (JSON)',
+      hint: 'من لوحة Procolis، تحقّق من إعدادات Webhooks أو إشعارات تغيّر حالة الشحنة، ثم أضف رابط الاستقبال الخاص بمتجرك.',
+      caveat: 'يجب تفعيل إرسال الأحداث من حساب Procolis نفسه ثم اختبار وصول حدث حقيقي.',
+      supportQuestion: 'مرحباً، أستخدم Procolis وأريد ربط تحديثات الشحن مع تاجر تراك. هل يدعم حسابي Webhooks خارجية عند تغيّر حالة الشحنة، وأين أضيف رابط الاستقبال؟'
     },
     {
       id: 'maystro' as const,
@@ -1312,20 +1398,9 @@ export function MerchantDashboardView({
       caveat: 'يدعم مزامنة حالات ramasse, in_transit, at_local_hub, out_for_delivery, delivered, returned.',
       supportQuestion: 'مرحباً، أستخدم تاجر تراك وأريد تفعيل Webhook لتتبع الشحنات مع Maystro Delivery. هل يمكن تفعيل الرابط الخارجي لحسابي؟'
     },
-    {
-      id: 'odoo' as const,
-      name: 'Odoo ERP',
-      symbol: 'O',
-      url: odooUrl,
-      header: `x-api-key: ${apiKey}`,
-      method: 'POST (JSON)',
-      hint: 'اربط نظام إدارة المبيعات والمخازن أودو بمزامنة التوصيل التلقائية في تاجر تراك عند شحن وتأكيد الطلبات.',
-      caveat: 'يمكنك إعداد Automated Action أو Webhook في تطبيق المبيعات أو التوصيل في Odoo.',
-      supportQuestion: 'مرحباً، أريد تفعيل Webhook في Odoo لإرسال إشعار شحن الطلب إلى تاجر تراك عند تأكيد الفاتورة أو التسليم.'
-    },
   ];
 
-  const activeCarrierConnection = carrierConnections.find((carrier) => carrier.id === selectedCarrier) ?? carrierConnections[0];
+  const activeCarrierConnection = carrierConnections.find((carrier) => carrier.id === selectedCarrier) ?? null;
   const integrationReady = Boolean(integrationPlatform && trackingSource && (trackingSource !== 'carrier' || selectedCarrier));
 
   const installCommands = {
@@ -1355,7 +1430,7 @@ export function MerchantDashboardView({
   <input type="text" name="wilaya" placeholder="الولاية" required />
   <input type="hidden" name="product_name" value="اسم المنتج الخاص بك" />
 
-  <button type="submit">تأكيد الطلب والدفع عند الاستلام 🚚</button>
+  <button type="submit">تأكيد الطلب والدفع عند الاستلام</button>
 </form>`;
 
   const reactCodeSnippet = `'use client';
@@ -3263,6 +3338,119 @@ export async function processOrderAction(formData: FormData) {
         .dz-billing-next-cycle-banner p { margin:0; font-size:12px; line-height:1.6; color:var(--ink-muted); }
         .dz-active-plan-card { padding:20px 22px; border-radius:14px; background:#fffefa; border:1px solid var(--border-soft); margin-top:24px; }
 
+        /* Guided Integrations */
+        .dz-int-guided { display:flex; flex-direction:column; gap:18px; max-width:980px; margin:0 auto; }
+        .dz-int-guided-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; }
+        .dz-int-guided-heading h2 { margin:4px 0 6px; color:var(--ink-main); font-size:22px; font-weight:850; letter-spacing:-.03em; }
+        .dz-int-guided-heading p { margin:0; color:var(--ink-muted); font-size:12px; line-height:1.8; }
+        .dz-int-guided-reset { display:inline-flex; align-items:center; gap:7px; flex:0 0 auto; padding:9px 12px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); color:var(--ink-muted); font:inherit; font-size:11px; font-weight:750; cursor:pointer; }
+        .dz-int-guided-reset svg { width:15px; height:15px; }
+        .dz-int-guided-card, .dz-int-guided-panel { background:var(--surface); border:1px solid var(--border-soft); border-radius:17px; padding:22px; box-shadow:var(--shadow-sm); }
+        .dz-int-guided-loading { padding:24px; border:1px solid var(--border-soft); border-radius:14px; background:var(--surface); color:var(--ink-muted); font-size:12px; text-align:center; }
+        .dz-int-guided-progress { display:flex; gap:6px; margin-bottom:17px; }
+        .dz-int-guided-progress span { height:4px; flex:1; border-radius:99px; background:#e8ebe6; }
+        .dz-int-guided-progress span.is-active, .dz-int-guided-progress span.is-done { background:#3c6548; }
+        .dz-int-guided-step-label { margin-bottom:5px; color:#59725c; font-size:10px; font-weight:850; }
+        .dz-int-guided-card h3 { margin:0; color:var(--ink-main); font-size:19px; font-weight:850; letter-spacing:-.025em; }
+        .dz-int-guided-help { margin:6px 0 17px; color:var(--ink-muted); font-size:12px; line-height:1.8; }
+        .dz-int-guided-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+        .dz-int-guided-option { position:relative; display:flex; align-items:center; gap:11px; min-width:0; min-height:82px; padding:13px; border:1px solid var(--border-strong); border-radius:13px; background:var(--surface); color:var(--ink-main); text-align:right; cursor:pointer; transition:border-color .18s ease, background .18s ease, transform .18s ease; }
+        .dz-int-guided-option:hover { border-color:#819783; transform:translateY(-1px); }
+        .dz-int-guided-option.is-selected { border-color:#59775e; background:#f1f5ef; box-shadow:inset 0 0 0 1px rgba(75,109,80,.12); }
+        .dz-int-guided-option-icon { display:grid; place-items:center; width:37px; height:37px; flex:0 0 37px; border-radius:10px; background:#eef2ec; color:#3f6248; }
+        .dz-int-guided-option-icon svg { width:19px; height:19px; }
+        .dz-int-guided-option > span:nth-child(2) { display:flex; flex:1; min-width:0; flex-direction:column; gap:4px; }
+        .dz-int-guided-option strong { font-size:12px; font-weight:850; }
+        .dz-int-guided-option small { color:var(--ink-muted); font-size:10px; line-height:1.55; }
+        .dz-int-guided-radio { width:17px; height:17px; flex:0 0 17px; border:1.5px solid #aeb8ad; border-radius:50%; }
+        .dz-int-guided-option.is-selected .dz-int-guided-radio { border:5px solid #49694e; background:#fff; }
+        .dz-int-guided-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:18px; padding-top:14px; border-top:1px solid var(--border-soft); }
+        .dz-int-guided-actions > span { color:var(--ink-muted); font-size:10px; }
+        .dz-int-guided-actions .dz-btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:38px; padding:8px 15px; }
+        .dz-int-guided-actions svg { width:15px; height:15px; }
+        .dz-int-guided-completed { display:flex; align-items:center; gap:9px; margin-bottom:18px; padding:10px 12px; border:1px solid var(--border-soft); border-radius:10px; background:#f7f9f5; font-size:11px; }
+        .dz-int-guided-completed > span { display:inline-flex; align-items:center; gap:5px; color:var(--ink-muted); }
+        .dz-int-guided-completed svg { width:14px; height:14px; color:#42714d; }
+        .dz-int-guided-completed strong { color:var(--ink-main); }
+        .dz-int-guided-completed button, .dz-int-guided-summary button { margin-inline-start:auto; border:0; background:transparent; color:#42664a; font:inherit; font-size:10px; font-weight:800; cursor:pointer; }
+        .dz-int-guided-carrier-select { display:grid; grid-template-columns:150px minmax(0,1fr); align-items:center; gap:12px; margin-top:13px; padding:13px; border:1px solid var(--border-soft); border-radius:11px; background:#f8faf7; }
+        .dz-int-guided-carrier-select label { font-size:11px; font-weight:800; }
+        .dz-int-guided-carrier-select select { min-height:39px; padding:8px 10px; border:1px solid var(--border-strong); border-radius:9px; background:#fff; color:var(--ink-main); font:inherit; font-size:11px; }
+        .dz-int-guided-result { display:flex; flex-direction:column; gap:12px; animation:dz-tab-fade-up .3s ease both; }
+        .dz-int-guided-result-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; padding:0 2px 3px; }
+        .dz-int-guided-result-head h3 { margin:4px 0; color:var(--ink-main); font-size:20px; font-weight:850; }
+        .dz-int-guided-result-head p { margin:0; color:var(--ink-muted); font-size:11px; line-height:1.7; }
+        .dz-int-guided-ready { display:inline-flex; align-items:center; gap:5px; padding:6px 9px; white-space:nowrap; border-radius:7px; background:#edf4ed; color:#42664a; font-size:10px; font-weight:800; }
+        .dz-int-guided-ready svg { width:13px; height:13px; }
+        .dz-int-guided-summary { display:flex; align-items:center; gap:22px; padding:12px 14px; border:1px solid var(--border-soft); border-radius:11px; background:rgba(255,255,255,.65); }
+        .dz-int-guided-summary span { display:flex; flex-direction:column; gap:3px; }
+        .dz-int-guided-summary small { color:var(--ink-muted); font-size:9px; }
+        .dz-int-guided-summary strong { color:var(--ink-main); font-size:11px; }
+        .dz-int-guided-panel { display:flex; flex-direction:column; gap:13px; }
+        .dz-int-guided-panel-title { display:flex; align-items:flex-start; gap:11px; }
+        .dz-int-guided-number { display:grid; place-items:center; width:31px; height:31px; flex:0 0 31px; border-radius:9px; background:#edf2eb; color:#3f6248; font-size:10px; font-weight:900; }
+        .dz-int-guided-panel-title h4 { margin:0 0 4px; color:var(--ink-main); font-size:14px; font-weight:850; }
+        .dz-int-guided-panel-title p { margin:0; color:var(--ink-muted); font-size:11px; line-height:1.8; }
+        .dz-int-guided-copy { display:flex; align-items:center; gap:10px; min-width:0; padding:10px; border:1px solid var(--border-soft); border-radius:10px; background:#f7f9f6; }
+        .dz-int-guided-copy > div { display:flex; flex:1; flex-direction:column; min-width:0; gap:5px; }
+        .dz-int-guided-copy small { color:var(--ink-muted); font-size:9px; }
+        .dz-int-guided-copy code, .dz-int-guided-credential code, .dz-int-guided-meta code { display:block; overflow:auto; color:#35463a; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:10px; line-height:1.7; direction:ltr; text-align:left; white-space:nowrap; }
+        .dz-int-guided-copy button, .dz-int-guided-copy-link, .dz-int-guided-agent-row button { display:inline-flex; align-items:center; justify-content:center; gap:6px; flex:0 0 auto; padding:8px 10px; border:1px solid rgba(57,91,64,.18); border-radius:8px; background:#fff; color:#42664a; font:inherit; font-size:10px; font-weight:800; cursor:pointer; }
+        .dz-int-guided-copy button svg, .dz-int-guided-copy-link svg, .dz-int-guided-agent-row button svg { width:13px; height:13px; }
+        .dz-int-guided-steps { display:grid; gap:8px; margin:0; padding-inline-start:22px; color:var(--ink-main); font-size:11px; line-height:1.8; }
+        .dz-int-guided-steps li { padding-inline-start:4px; }
+        .dz-int-guided-note { margin:0; padding:10px 12px; border-inline-start:3px solid #91a58f; border-radius:7px; background:#f3f6f1; color:#56675a; font-size:10px; line-height:1.8; }
+        .dz-int-guided-credentials { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+        .dz-int-guided-credential { display:flex; flex-direction:column; gap:8px; min-width:0; padding:12px; border:1px solid var(--border-soft); border-radius:10px; background:#f8faf7; }
+        .dz-int-guided-credential:last-child { grid-column:1 / -1; }
+        .dz-int-guided-credential-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+        .dz-int-guided-credential-head small { color:var(--ink-muted); font-size:10px; font-weight:800; }
+        .dz-int-guided-credential-head button { display:inline-flex; align-items:center; gap:5px; border:0; background:transparent; color:#42664a; font:inherit; font-size:10px; cursor:pointer; }
+        .dz-int-guided-credential-head button svg { width:13px; height:13px; }
+        .dz-int-guided-recommended { display:flex; flex-direction:column; gap:11px; padding:15px; border:1px solid #dce6da; border-radius:12px; background:#f5f8f3; }
+        .dz-int-guided-recommended h4 { margin:3px 0; color:var(--ink-main); font-size:13px; font-weight:850; }
+        .dz-int-guided-recommended p { margin:0; color:var(--ink-muted); font-size:10px; line-height:1.7; }
+        .dz-int-guided-package-row { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:9px; }
+        .dz-int-guided-package-select { display:flex; gap:3px; }
+        .dz-int-guided-package-select button { padding:6px 8px; border:1px solid var(--border-strong); border-radius:6px; background:#fff; color:var(--ink-muted); font:inherit; font-size:9px; cursor:pointer; }
+        .dz-int-guided-package-select button.is-active { background:#273b30; border-color:#273b30; color:#fff; }
+        .dz-int-guided-package-row > code, .dz-int-guided-agent-row > code { overflow:auto; padding:9px 10px; border:1px solid var(--border-soft); border-radius:7px; background:#fff; color:#34483a; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:10px; direction:ltr; text-align:left; white-space:nowrap; }
+        .dz-int-guided-package-row > button { display:inline-flex; align-items:center; gap:5px; padding:8px 10px; border:0; border-radius:7px; background:#273b30; color:#fff; font:inherit; font-size:10px; font-weight:800; cursor:pointer; }
+        .dz-int-guided-package-row > button svg { width:13px; height:13px; }
+        .dz-int-guided-agent-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; }
+        .dz-int-guided-details { border:1px solid var(--border-soft); border-radius:11px; background:var(--surface); padding:0 13px; }
+        .dz-int-guided-details summary { padding:13px 0; color:var(--ink-main); font-size:11px; font-weight:850; cursor:pointer; }
+        .dz-int-guided-details > p { margin:0 0 12px; color:var(--ink-muted); font-size:10px; line-height:1.8; }
+        .dz-int-guided-details .dz-code-container { margin:0 0 12px; }
+        .dz-int-guided-doc-link { margin:0 0 12px; font-size:10px; }
+        .dz-int-guided-doc-link a { color:#42664a; font-weight:800; text-decoration:underline; }
+        .dz-int-guided-meta { display:grid; grid-template-columns:110px minmax(0,1fr); gap:7px 12px; padding:10px 12px; border-radius:9px; background:#f7f9f6; font-size:10px; }
+        .dz-int-guided-meta span { color:var(--ink-muted); }
+        .dz-int-guided-meta strong { color:var(--ink-main); }
+        .dz-int-guided-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:10px 2px; color:var(--ink-muted); font-size:10px; }
+        .dz-int-guided-footer button { border:0; background:transparent; color:#42664a; font:inherit; font-size:10px; font-weight:850; cursor:pointer; }
+        .dz-int-guided-manual .dz-btn { align-self:flex-start; display:inline-flex; align-items:center; gap:7px; }
+        .dz-int-guided-manual .dz-btn svg { width:15px; height:15px; }
+        @media (max-width: 760px) {
+          .dz-int-guided-heading, .dz-int-guided-result-head { flex-direction:column; }
+          .dz-int-guided-options { grid-template-columns:minmax(0,1fr); }
+          .dz-int-guided-option { min-height:68px; }
+          .dz-int-guided-actions { flex-wrap:wrap; }
+          .dz-int-guided-actions .dz-btn { margin-inline-start:auto; }
+          .dz-int-guided-carrier-select { grid-template-columns:minmax(0,1fr); }
+          .dz-int-guided-summary { align-items:flex-start; flex-direction:column; gap:8px; }
+          .dz-int-guided-summary button { margin-inline-start:0; }
+          .dz-int-guided-credentials { grid-template-columns:minmax(0,1fr); }
+          .dz-int-guided-credential:last-child { grid-column:auto; }
+          .dz-int-guided-package-row { grid-template-columns:minmax(0,1fr); }
+          .dz-int-guided-agent-row { grid-template-columns:minmax(0,1fr); }
+          .dz-int-guided-copy { align-items:stretch; flex-direction:column; }
+          .dz-int-guided-copy button { align-self:flex-start; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .dz-int-guided-option, .dz-int-guided-result { transition:none !important; animation:none !important; }
+        }
+
         /* Integration Hub */
         .dz-int-hub { display:flex; flex-direction:column; gap:24px; }
         .dz-int-creds-card { background:rgba(255,254,250,.95); border:1px solid var(--border-soft); border-radius:18px; padding:22px 24px; box-shadow:0 4px 20px rgba(0,0,0,.03); }
@@ -3568,10 +3756,6 @@ export async function processOrderAction(formData: FormData) {
           </nav>
 
           <div className="dz-sidebar-footer">
-            <div className="dz-api-mini">
-              <span>API: <span className="dz-mono" style={{ border: 'none', background: 'transparent' }}>{apiKey.substring(0,8)}...</span></span>
-              <button className="dz-icon-btn" onClick={() => copyToClipboard(apiKey, 'api')}><Icons.Copy /></button>
-            </div>
             <form action={logout}>
               <button type="submit" className="dz-nav-item" style={{ width: '100%', justifyContent: 'center', background: 'var(--bg-base)' }}>
                 <Icons.LogOut /> <span style={{ marginRight: '8px' }}>تسجيل الخروج</span>
@@ -5212,500 +5396,284 @@ export async function processOrderAction(formData: FormData) {
             </div>
           )}
 
-          {/* TAB: INTEGRATIONS — Complete Developer & Carrier Hub */}
+          {/* TAB: INTEGRATIONS — guided, progressive setup */}
           {activeTab === 'integrations' && (
-            <div className="dz-int-hub" aria-label="بوابات الربط وحزمة الـ SDK">
-              {/* TOP API CREDENTIALS HUB */}
-              <div className="dz-int-creds-card">
-                <div className="dz-int-creds-header">
-                  <div className="dz-int-creds-title">
-                    <Icons.Key />
+            <div className="dz-int-guided" aria-label="إعداد ربط المتجر">
+              {integrationChoicesHydratedFor !== merchantId ? (
+                <div className="dz-int-guided-loading" role="status">جارٍ استعادة اختيارات الربط المحفوظة على هذا المتصفح...</div>
+              ) : (
+                <>
+                  <div className="dz-int-guided-heading">
                     <div>
-                      <h2>بيانات الربط والاعتماد البرمجي (API Credentials)</h2>
-                      <span className="dz-int-creds-badge">تاجر تراك Tajer Track · مسار آمن</span>
+                      <span className="dz-setup-eyebrow">إعداد مرة واحدة</span>
+                      <h2>خلّينا نربط متجرك</h2>
+                      <p>جاوب عن سؤالين فقط، وسنعرض لك الخطوات التي تحتاجها دون تفاصيل غير ضرورية.</p>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <a
-                      href={`${siteUrl}/skill.md`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="dz-btn dz-btn-outline"
-                      style={{ fontSize: '12px', padding: '6px 12px' }}
-                    >
-                      <Icons.BookOpen /> توثيق وكلاء الذكاء (skill.md)
-                    </a>
-                  </div>
-                </div>
-
-                <div className="dz-int-creds-grid">
-                  <div className="dz-int-field-box">
-                    <span className="dz-int-field-label">
-                      <span>مفتاح الـ API الخاص بمتجرك (API Key)</span>
-                      <button
-                        type="button"
-                        onClick={() => setApiKeyRevealed(!apiKeyRevealed)}
-                        style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--ink-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}
-                      >
-                        {apiKeyRevealed ? <Icons.EyeOff /> : <Icons.Eye />} {apiKeyRevealed ? 'إخفاء' : 'إظهار'}
+                    {integrationStep === 3 && (
+                      <button type="button" className="dz-int-guided-reset" onClick={() => {
+                        setIntegrationPlatform(null);
+                        setTrackingSource(null);
+                        setSelectedCarrier(null);
+                        setIntegrationStep(1);
+                        setApiKeyRevealed(false);
+                      }}>
+                        <Icons.Refresh /> إعادة الاختبار
                       </button>
-                    </span>
-                    <div className="dz-int-field-row">
-                      <code className="dz-int-field-code">
-                        {apiKeyRevealed ? apiKey : `${apiKey.slice(0, 10)}••••••••••••••••••••••••••••`}
-                      </code>
-                      <button
-                        type="button"
-                        className="dz-icon-btn"
-                        onClick={() => copyToClipboard(apiKey, 'api-key-main')}
-                        title="نسخ المفتاح"
-                      >
-                        {copiedKey === 'api-key-main' ? <Icons.Check /> : <Icons.Copy />}
-                      </button>
-                    </div>
+                    )}
                   </div>
 
-                  <div className="dz-int-field-box">
-                    <span className="dz-int-field-label">معرّف المتجر الداخلي (Store ID)</span>
-                    <div className="dz-int-field-row">
-                      <code className="dz-int-field-code">{merchantId}</code>
-                      <button
-                        type="button"
-                        className="dz-icon-btn"
-                        onClick={() => copyToClipboard(merchantId, 'store-id')}
-                        title="نسخ المعرّف"
-                      >
-                        {copiedKey === 'store-id' ? <Icons.Check /> : <Icons.Copy />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="dz-int-field-box">
-                    <span className="dz-int-field-label">رابط نقطة النهاية الموحدة (Ingestion Endpoint)</span>
-                    <div className="dz-int-field-row">
-                      <code className="dz-int-field-code">{`${siteUrl}/api/webhooks`}</code>
-                      <button
-                        type="button"
-                        className="dz-icon-btn"
-                        onClick={() => copyToClipboard(`${siteUrl}/api/webhooks`, 'base-endpoint')}
-                        title="نسخ الرابط"
-                      >
-                        {copiedKey === 'base-endpoint' ? <Icons.Check /> : <Icons.Copy />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* INTEGRATION NAVIGATION TABS */}
-              <div className="dz-int-nav">
-                <button
-                  type="button"
-                  className={`dz-int-nav-btn ${integrationSection === 'sdk' ? 'active' : ''}`}
-                  onClick={() => setIntegrationSection('sdk')}
-                >
-                  <Icons.Terminal /> حزمة الـ SDK والربط البرمجي (dz-tracking-sdk)
-                </button>
-                <button
-                  type="button"
-                  className={`dz-int-nav-btn ${integrationSection === 'carriers' ? 'active' : ''}`}
-                  onClick={() => setIntegrationSection('carriers')}
-                >
-                  <Icons.Truck /> بوابات شركات التوصيل الجزائرية (Webhooks)
-                </button>
-                <button
-                  type="button"
-                  className={`dz-int-nav-btn ${integrationSection === 'shopify' ? 'active' : ''}`}
-                  onClick={() => setIntegrationSection('shopify')}
-                >
-                  <Icons.Code /> متجر Shopify
-                </button>
-                <button
-                  type="button"
-                  className={`dz-int-nav-btn ${integrationSection === 'wizard' ? 'active' : ''}`}
-                  onClick={() => setIntegrationSection('wizard')}
-                >
-                  <Icons.HelpCircle /> المساعد التفاعلي لتحديد المسار
-                </button>
-              </div>
-
-              {/* SUBTAB 1: SDK & DEVELOPER HUB */}
-              {integrationSection === 'sdk' && (
-                <div className="dz-int-panel">
-                  {/* FEATURES BADGES */}
-                  <div className="dz-features-badges">
-                    <div className="dz-feature-pill">
-                      <div className="dz-feature-pill-icon"><Icons.Zap /></div>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '13px' }}>التقاط بدون كود (Zero-Code)</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>أضف <code>data-dz-checkout</code> للنموذج وسيلتقط الـ SDK الطلب تلقائياً.</span>
-                      </div>
-                    </div>
-                    <div className="dz-feature-pill">
-                      <div className="dz-feature-pill-icon">🇩🇿</div>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '13px' }}>تصحيح هواتف الجزائر</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>توحيد وتصحيح تلقائي لصيغ (05, 06, 07, +213) وإزالة الشوائب.</span>
-                      </div>
-                    </div>
-                    <div className="dz-feature-pill">
-                      <div className="dz-feature-pill-icon"><Icons.Shield /></div>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '13px' }}>درع العمل دون اتصال</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>حفظ مؤقت واسترجاع فوري للطلبات في حال ضعف أو انقطاع شبكة الزبون.</span>
-                      </div>
-                    </div>
-                    <div className="dz-feature-pill">
-                      <div className="dz-feature-pill-icon"><Icons.MessageCircle /></div>
-                      <div>
-                        <strong style={{ display: 'block', fontSize: '13px' }}>استرجاع الواتساب الفوري</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>توليد روابط محادثات مخصصة لإنقاذ الطرود المهددة بعدم الرد.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* PACKAGE MANAGER INSTALL BOX */}
-                  <div className="dz-card-box" style={{ padding: '18px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                      <strong style={{ fontSize: '14px' }}>تثبيت حزمة الـ SDK في مشروعك</strong>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        {(['npm', 'pnpm', 'yarn', 'bun'] as const).map((pm) => (
-                          <button
-                            key={pm}
-                            type="button"
-                            className={`dz-btn dz-btn-outline ${packageManager === pm ? 'active' : ''}`}
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: '11px',
-                              background: packageManager === pm ? '#27342d' : 'transparent',
-                              color: packageManager === pm ? '#fff' : 'inherit',
-                            }}
-                            onClick={() => setPackageManager(pm)}
-                          >
-                            {pm}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="dz-copy-field dz-copy-field-command">
-                      <code dir="ltr">{installCommands[packageManager]}</code>
-                      <button type="button" onClick={() => copyToClipboard(installCommands[packageManager], 'pm-install')}>
-                        {copiedKey === 'pm-install' ? <Icons.Check /> : <Icons.Copy />}
-                        <span>{copiedKey === 'pm-install' ? 'تم النسخ' : 'نسخ الأمر'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* CODE SAMPLES TAB BOX */}
-                  <div className="dz-code-container">
-                    <div className="dz-code-header">
-                      <div className="dz-code-tabs">
-                        <button
-                          type="button"
-                          className={`dz-code-tab-btn ${sdkCodeTab === 'html' ? 'active' : ''}`}
-                          onClick={() => setSdkCodeTab('html')}
-                        >
-                          HTML / Zero-Code
+                  {integrationStep === 1 && (
+                    <section className="dz-int-guided-card" aria-labelledby="dz-int-source-title">
+                      <div className="dz-int-guided-progress"><span className="is-active" /><span /><span /></div>
+                      <div className="dz-int-guided-step-label">الخطوة 1 من 2</div>
+                      <h3 id="dz-int-source-title">من أين تأتي طلبات متجرك؟</h3>
+                      <p className="dz-int-guided-help">اختر الطريقة التي تستخدمها حالياً لتسجيل الطلبات.</p>
+                      <div className="dz-int-guided-options">
+                        <button type="button" className={`dz-int-guided-option ${integrationPlatform === 'shopify' ? 'is-selected' : ''}`} aria-pressed={integrationPlatform === 'shopify'} onClick={() => {
+                          setIntegrationPlatform('shopify');
+                          setTrackingSource(null);
+                          setSelectedCarrier(null);
+                        }}>
+                          <span className="dz-int-guided-option-icon"><Icons.ShoppingBag /></span>
+                          <span><strong>Shopify</strong><small>متجري يعمل على Shopify.</small></span>
+                          <span className="dz-int-guided-radio" />
                         </button>
-                        <button
-                          type="button"
-                          className={`dz-code-tab-btn ${sdkCodeTab === 'react' ? 'active' : ''}`}
-                          onClick={() => setSdkCodeTab('react')}
-                        >
-                          React / Next.js
+                        <button type="button" className={`dz-int-guided-option ${integrationPlatform === 'website' ? 'is-selected' : ''}`} aria-pressed={integrationPlatform === 'website'} onClick={() => {
+                          setIntegrationPlatform('website');
+                          setTrackingSource(null);
+                          setSelectedCarrier(null);
+                        }}>
+                          <span className="dz-int-guided-option-icon"><Icons.Code /></span>
+                          <span><strong>موقع إلكتروني خاص</strong><small>موقع مبرمج أو متجر مخصص.</small></span>
+                          <span className="dz-int-guided-radio" />
                         </button>
-                        <button
-                          type="button"
-                          className={`dz-code-tab-btn ${sdkCodeTab === 'node' ? 'active' : ''}`}
-                          onClick={() => setSdkCodeTab('node')}
-                        >
-                          Node.js Backend / Server Actions
-                        </button>
-                        <button
-                          type="button"
-                          className={`dz-code-tab-btn ${sdkCodeTab === 'curl' ? 'active' : ''}`}
-                          onClick={() => setSdkCodeTab('curl')}
-                        >
-                          cURL / REST API
-                        </button>
-                        <button
-                          type="button"
-                          className={`dz-code-tab-btn ${sdkCodeTab === 'agent' ? 'active' : ''}`}
-                          onClick={() => setSdkCodeTab('agent')}
-                        >
-                          أمر وكيل الذكاء (AI Prompt)
+                        <button type="button" className={`dz-int-guided-option ${integrationPlatform === 'manual' ? 'is-selected' : ''}`} aria-pressed={integrationPlatform === 'manual'} onClick={() => {
+                          setIntegrationPlatform('manual');
+                          setTrackingSource(null);
+                          setSelectedCarrier(null);
+                        }}>
+                          <span className="dz-int-guided-option-icon"><Icons.Clipboard /></span>
+                          <span><strong>إضافة الطلبات يدوياً</strong><small>أسجل الطلبات من لوحة تاجر تراك.</small></span>
+                          <span className="dz-int-guided-radio" />
                         </button>
                       </div>
+                      <div className="dz-int-guided-actions">
+                        <span>ستتمكن من تعديل اختيارك لاحقاً.</span>
+                        <button type="button" className="dz-btn" disabled={!integrationPlatform} onClick={() => setIntegrationStep(2)}>متابعة <Icons.ArrowLeft /></button>
+                      </div>
+                    </section>
+                  )}
 
-                      <button
-                        type="button"
-                        className="dz-btn dz-btn-outline"
-                        style={{ fontSize: '11px', padding: '4px 10px', color: '#d1dcd4', borderColor: '#3a4a3f' }}
-                        onClick={() => {
-                          const codeMap = {
-                            html: htmlCodeSnippet,
-                            react: reactCodeSnippet,
-                            node: nodeCodeSnippet,
-                            curl: curlSnippet,
-                            agent: sdkAgentPrompt,
-                          };
-                          copyToClipboard(codeMap[sdkCodeTab], `code-${sdkCodeTab}`);
-                        }}
-                      >
-                        {copiedKey === `code-${sdkCodeTab}` ? <Icons.Check /> : <Icons.Copy />}{' '}
-                        {copiedKey === `code-${sdkCodeTab}` ? 'تم النسخ' : 'نسخ الكود'}
-                      </button>
-                    </div>
-
-                    <pre className="dz-code-pre">
-                      {sdkCodeTab === 'html' && htmlCodeSnippet}
-                      {sdkCodeTab === 'react' && reactCodeSnippet}
-                      {sdkCodeTab === 'node' && nodeCodeSnippet}
-                      {sdkCodeTab === 'curl' && curlSnippet}
-                      {sdkCodeTab === 'agent' && sdkAgentPrompt}
-                    </pre>
-                  </div>
-
-                  {/* HTML DATA ATTRIBUTES SPECIFICATION TABLE */}
-                  <div className="dz-card-box" style={{ padding: '20px' }}>
-                    <h3 style={{ margin: '0 0 12px', fontSize: '15px' }}>دليل خصائص الـ HTML لتتبع النماذج تلقائياً (Zero-Code)</h3>
-                    <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--ink-muted)' }}>
-                      عند استخدام <code>initTracker()</code>، يمكنك تحويل أي نموذج دفع أو تأكيد طلب إلى نموذج متكامل مع تاجر تراك دون كتابة سطر كود برمجي واحد:
-                    </p>
-                    <div className="dz-table-container">
-                      <table className="dz-data-table">
-                        <thead>
-                          <tr>
-                            <th>الخاصية (Attribute)</th>
-                            <th>النوع</th>
-                            <th>الوصف والاستخدام</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td><code>data-dz-checkout</code></td>
-                            <td>مفتاح (Boolean)</td>
-                            <td>يُوضع على وسم <code>&lt;form&gt;</code> لتفعيل الالتقاط الآلي وتجهيز الطلب للتتبع.</td>
-                          </tr>
-                          <tr>
-                            <td><code>data-dz-redirect="tracking"</code></td>
-                            <td>اختياري</td>
-                            <td>توجيه المتصفح تلقائياً إلى صفحة التتبع بهويتك البصرية فور تسجيل الطلب.</td>
-                          </tr>
-                          <tr>
-                            <td><code>data-dz-field="name"</code></td>
-                            <td>اختياري</td>
-                            <td>تحديد حقل اسم العميل إذا كان اسم المدخل في نموذجك يختلف عن <code>name</code>.</td>
-                          </tr>
-                          <tr>
-                            <td><code>data-dz-field="phone"</code></td>
-                            <td>اختياري</td>
-                            <td>تحديد حقل رقم هاتف العميل ليتم فحصه وتصحيحه تلقائياً.</td>
-                          </tr>
-                          <tr>
-                            <td><code>data-dz-field="wilaya"</code></td>
-                            <td>اختياري</td>
-                            <td>تحديد ولاية التوصيل في الجزائر.</td>
-                          </tr>
-                          <tr>
-                            <td><code>data-dz-prevent-default="false"</code></td>
-                            <td>اختياري</td>
-                            <td>السماح للنموذج بإكمال إرساله الأصلي إلى خادمك أو بريدك بالتوازي مع تسجيله في تاجر تراك.</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* SUBTAB 2: CARRIERS WEBHOOKS HUB */}
-              {integrationSection === 'carriers' && (
-                <div className="dz-int-panel">
-                  <div className="dz-card-box" style={{ padding: '16px 20px', background: '#f8faf7' }}>
-                    <strong style={{ display: 'block', fontSize: '14px', marginBottom: '4px' }}>
-                      كيف تعمل بوابات شركات التوصيل؟
-                    </strong>
-                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.7 }}>
-                      عندما تغيّر شركة التوصيل حالة الطرد (مثلاً: خرج للتوصيل، لم يرد، تم التسليم، مؤجل)، تقوم الشركة بإرسال إشعار لحظي (Webhook) إلى الرابط المخصص لمتجرك أدناه. يقوم تاجر تراك بترجمة الحالة وعرضها فوراً لزبونك.
-                    </p>
-                  </div>
-
-                  <div className="dz-carriers-grid">
-                    {carrierConnections.map((carrier) => (
-                      <div key={carrier.id} className="dz-carrier-card">
-                        <div className="dz-carrier-card-head">
-                          <span className="dz-carrier-name">{carrier.name}</span>
-                          <span className="dz-carrier-status-tag">جاهز للربط ✓</span>
-                        </div>
-                        <p className="dz-carrier-hint">{carrier.hint}</p>
-
-                        <div className="dz-copy-field">
-                          <code dir="ltr">{carrier.url}</code>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(carrier.url, `carrier-url-${carrier.id}`)}
-                          >
-                            {copiedKey === `carrier-url-${carrier.id}` ? <Icons.Check /> : <Icons.Copy />}
-                            <span>{copiedKey === `carrier-url-${carrier.id}` ? 'تم النسخ' : 'نسخ الرابط'}</span>
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="dz-support-copy"
-                          onClick={() => copyToClipboard(carrier.supportQuestion, `carrier-q-${carrier.id}`)}
-                        >
-                          {copiedKey === `carrier-q-${carrier.id}` ? <Icons.Check /> : <Icons.Copy />}{' '}
-                          {copiedKey === `carrier-q-${carrier.id}` ? 'تم نسخ السؤال' : 'نسخ صيغة السؤال لدعم الشركة'}
+                  {integrationStep === 2 && (
+                    <section className="dz-int-guided-card" aria-labelledby="dz-int-updates-title">
+                      <div className="dz-int-guided-progress"><span className="is-done" /><span className="is-active" /><span /></div>
+                      <div className="dz-int-guided-completed">
+                        <span><Icons.Check /> مصدر الطلبات</span>
+                        <strong>{integrationPlatform === 'shopify' ? 'Shopify' : integrationPlatform === 'website' ? 'موقع إلكتروني خاص' : 'إضافة يدوية'}</strong>
+                        <button type="button" onClick={() => setIntegrationStep(1)}>تغيير</button>
+                      </div>
+                      <div className="dz-int-guided-step-label">الخطوة 2 من 2</div>
+                      <h3 id="dz-int-updates-title">كيف تريد تحديث حالة الشحنة؟</h3>
+                      <p className="dz-int-guided-help">استقبال الطلب وتحديث حالة التوصيل عمليتان منفصلتان. اختر ما يناسبك.</p>
+                      <div className="dz-int-guided-options">
+                        <button type="button" className={`dz-int-guided-option ${trackingSource === 'carrier' ? 'is-selected' : ''}`} aria-pressed={trackingSource === 'carrier'} onClick={() => setTrackingSource('carrier')}>
+                          <span className="dz-int-guided-option-icon"><Icons.Truck /></span>
+                          <span><strong>تلقائياً من شركة التوصيل</strong><small>تصل الحالات من الشركة عند تفعيل Webhook.</small></span>
+                          <span className="dz-int-guided-radio" />
+                        </button>
+                        <button type="button" className={`dz-int-guided-option ${trackingSource === 'manual' ? 'is-selected' : ''}`} aria-pressed={trackingSource === 'manual'} onClick={() => {
+                          setTrackingSource('manual');
+                          setSelectedCarrier(null);
+                        }}>
+                          <span className="dz-int-guided-option-icon"><Icons.Edit /></span>
+                          <span><strong>أحدّث الحالات بنفسي</strong><small>أغيّر حالة الشحنة من لوحة الطلبات.</small></span>
+                          <span className="dz-int-guided-radio" />
+                        </button>
+                        <button type="button" className={`dz-int-guided-option ${trackingSource === 'unsure' ? 'is-selected' : ''}`} aria-pressed={trackingSource === 'unsure'} onClick={() => {
+                          setTrackingSource('unsure');
+                          setSelectedCarrier(null);
+                        }}>
+                          <span className="dz-int-guided-option-icon"><Icons.HelpCircle /></span>
+                          <span><strong>لست متأكداً</strong><small>ساعدني في التحقق من دعم شركة التوصيل.</small></span>
+                          <span className="dz-int-guided-radio" />
                         </button>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* SUBTAB 3: SHOPIFY INTEGRATION */}
-              {integrationSection === 'shopify' && (
-                <div className="dz-int-panel">
-                  <div className="dz-guide-step-panel">
-                    <div className="dz-guide-panel-top">
-                      <span className="dz-guide-step-no">01</span>
-                      <span className="dz-guide-type">SHOPIFY · WEBHOOK</span>
-                    </div>
-                    <h4>رابط استقبال طلبات متجر شوبيفاي (Shopify Webhook)</h4>
-                    <p>
-                      من لوحة تحكم Shopify، افتح الإعدادات (Settings) ثم الإشعارات (Notifications) وانزل إلى قسم Webhooks. أنشئ Webhook جديداً بحدث <strong>Order creation</strong> والصق الرابط أدناه:
-                    </p>
-
-                    <div className="dz-copy-field">
-                      <code dir="ltr">{shopifyUrl}</code>
-                      <button type="button" onClick={() => copyToClipboard(shopifyUrl, 'shopify-webhook-tab')}>
-                        {copiedKey === 'shopify-webhook-tab' ? <Icons.Check /> : <Icons.Copy />}
-                        <span>{copiedKey === 'shopify-webhook-tab' ? 'تم النسخ' : 'نسخ الرابط'}</span>
-                      </button>
-                    </div>
-
-                    <ol className="dz-guide-steps-list">
-                      <li>افتح لوحة تحكم Shopify واختر <strong>Settings ➔ Notifications</strong>.</li>
-                      <li>انزل إلى قسم <strong>Webhooks</strong> واضغط <strong>Create webhook</strong>.</li>
-                      <li>اختر الحدث: <strong>Order creation</strong> (إنشاء الطلب).</li>
-                      <li>صيغة البيانات: <strong>JSON</strong>.</li>
-                      <li>الصق الرابط المنسوخ أعلاه في خانة <strong>URL</strong> واضغط حفظ.</li>
-                    </ol>
-
-                    <p className="dz-guide-note">
-                      ملاحظة: بمجرد حفظ الإعداد، ستدخل كافة الطلبات الجديدة في Shopify إلى تاجر تراك تلقائياً لتوليد روابط تتبع مخصصة لكل زبون.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* SUBTAB 4: INTERACTIVE WIZARD */}
-              {integrationSection === 'wizard' && (
-                <section id="dz-integration-wizard" className="dz-integration-wizard" aria-label="دليل ربط المتجر">
-                  <div className={`dz-integration-questions ${integrationReady ? 'is-complete' : ''}`} aria-hidden={integrationReady} inert={integrationReady}>
-                    <div className="dz-integration-question">
-                      <div className="dz-integration-question-head"><span className="dz-integration-step">01</span><div><h3>وين يستقبل متجرك الطلبات؟</h3><p>هذا يحدد كيف تدخل الطلبات إلى تاجر تراك.</p></div></div>
-                      <div className="dz-integration-choice-grid">
-                        <button type="button" className={`dz-integration-choice ${integrationPlatform === 'shopify' ? 'is-selected' : ''}`} aria-pressed={integrationPlatform === 'shopify'} onClick={() => setIntegrationPlatform('shopify')}>
-                          <span className="dz-integration-choice-symbol">S</span><span><strong>Shopify</strong><small>متجري مبني على Shopify</small></span><span className="dz-choice-check">{integrationPlatform === 'shopify' ? '✓' : '+'}</span>
-                        </button>
-                        <button type="button" className={`dz-integration-choice ${integrationPlatform === 'website' ? 'is-selected' : ''}`} aria-pressed={integrationPlatform === 'website'} onClick={() => setIntegrationPlatform('website')}>
-                          <span className="dz-integration-choice-symbol"><Icons.Code /></span><span><strong>موقع خاص</strong><small>موقع مبرمج أو متجر مخصص</small></span><span className="dz-choice-check">{integrationPlatform === 'website' ? '✓' : '+'}</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="dz-integration-question">
-                      <div className="dz-integration-question-head"><span className="dz-integration-step">02</span><div><h3>كيف تحب تتحدّث حالة الشحنة؟</h3><p>استقبال الطلبات شيء، وتحديث حالة التوصيل شيء آخر.</p></div></div>
-                      <div className="dz-integration-choice-grid dz-integration-source-grid">
-                        <button type="button" className={`dz-integration-choice ${trackingSource === 'carrier' ? 'is-selected' : ''}`} aria-pressed={trackingSource === 'carrier'} onClick={() => setTrackingSource('carrier')}>
-                          <span className="dz-integration-choice-symbol"><Icons.Truck /></span><span><strong>من شركة التوصيل</strong><small>تحديث آلي عند إرسال الشركة للأحداث</small></span><span className="dz-choice-check">{trackingSource === 'carrier' ? '✓' : '+'}</span>
-                        </button>
-                        <button type="button" className={`dz-integration-choice ${trackingSource === 'manual' ? 'is-selected' : ''}`} aria-pressed={trackingSource === 'manual'} onClick={() => setTrackingSource('manual')}>
-                          <span className="dz-integration-choice-symbol"><Icons.Edit /></span><span><strong>تحديث يدوي</strong><small>أغيّر الحالة من لوحة تاجر تراك</small></span><span className="dz-choice-check">{trackingSource === 'manual' ? '✓' : '+'}</span>
-                        </button>
-                        <button type="button" className={`dz-integration-choice ${trackingSource === 'unsure' ? 'is-selected' : ''}`} aria-pressed={trackingSource === 'unsure'} onClick={() => setTrackingSource('unsure')}>
-                          <span className="dz-integration-choice-symbol"><Icons.HelpCircle /></span><span><strong>ماني متأكد</strong><small>ورّيني كيف أتحقق من شركة التوصيل</small></span><span className="dz-choice-check">{trackingSource === 'unsure' ? '✓' : '+'}</span>
-                        </button>
-                      </div>
-                      {(trackingSource === 'carrier') && (
-                        <div className="dz-carrier-picker">
-                          <label htmlFor="dz-carrier-select">اختَر شركة التوصيل</label>
-                          <select id="dz-carrier-select" value={selectedCarrier ?? ''} onChange={(event) => setSelectedCarrier(event.target.value as Exclude<typeof selectedCarrier, null>)}>
-                            <option value="" disabled>اختَر شركة التوصيل</option>
+                      {trackingSource === 'carrier' && (
+                        <div className="dz-int-guided-carrier-select">
+                          <label htmlFor="dz-int-guided-carrier">اختر شركة التوصيل</label>
+                          <select id="dz-int-guided-carrier" value={selectedCarrier ?? ''} onChange={(event) => setSelectedCarrier(event.target.value as Exclude<typeof selectedCarrier, null>)}>
+                            <option value="" disabled>اختر الشركة...</option>
                             {carrierConnections.map((carrier) => <option key={carrier.id} value={carrier.id}>{carrier.name}</option>)}
-                            <option value="other">شركة أخرى / غير موجودة في القائمة</option>
+                            <option value="other">شركة أخرى / غير موجودة</option>
                           </select>
-                          <p>لا تظهر شركتك؟ اختر «شركة أخرى» لنجهّز لك سؤالاً واضحاً ترسله لدعمها.</p>
                         </div>
                       )}
-                    </div>
-                  </div>
+                      <div className="dz-int-guided-actions">
+                        <button type="button" className="dz-btn dz-btn-outline" onClick={() => setIntegrationStep(1)}>رجوع</button>
+                        <button type="button" className="dz-btn" disabled={!trackingSource || (trackingSource === 'carrier' && !selectedCarrier)} onClick={() => setIntegrationStep(3)}>عرض خطوات الربط <Icons.ArrowLeft /></button>
+                      </div>
+                    </section>
+                  )}
 
-                  {integrationReady && (
-                    <div className="dz-integration-results dz-integration-results-enter" aria-live="polite" data-dz-reveal="integration-guide">
-                      <div className="dz-integration-results-title"><span className="dz-result-ready-dot" /><div><span className="dz-setup-eyebrow">خطتك المقترحة</span><h3>{integrationPlatform === 'shopify' ? 'ربط Shopify عبر Webhook' : 'ربط موقعك عبر SDK ومساعد البرمجة'}</h3><p>{trackingSource === 'carrier' ? (selectedCarrier === 'other' ? 'سنربط مصدر الطلبات أولاً، ثم نتحقق من طريقة التحديث التي تدعمها شركة التوصيل التي تستخدمها.' : `سنربط مصدر الطلبات أولاً، ثم نتحقق من إعدادات ${activeCarrierConnection.name} لإرسال تحديثات الشحن.`) : trackingSource === 'manual' ? 'ستدخل الطلبات عبر المصدر المختار، ويمكنك تحديث حالة الشحنة يدوياً من لوحة الطلبات.' : 'ستربط مصدر الطلبات الآن، ويمكنك تفعيل التحديث الآلي لاحقاً إذا كانت شركة التوصيل تدعم Webhooks.'}</p></div></div>
+                  {integrationStep === 3 && integrationPlatform && trackingSource && (
+                    <section className="dz-int-guided-result" aria-live="polite">
+                      <div className="dz-int-guided-result-head">
+                        <div>
+                          <span className="dz-setup-eyebrow">خطة الربط الخاصة بمتجرك</span>
+                          <h3>{integrationPlatform === 'shopify' ? 'استقبال طلبات Shopify' : integrationPlatform === 'website' ? 'ربط موقعك الإلكتروني' : 'إضافة الطلبات من لوحة تاجر تراك'}</h3>
+                          <p>يمكنك الرجوع وتعديل اختياراتك أو إعادة الاختبار في أي وقت.</p>
+                        </div>
+                        <span className="dz-int-guided-ready"><Icons.Check /> تم تحديد المسار</span>
+                      </div>
 
-                      {integrationPlatform === 'shopify' ? (
-                        <article className="dz-guide-step-panel">
-                          <div className="dz-guide-panel-top"><span className="dz-guide-step-no">01</span><span className="dz-guide-type">SHOPIFY · WEBHOOK</span></div>
-                          <h4>انسخ رابط استقبال طلبات Shopify</h4>
-                          <p>من لوحة Shopify، افتح إعدادات Webhooks وأضف رابط الاستقبال أدناه. اختر حدث إنشاء الطلب، وأضف أحداث التحديث/التجهيز المتاحة لديك إذا أردت مزامنة معلومات لاحقة.</p>
-                          <div className="dz-copy-field"><code dir="ltr">{shopifyUrl}</code><button type="button" onClick={() => copyToClipboard(shopifyUrl, 'shopify-webhook')}>{copiedKey === 'shopify-webhook' ? <Icons.Check /> : <Icons.Copy />}<span>{copiedKey === 'shopify-webhook' ? 'تم النسخ' : 'نسخ الرابط'}</span></button></div>
-                          <ol className="dz-guide-steps-list"><li>افتح إعدادات المتجر في Shopify وابحث عن Webhooks.</li><li>أنشئ Webhook جديداً والصق الرابط المنسوخ.</li><li>اختر صيغة JSON إن طُلبت، ثم احفظ الإعداد.</li></ol>
-                          <p className="dz-guide-note">هذا الرابط يستقبل أحداث Shopify فقط؛ لا يعني أن حالة شركة الشحن ستتحدث آلياً من دون ربط الشركة أيضاً.</p>
+                      <div className="dz-int-guided-summary">
+                        <span><small>مصدر الطلبات</small><strong>{integrationPlatform === 'shopify' ? 'Shopify' : integrationPlatform === 'website' ? 'موقع خاص' : 'إضافة يدوية'}</strong></span>
+                        <span><small>تحديث الشحنات</small><strong>{trackingSource === 'carrier' ? (selectedCarrier === 'other' ? 'شركة توصيل أخرى' : activeCarrierConnection?.name || 'شركة التوصيل') : trackingSource === 'manual' ? 'يدوي' : 'بحاجة إلى تحقق'}</strong></span>
+                        <button type="button" onClick={() => setIntegrationStep(1)}>تعديل الاختيارات</button>
+                      </div>
+
+                      {integrationPlatform === 'shopify' && (
+                        <article className="dz-int-guided-panel">
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">01</span><div><h4>اربط Shopify لاستقبال الطلبات</h4><p>أنشئ Webhook لحدث إنشاء الطلب داخل إعدادات Shopify.</p></div></div>
+                          <div className="dz-int-guided-copy">
+                            <div><small>رابط استقبال طلبات Shopify</small><code dir="ltr">{shopifyUrl}</code></div>
+                            <button type="button" onClick={() => copyToClipboard(shopifyUrl, 'guided-shopify-webhook')}>{copiedKey === 'guided-shopify-webhook' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-shopify-webhook' ? 'تم النسخ' : 'نسخ الرابط'}</button>
+                          </div>
+                          <ol className="dz-int-guided-steps">
+                            <li>افتح Shopify ثم Settings ثم Notifications.</li>
+                            <li>انتقل إلى Webhooks وأنشئ Webhook جديداً.</li>
+                            <li>اختر Order creation، وحدد JSON.</li>
+                            <li>ألصق الرابط واحفظ الإعداد.</li>
+                          </ol>
+                          <p className="dz-int-guided-note">هذا الربط يستقبل الطلبات فقط. تحديثات شركة الشحن تحتاج إلى إعداد منفصل أدناه عند اختيار التحديث الآلي.</p>
                         </article>
-                      ) : (
-                        <article className="dz-guide-step-panel">
-                          <div className="dz-guide-panel-top"><span className="dz-guide-step-no">01</span><span className="dz-guide-type">CUSTOM WEBSITE · SDK + AGENT</span></div>
-                          <h4>خلّي وكيل البرمجة يركّب الربط داخل مشروعك</h4>
-                          <p>لا تحتاج تعدّل الملفات يدوياً. المطوّر يشغّل أمر التثبيت، ثم ينسخ التوجيه الجاهز أدناه إلى وكيل البرمجة الذي يستخدمه، مثل Cursor أو Claude Code. انسخ التوجيه كما هو والصقه في وكيل البرمجة؛ سيقرأ تعليمات تاجر تراك من رابط المهارة ويستخدم مفتاح متجرك للربط.</p>
-                          <div className="dz-copy-field dz-copy-field-command"><code dir="ltr">{sdkInstallCommand}</code><button type="button" onClick={() => copyToClipboard(sdkInstallCommand, 'sdk-install')}>{copiedKey === 'sdk-install' ? <Icons.Check /> : <Icons.Copy />}<span>{copiedKey === 'sdk-install' ? 'تم النسخ' : 'نسخ الأمر'}</span></button></div>
-                          <div className="dz-agent-prompt-head"><span>التوجيه الجاهز لوكيل البرمجة</span><button type="button" onClick={() => copyToClipboard(sdkAgentPrompt, 'sdk-agent-prompt')}>{copiedKey === 'sdk-agent-prompt' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'sdk-agent-prompt' ? 'تم نسخ التوجيه' : 'نسخ التوجيه'}</button></div>
-                          <pre className="dz-agent-prompt" dir="ltr">{sdkAgentPrompt}</pre>
-                          <ol className="dz-guide-steps-list"><li>افتح الطرفية داخل مشروع الموقع وشغّل أمر التثبيت.</li><li>انسخ التوجيه والصقه في وكيل البرمجة.</li><li>راجع الملفات التي عدّلها الوكيل، واختبر وصول طلب تجريبي قبل الإطلاق.</li></ol>
-                          <p className="dz-guide-note">مهم: يجب أن يبقى مفتاح التاجر على الخادم، ولا يُضاف إلى كود المتصفح أو المستودع العام.</p>
+                      )}
+
+                      {integrationPlatform === 'website' && (
+                        <article className="dz-int-guided-panel">
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">01</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
+                          <div className="dz-int-guided-credentials">
+                            <div className="dz-int-guided-credential">
+                              <div className="dz-int-guided-credential-head"><small>مفتاح API</small><button type="button" onClick={() => setApiKeyRevealed((value) => !value)}>{apiKeyRevealed ? <Icons.EyeOff /> : <Icons.Eye />}{apiKeyRevealed ? 'إخفاء' : 'إظهار'}</button></div>
+                              <code dir="ltr">{apiKeyRevealed ? apiKey : `${apiKey.slice(0, 8)}••••••••••••••••••••`}</code>
+                              <button type="button" className="dz-int-guided-copy-link" onClick={() => copyToClipboard(apiKey, 'guided-api-key')}>{copiedKey === 'guided-api-key' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-api-key' ? 'تم النسخ' : 'نسخ المفتاح'}</button>
+                            </div>
+                            <div className="dz-int-guided-credential">
+                              <div className="dz-int-guided-credential-head"><small>معرّف المتجر</small></div>
+                              <code dir="ltr">{merchantId}</code>
+                              <button type="button" className="dz-int-guided-copy-link" onClick={() => copyToClipboard(merchantId, 'guided-store-id')}>{copiedKey === 'guided-store-id' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-store-id' ? 'تم النسخ' : 'نسخ المعرّف'}</button>
+                            </div>
+                            <div className="dz-int-guided-credential">
+                              <div className="dz-int-guided-credential-head"><small>رابط استقبال الطلبات المباشر</small></div>
+                              <code dir="ltr">{directWebhookUrl}?key={apiKey}</code>
+                              <button type="button" className="dz-int-guided-copy-link" onClick={() => copyToClipboard(`${directWebhookUrl}?key=${apiKey}`, 'guided-direct-webhook')}>{copiedKey === 'guided-direct-webhook' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-direct-webhook' ? 'تم النسخ' : 'نسخ الرابط'}</button>
+                            </div>
+                          </div>
+                          <div className="dz-int-guided-recommended">
+                            <div><span className="dz-setup-eyebrow">الطريقة الموصى بها</span><h4>استخدم SDK ومساعد البرمجة</h4><p>انسخ أمر التثبيت ثم التوجيه الجاهز إلى Cursor أو Claude Code أو وكيل البرمجة الذي تستخدمه.</p></div>
+                            <div className="dz-int-guided-package-row">
+                              <div className="dz-int-guided-package-select">
+                                {(['npm', 'pnpm', 'yarn', 'bun'] as const).map((pm) => <button key={pm} type="button" className={packageManager === pm ? 'is-active' : ''} onClick={() => setPackageManager(pm)}>{pm}</button>)}
+                              </div>
+                              <code dir="ltr">{installCommands[packageManager]}</code>
+                              <button type="button" onClick={() => copyToClipboard(installCommands[packageManager], 'guided-sdk-install')}>{copiedKey === 'guided-sdk-install' ? <Icons.Check /> : <Icons.Copy />} نسخ الأمر</button>
+                            </div>
+                            <div className="dz-int-guided-agent-row"><code dir="ltr">{sdkAgentPrompt}</code><button type="button" onClick={() => copyToClipboard(sdkAgentPrompt, 'guided-sdk-agent')}>{copiedKey === 'guided-sdk-agent' ? <Icons.Check /> : <Icons.Copy />} نسخ التوجيه</button></div>
+                            <p className="dz-int-guided-note">راجع الملفات التي يقترحها وكيل البرمجة واختبر طلباً تجريبياً. لا تضع مفتاح API في كود المتصفح أو في مستودع عام؛ يجب أن يبقى على الخادم.</p>
+                          </div>
+                          <details className="dz-int-guided-details">
+                            <summary>أمثلة المطور والتوثيق المتقدم</summary>
+                            <div className="dz-code-container">
+                              <div className="dz-code-header">
+                                <div className="dz-code-tabs">
+                                  {(['html', 'react', 'node', 'curl', 'agent'] as const).map((tab) => <button key={tab} type="button" className={`dz-code-tab-btn ${sdkCodeTab === tab ? 'active' : ''}`} onClick={() => setSdkCodeTab(tab)}>{tab === 'html' ? 'HTML' : tab === 'react' ? 'React / Next.js' : tab === 'node' ? 'Node.js' : tab === 'curl' ? 'REST API' : 'AI Prompt'}</button>)}
+                                </div>
+                                <button type="button" className="dz-btn dz-btn-outline" onClick={() => copyToClipboard(({ html: htmlCodeSnippet, react: reactCodeSnippet, node: nodeCodeSnippet, curl: curlSnippet, agent: sdkAgentPrompt })[sdkCodeTab], `guided-advanced-${sdkCodeTab}`)}>{copiedKey === `guided-advanced-${sdkCodeTab}` ? <Icons.Check /> : <Icons.Copy />} نسخ المثال</button>
+                              </div>
+                              <pre className="dz-code-pre">{sdkCodeTab === 'html' ? htmlCodeSnippet : sdkCodeTab === 'react' ? reactCodeSnippet : sdkCodeTab === 'node' ? nodeCodeSnippet : sdkCodeTab === 'curl' ? curlSnippet : sdkAgentPrompt}</pre>
+                            </div>
+                            <p className="dz-int-guided-doc-link"><a href={`${siteUrl}/skill.md`} target="_blank" rel="noreferrer">فتح توثيق تاجر تراك للمطورين</a></p>
+                          </details>
+                          <details className="dz-int-guided-details">
+                            <summary>ربط Odoo أو نظام ERP مخصص</summary>
+                            <p>يمكن إعداد Automated Action أو Webhook في نظام ERP لإرسال الطلبات أو أحداث الشحن إلى نقطة الاستقبال المخصصة.</p>
+                            <div className="dz-int-guided-copy">
+                              <div><small>Odoo Webhook URL</small><code dir="ltr">{odooUrl}</code></div>
+                              <button type="button" onClick={() => copyToClipboard(odooUrl, 'guided-odoo-webhook')}>{copiedKey === 'guided-odoo-webhook' ? <Icons.Check /> : <Icons.Copy />} نسخ الرابط</button>
+                            </div>
+                          </details>
                         </article>
                       )}
 
-                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && (
-                        <article className="dz-guide-step-panel dz-carrier-guide-panel">
-                          <div className="dz-guide-panel-top"><span className="dz-guide-step-no">02</span><span className="dz-guide-type">DELIVERY STATUS · WEBHOOK</span></div>
-                          <h4>تحقّق من ربط {activeCarrierConnection.name}</h4>
-                          <p>{activeCarrierConnection.hint}</p>
-                          <div className="dz-copy-field"><code dir="ltr">{activeCarrierConnection.url}</code><button type="button" onClick={() => copyToClipboard(activeCarrierConnection.url, 'carrier-webhook')}>{copiedKey === 'carrier-webhook' ? <Icons.Check /> : <Icons.Copy />}<span>{copiedKey === 'carrier-webhook' ? 'تم النسخ' : 'نسخ رابط الاستقبال'}</span></button></div>
-                          <ol className="dz-guide-steps-list"><li>افتح لوحة الشركة أو تواصل مع دعمها للتأكد من طريقة تسجيل Webhook خارجي.</li><li>إذا كان حسابك يدعم Webhooks، أضف رابط الاستقبال وحدد أحداث تغيّر الحالة.</li><li>اطلب إرسال حدث تجريبي، وتحقق من وصوله قبل الاعتماد على التحديث الآلي.</li></ol>
-                          <p className="dz-guide-note">{activeCarrierConnection.caveat} يجب تسجيل الرابط من جهة الشركة ووصول أحداث صحيحة حتى تظهر التحديثات هنا.</p>
-                          <button type="button" className="dz-support-copy" onClick={() => copyToClipboard(`مرحباً، أستخدم تاجر تراك وأريد مزامنة حالات الشحن تلقائياً. هل يدعم حسابي في ${activeCarrierConnection.name} إرسال Webhooks خارجية عند تغيّر حالة الطرد؟ إذا نعم، أين أضيف رابط الاستقبال وأختار أحداث الحالة؟`, 'carrier-support-question')}>
-                            {copiedKey === 'carrier-support-question' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'carrier-support-question' ? 'تم نسخ السؤال' : 'انسخ سؤالاً جاهزاً لدعم الشركة'}
-                          </button>
+                      {integrationPlatform === 'manual' && (
+                        <article className="dz-int-guided-panel">
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">01</span><div><h4>لا تحتاج إلى إعداد ربط للطلبات</h4><p>يمكنك إضافة الطلبات مباشرة من لوحة تاجر تراك. سنستخدم التحديث اليدوي أو ربط شركة الشحن حسب اختيارك في الخطوة التالية.</p></div></div>
+                          <button type="button" className="dz-btn" onClick={() => {
+                            setActiveTab('orders');
+                            setIsAddOrderModalOpen(true);
+                          }}>إضافة طلب جديد <Icons.ArrowLeft /></button>
                         </article>
                       )}
+
                       {trackingSource === 'carrier' && selectedCarrier === 'other' && (
-                        <article className="dz-guide-step-panel dz-carrier-guide-panel">
-                          <div className="dz-guide-panel-top"><span className="dz-guide-step-no">02</span><span className="dz-guide-type">OTHER CARRIER · CHECK SUPPORT</span></div>
-                          <h4>تحقّق أولاً من دعم شركة التوصيل</h4>
-                          <p>ما عندنا حالياً رابط مخصص جاهز باسم هذه الشركة. اسأل الدعم هل يستطيع حسابك إرسال Webhooks خارجية عند تغيّر حالة الشحنة. لا تستخدم رابط شركة أخرى لأنه يستقبل نوعاً مختلفاً من البيانات.</p>
-                          <button type="button" className="dz-support-copy" onClick={() => copyToClipboard('مرحباً، أريد ربط شركة التوصيل لديّ مع تاجر تراك. هل تدعمون إرسال Webhook خارجي عند تغيّر حالة الشحنة؟ ما هي طريقة تفعيله من لوحة التاجر، وما تنسيق الأحداث المرسلة؟', 'carrier-support-question')}>
-                            {copiedKey === 'carrier-support-question' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'carrier-support-question' ? 'تم نسخ السؤال' : 'انسخ سؤالاً جاهزاً لدعم الشركة'}
-                          </button>
-                          <div className="dz-integration-next-note"><strong>إلى أن تتأكد من دعم Webhooks</strong><span>استخدم التحديث اليدوي من لوحة تاجر تراك، ولا تعتبر التحديث الآلي جاهزاً قبل اختبار وصول حدث حقيقي.</span><button type="button" onClick={() => setTrackingSource('manual')}>اعتمد التحديث اليدوي مؤقتاً <span aria-hidden="true">←</span></button></div>
+                        <article className="dz-int-guided-panel">
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>تحقّق من دعم شركة التوصيل</h4><p>لا نملك رابطاً مخصصاً لهذه الشركة حالياً. يجب التأكد من أنها تستطيع إرسال Webhook خارجي عند تغيّر حالة الشحنة.</p></div></div>
+                          <button type="button" className="dz-support-copy" onClick={() => copyToClipboard('مرحباً، أريد ربط شركة التوصيل لديّ مع تاجر تراك. هل تدعمون إرسال Webhook خارجي عند تغيّر حالة الشحنة؟ ما طريقة تفعيله من لوحة التاجر وما تنسيق الأحداث المرسلة؟', 'guided-other-carrier-question')}>{copiedKey === 'guided-other-carrier-question' ? <Icons.Check /> : <Icons.Copy />} نسخ سؤال جاهز للدعم</button>
+                          <div className="dz-int-guided-note">إلى أن تتأكد من دعم Webhooks، يمكنك تحديث الحالات يدوياً من لوحة الطلبات.</div>
+                        </article>
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && activeCarrierConnection && (
+                        <article className="dz-int-guided-panel">
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{integrationPlatform === 'website' ? '02' : '02'}</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
+                          <div className="dz-int-guided-copy">
+                            <div><small>رابط استقبال تحديثات الشحن</small><code dir="ltr">{activeCarrierConnection.url}</code></div>
+                            <button type="button" onClick={() => copyToClipboard(activeCarrierConnection.url, `guided-carrier-${activeCarrierConnection.id}`)}>{copiedKey === `guided-carrier-${activeCarrierConnection.id}` ? <Icons.Check /> : <Icons.Copy />} نسخ الرابط</button>
+                          </div>
+                          <div className="dz-int-guided-meta"><span>الطريقة</span><strong>{activeCarrierConnection.method}</strong><span>الترويسة عند طلبها</span><code dir="ltr">{activeCarrierConnection.header}</code></div>
+                          <ol className="dz-int-guided-steps">
+                            <li>افتح لوحة شركة التوصيل أو تواصل مع دعمها لتفعيل Webhook خارجي.</li>
+                            <li>أضف رابط الاستقبال وحدد أحداث تغيّر الحالة التي تريد إرسالها.</li>
+                            <li>اطلب إرسال حدث تجريبي وتأكد من وصوله إلى تاجر تراك.</li>
+                          </ol>
+                          <p className="dz-int-guided-note">{activeCarrierConnection.caveat} نسخ الرابط وحده لا يفعّل إرسال الأحداث من حساب شركة التوصيل.</p>
+                          <button type="button" className="dz-support-copy" onClick={() => copyToClipboard(activeCarrierConnection.supportQuestion, `guided-carrier-question-${activeCarrierConnection.id}`)}>{copiedKey === `guided-carrier-question-${activeCarrierConnection.id}` ? <Icons.Check /> : <Icons.Copy />} نسخ سؤال جاهز لدعم الشركة</button>
                         </article>
                       )}
 
                       {trackingSource === 'manual' && (
-                        <div className="dz-integration-next-note"><strong>الخطوة التالية: جرّب أول طلب.</strong><span>بعد ظهوره في قائمة الطلبات، افتحه وحدّث الحالة من لوحة تاجر تراك. لا تحتاج إعداد Webhook لشركة التوصيل إذا كنت ستحدّث الحالات بنفسك.</span><button type="button" onClick={() => setActiveTab('orders')}>افتح الطلبات <span aria-hidden="true">←</span></button></div>
-                      )}
-                      {trackingSource === 'unsure' && (
-                        <div className="dz-integration-next-note"><strong>كيف تعرف إذا كانت شركتك تدعم التحديث الآلي؟</strong><span>اسأل دعم شركة التوصيل: «هل تدعمون Webhook لإرسال تغيّر حالة الشحنة إلى رابط خارجي؟ وهل يمكن تفعيل ذلك من لوحة العميل؟» إلى أن يتم تأكيد الدعم، يمكنك تحديث الحالة يدوياً من تاجر تراك.</span><button type="button" onClick={() => { setTrackingSource('manual'); }}>اعتمد التحديث اليدوي مؤقتاً <span aria-hidden="true">←</span></button></div>
+                        <article className="dz-int-guided-panel dz-int-guided-manual">
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>تحديث الحالات من لوحة الطلبات</h4><p>بعد ظهور الطلب في القائمة، افتحه واختر الحالة الجديدة. لا تحتاج إلى Webhook من شركة التوصيل لهذا المسار.</p></div></div>
+                          <button type="button" className="dz-btn dz-btn-outline" onClick={() => setActiveTab('orders')}>فتح الطلبات <Icons.ArrowLeft /></button>
+                        </article>
                       )}
 
-                      <div className="dz-integration-reset-row"><span>تقدر ترجع وتغيّر إجاباتك في أي وقت.</span><button type="button" onClick={() => { setIntegrationPlatform(null); setTrackingSource(null); setSelectedCarrier(null); }}>إعادة الدليل من البداية</button></div>
-                    </div>
+                      {trackingSource === 'unsure' && (
+                        <article className="dz-int-guided-panel">
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>اسأل شركة التوصيل عن Webhooks</h4><p>اسأل الدعم إن كان حسابك يستطيع إرسال إشعار إلى رابط خارجي عند تغيّر حالة الشحنة.</p></div></div>
+                          <button type="button" className="dz-support-copy" onClick={() => copyToClipboard('مرحباً، هل يدعم حسابي إرسال Webhook خارجي إلى رابط أقدمه لكم عند تغيّر حالة الشحنة؟ وأين يمكنني تفعيل ذلك وما تنسيق الأحداث المرسلة؟', 'guided-unsure-question')}>{copiedKey === 'guided-unsure-question' ? <Icons.Check /> : <Icons.Copy />} نسخ السؤال</button>
+                          <div className="dz-int-guided-note">إلى أن تتأكد من ذلك، يمكنك اختيار التحديث اليدوي دون تعطيل استقبال الطلبات.</div>
+                          <button type="button" className="dz-btn dz-btn-outline" onClick={() => {
+                            setTrackingSource('manual');
+                            setSelectedCarrier(null);
+                          }}>اعتماد التحديث اليدوي مؤقتاً</button>
+                        </article>
+                      )}
+
+                      <div className="dz-int-guided-footer">
+                        <span>اختياراتك محفوظة على هذا المتصفح لهذا المتجر.</span>
+                        <button type="button" onClick={() => setIntegrationStep(1)}>تعديل الاختيارات</button>
+                        <button type="button" onClick={() => {
+                          setIntegrationPlatform(null);
+                          setTrackingSource(null);
+                          setSelectedCarrier(null);
+                          setIntegrationStep(1);
+                          setApiKeyRevealed(false);
+                        }}>إعادة الاختبار من البداية</button>
+                      </div>
+                    </section>
                   )}
-                </section>
+                </>
               )}
             </div>
           )}
