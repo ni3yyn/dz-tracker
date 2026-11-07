@@ -3492,6 +3492,10 @@ export async function processOrderAction(formData: FormData) {
         .dz-upsell-action-btn { width:30px; height:30px; border-radius:8px; border:1px solid rgba(9,9,11,0.12); background:#fff; color:#4b5563; display:grid; place-items:center; cursor:pointer; transition:all 0.15s; }
         .dz-upsell-action-btn:hover { background:#f9fafb; color:#111827; }
         .dz-upsell-action-btn.danger:hover { background:#fee2e2; color:#dc2626; border-color:#fca5a5; }
+
+        @media (max-width: 640px) {
+          .dz-settings-profile-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        }
       `}} />
 
       <div className="dz-admin-root">
@@ -5816,7 +5820,7 @@ export async function processOrderAction(formData: FormData) {
                   <Icons.Store />
                 </div>
                 <form onSubmit={handleSaveBranding}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(240px, .85fr)', gap: '16px', alignItems: 'end' }}>
+                  <div className="dz-settings-profile-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(240px, .85fr)', gap: '16px', alignItems: 'end' }}>
                     <div>
                       <label htmlFor="merchant-settings-store-name" className="formLabel">اسم المتجر</label>
                       <input id="merchant-settings-store-name" type="text" className="input" value={storeNameDraft} maxLength={80} required onChange={(event) => setStoreNameDraft(event.target.value)} placeholder="اسم متجرك" />
