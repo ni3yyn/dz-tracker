@@ -1,43 +1,38 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@saas/database';
 
-async function incrementClicks(id: string) {
+async function incrementClicks(id: string): Promise<boolean> {
   if (!id || typeof id !== 'string') return false;
 
   const supabase = getSupabaseAdminClient();
 
-  // 1. Try atomic database RPC function first
+  // 1. Try atomic RPC first (requires migration applied in Supabase)
   try {
-    const { error: rpcError } = await supabase.rpc('increment_merchant_upsell_clicks', {
-      upsell_id: id,
-    });
-
-    if (!rpcError) {
-      return true;
-    }
-  } catch {
-    // Continue to fallback if RPC is unavailable
+    const { error } = await supabase.rpc('increment_merchant_upsell_clicks', { upsell_id: id });
+    if (!error) return true;
+    console.warn('[upsell/click] RPC error:', error.message);
+  } catch (e) {
+    console.warn('[upsell/click] RPC threw:', e);
   }
 
-  // 2. Resilient fallback: read current count and increment
+  // 2. Fallback: read-then-write increment
   try {
-    const { data: item } = await supabase
+    const { data: row } = await supabase
       .from('merchant_upsells')
       .select('clicks_count')
       .eq('id', id)
       .maybeSingle();
 
-    if (item) {
+    if (row) {
       await supabase
         .from('merchant_upsells')
-        .update({ clicks_count: ((item as any).clicks_count || 0) + 1 })
+        .update({ clicks_count: ((row as any).clicks_count || 0) + 1 })
         .eq('id', id);
       return true;
     }
   } catch (err) {
-    console.error('Error incrementing upsell clicks fallback:', err);
+    console.error('[upsell/click] fallback error:', err);
   }
-
   return false;
 }
 
