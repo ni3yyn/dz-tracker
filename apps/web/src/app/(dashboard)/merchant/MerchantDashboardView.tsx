@@ -7,6 +7,7 @@ import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
 import { ImageUploadField } from './ImageUploadField';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
+import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
   saveBrandSettings,
   applyPresetMappings,
@@ -648,6 +649,7 @@ export function MerchantDashboardView({
   confirmationTelegramEnabled = false,
   initialUpsells = [],
 }: Props) {
+  const { confirm: confirmDialog } = useGlobalDialog();
   const isUnlimitedPlan = subscription.tier === 'scale' || (subscription.limit !== undefined && subscription.limit >= 999999);
   const tierDefaults: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
   const normalizedLimit = isUnlimitedPlan 
@@ -865,10 +867,18 @@ export function MerchantDashboardView({
 
     const confirmationMessage =
       ids.length === 1
-        ? 'هل أنت متأكد من حذف هذا الطلب نهائياً؟ سيتم حذف سجل تحديثاته وروابط الإشعارات المرتبطة به أيضاً.'
-        : `هل أنت متأكد من حذف ${ids.length} طلباً نهائياً؟ سيتم حذف سجلات التحديثات وروابط الإشعارات المرتبطة بها أيضاً.`;
+        ? 'سيتم حذف الطلب وسجل تحديثاته وروابط الإشعارات المرتبطة به نهائياً. لا يمكن التراجع عن هذا الإجراء.'
+        : `سيتم حذف ${ids.length} طلباً وسجلات تحديثاتها وروابط إشعاراتها نهائياً. لا يمكن التراجع عن هذا الإجراء.`;
 
-    if (!window.confirm(confirmationMessage)) return;
+    const confirmed = await confirmDialog({
+      title: ids.length === 1 ? 'حذف الطلب' : 'حذف الطلبات المحددة',
+      message: confirmationMessage,
+      confirmLabel: ids.length === 1 ? 'حذف الطلب' : `حذف ${ids.length} طلباً`,
+      cancelLabel: 'الاحتفاظ بها',
+      tone: 'danger',
+    });
+
+    if (!confirmed) return;
 
     setIsDeletingOrders(true);
     try {
@@ -1088,9 +1098,14 @@ export function MerchantDashboardView({
   };
 
   const handleDeleteUpsell = async (id: string) => {
-    if (!window.confirm('هل أنت متأكد من حذف هذا المنتج؟ لن يظهر مجدداً في صفحة التتبع.')) {
-      return;
-    }
+    const confirmed = await confirmDialog({
+      title: 'حذف المنتج',
+      message: 'سيتم حذف هذا المنتج من صفحة التتبع نهائياً. لا يمكن التراجع عن هذا الإجراء.',
+      confirmLabel: 'حذف المنتج',
+      cancelLabel: 'إبقاء المنتج',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try {
       setDeletingUpsellId(id);
       setUpsellsList((prev) => prev.filter((u) => u.id !== id));
