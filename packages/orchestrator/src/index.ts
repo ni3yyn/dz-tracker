@@ -430,20 +430,6 @@ export class TrackingOrchestrator {
       if (data) return data;
     }
 
-    // ج) حزام أمان ذكي: المطابقة برقم هاتف الزبون للشحنات المفتوحة حديثاً في حال نسي التاجر كتابة رقم الطلب
-    if (event.customerPhone) {
-      const { data } = await this.supabase
-        .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name')
-        .eq('merchant_id', event.merchantId)
-        .eq('customer_phone', event.customerPhone)
-        .is('carrier_tracking_number', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (data) return data;
-    }
-
     return null;
   }
 
