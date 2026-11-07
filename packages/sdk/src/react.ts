@@ -1,11 +1,12 @@
 /**
- * React & Next.js Hooks & Component Bindings for DZ Tracking SDK
+ * React & Next.js hook for client-side tracking.
+ * Browser hooks expose the configured merchant API key to visitors; a server route
+ * or Server Action is preferred for production integrations.
  */
-
 import React, { useState, useCallback } from 'react';
 import { DZTrackerClient } from './client';
 import { DZTrackerConfig, TrackOrderParams, TrackOrderResult, UpdateStatusParams } from './types';
-import { getTrackerClient } from './index';
+import { getTrackerClient } from './core';
 
 export interface UseTrackerReturn {
   track: (params: TrackOrderParams) => Promise<TrackOrderResult>;
@@ -15,64 +16,43 @@ export interface UseTrackerReturn {
   error: Error | null;
 }
 
-/**
- * React Hook for programmatic order tracking and state updates
- */
 export function useTracker(config?: DZTrackerConfig): UseTrackerReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [lastResult, setLastResult] = useState<TrackOrderResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  const getClient = useCallback(() => {
-    if (config) {
-      return new DZTrackerClient(config);
+  const getClient = useCallback(() => config ? new DZTrackerClient(config) : getTrackerClient(), [config]);
+
+  const track = useCallback(async (params: TrackOrderParams): Promise<TrackOrderResult> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await getClient().trackOrder(params);
+      setLastResult(result);
+      if (!result.success) setError(new Error(result.error || 'Tracking registration was not confirmed.'));
+      return result;
+    } catch (err: any) {
+      const trackingError = err instanceof Error ? err : new Error(String(err));
+      setError(trackingError);
+      throw trackingError;
+    } finally {
+      setIsLoading(false);
     }
-    return getTrackerClient();
-  }, [config]);
+  }, [getClient]);
 
-  const track = useCallback(
-    async (params: TrackOrderParams): Promise<TrackOrderResult> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const client = getClient();
-        const result = await client.trackOrder(params);
-        setLastResult(result);
-        return result;
-      } catch (err: any) {
-        const e = err instanceof Error ? err : new Error(String(err));
-        setError(e);
-        throw e;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [getClient]
-  );
+  const updateStatus = useCallback(async (params: UpdateStatusParams): Promise<any> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      return await getClient().updateStatus(params);
+    } catch (err: any) {
+      const trackingError = err instanceof Error ? err : new Error(String(err));
+      setError(trackingError);
+      throw trackingError;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getClient]);
 
-  const updateStatus = useCallback(
-    async (params: UpdateStatusParams): Promise<any> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const client = getClient();
-        return await client.updateStatus(params);
-      } catch (err: any) {
-        const e = err instanceof Error ? err : new Error(String(err));
-        setError(e);
-        throw e;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [getClient]
-  );
-
-  return {
-    track,
-    updateStatus,
-    isLoading,
-    lastResult,
-    error,
-  };
+  return { track, updateStatus, isLoading, lastResult, error };
 }

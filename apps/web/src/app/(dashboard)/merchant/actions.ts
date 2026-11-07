@@ -10,6 +10,29 @@ import { BrandSettings, DEFAULT_BRAND_SETTINGS } from '@saas/ui';
 type PersistedBrandSettings = BrandSettings & { showWhatsAppButton?: boolean; animateBackgroundBlobs?: boolean; backgroundBlur?: boolean; timelineLineStyle?: 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none' };
 import { createClient } from '../../../lib/supabase-server';
 
+/**
+ * Return the authenticated merchant's API key only when an integration path needs it.
+ * The merchant is resolved from the server session; no browser-supplied merchant ID is trusted.
+ */
+export async function getMerchantIntegrationApiKey(): Promise<{ apiKey: string | null; error?: string }> {
+  const authSupabase = await createClient();
+  const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+  if (authError || !user) {
+    return { apiKey: null, error: 'انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مجدداً.' };
+  }
+  const supabase = getSupabaseAdminClient();
+  const { data: merchant, error } = await supabase
+    .from('merchants')
+    .select('api_key')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+  if (error || !merchant?.api_key) {
+    console.error('[IntegrationCredentials] Could not resolve the authenticated merchant key:', error?.message);
+    return { apiKey: null, error: 'تعذر تحميل بيانات الربط. حدّث الصفحة ثم حاول مجدداً.' };
+  }
+  return { apiKey: merchant.api_key };
+}
+
 export async function saveStatusMapping(formData: FormData) {
   const merchantId = formData.get('merchant_id') as string;
   const sourceStatus = (formData.get('source_status') as string)?.trim().toLowerCase();

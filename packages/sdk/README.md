@@ -1,268 +1,314 @@
-# 📦 DZ Tracking SDK (`dz-tracking-sdk`)
+# DZ Tracking SDK
 
-> **Enterprise-grade, post-purchase tracking infrastructure for Algerian e-commerce.**  
-> Reduce Cash on Delivery (COD) return rates (*Retours*), automate tracking updates, and deliver 1-click WhatsApp delivery recovery links with minimal code.
+Official TypeScript client for TajerTrack / DZ Tracker order tracking.
 
----
+> **Release check:** this repository's SDK source currently declares version **2.0.0**. The public npm package may lag behind the source tree. Before relying on these examples, run **npm view dz-tracking-sdk version**, install it, and inspect the installed declaration files. Never assume the published package contains unreleased GitHub source.
 
-## 🚀 Key Highlights
+## Installation
 
-* **Zero-Code Form Auto-Capture:** Add `data-dz-checkout` to your checkout form and track orders with **zero lines of JavaScript**.
-* **Isomorphic & Multi-Tenant:** Works seamlessly across Browser, Shopify Liquid themes, React / Next.js, and backend runtimes (Node.js, Next.js Server Actions, Remix).
-* **Algerian Phone Intelligence:** Automatically normalizes local `05 / 06 / 07` mobile formats into standardized international format (`213XXXXXXXXX`).
-* **Flaky Mobile Network Shield:** Features `navigator.sendBeacon` fallback and an offline `localStorage` queue so checkout events are never lost on unstable 3G/4G connections.
-* **1-Click WhatsApp COD Recovery:** Generates contextual Arabic recovery links directly to the customer's WhatsApp to resolve *"Client ne répond pas"* issues.
-* **Pixel-Ready Custom Events:** Automatically emits `dz:track:success` for Facebook Pixel, TikTok Pixel, and Google Analytics.
-* **Lightweight:** Dual ESM & CJS builds with zero heavy dependencies.
-
----
-
-## 📥 Installation
-
-```bash
-# npm
+~~~bash
 npm install dz-tracking-sdk
+# or: pnpm add dz-tracking-sdk
+# yarn add dz-tracking-sdk
+# bun add dz-tracking-sdk
+~~~
 
-# pnpm
-pnpm add dz-tracking-sdk
+Use the framework-neutral entry point in Node.js/server environments:
 
-# yarn
-yarn add dz-tracking-sdk
-```
+~~~typescript
+import { DZTrackerClient } from 'dz-tracking-sdk/core';
+~~~
 
-Or initialize automatically in your project using the interactive CLI:
+The main entry point includes the React hook and expects React to be installed:
 
-```bash
-npx dz-tracker init
-```
-
----
-
-## ⚡ Quickstart Guide
-
-### Option 1: Zero-Code HTML / Shopify Liquid (Recommended)
-
-Just add `initTracker` once in your app layout or theme header, and annotate your checkout `<form>`:
-
-```html
-<!-- 1. Initialize once in your header / layout -->
-<script type="module">
-  import { initTracker } from 'dz-tracking-sdk';
-
-  initTracker({
-    apiKey: 'your_merchant_api_key',
-    baseUrl: 'https://tajertrack.vercel.app' // or your custom domain
-  });
-</script>
-
-<!-- 2. Annotate your checkout form (Zero custom JS needed!) -->
-<form data-dz-checkout data-dz-redirect="tracking">
-  <input type="text" name="name" placeholder="الاسم الكامل" required />
-  <input type="tel" name="phone" placeholder="05 / 06 / 07..." required />
-  <input type="text" name="wilaya" placeholder="الولاية" required />
-  <input type="hidden" name="product_name" value="Pack Smart Watch Ultra" />
-  
-  <button type="submit">تأكيد الطلب والدفع عند الاستلام</button>
-</form>
-```
-
-> **What happens automatically?**  
-> 1. When the customer submits, the SDK extracts customer details and normalizes their phone to Algerian `213...`.  
-> 2. It creates the tracking record in DZ Tracking.  
-> 3. It automatically redirects the customer to their branded tracking page (`/t/[uuid]`).
-
----
-
-### Option 2: React & Next.js (`useTracker` Hook)
-
-For modern React, Next.js (App Router), or Remix storefronts:
-
-```tsx
-'use client';
-
-import React, { useState } from 'react';
+~~~typescript
 import { useTracker } from 'dz-tracking-sdk';
+~~~
 
-export function CheckoutForm() {
-  const { track, isLoading, error } = useTracker({
-    apiKey: process.env.NEXT_PUBLIC_DZ_API_KEY!,
-  });
+## Choose the correct integration
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+Register tracking **after** your store has successfully created its own order. Do not replace checkout, payment/COD validation, inventory, store database writes, or customer notifications with a tracking request.
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+Keep the merchant API key private in **DZ_TRACKER_API_KEY**. A value in **NEXT_PUBLIC_*** or a browser hook is visible to every visitor. Prefer server-side registration for production.
 
-    const result = await track({
-      orderId: `#DZ-${Date.now().toString().slice(-5)}`,
-      name,
-      phone,
-      productName: 'AirPods Pro 2',
-      status: 'order_placed',
-    });
+## Server-side quick start (recommended)
 
-    // 🚀 Redirect to the live tracking page
-    window.location.href = result.trackingUrl;
-  };
+~~~dotenv
+DZ_TRACKER_API_KEY=your_merchant_api_key
+DZ_TRACKER_BASE_URL=https://tajertrack.vercel.app
+~~~
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <input 
-        value={name} 
-        onChange={(e) => setName(e.target.value)} 
-        placeholder="الاسم" 
-        required 
-      />
-      <input 
-        value={phone} 
-        onChange={(e) => setPhone(e.target.value)} 
-        placeholder="رقم الهاتف" 
-        required 
-      />
-      
-      <button type="submit" disabled={isLoading}>
-        {isLoading ? 'جاري تأكيد الطلب...' : 'تأكيد الطلب والدفع عند الاستلام 🚚'}
-      </button>
-
-      {error && <p style={{ color: 'red' }}>{error.message}</p>}
-    </form>
-  );
-}
-```
-
----
-
-### Option 3: Backend / Server Actions / Node.js (`DZTrackerClient`)
-
-For backend webhooks, server actions, or multi-tenant instances where global state cannot be shared:
-
-```typescript
-// app/actions/checkout.ts (Next.js Server Action)
-'use server';
-
-import { DZTrackerClient } from 'dz-tracking-sdk';
+~~~typescript
+import { DZTrackerClient } from 'dz-tracking-sdk/core';
 
 const tracker = new DZTrackerClient({
-  apiKey: process.env.DZ_MERCHANT_KEY!,
-  baseUrl: process.env.DZ_API_URL || 'https://tajertrack.vercel.app',
+  apiKey: process.env.DZ_TRACKER_API_KEY!,
+  baseUrl: process.env.DZ_TRACKER_BASE_URL || 'https://tajertrack.vercel.app',
 });
 
-export async function processOrderAction(formData: FormData) {
-  const order = await tracker.trackOrder({
-    orderId: `#ORD-${Date.now()}`,
-    name: formData.get('name') as string,
-    phone: formData.get('phone') as string,
-    productName: 'Chaussures Cuir Véritable',
+export async function registerOrder(order: {
+  id: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  productName?: string | null;
+}) {
+  // Call only after the store order has been persisted successfully.
+  const result = await tracker.trackOrder({
+    orderId: String(order.id), // Stable external order ID, reused for retries.
+    name: order.customerName || undefined,
+    phone: order.customerPhone || undefined,
+    productName: order.productName || undefined,
     status: 'order_placed',
   });
 
-  return {
-    success: true,
-    trackingUrl: order.trackingUrl,
-    whatsappUrl: order.whatsappUrl,
-  };
+  if (!result.success || !result.trackingUrl) {
+    // Keep the store order. Record a retryable tracking-sync failure.
+    return { trackingCreated: false, trackingUrl: null, error: result.error };
+  }
+
+  return { trackingCreated: true, trackingUrl: result.trackingUrl };
 }
-```
+~~~
 
----
+Do not log the API key. Do not generate a new order ID for every retry. The SDK's localStorage queue is browser-only; server-side retry must use your application's durable job/outbox mechanism.
 
-## 🏷️ Declarative HTML Data-Attributes Reference
+## Client API
 
-The SDK auto-capture engine scans your DOM for the following declarative attributes:
+### Register an order
 
-| Attribute | Target Element | Description | Example |
-| :--- | :--- | :--- | :--- |
-| `data-dz-checkout` | `<form>` | Activates zero-code auto-capture on form submission. | `<form data-dz-checkout>` |
-| `data-dz-redirect` | `<form>` | Defines post-submit navigation: `'tracking'` (default consumer page), `'none'`, or a custom URL. | `data-dz-redirect="/merci"` |
-| `data-dz-order` | `<form>` or `<input>` | Explicit Order ID override. If omitted, checks input `name="order_id"` or auto-generates `#ORD-XXXXX`. | `data-dz-order="#ORD-9021"` |
-| `data-dz-name` | `<input>` | Explicit customer name selector (auto-falls back to `name="name"`, `name="customer_name"`). | `<input data-dz-name />` |
-| `data-dz-phone` | `<input>` | Explicit customer phone selector (auto-falls back to `name="phone"`, `name="tel"`). | `<input data-dz-phone />` |
-| `data-dz-product` | Form, input, or text element | Product title to associate with this order. | `<span data-dz-product>Pack 3 T-Shirts</span>` |
-| `data-dz-price` | `<input>` or element | Total price in DZD. | `<input name="total" data-dz-price />` |
-| `data-dz-wilaya` | `<select>` or `<input>` | Algerian Wilaya name or code. | `<select name="wilaya" data-dz-wilaya>` |
-| `data-dz-status` | Button, link, or checkbox | Triggers a 1-click status update on click or toggle. | `<button data-dz-order="#101" data-dz-status="shipped">تم الشحن</button>` |
+Supported **TrackOrderParams**:
 
----
+| Property | Type | Meaning |
+|---|---|---|
+| orderId | string (required) | Stable store order ID |
+| name | string | Customer name |
+| phone | string | Customer phone; common Algerian formats are normalized |
+| status | string | Raw initial status; defaults to order_placed |
+| productName | string | Product/order summary |
+| productImage | string | Product image URL |
+| carrierName | string | Carrier name, if known |
+| carrierTrackingNumber | string | Carrier waybill/tracking number |
+| description | string | Status description |
+| telegramConsent | boolean | True only after explicit customer consent |
+| telegramConsentSource | string | Where that consent was collected |
 
-## 📊 Analytics & Pixel Integration (CustomEvents)
+The source type still accepts **totalPrice** and **wilaya** for compatibility, but the current webhook/orchestrator/orders schema does **not persist** either field. Do not promise they appear in the dashboard.
 
-Forms managed by `data-dz-checkout` automatically dispatch standard browser events that bubble up:
-
-```javascript
-document.addEventListener('dz:track:success', (event) => {
-  const { orderId, trackingUuid, trackingUrl, whatsappUrl } = event.detail;
-
-  // 1. Trigger Facebook Pixel Purchase Event
-  if (typeof fbq === 'function') {
-    fbq('track', 'Purchase', {
-      content_name: orderId,
-      currency: 'DZD',
-    });
-  }
-
-  // 2. Trigger TikTok Pixel
-  if (typeof ttq === 'object') {
-    ttq.track('CompletePayment', { content_id: orderId });
-  }
-
-  console.log(`✅ Order ${orderId} successfully tracked at ${trackingUrl}`);
+~~~typescript
+const result = await tracker.trackOrder({
+  orderId: 'STORE-ORDER-1042',
+  name: 'Customer Name',
+  phone: '0555123456',
+  productName: 'Product title',
+  status: 'order_placed',
+  telegramConsent: false,
 });
 
-document.addEventListener('dz:track:error', (event) => {
-  console.warn('⚠️ Tracking failed:', event.detail.error);
+if (result.success && result.trackingUrl) {
+  // A real tracking UUID was returned by the API.
+  console.log(result.trackingUrl);
+} else {
+  // Network, authentication, subscription, account, or server failure.
+  console.error(result.error || 'Tracking registration failed');
+}
+~~~
+
+**TrackOrderResult** contains **success**, **trackingUuid**, **trackingUrl**, **whatsappUrl**, **orderId**, optional **deduplicated**, **isNewOrder**, and **error**. Failed or unconfirmed requests have empty tracking UUID/URL values. The SDK must not fabricate a pending tracking URL; always check **success** before redirecting.
+
+### Update an existing shipment
+
+Use the same external order ID that you used to register the order:
+
+~~~typescript
+await tracker.updateStatus({
+  orderId: 'STORE-ORDER-1042',
+  status: 'out_for_delivery',
+  description: 'The parcel is with the delivery agent',
+  carrierTrackingNumber: 'YAL-123456',
 });
-```
+~~~
 
----
+The direct endpoint may create a new order if it cannot resolve the external order ID or carrier tracking number. Verify the identifier before sending updates.
 
-## 📱 Algerian Phone Utilities
+### Read a tracking record
 
-Included out-of-the-box for clean, robust numbers:
+~~~typescript
+const order = await tracker.getOrder('TRACKING_UUID_FROM_CREATE_RESPONSE');
+console.log(order.currentStatus, order.timeline);
+~~~
 
-```typescript
-import { normalizeAlgerianPhone, formatAlgerianPhoneDisplay } from 'dz-tracking-sdk';
+The SDK calls **GET /api/track/{trackingUuid}** and returns the response's **data** object.
 
-// Normalizes any format to international standard:
-normalizeAlgerianPhone('0555 12 34 56');   // '213555123456'
-normalizeAlgerianPhone('+213 6 61 22 33'); // '2136612233'
-normalizeAlgerianPhone('0770-99-88-77');   // '213770998877'
+### Other exports
 
-// Pretty print for user interfaces:
-formatAlgerianPhoneDisplay('213555123456'); // '05 55 12 34 56'
-```
+- **getTrackingUrl(uuid)** returns the public **/t/{uuid}** URL.
+- **generateWhatsAppUrl(phone, orderId, trackingUrl, customerName?)** returns a WhatsApp deep link, or an empty string when the phone cannot be normalized.
+- **normalizeAlgerianPhone(value)** removes formatting and normalizes common Algerian local/international forms. It is not complete phone-number validation.
+- **formatAlgerianPhoneDisplay(value)** formats a normalized Algerian number for display.
+- **initTracker(config)** initializes the singleton and (in a browser bundle) enables form auto-capture unless disabled.
+- **trackAndRedirect(params)** is a standalone export that uses the initialized singleton and throws when API-confirmed registration fails.
 
----
+## React hook
 
-## 🛠️ Developer CLI Tools
+Only use the browser hook if exposing the merchant API key to all visitors is explicitly acceptable. A server action/API route is preferred.
 
-The package ships with a built-in CLI accessible via `npx`:
+~~~tsx
+'use client';
 
-```bash
-# Initialize and inject tracking into your project
-npx dz-tracker init
+import { useTracker } from 'dz-tracking-sdk';
 
-# Verify that your Merchant API Key connects successfully
-npx dz-tracker test
+export function TrackButton({ orderId, name, phone }: {
+  orderId: string;
+  name: string;
+  phone: string;
+}) {
+  // Any NEXT_PUBLIC_* key is visible to site visitors.
+  const { track, isLoading, lastResult, error } = useTracker({
+    apiKey: process.env.NEXT_PUBLIC_DZ_TRACKER_KEY!,
+    baseUrl: process.env.NEXT_PUBLIC_DZ_TRACKER_BASE_URL,
+  });
 
-# Print ready-to-copy HTML & React code snippets
-npx dz-tracker snippet
+  async function onClick() {
+    const result = await track({ orderId, name, phone, status: 'order_placed' });
+    if (result.success && result.trackingUrl) {
+      window.location.assign(result.trackingUrl);
+    }
+  }
 
-# View help
+  return (
+    <>
+      <button type="button" onClick={onClick} disabled={isLoading}>View tracking</button>
+      {error && <p role="alert">{error.message}</p>}
+      {lastResult && !lastResult.success && <p role="alert">{lastResult.error}</p>}
+    </>
+  );
+}
+~~~
+
+The hook returns **track**, **updateStatus**, **isLoading**, **lastResult**, and **error**. It does **not** return **trackAndRedirect**. The standalone **trackAndRedirect()** export is separate and requires **initTracker()** first.
+
+## Declarative form auto-capture
+
+The source supports **initTracker()** and **setupAutoCapture()** when imported through a JavaScript bundler in a browser/client-only entry. It does not ship an official UMD/IIFE browser-global bundle. Do not load **dist/index.js** as a plain script tag and do not call **window.DZTracker.initTracker()**.
+
+~~~typescript
+import { initTracker } from 'dz-tracking-sdk/core';
+
+initTracker({
+  apiKey: 'PUBLICLY_EXPOSED_KEY_ONLY_IF_ACCEPTABLE',
+  baseUrl: 'https://tajertrack.vercel.app',
+});
+~~~
+
+Auto-capture selectors:
+
+- **form[data-dz-checkout]**
+- **form[data-dz-form]**
+- **form[data-dz-order]**
+
+Supported form/data field values:
+
+| Value | Supported form attribute or control names |
+|---|---|
+| Order ID | form data-dz-order; otherwise order_id, orderId, orderNumber, order_number, reference, id |
+| Name | data-dz-name; otherwise customer_name, name, fullname, full_name, client, nom |
+| Phone | data-dz-phone; otherwise customer_phone, phone, telephone, tel, mobile |
+| Product | data-dz-product; otherwise product_name, product, item, produit, or scoped data-dz-product text |
+| Wilaya | data-dz-wilaya; otherwise wilaya, city, ville, state |
+| Total price | data-dz-price; accepted by the client but not persisted by the current server |
+
+Important behavior:
+
+- The SDK observes the submit event but does **not** call **preventDefault()** or cancel/replace the store's native submission. It sends tracking alongside the existing form submission.
+- For native forms that navigate immediately, tracking can race the page navigation. For React/server-action checkout or a store that needs reliable order persistence first, call the server-side client after saving the store order.
+- Automatic navigation is opt-in via **data-dz-redirect="tracking"** or a custom URL. Use **data-dz-redirect="none"** to suppress SDK navigation.
+- A **dz:track:success** event is emitted only after a real tracking UUID has been returned. Failed/unconfirmed requests emit **dz:track:error** and do not redirect.
+
+Example markup (requires the SDK to have been initialized by a bundled browser entry):
+~~~html
+<form data-dz-checkout data-dz-redirect="none">
+  <input name="order_id" value="STORE-ORDER-1042" />
+  <input name="name" value="Customer Name" />
+  <input name="phone" value="0555123456" />
+  <input name="product_name" value="Product title" />
+  <button type="submit">Submit existing checkout</button>
+</form>
+~~~
+
+The data attributes add tracking capture; they do not replace the store's order endpoint or validation.
+
+## Direct REST webhook contract
+
+The current direct endpoint is **POST {baseUrl}/api/webhooks**, with **Content-Type: application/json** and **x-api-key: {merchantApiKey}**.
+
+Supported JSON fields:
+~~~json
+{
+  "order_id": "STORE-ORDER-1042",
+  "customer_name": "Customer Name",
+  "customer_phone": "0555123456",
+  "status": "order_placed",
+  "description": "Order received",
+  "product_name": "Product title",
+  "product_image": "https://store.example/product.jpg",
+  "carrier_name": "Yalidine Express",
+  "carrier_tracking_number": "YAL-123456",
+  "telegram_consent": false
+}
+~~~
+
+Successful responses contain **success**, **isNewOrder**, **deduplicated**, **order**, **status**, **tracking_uuid**, and **tracking_url**. Non-2xx responses are failures: 400 malformed/empty body, 401 missing/invalid key, 402 subscription limit/expiry, 403 suspended account, 500 internal error.
+
+The same endpoint handles status updates. Send the same **order_id** plus a new **status**. Never send updates with an invented or mismatched ID, because the orchestrator may create a new order when it cannot find a match.
+
+## Shopify and courier webhooks
+
+Repository endpoints:
+
+| Event source | Endpoint |
+|---|---|
+| Custom direct order/status event | /api/webhooks |
+| Shopify order webhook | /api/webhooks/shopify |
+| Yalidine | /api/webhooks/yalidine |
+| EcoTrack | /api/webhooks/ecotrack |
+| ZR Express | /api/webhooks/zrexpress |
+| Procolis | /api/webhooks/procolis |
+| Maystro | /api/webhooks/maystro |
+| Odoo carrier normalization | /api/webhooks/odoo |
+
+Courier endpoints use provider-specific adapters. Inspect the selected adapter and the provider's current payload requirements; do not guess a generic carrier payload.
+
+The shared handler accepts an API key in the **key** query parameter for courier services requiring URL authentication. Treat those URLs as secrets. The Shopify route currently normalizes incoming payloads but does not call its adapter's HMAC verification helper. Do not claim Shopify signatures are verified unless HMAC verification has been implemented and tested.
+
+## Offline behavior
+
+The browser queue uses localStorage, keeps up to 50 pending events, and attempts limited retries after connectivity returns. This is best-effort, not a guaranteed delivery mechanism or a server-side durable queue. Server integrations must use the host application's own durable retry/outbox mechanism.
+
+## CLI
+
+~~~bash
 npx dz-tracker help
-```
+npx dz-tracker init
+npx dz-tracker test
+npx dz-tracker snippet
+npx dz-tracker install-skill
+~~~
 
----
+- **init** writes private server environment values only; it does not inject code into application entry files.
+- **test** performs a read-only credential check and must not create a real order or trigger customer notifications.
+- **snippet** prints a server-side integration example.
+- **install-skill** fetches the canonical current skill from the configured TajerTrack **/skill.md** endpoint.
 
-## 🛡️ Network Resiliency & Offline Queuing
+## Verification checklist
 
-Mobile connectivity in Algeria can fluctuate during checkout. The SDK guarantees:
-1. **Zero Frozen Checkouts:** Network calls timeout after 3500ms max, returning an optimistic tracking URL so the customer is never stuck on a frozen button.
-2. **`sendBeacon` Support:** Uses `navigator.sendBeacon` so tracking payloads complete even if the customer immediately closes the browser tab after ordering.
-3. **Local Cache Retry:** Queues failed events in `localStorage` and automatically syncs them when the device reconnects to the network.
+1. Inspect the final diff. The store's original order creation must still happen exactly once.
+2. Run the host project's typecheck, lint and build.
+3. Confirm the CLI test is read-only before running it.
+4. Use a dedicated test merchant/staging environment for end-to-end order creation.
+5. Verify a real response includes a tracking UUID before redirecting.
+6. Verify later status updates use the same external order ID and update the same tracking record.
+7. Never claim tests or builds passed unless they were actually run and observed.
 
----
+## License
 
-## 📄 License
-
-MIT © DZ Tracking
+MIT

@@ -23,6 +23,7 @@ import {
   toggleMerchantUpsell,
   reorderMerchantUpsell,
   toggleConfirmationTelegram,
+  getMerchantIntegrationApiKey,
   deleteMerchantOrders,
 } from './actions';
 import {
@@ -129,7 +130,6 @@ export interface MerchantUpsellItem {
 
 interface Props {
   storeName: string;
-  apiKey: string;
   merchantId: string;
   orders: OrderItem[];
   mappings: MappingItem[];
@@ -640,7 +640,6 @@ const Icons = {
 
 export function MerchantDashboardView({
   storeName,
-  apiKey,
   merchantId,
   orders,
   mappings,
@@ -812,6 +811,39 @@ export function MerchantDashboardView({
   const [sdkCodeTab, setSdkCodeTab] = useState<'html' | 'react' | 'node' | 'curl' | 'agent'>('agent');
   const [packageManager, setPackageManager] = useState<'npm' | 'pnpm' | 'yarn' | 'bun'>('npm');
   const [apiKeyRevealed, setApiKeyRevealed] = useState(false);
+  const [integrationApiKey, setIntegrationApiKey] = useState('');
+  const [integrationApiKeyLoading, setIntegrationApiKeyLoading] = useState(false);
+  const shouldLoadIntegrationApiKey =
+    activeTab === 'integrations' &&
+    integrationChoicesHydratedFor === merchantId &&
+    (integrationPlatform === 'website' || integrationPlatform === 'shopify' ||
+      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other'));
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!shouldLoadIntegrationApiKey) {
+      setIntegrationApiKey('');
+      setIntegrationApiKeyLoading(false);
+      setApiKeyRevealed(false);
+      return;
+    }
+    setIntegrationApiKeyLoading(true);
+    getMerchantIntegrationApiKey()
+      .then((result) => {
+        if (cancelled) return;
+        setIntegrationApiKey(result.apiKey || '');
+        if (result.error) console.error('[Integrations] Credential lookup:', result.error);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setIntegrationApiKey('');
+        console.error('[Integrations] Credential lookup failed:', error);
+      })
+      .finally(() => {
+        if (!cancelled) setIntegrationApiKeyLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [shouldLoadIntegrationApiKey, merchantId]);
   const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [addOrderError, setAddOrderError] = useState<string | null>(null);
@@ -1333,13 +1365,13 @@ export function MerchantDashboardView({
   };
 
   const directWebhookUrl = `${siteUrl}/api/webhooks`;
-  const shopifyUrl = `${siteUrl}/api/webhooks/shopify?key=${apiKey}`;
-  const yalidineUrl = `${siteUrl}/api/webhooks/yalidine?key=${apiKey}`;
-  const ecotrackUrl = `${siteUrl}/api/webhooks/ecotrack?key=${apiKey}`;
-  const zrexpressUrl = `${siteUrl}/api/webhooks/zrexpress?key=${apiKey}`;
-  const procolisUrl = `${siteUrl}/api/webhooks/procolis?key=${apiKey}`;
-  const odooUrl = `${siteUrl}/api/webhooks/odoo?key=${apiKey}`;
-  const maystroUrl = `${siteUrl}/api/webhooks/maystro?key=${apiKey}`;
+  const shopifyUrl = `${siteUrl}/api/webhooks/shopify?key=${integrationApiKey}`;
+  const yalidineUrl = `${siteUrl}/api/webhooks/yalidine?key=${integrationApiKey}`;
+  const ecotrackUrl = `${siteUrl}/api/webhooks/ecotrack?key=${integrationApiKey}`;
+  const zrexpressUrl = `${siteUrl}/api/webhooks/zrexpress?key=${integrationApiKey}`;
+  const procolisUrl = `${siteUrl}/api/webhooks/procolis?key=${integrationApiKey}`;
+  const odooUrl = `${siteUrl}/api/webhooks/odoo?key=${integrationApiKey}`;
+  const maystroUrl = `${siteUrl}/api/webhooks/maystro?key=${integrationApiKey}`;
 
   const carrierConnections = [
     {
@@ -1378,7 +1410,7 @@ export function MerchantDashboardView({
       name: 'Procolis',
       symbol: 'P',
       url: procolisUrl,
-      header: `Token ${apiKey}`,
+      header: `Token ${integrationApiKey}`,
       method: 'POST (JSON)',
       hint: 'من لوحة Procolis، تحقّق من إعدادات Webhooks أو إشعارات تغيّر حالة الشحنة، ثم أضف رابط الاستقبال الخاص بمتجرك.',
       caveat: 'يجب تفعيل إرسال الأحداث من حساب Procolis نفسه ثم اختبار وصول حدث حقيقي.',
@@ -1406,128 +1438,91 @@ export function MerchantDashboardView({
   };
 
   const sdkInstallCommand = installCommands[packageManager];
-  const sdkAgentPrompt = `Read ${siteUrl}/skill.md and implement Tajer Track with key: ${apiKey}`;
+  const sdkAgentPrompt = [
+    `Read ${siteUrl}/skill.md completely before changing code.`,
+    'Inspect the existing checkout and the actually installed dz-tracking-sdk version and .d.ts exports.',
+    'Preserve the store order-creation flow. Register tracking only after the store has successfully saved its order.',
+    'Keep the merchant key in a private server-only variable named DZ_TRACKER_API_KEY. Never include a key in this prompt, NEXT_PUBLIC_*, browser source, generated snippets, or logs.',
+    'If the key is needed for local testing, ask me to configure it in .env.local; do not ask me to paste it into this AI chat.',
+    'Use the real stable external order ID. Do not generate a new ID for every retry.',
+    'Only return or redirect to a tracking URL when the API confirms success and a real tracking UUID.',
+    'Inspect the chosen courier adapter and provider requirements instead of guessing the webhook payload.',
+    `TajerTrack base URL: ${siteUrl}`,
+  ].join('\\n');
 
-  const htmlCodeSnippet = `<!-- 1. أضف الكود في ترويسة الموقع (Layout أو Header) -->
-<script type="module">
-  import { initTracker } from 'dz-tracking-sdk';
-
-  initTracker({
-    apiKey: '${apiKey}',
-    baseUrl: '${siteUrl}'
-  });
-</script>
-
-<!-- 2. أضف الخاصية data-dz-checkout لنموذج الشراء (بدون كتابة أي JS!) -->
-<form data-dz-checkout data-dz-redirect="tracking">
-  <input type="text" name="name" placeholder="الاسم الكامل" required />
-  <input type="tel" name="phone" placeholder="05 / 06 / 07..." required />
-  <input type="text" name="wilaya" placeholder="الولاية" required />
-  <input type="hidden" name="product_name" value="اسم المنتج الخاص بك" />
-
-  <button type="submit">تأكيد الطلب والدفع عند الاستلام</button>
+  const htmlCodeSnippet = `<!-- Markup only: initialize the SDK from your own bundled browser entry first. -->
+<!-- For a native checkout that navigates immediately, register tracking server-side after saving the order instead. -->
+<form data-dz-checkout data-dz-redirect="none">
+  <input type="text" name="order_id" value="YOUR_EXISTING_STORE_ORDER_ID" required />
+  <input type="text" name="name" placeholder="الاسم الكامل" />
+  <input type="tel" name="phone" placeholder="05 / 06 / 07..." />
+  <input type="hidden" name="product_name" value="اسم المنتج" />
+  <button type="submit">تأكيد الطلب</button>
 </form>`;
 
   const reactCodeSnippet = `'use client';
 
-import React, { useState } from 'react';
 import { useTracker } from 'dz-tracking-sdk';
 
-export function CheckoutForm() {
+// WARNING: a key passed to a browser hook is visible to every site visitor.
+// Prefer server-side registration with DZ_TRACKER_API_KEY for production.
+export function TrackExistingOrder({ orderId, name, phone }) {
   const { track, isLoading, error } = useTracker({
-    apiKey: '${apiKey}',
-    baseUrl: '${siteUrl}',
+    apiKey: process.env.NEXT_PUBLIC_DZ_TRACKER_KEY,
+    baseUrl: process.env.NEXT_PUBLIC_DZ_TRACKER_BASE_URL,
   });
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [wilaya, setWilaya] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  async function register() {
     const result = await track({
-      orderId: \`#DZ-\${Date.now().toString().slice(-5)}\`,
+      orderId, // The real ID from the order already saved in your store.
       name,
       phone,
-      wilaya,
-      productName: 'Pack Smart Watch Ultra',
       status: 'order_placed',
     });
+    if (result.success && result.trackingUrl) {
+      window.location.assign(result.trackingUrl);
+      return;
+    }
+    console.error(result.error || error?.message || 'Tracking registration failed.');
+  }
 
-    // Redirect to the merchant-branded tracking page
-    window.location.href = result.trackingUrl;
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input 
-        value={name} 
-        onChange={(e) => setName(e.target.value)} 
-        placeholder="الاسم الكامل" 
-        required 
-      />
-      <input 
-        value={phone} 
-        onChange={(e) => setPhone(e.target.value)} 
-        placeholder="05 / 06 / 07..." 
-        required 
-      />
-      <input 
-        value={wilaya} 
-        onChange={(e) => setWilaya(e.target.value)} 
-        placeholder="الولاية" 
-        required 
-      />
-      
-      <button type="submit" disabled={isLoading}>
-        {isLoading ? 'جاري التأكيد...' : 'تأكيد الطلب والدفع عند الاستلام'}
-      </button>
-
-      {error && <p style={{ color: '#ef4444', fontSize: '13px' }}>{error.message}</p>}
-    </form>
-  );
+  return <button type="button" disabled={isLoading} onClick={register}>فتح صفحة التتبع</button>;
 }`;
 
-  const nodeCodeSnippet = `// app/actions/checkout.ts (Next.js Server Action / Node.js Backend)
-'use server';
+  const nodeCodeSnippet = `'use server';
 
-import { DZTrackerClient } from 'dz-tracking-sdk';
+import { DZTrackerClient } from 'dz-tracking-sdk/core';
 
 const tracker = new DZTrackerClient({
-  apiKey: process.env.TAJER_TRACK_API_KEY || '${apiKey}',
-  baseUrl: '${siteUrl}',
+  apiKey: process.env.DZ_TRACKER_API_KEY!,
+  baseUrl: process.env.DZ_TRACKER_BASE_URL || '${siteUrl}',
 });
 
-export async function processOrderAction(formData: FormData) {
-  const order = await tracker.trackOrder({
-    orderId: \`#ORD-\${Date.now()}\`,
-    name: formData.get('name') as string,
-    phone: formData.get('phone') as string,
-    wilaya: formData.get('wilaya') as string,
-    productName: formData.get('product_name') as string || 'المنتج المطلوب',
+// Invoke after the store has persisted the order. Do not create the store order here.
+export async function registerSavedOrder(savedOrder) {
+  const result = await tracker.trackOrder({
+    orderId: String(savedOrder.id),
+    name: savedOrder.customerName || undefined,
+    phone: savedOrder.customerPhone || undefined,
+    productName: savedOrder.productName || undefined,
     status: 'order_placed',
   });
-
-  return {
-    success: true,
-    trackingUrl: order.trackingUrl,
-    whatsappUrl: order.whatsappUrl, // رابط رسالة واتساب للزبون لمعالجة عدم الرد
-  };
+  if (!result.success || !result.trackingUrl) {
+    return { trackingCreated: false, trackingUrl: null, error: result.error };
+  }
+  return { trackingCreated: true, trackingUrl: result.trackingUrl, whatsappUrl: result.whatsappUrl };
 }`;
 
   const curlSnippet = `curl -X POST "${siteUrl}/api/webhooks" \\
   -H "Content-Type: application/json" \\
-  -H "x-api-key: ${apiKey}" \\
+  -H "x-api-key: $DZ_TRACKER_API_KEY" \\
   -d '{
-    "order_id": "#ORD-1082",
-    "customer_name": "أحمد بن علي",
+    "order_id": "YOUR_EXISTING_STORE_ORDER_ID",
+    "customer_name": "Customer Name",
     "customer_phone": "0555123456",
-    "product_name": "ساعة ذكية Ultra 2026",
-    "wilaya": "Alger",
+    "product_name": "Product title",
     "status": "order_placed"
   }'`;
-
   const deliveredCount = orders.filter((o) => o.current_status === 'delivered').length;
   const inTransitCount = orders.filter((o) =>
     ['in_transit', 'out_for_delivery', 'dispatched', 'shipped'].includes(o.current_status)
@@ -5588,6 +5583,11 @@ export async function processOrderAction(formData: FormData) {
                         <span className="dz-int-guided-ready"><Icons.Check /> تم تحديد المسار</span>
                       </div>
 
+                      {shouldLoadIntegrationApiKey && !integrationApiKey && (
+                        <p className="dz-int-guided-note" role="status">
+                          {integrationApiKeyLoading ? 'جارٍ تحميل بيانات الربط...' : 'تعذر تحميل بيانات الربط. حدّث الصفحة ثم أعد فتح هذا القسم.'}
+                        </p>
+                      )}
                       <div className="dz-int-guided-summary">
                         <span><small>مصدر الطلبات</small><strong>{integrationPlatform === 'shopify' ? 'Shopify' : integrationPlatform === 'website' ? 'موقع خاص' : 'إضافة يدوية'}</strong></span>
                         <span><small>تحديث الشحنات</small><strong>{trackingSource === 'carrier' ? (selectedCarrier === 'other' ? 'شركة توصيل أخرى' : activeCarrierConnection?.name || 'شركة التوصيل') : trackingSource === 'manual' ? 'يدوي' : 'بحاجة إلى تحقق'}</strong></span>
@@ -5599,7 +5599,7 @@ export async function processOrderAction(formData: FormData) {
                           <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">01</span><div><h4>اربط Shopify لاستقبال الطلبات</h4><p>أنشئ Webhook لحدث إنشاء الطلب داخل إعدادات Shopify.</p></div></div>
                           <div className="dz-int-guided-copy">
                             <div><small>رابط استقبال طلبات Shopify</small><code dir="ltr">{shopifyUrl}</code></div>
-                            <button type="button" onClick={() => copyToClipboard(shopifyUrl, 'guided-shopify-webhook')}>{copiedKey === 'guided-shopify-webhook' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-shopify-webhook' ? 'تم النسخ' : 'نسخ الرابط'}</button>
+                            <button type="button" disabled={!integrationApiKey || integrationApiKeyLoading} onClick={() => copyToClipboard(shopifyUrl, 'guided-shopify-webhook')}>{copiedKey === 'guided-shopify-webhook' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-shopify-webhook' ? 'تم النسخ' : 'نسخ الرابط'}</button>
                           </div>
                           <ol className="dz-int-guided-steps">
                             <li>افتح Shopify ثم Settings ثم Notifications.</li>
@@ -5617,8 +5617,8 @@ export async function processOrderAction(formData: FormData) {
                           <div className="dz-int-guided-credentials">
                             <div className="dz-int-guided-credential">
                               <div className="dz-int-guided-credential-head"><small>مفتاح API</small><button type="button" onClick={() => setApiKeyRevealed((value) => !value)}>{apiKeyRevealed ? <Icons.EyeOff /> : <Icons.Eye />}{apiKeyRevealed ? 'إخفاء' : 'إظهار'}</button></div>
-                              <code dir="ltr">{apiKeyRevealed ? apiKey : `${apiKey.slice(0, 8)}••••••••••••••••••••`}</code>
-                              <button type="button" className="dz-int-guided-copy-link" onClick={() => copyToClipboard(apiKey, 'guided-api-key')}>{copiedKey === 'guided-api-key' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-api-key' ? 'تم النسخ' : 'نسخ المفتاح'}</button>
+                              <code dir="ltr">{integrationApiKeyLoading ? 'جارٍ التحميل...' : apiKeyRevealed ? integrationApiKey : integrationApiKey ? `${integrationApiKey.slice(0, 8)}••••••••••••••••••••` : 'غير متاح'}</code>
+                              <button type="button" className="dz-int-guided-copy-link" disabled={!integrationApiKey || integrationApiKeyLoading} onClick={() => copyToClipboard(integrationApiKey, 'guided-api-key')}>{copiedKey === 'guided-api-key' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-api-key' ? 'تم النسخ' : 'نسخ المفتاح'}</button>
                             </div>
                             <div className="dz-int-guided-credential">
                               <div className="dz-int-guided-credential-head"><small>معرّف المتجر</small></div>
@@ -5627,8 +5627,8 @@ export async function processOrderAction(formData: FormData) {
                             </div>
                             <div className="dz-int-guided-credential">
                               <div className="dz-int-guided-credential-head"><small>رابط استقبال الطلبات المباشر</small></div>
-                              <code dir="ltr">{directWebhookUrl}?key={apiKey}</code>
-                              <button type="button" className="dz-int-guided-copy-link" onClick={() => copyToClipboard(`${directWebhookUrl}?key=${apiKey}`, 'guided-direct-webhook')}>{copiedKey === 'guided-direct-webhook' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-direct-webhook' ? 'تم النسخ' : 'نسخ الرابط'}</button>
+                              <code dir="ltr">{directWebhookUrl}?key={integrationApiKey}</code>
+                              <button type="button" className="dz-int-guided-copy-link" onClick={() => copyToClipboard(`${directWebhookUrl}?key=${integrationApiKey}`, 'guided-direct-webhook')}>{copiedKey === 'guided-direct-webhook' ? <Icons.Check /> : <Icons.Copy />} {copiedKey === 'guided-direct-webhook' ? 'تم النسخ' : 'نسخ الرابط'}</button>
                             </div>
                           </div>
                           <div className="dz-int-guided-recommended">
@@ -5678,7 +5678,7 @@ export async function processOrderAction(formData: FormData) {
                             <p>يمكن إعداد Automated Action أو Webhook في نظام ERP لإرسال الطلبات أو أحداث الشحن إلى نقطة الاستقبال المخصصة.</p>
                             <div className="dz-int-guided-copy">
                               <div><small>Odoo Webhook URL</small><code dir="ltr">{odooUrl}</code></div>
-                              <button type="button" onClick={() => copyToClipboard(odooUrl, 'guided-odoo-webhook')}>{copiedKey === 'guided-odoo-webhook' ? <Icons.Check /> : <Icons.Copy />} نسخ الرابط</button>
+                              <button type="button" disabled={!integrationApiKey || integrationApiKeyLoading} onClick={() => copyToClipboard(odooUrl, 'guided-odoo-webhook')}>{copiedKey === 'guided-odoo-webhook' ? <Icons.Check /> : <Icons.Copy />} نسخ الرابط</button>
                             </div>
                           </details>
                         </article>
@@ -5707,7 +5707,7 @@ export async function processOrderAction(formData: FormData) {
                           <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
                           <div className="dz-int-guided-copy">
                             <div><small>رابط استقبال تحديثات الشحن</small><code dir="ltr">{activeCarrierConnection.url}</code></div>
-                            <button type="button" onClick={() => copyToClipboard(activeCarrierConnection.url, `guided-carrier-${activeCarrierConnection.id}`)}>{copiedKey === `guided-carrier-${activeCarrierConnection.id}` ? <Icons.Check /> : <Icons.Copy />} نسخ الرابط</button>
+                            <button type="button" disabled={!integrationApiKey || integrationApiKeyLoading} onClick={() => copyToClipboard(activeCarrierConnection.url, `guided-carrier-${activeCarrierConnection.id}`)}>{copiedKey === `guided-carrier-${activeCarrierConnection.id}` ? <Icons.Check /> : <Icons.Copy />} نسخ الرابط</button>
                           </div>
                           <div className="dz-int-guided-meta"><span>طريقة الإرسال</span><strong>{activeCarrierConnection.method}</strong><span>المصادقة</span><strong>مضمّنة في رابط الاستقبال الخاص بمتجرك</strong></div>
                           <ol className="dz-int-guided-steps">
