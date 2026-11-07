@@ -10,67 +10,52 @@ export default async function ConfirmOrderPage({ params }: Props) {
   const { token } = await params;
   const supabase = getSupabaseAdminClient();
 
-  // Look up order by token
   const { data: order, error } = await supabase
     .from('orders')
-    .select('id, external_order_id, customer_name, product_name, merchant_id, confirmation_status, confirmation_expires_at')
+    .select('id, external_order_id, customer_name, product_name, product_image, merchant_id, confirmation_status, confirmation_expires_at')
     .eq('confirmation_token', token)
     .maybeSingle();
 
   if (error || !order) {
-    return (
-      <ConfirmOrderView
-        status="invalid"
-        token={token}
-      />
-    );
+    return <ConfirmOrderView status="invalid" token={token} />;
   }
 
-  // Check expiry
+  // Load merchant identity before resolving status so every valid state stays branded.
+  const [{ data: merchant }, { data: brandColorRow }] = await Promise.all([
+    supabase
+      .from('merchants')
+      .select('store_name, logo_url')
+      .eq('id', order.merchant_id)
+      .maybeSingle(),
+    supabase
+      .from('status_mappings')
+      .select('display_status')
+      .eq('merchant_id', order.merchant_id)
+      .eq('source_status', '__brand_primary_color__')
+      .maybeSingle(),
+  ]);
+
   const isExpired =
     order.confirmation_expires_at &&
     new Date(order.confirmation_expires_at).getTime() < Date.now();
 
-  if (isExpired) {
-    return (
-      <ConfirmOrderView
-        status="expired"
-        token={token}
-        orderNumber={order.external_order_id}
-        customerName={order.customer_name ?? undefined}
-      />
-    );
-  }
-
-  // Already responded
-  if (order.confirmation_status === 'confirmed' || order.confirmation_status === 'cancelled') {
-    return (
-      <ConfirmOrderView
-        status={order.confirmation_status}
-        token={token}
-        orderNumber={order.external_order_id}
-        customerName={order.customer_name ?? undefined}
-      />
-    );
-  }
-
-  // Fetch merchant name for display
-  const { data: merchant } = await supabase
-    .from('merchants')
-    .select('store_name, logo_url')
-    .eq('id', order.merchant_id)
-    .maybeSingle();
+  const status = isExpired
+    ? 'expired'
+    : order.confirmation_status === 'confirmed' || order.confirmation_status === 'cancelled'
+      ? order.confirmation_status
+      : 'pending';
 
   return (
     <ConfirmOrderView
-      status="pending"
+      status={status}
       token={token}
       orderNumber={order.external_order_id}
       customerName={order.customer_name ?? undefined}
       productName={order.product_name ?? undefined}
+      productImage={order.product_image ?? undefined}
       storeName={merchant?.store_name ?? undefined}
-      logoUrl={(merchant as any)?.logo_url ?? undefined}
+      logoUrl={merchant?.logo_url ?? undefined}
+      brandColor={brandColorRow?.display_status ?? '#273b30'}
     />
   );
 }
-
