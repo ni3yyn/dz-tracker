@@ -2068,7 +2068,7 @@ export async function processOrderAction(formData: FormData) {
         .dz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px; }
         .dz-card-box { background: var(--surface); border-radius: var(--radius-lg); padding: 24px; border: 1px solid var(--border-soft); box-shadow: var(--shadow-sm); }
         
-        .dz-toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink-main); color: #fff; padding: 14px 28px; border-radius: 99px; font-weight: 600; font-size: 13px; box-shadow: 0 16px 40px rgba(9,9,11,0.2); z-index: 9999; opacity: 0; pointer-events: none; transition: 0.4s var(--ease-spring); }
+        .dz-toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(24px); background: #09090B; color: #ffffff; padding: 14px 28px; border-radius: 99px; font-weight: 600; font-size: 14px; letter-spacing: 0.01em; box-shadow: 0 16px 40px rgba(9,9,11,0.28); z-index: 99999; opacity: 0; pointer-events: none; transition: opacity 0.35s cubic-bezier(0.25,1,0.4,1), transform 0.35s cubic-bezier(0.25,1,0.4,1); white-space: nowrap; max-width: 90vw; }
         .dz-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
         @media (max-width: 1024px) {
@@ -2179,7 +2179,7 @@ export async function processOrderAction(formData: FormData) {
         .dz-admin-root .dz-phone-chassis { border: 8px solid #2b332e; border-radius: 32px; box-shadow: 0 20px 42px -28px rgba(22,33,25,.45); background: #2b332e; }
         .dz-admin-root .dz-phone-notch { height: 19px; }
         .dz-admin-root .dz-phone-screen { padding: 11px 8px; }
-        .dz-admin-root .dz-toast { bottom: 24px; padding: 12px 20px; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; box-shadow: 0 10px 32px rgba(0,0,0,.16); font-size: 12px; }
+        .dz-admin-root .dz-toast { border: 1px solid rgba(255,255,255,.12); }
         .dz-admin-root button:focus-visible, .dz-admin-root a:focus-visible, .dz-admin-root input:focus-visible, .dz-admin-root select:focus-visible, .dz-admin-root textarea:focus-visible { outline: 3px solid rgba(53,88,70,.25); outline-offset: 2px; }
         @media (max-width: 1024px) {
           .dz-admin-root .dz-sidebar { padding: 15px 18px; background: #f8f8f4; }
@@ -6182,11 +6182,13 @@ export async function processOrderAction(formData: FormData) {
           ), document.body)}
 
         </main>
+
+        {/* TOAST — inside dz-admin-root so CSS vars (--ink-main, --ease-spring) resolve correctly */}
+        <div className={`dz-toast ${toastMsg ? 'show' : ''}`} role="status" aria-live="polite">
+          {toastMsg}
+        </div>
       </div>
 
-      <div className={`dz-toast ${toastMsg ? 'show' : ''}`}>
-        {toastMsg}
-      </div>
     </>
   );
 }
