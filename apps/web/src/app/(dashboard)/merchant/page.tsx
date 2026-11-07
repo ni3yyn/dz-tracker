@@ -156,7 +156,7 @@ export default async function MerchantDashboardPage() {
   const cleanMappings = (mappings || []).filter((m) => !m.source_status.startsWith('__brand_'));
 
   // استخراج رابط الموقع الأساسي
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dz-tracker-three.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tajertrack.vercel.app';
 
   // معالجة سقف الطلبات وتحديثه تلقائياً حسب الباقة
   const currentTier = merchant.subscription_tier || 'starter';

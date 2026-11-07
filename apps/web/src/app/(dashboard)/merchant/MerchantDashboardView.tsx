@@ -643,6 +643,26 @@ export function MerchantDashboardView({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
 
+  // Mobile Back Button Handler: when mobile menu drawer is open, back button closes it instead of leaving dashboard
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    window.history.pushState({ tajerMobileMenu: true }, '');
+
+    const handlePopState = () => {
+      setMobileMenuOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (window.history.state?.tajerMobileMenu) {
+        window.history.back();
+      }
+    };
+  }, [mobileMenuOpen]);
+
   // Upsell Features State
   const [upsellsList, setUpsellsList] = useState<MerchantUpsellItem[]>(initialUpsells);
   const [upsellScrapeUrl, setUpsellScrapeUrl] = useState('');
@@ -1597,8 +1617,10 @@ export async function processOrderAction(formData: FormData) {
         .dz-header {
           display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0;
         }
+        .dz-header-titles { flex: 1 1 auto; min-width: 0; }
         .dz-header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px 0; color: var(--ink-main); }
         .dz-header p { color: var(--ink-muted); font-size: 14px; margin: 0; max-width: 600px; line-height: 1.6; }
+        .dz-header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
         .dz-search-box {
           display: flex; align-items: center; background: rgba(255, 255, 255, 0.6);
@@ -2969,55 +2991,133 @@ export async function processOrderAction(formData: FormData) {
         .dz-data-table th { background:#f7f9f6; font-weight:800; color:#27342d; }
         .dz-data-table code { font-family:monospace; background:#eef2ed; color:#27342d; padding:2px 6px; border-radius:4px; font-size:11px; direction:ltr; display:inline-block; }
 
+        .dz-mobile-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 1290;
+          background: rgba(15, 23, 42, 0.45);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          animation: dzFadeIn 0.2s ease-out;
+        }
+        @keyframes dzFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
         @media (max-width: 1024px) {
-          .dz-sidebar { position:fixed; top:88px; right:16px; width:min(320px,calc(100vw - 32px)); height:auto; max-height:calc(100dvh - 104px); overflow-y:auto; border:1px solid var(--border-soft); border-radius:18px; padding:18px; box-shadow:0 22px 70px rgba(32,40,36,.16); display:flex; flex-direction:column; visibility:hidden; opacity:0; pointer-events:none; transform:translateY(-9px); transition:opacity .3s ease,transform .38s cubic-bezier(.2,.65,.25,1),visibility .3s ease; }
-          .dz-sidebar.dz-mobile-nav-open { visibility:visible; opacity:1; pointer-events:auto; transform:translateY(0); }
-          .dz-sidebar .dz-brand { margin-bottom:20px; }
-          .dz-sidebar .dz-nav { flex-direction:column; overflow:visible; }
-          .dz-sidebar .dz-nav-item { width:100%; white-space:normal; }
-          .dz-sidebar .dz-sidebar-footer { display:flex; }
-          .dz-mobile-menu-toggle { display:flex; }
-          .dz-header { flex-direction:row; align-items:center; justify-content:space-between; gap:12px; }
-          .dz-header > div:first-child { flex:1; min-width:0; }
-          .dz-header h1 { font-size:clamp(20px,4vw,28px); }
-          .dz-search-box { width: min(320px, 42%); min-width: 180px; }
-          .dz-billing-plan-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
-        }
-        @media (max-width: 860px) {
-          .dz-header { display: contents !important; }
-          .dz-header > div:first-child { order: 2 !important; flex: 1 1 0px !important; min-width: 0 !important; width: auto !important; }
-          .dz-header h1 { margin: 0 !important; font-size: clamp(19px, 4.5vw, 24px) !important; }
-          .dz-search-box {
-            order: 3 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            flex: 0 0 100% !important;
-            box-sizing: border-box !important;
-            margin: 0 !important;
+          .dz-sidebar {
+            position: fixed;
+            top: 76px;
+            right: 16px;
+            width: min(320px, calc(100vw - 32px));
+            height: auto;
+            max-height: calc(100dvh - 90px);
+            overflow-y: auto;
+            border: 1px solid var(--border-soft);
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 22px 70px rgba(32, 40, 36, 0.16);
+            display: flex;
+            flex-direction: column;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-9px);
+            transition: opacity 0.3s ease, transform 0.38s cubic-bezier(0.2, 0.65, 0.25, 1), visibility 0.3s ease;
+            z-index: 1300 !important;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
           }
+          .dz-sidebar::-webkit-scrollbar { display: none; width: 0; height: 0; }
+          .dz-sidebar.dz-mobile-nav-open { visibility: visible; opacity: 1; pointer-events: auto; transform: translateY(0); }
+          .dz-sidebar .dz-brand { margin-bottom: 20px; }
+          .dz-sidebar .dz-nav { flex-direction: column; overflow: visible; }
+          .dz-sidebar .dz-nav-item { width: 100%; white-space: normal; }
+          .dz-sidebar .dz-sidebar-footer { display: flex; }
+          .dz-mobile-menu-toggle { display: flex; }
+
+          .dz-header-titles {
+            grid-column: 2 !important;
+            grid-row: 1 !important;
+            min-width: 0 !important;
+            align-self: center !important;
+          }
+          .dz-header-titles h1 {
+            margin: 0 !important;
+            font-size: clamp(17px, 4vw, 22px) !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            line-height: 1.25 !important;
+          }
+          .dz-header-titles p {
+            display: none !important;
+          }
+
+          .dz-header-actions {
+            grid-column: 1 / -1 !important;
+            grid-row: 2 !important;
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            margin-top: 2px !important;
+          }
+          .dz-header-actions .dz-search-box {
+            flex: 1 1 auto !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            height: 42px !important;
+            margin: 0 !important;
+            padding: 8px 14px !important;
+          }
+          .dz-header-actions .dz-add-order-btn {
+            flex: 0 0 auto !important;
+            height: 42px !important;
+            padding: 0 14px !important;
+            font-size: 13px !important;
+            white-space: nowrap !important;
+          }
+
+          .dz-billing-plan-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
+
         @media (max-width: 560px) {
-          .dz-sidebar { top:82px; right:10px; width:calc(100vw - 20px); max-height:calc(100dvh - 94px); }
-          .dz-header p { font-size:11px; }
-          .dz-billing-plan-list { grid-template-columns:minmax(0,1fr); }
-          .dz-billing-plan { min-height:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px 12px; }
-          .dz-billing-plan > div { min-height:0; }
-          .dz-billing-plan b { grid-column:2; grid-row:1; font-size:19px; }
-          .dz-billing-plan > span,.dz-billing-plan button { grid-column:1 / -1; }
-          .dz-billing-selected-summary { align-items:flex-start; }
-          .dz-billing-selected-price { font-size:15px; }
+          .dz-sidebar {
+            top: 70px !important;
+            right: 10px !important;
+            width: calc(100vw - 20px) !important;
+            max-height: calc(100dvh - 82px) !important;
+          }
+          .dz-header-titles h1 {
+            font-size: 17px !important;
+          }
+          .dz-header-actions .dz-search-box {
+            height: 40px !important;
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+          }
+          .dz-header-actions .dz-add-order-btn {
+            height: 40px !important;
+            padding: 0 12px !important;
+            font-size: 12px !important;
+          }
+          .dz-header-actions .dz-add-order-btn span {
+            font-size: 12px !important;
+          }
+          .dz-billing-plan-list { grid-template-columns: minmax(0, 1fr); }
+          .dz-billing-plan { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 12px; }
+          .dz-billing-plan > div { min-height: 0; }
+          .dz-billing-plan b { grid-column: 2; grid-row: 1; font-size: 19px; }
+          .dz-billing-plan > span, .dz-billing-plan button { grid-column: 1 / -1; }
+          .dz-billing-selected-summary { align-items: flex-start; }
+          .dz-billing-selected-price { font-size: 15px; }
         }
         @media (prefers-reduced-motion: reduce) { .dz-mobile-menu-toggle span,.dz-sidebar,.dz-billing-plan,.dz-billing-plan-list,.dz-billing-selected-summary,.dz-main > div:not(.dz-toast),.dz-main > header { transition-duration:.01ms!important; animation-duration:.01ms!important; } }
         /* Compact dashboard top edge and a clean, scrollbar-free mobile navigation drawer. */
         .dz-admin-root .dz-main { padding-top: 0 !important; }
-        @media (max-width: 1024px) {
-          .dz-admin-root .dz-header p { display: none !important; }
-          .dz-admin-root .dz-sidebar { top: 76px; max-height: calc(100dvh - 90px); scrollbar-width: none; -ms-overflow-style: none; }
-          .dz-admin-root .dz-sidebar::-webkit-scrollbar { display: none; width: 0; height: 0; }
-        }
-        @media (max-width: 560px) {
-          .dz-admin-root .dz-sidebar { top: 70px; max-height: calc(100dvh - 82px); }
-        }
 
         /* UPSELL FEATURE STYLES */
         .dz-upsell-container { display:flex; flex-direction:column; gap:24px; max-width:1100px; padding-bottom:60px; animation:dz-tab-fade-up .35s ease; }
@@ -3142,6 +3242,15 @@ export async function processOrderAction(formData: FormData) {
           </div>
         </aside>
 
+        {/* MOBILE MENU BACKDROP */}
+        {mobileMenuOpen && (
+          <div
+            className="dz-mobile-backdrop"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         {/* MAIN */}
         <main className="dz-main dz-scrollable">
           
@@ -3157,7 +3266,7 @@ export async function processOrderAction(formData: FormData) {
             onMenuToggle={() => setMobileMenuOpen((open) => !open)}
             menuId="dz-merchant-sidebar"
           >
-            <div>
+            <div className="dz-header-titles">
               <h1>
                 {activeTab === 'overview' && 'نظرة عامة'}
                 {activeTab === 'orders' && 'الشحنات'}
@@ -3187,7 +3296,7 @@ export async function processOrderAction(formData: FormData) {
             </div>
 
             {(activeTab === 'overview' || activeTab === 'orders' || activeTab === 'alerts') && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <div className="dz-header-actions">
                 <div className="dz-search-box" role="search">
                   <Icons.Search />
                   <input
@@ -3216,7 +3325,7 @@ export async function processOrderAction(formData: FormData) {
                   title="إضافة طلب يدوي لاختبار التتبع وتيليجرام"
                 >
                   <Icons.Plus />
-                  <span>إضافة طلب جديد</span>
+                  <span>طلب جديد</span>
                 </button>
               </div>
             )}

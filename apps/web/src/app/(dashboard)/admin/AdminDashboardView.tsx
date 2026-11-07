@@ -80,6 +80,26 @@ export function AdminDashboardView({
   const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'merchants' | 'telemetry' | 'settings'>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
+
+  // Mobile Back Button Handler: when mobile menu drawer is open, back button closes it instead of leaving dashboard
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    window.history.pushState({ tajerAdminMobileMenu: true }, '');
+
+    const handlePopState = () => {
+      setMobileMenuOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (window.history.state?.tajerAdminMobileMenu) {
+        window.history.back();
+      }
+    };
+  }, [mobileMenuOpen]);
   const [searchQuery, setSearchQuery] = useState('');
   const [merchantFilter, setMerchantFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'suspended'>('all');
   const [carrierFilter, setCarrierFilter] = useState<string>('all');
@@ -284,6 +304,15 @@ export function AdminDashboardView({
         <div className={`${styles.auroraBlob} ${styles.blob3}`} />
         <div className={styles.grainOverlay} />
       </div>
+
+      {/* MOBILE MENU BACKDROP */}
+      {mobileMenuOpen && (
+        <div
+          className={styles.mobileBackdrop}
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* 2. SIDE RAIL */}
       <aside id="dz-admin-sidebar" className={`${styles.sideRail} ${mobileMenuOpen ? styles.sideRailOpen : ''}`}>

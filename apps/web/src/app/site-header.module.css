@@ -74,69 +74,99 @@
 .mobilePrimary { width: 100%; min-height: 46px; }
 .compact { min-height: 82px; }
 
-/* Dashboard header uses the same component, alongside the existing workspace menu. */
+/* Dashboard header: sleek sticky header for both Merchant & Admin */
 .dashboardHeader {
-  position: sticky; top: 0; z-index: 1200; box-sizing: border-box;
-  display: flex; align-items: center; gap: 14px; width: 100%; min-width: 0;
-  margin: 0 0 22px; padding: 10px 0 13px;
-  border-bottom: 1px solid var(--border-soft, rgba(32,42,35,.08));
-  background: var(--bg-base, rgba(247,246,240,.94));
-  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 20px;
+  padding: 12px 0 14px;
+  border-bottom: 1px solid var(--border-soft, rgba(32, 42, 35, 0.08));
+  background: var(--bg-base, rgba(247, 246, 240, 0.94));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  transition: all 0.2s ease;
 }
-.dashboardContent { display: block; flex: 1 1 auto; min-width: 0; }
-.dashboardMenuToggle { color: var(--ink-main, #202a23); border-color: var(--border-soft, #dfe3d9); background: var(--surface, #fffefa); }
 
-@media (max-width: 1180px) {
-  .header { grid-template-columns: minmax(135px, 1fr) auto minmax(145px, 1fr); gap: 15px; padding-inline: 28px; }
-  .desktopNav { gap: 16px; }
-  .desktopNav a, .loginLink { font-size: 11px; }
-  .primaryLink { padding-inline: 15px; }
+.dashboardContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 16px;
 }
-@media (max-width: 980px) {
-  .header { grid-template-columns: minmax(0, 1fr) auto; min-height: 74px; gap: 12px; padding-inline: 22px; }
-  .desktopNav, .actions { display: none; }
-  .menuToggle { display: flex; }
-  .brand { gap: 10px; }
-  .mark { width: 39px; height: 39px; flex-basis: 39px; }
-  .wordmark strong { font-size: 16px; }
-  .compact { min-height: 74px; }
-  .dashboardMenuToggle { display: flex; }
-  .dashboardHeader { gap: 10px; margin-bottom: 16px; padding-block: 8px 10px; }
+
+.dashboardMenuToggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  padding: 0;
+  border: 1px solid var(--border-soft, #dfe3d9);
+  border-radius: 11px;
+  background: var(--surface, #fffefa);
+  color: var(--ink-main, #202a23);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
 }
-@media (max-width: 560px) {
-  .header { min-height: 70px; padding-inline: 16px; }
-  .wordmark strong { font-size: 15px; letter-spacing: -.025em; }
-  .menuToggle { width: 41px; height: 41px; flex-basis: 41px; }
-  .compact { min-height: 70px; }
-  .mobileMenu { inset-inline: 8px; }
-  .mobileMenuOpen { padding: 11px 15px 14px; }
-  .dashboardHeader { margin-bottom: 14px; padding-block: 7px 9px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .header *, .header *::before, .header *::after, .dashboardHeader *, .dashboardHeader *::before, .dashboardHeader *::after {
-    transition-duration: .01ms !important; animation-duration: .01ms !important; scroll-behavior: auto !important;
-  }
+
+.dashboardMenuToggle:hover {
+  background: var(--surface-hover, #f5f6f2);
+  border-color: var(--border-strong, #cbd5e1);
 }
 
 @media (max-width: 1024px) {
-  .dashboardMenuToggle { display: flex; }
-  .dashboardContent:global(.dz-header), .dashboardContent:global(.topBar) { min-width: 0; }
-}
-
-@media (max-width: 860px) {
-  .dashboardHeader {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    row-gap: 12px;
-    column-gap: 12px;
-  }
   .dashboardMenuToggle {
-    order: 1;
-    flex: 0 0 42px;
-    margin: 0;
+    display: flex !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+  }
+  .dashboardHeader {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    align-items: center !important;
+    column-gap: 12px !important;
+    row-gap: 10px !important;
+    padding: 10px 16px 12px !important;
+    margin: 0 -16px 16px -16px !important;
+    width: calc(100% + 32px) !important;
+    background: var(--bg-base, rgba(247, 246, 240, 0.96)) !important;
+    border-bottom: 1px solid var(--border-soft, rgba(0, 0, 0, 0.08)) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    backdrop-filter: blur(16px) !important;
   }
   .dashboardContent {
-    display: contents;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    display: contents !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboardHeader {
+    padding: 8px 12px 10px !important;
+    margin: 0 -12px 12px -12px !important;
+    width: calc(100% + 24px) !important;
+    column-gap: 10px !important;
+    row-gap: 8px !important;
+  }
+  .dashboardMenuToggle {
+    width: 38px !important;
+    height: 38px !important;
+    flex: 0 0 38px !important;
   }
 }

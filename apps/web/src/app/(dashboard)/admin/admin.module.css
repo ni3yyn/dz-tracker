@@ -987,65 +987,113 @@
 .backBtn:hover, .railLogoutBtn:hover { transform: translateY(-1px); background: #1d3027; }
 
 
+.mobileBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1290;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: adminFadeIn 0.2s ease-out;
+}
+@keyframes adminFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .mobileMenuToggle { display:none; align-items:center; justify-content:center; flex-direction:column; gap:5px; width:42px; height:42px; flex:0 0 42px; padding:0; border:1px solid var(--border-soft); border-radius:11px; background:#fffefa; color:var(--ink-main); cursor:pointer; }
 .mobileMenuToggle span { display:block; width:17px; height:1.7px; border-radius:2px; background:currentColor; transition:transform .32s cubic-bezier(.2,.65,.25,1),opacity .25s ease; }
 .mobileMenuToggleOpen span:first-child { transform:translateY(6.7px) rotate(45deg); }
 .mobileMenuToggleOpen span:nth-child(2) { opacity:0; }
 .mobileMenuToggleOpen span:last-child { transform:translateY(-6.7px) rotate(-45deg); }
+
 @media (max-width: 1024px) {
-  .sideRail { position:fixed; top:88px; right:16px; width:min(320px,calc(100vw - 32px)); height:auto; max-height:calc(100dvh - 104px); overflow-y:auto; border:1px solid var(--border-soft); border-radius:17px; padding:18px; box-shadow:0 22px 70px rgba(32,40,36,.16); display:flex; flex-direction:column; visibility:hidden; opacity:0; pointer-events:none; transform:translateY(-9px); transition:opacity .3s ease,transform .38s cubic-bezier(.2,.65,.25,1),visibility .3s ease; }
-  .sideRailOpen { visibility:visible; opacity:1; pointer-events:auto; transform:translateY(0); }
-  .railBrand { margin-bottom:20px; }
-  .railNav { flex-direction:column; overflow:visible; }
-  .railItem { width:100%; white-space:normal; }
-  .railFooter { display:flex; }
-  .mobileMenuToggle { display:flex; }
-  .topBar { flex-direction:row; align-items:center; gap:12px; }
-  .pageHeaderGroup { flex:1; min-width:0; }
-  .pageHeaderGroup h1 { font-size:clamp(19px,3.5vw,26px); }
-  .omniSearchWrapper { width: min(340px, 42%); min-width: 180px; }
-}
-@media (max-width: 860px) {
-  .topBar { display: contents !important; }
-  .pageHeaderGroup { order: 2 !important; flex: 1 1 0px !important; min-width: 0 !important; width: auto !important; }
-  .pageHeaderGroup h1 { margin: 0 !important; font-size: clamp(19px, 4.5vw, 24px) !important; }
-  .topActionsGroup {
-    order: 3 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 0 0 100% !important;
-    margin: 0 !important;
-  }
-  .omniSearchWrapper {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    margin: 0 !important;
-  }
-}
-@media (max-width: 560px) {
-  .sideRail { top:82px; right:10px; width:calc(100vw - 20px); max-height:calc(100dvh - 94px); }
-  .pageHeaderGroup p { font-size:11px; }
-}
-@media (prefers-reduced-motion: reduce) { .mobileMenuToggle span,.sideRail { transition-duration:.01ms!important; animation-duration:.01ms!important; } }
-
-@keyframes adminPanelFadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-.mainContent > div:not(.toast) { animation: adminPanelFadeUp .52s cubic-bezier(.2,.65,.25,1) both; }
-@media (prefers-reduced-motion: reduce) { .mainContent > div:not(.toast) { animation-duration:.01ms!important; } }
-
-
-/* Tighten the dashboard header to the top edge and keep mobile navigation visually clean. */
-.adminLayout .mainContent { padding-top: 0; }
-@media (max-width: 1024px) {
-  .pageHeaderGroup p { display: none !important; }
   .sideRail {
+    position: fixed;
     top: 76px;
+    right: 16px;
+    width: min(320px, calc(100vw - 32px));
+    height: auto;
     max-height: calc(100dvh - 90px);
+    overflow-y: auto;
+    border: 1px solid var(--border-soft);
+    border-radius: 17px;
+    padding: 18px;
+    box-shadow: 0 22px 70px rgba(32, 40, 36, 0.16);
+    display: flex;
+    flex-direction: column;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-9px);
+    transition: opacity 0.3s ease, transform 0.38s cubic-bezier(0.2, 0.65, 0.25, 1), visibility 0.3s ease;
+    z-index: 1300 !important;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
   .sideRail::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  .sideRailOpen { visibility: visible; opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .railBrand { margin-bottom: 20px; }
+  .railNav { flex-direction: column; overflow: visible; }
+  .railItem { width: 100%; white-space: normal; }
+  .railFooter { display: flex; }
+  .mobileMenuToggle { display: flex; }
+
+  .pageHeaderGroup {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+    align-self: center !important;
+  }
+  .pageHeaderGroup h1 {
+    margin: 0 !important;
+    font-size: clamp(17px, 4vw, 22px) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.25 !important;
+  }
+  .pageHeaderGroup p {
+    display: none !important;
+  }
+
+  .topActionsGroup {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    margin-top: 2px !important;
+  }
+  .omniSearchWrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 42px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
 }
+
 @media (max-width: 560px) {
-  .sideRail { top: 70px; max-height: calc(100dvh - 82px); }
+  .sideRail {
+    top: 70px !important;
+    right: 10px !important;
+    width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 82px) !important;
+  }
+  .pageHeaderGroup h1 {
+    font-size: 17px !important;
+  }
+  .omniSearchWrapper {
+    height: 40px !important;
+  }
 }
+
+@media (prefers-reduced-motion: reduce) { .mobileMenuToggle span, .sideRail { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+@keyframes adminPanelFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.mainContent > div:not(.toast) { animation: adminPanelFadeUp .52s cubic-bezier(.2, .65, .25, 1) both; }
+@media (prefers-reduced-motion: reduce) { .mainContent > div:not(.toast) { animation-duration: .01ms !important; } }
+
+/* Tighten the dashboard header to the top edge and keep mobile navigation visually clean. */
+.adminLayout .mainContent { padding-top: 0; }
