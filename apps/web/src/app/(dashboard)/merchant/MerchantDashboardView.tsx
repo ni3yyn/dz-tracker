@@ -859,7 +859,13 @@ export function MerchantDashboardView({
           trackingUuid: res.trackingUuid!,
           externalOrderId: res.externalOrderId!,
         });
-        showToast('تم إنشاء الطلب بنجاح! تم جدولة التتبع في طابور تيليجرام 🚀');
+        if (res.confirmationQueueError) {
+          showToast('تم إنشاء الطلب، لكن تعذرت جدولة رسالة تأكيد تيليجرام. راجع سجلات الخادم.');
+        } else if (res.confirmationQueued) {
+          showToast('تم إنشاء الطلب وجدولة رابط التتبع ورسالة تأكيد الطلب عبر تيليجرام 🚀');
+        } else {
+          showToast('تم إنشاء الطلب بنجاح! تم جدولة التتبع في طابور تيليجرام 🚀');
+        }
       }
     } catch (err: any) {
       setAddOrderError(err?.message || 'حدث خطأ غير متوقع أثناء إضافة الطلب');
