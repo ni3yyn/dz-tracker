@@ -9,3 +9,8 @@ body {
 *, *::before, *::after {
   box-sizing: inherit;
 }
+
+/* ── Utility keyframe for spinners ─────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

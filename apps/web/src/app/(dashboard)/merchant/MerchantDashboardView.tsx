@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { StatusSelector } from './StatusSelector';
 import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
+import { ImageUploadField } from './ImageUploadField';
 import {
   saveBrandSettings,
   applyPresetMappings,
@@ -805,6 +806,7 @@ export function MerchantDashboardView({
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const [isSubmittingProof, setIsSubmittingProof] = useState(false);
+  const [proofImageUrl, setProofImageUrl] = useState('');
   const [selectedUpgradeTier, setSelectedUpgradeTier] = useState<'basic' | 'growth' | 'scale'>(() => subscription.tier === 'scale' ? 'scale' : subscription.tier === 'growth' ? 'growth' : 'basic');
   const [showAdvanceRenewal, setShowAdvanceRenewal] = useState(false);
 
@@ -1064,13 +1066,21 @@ export function MerchantDashboardView({
 
   const handleSubmitProof = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!proofImageUrl) {
+      alert('يرجى رفع صورة وصل التحويل أولاً');
+      return;
+    }
+
     setIsSubmittingProof(true);
-    
+
     const fd = new FormData(e.currentTarget);
     fd.append('merchant_id', merchantId);
     fd.append('plan_tier', selectedUpgradeTier);
     fd.append('amount_dzd', selectedUpgradeTier === 'scale' ? '2500' : selectedUpgradeTier === 'growth' ? '1800' : '1000');
     fd.append('payment_method', 'baridimob');
+    // Inject the uploaded image URL (overrides any stale value)
+    fd.set('payment_proof_url', proofImageUrl);
 
     const res = await submitPaymentProof(fd);
     setIsSubmittingProof(false);
@@ -1079,6 +1089,7 @@ export function MerchantDashboardView({
       alert(res.error);
     } else {
       showToast('تم إرسال وصل التحويل بنجاح. ستتم مراجعته وتفعيل الباقة بعد الموافقة.');
+      setProofImageUrl('');
       (e.target as HTMLFormElement).reset();
     }
   };
@@ -4585,28 +4596,15 @@ export async function processOrderAction(formData: FormData) {
                     </div>
 
                     <div className="dz-upsell-field">
-                      <label>رابط الصورة (Image URL) *</label>
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <input
-                          type="url"
-                          required
-                          dir="ltr"
-                          style={{ flex: 1 }}
-                          placeholder="https://mystore.com/cdn/bag.jpg"
-                          value={upsellImageUrl}
-                          onChange={(e) => setUpsellImageUrl(e.target.value)}
-                        />
-                        {upsellImageUrl && (
-                          <img
-                            src={upsellImageUrl}
-                            alt="معاينة"
-                            className="dz-upsell-preview-thumbnail"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        )}
-                      </div>
+                      <ImageUploadField
+                        label="صورة المنتج"
+                        required
+                        value={upsellImageUrl}
+                        onChange={setUpsellImageUrl}
+                        merchantId={merchantId}
+                        folder="upsell-products"
+                        quality={0.68}
+                      />
                     </div>
 
                     <div className="dz-upsell-field">
@@ -5765,8 +5763,19 @@ export async function processOrderAction(formData: FormData) {
                       <input type="text" name="transaction_ref" placeholder="BM-..." className="input" required />
                     </div>
                     <div style={{ marginBottom: '24px' }}>
-                      <label className="formLabel">رابط صورة وصل التحويل</label>
-                      <input type="url" name="payment_proof_url" placeholder="https://..." className="input" required />
+                      <ImageUploadField
+                        label="صورة وصل التحويل"
+                        required
+                        value={proofImageUrl}
+                        onChange={setProofImageUrl}
+                        merchantId={merchantId}
+                        folder="payment-receipts"
+                        quality={0.78}
+                        placeholder="ارفع صورة الوصل (CCP / BaridiMob)"
+                      />
+                      <small style={{ display: 'block', marginTop: '6px', color: 'var(--ink-muted)', fontSize: '11px' }}>
+                        الصورة تُرفع مباشرة وتُحفظ تلقائياً — لا تحتاج لرابط خارجي
+                      </small>
                     </div>
                     <button type="submit" disabled={isSubmittingProof} className="dz-btn" style={{ width: '100%' }}>
                       {isSubmittingProof ? 'جاري الإرسال...' : 'إرسال وصل التحويل للمراجعة'}
