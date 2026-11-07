@@ -5,6 +5,7 @@ import { getSupabaseBrowserClient } from '@saas/database';
 import { TimelineEvent, BrandSettings, DEFAULT_BRAND_SETTINGS } from '@saas/ui';
 import { PushNotificationControl } from './PushNotificationControl';
 import styles from './t.module.css';
+import { toCachedImageUrl } from '../../../lib/imageProxy';
 
 type TimelineLineStyle = 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none';
 type TrackingBrandSettings = BrandSettings & { showWhatsAppButton?: boolean; animateBackgroundBlobs?: boolean; backgroundBlur?: boolean; timelineLineStyle?: TimelineLineStyle };
@@ -557,10 +558,11 @@ export function TrackingLiveView({
                   >
                     <div className={styles.upsellImageWrapper}>
                       <img
-                        src={item.image_url}
+                        src={toCachedImageUrl(item.image_url)}
                         alt={item.title}
                         className={styles.upsellImage}
                         loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     <div className={styles.upsellContent}>

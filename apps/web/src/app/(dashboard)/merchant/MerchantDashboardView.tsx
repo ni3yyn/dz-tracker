@@ -6,6 +6,7 @@ import { StatusSelector } from './StatusSelector';
 import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
 import { ImageUploadField } from './ImageUploadField';
+import { toCachedImageUrl } from '../../../lib/imageProxy';
 import {
   saveBrandSettings,
   applyPresetMappings,
@@ -4701,7 +4702,7 @@ export async function processOrderAction(formData: FormData) {
                       >
                         <div className="dz-upsell-item-card-top">
                           <img
-                            src={item.image_url}
+                            src={toCachedImageUrl(item.image_url)}
                             alt={item.title}
                             className="dz-upsell-item-card-img"
                             onError={(e) => {
