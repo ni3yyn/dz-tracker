@@ -649,7 +649,10 @@ export class TrackingOrchestrator {
     if (
       event.externalOrderId &&
       event.externalOrderId !== 'UNKNOWN_ORDER' &&
-      event.externalOrderId !== event.carrierTrackingNumber
+      !(
+        (event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') &&
+        event.externalOrderId === event.carrierTrackingNumber
+      )
     ) {
       const { data } = await this.supabase
         .from('orders')
