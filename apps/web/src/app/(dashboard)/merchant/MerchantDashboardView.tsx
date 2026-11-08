@@ -6315,17 +6315,6 @@ export async function registerSavedOrder(savedOrder) {
                     <>
                       <div className="dz-order-detail-field"><span>رقم التتبع لدى E-com Delivery</span><strong dir="ltr">{selectedOrder.carrier_metadata.ecomV2.trackingNumber || selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
                       <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.ecomV2.wilayaId || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.ecomV2.commune || 'مكتب استلام'}</strong></div>
-                      <div className="dz-order-detail-field"><span>مكتب الاستلام</span><strong dir="ltr">{selectedOrder.carrier_metadata.ecomV2.stopDeskId || '—'}</strong></div>
-                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.codAmount != null ? Number(selectedOrder.carrier_metadata.ecomV2.codAmount).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>تعريفة التوصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.shippingFee != null ? Number(selectedOrder.carrier_metadata.ecomV2.shippingFee).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>الحالة الأصلية</span><strong>{selectedOrder.carrier_metadata.rawSituation || 'بانتظار أول تحديث'}</strong></div>
-                    </>
-                  )}
-                  {selectedOrder.carrier_name === 'E-com Delivery v2' && selectedOrder.carrier_metadata?.ecomV2 && (
-                    <>
-                      <div className="dz-order-detail-field"><span>رقم التتبع لدى E-com Delivery</span><strong dir="ltr">{selectedOrder.carrier_metadata.ecomV2.trackingNumber || selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.ecomV2.wilayaId || 'غير متوفر'}</strong></div>
                       <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.ecomV2.commune || '—'}</strong></div>
                       <div className="dz-order-detail-field"><span>مكتب الاستلام</span><strong>{selectedOrder.carrier_metadata.ecomV2.stopDeskId || '—'}</strong></div>
                       <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.address || 'غير متوفر'}</strong></div>
