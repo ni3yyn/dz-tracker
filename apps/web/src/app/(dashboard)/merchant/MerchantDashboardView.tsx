@@ -5673,6 +5673,81 @@ export async function registerSavedOrder(savedOrder) {
           border-radius: 0 !important;
           transform: none;
         }
+
+        /* Merchant mobile navigation uses the same full-width bottom drop-up as the public header. */
+        @media (max-width: 1024px) {
+          html body .dz-admin-root .dz-sidebar {
+            position: fixed !important;
+            inset: auto 0 0 !important;
+            width: 100% !important;
+            max-width: none !important;
+            height: auto !important;
+            max-height: calc(100vh - 76px) !important;
+            max-height: calc(100dvh - 76px) !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain;
+            padding: 18px 20px max(18px, env(safe-area-inset-bottom)) !important;
+            border: 0 !important;
+            border-top: 1px solid var(--border-soft) !important;
+            border-radius: 0 !important;
+            background: rgba(255, 255, 255, .98) !important;
+            box-shadow: 0 -16px 38px rgba(32, 40, 36, .16) !important;
+            transform: translate3d(0, 100%, 0) !important;
+            transform-origin: bottom center;
+            transition: transform .46s cubic-bezier(.2, .75, .25, 1),
+              opacity .28s ease, visibility .46s ease !important;
+            will-change: transform;
+            z-index: 1300 !important;
+          }
+
+          .dz-admin-root .dz-sidebar.dz-mobile-nav-open {
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            transform: translate3d(0, 0, 0) !important;
+          }
+
+          .dz-admin-root .dz-sidebar .dz-brand {
+            margin-bottom: 18px !important;
+          }
+
+          .dz-admin-root .dz-sidebar .dz-nav {
+            flex: 0 0 auto !important;
+            gap: 4px !important;
+            overflow: visible !important;
+          }
+
+          html body .dz-admin-root .dz-sidebar .dz-nav-item:not(#app-button-radius-reset) {
+            width: 100% !important;
+            min-height: 46px !important;
+            padding: 10px 14px !important;
+            border-radius: 0 !important;
+            font-size: 14px !important;
+            line-height: 1.55 !important;
+          }
+
+          .dz-admin-root .dz-sidebar .dz-sidebar-footer {
+            margin-top: 14px !important;
+            padding-top: 14px !important;
+          }
+        }
+
+        @media (max-width: 560px) {
+          html body .dz-admin-root .dz-sidebar {
+            padding: 16px 16px max(16px, env(safe-area-inset-bottom)) !important;
+            max-height: calc(100vh - 70px) !important;
+            max-height: calc(100dvh - 70px) !important;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .dz-admin-root .dz-sidebar {
+            transition-duration: .01ms !important;
+            animation-duration: .01ms !important;
+          }
+        }
       `}} />
 
       <div className="dz-admin-root">
