@@ -452,7 +452,6 @@ export async function createElogistiaShipment(orderId: string, input: {
     const { error: updateError } = await (db as any).from('orders').update({
       carrier_name: 'Elogistia',
       carrier_tracking_number: tracking,
-      carrier_order_id: tracking,
       carrier_metadata: metadata,
       updated_at: new Date().toISOString(),
     }).eq('id', orderId).eq('merchant_id', id);
