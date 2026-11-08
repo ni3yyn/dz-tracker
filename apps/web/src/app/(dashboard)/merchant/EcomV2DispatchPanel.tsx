@@ -56,7 +56,7 @@ export function EcomV2DispatchPanel({ order }: Props) {
       {order.carrier_name!=='E-com Delivery v2'&&<button type="button" className="dz-btn" onClick={()=>setExpanded(v=>!v)}>{expanded?'إخفاء':'إنشاء شحنة E-com v2'}</button>}
     </div>
     {!expanded&&order.carrier_name!=='E-com Delivery v2'?<p className="dz-int-guided-note">لن يُرسل شيء إلى شركة التوصيل حتى تضغط زر إنشاء الشحنة.</p>
-    :tracking?<div className="dz-int-guided-meta"><span>الحالة</span><strong>{linked?'تم إنشاء الشحنة وربطها':'تم الإنشاء ويحتاج الربط المحلي إلى متابعة'}</strong><span>رقم التتبع</span><strong dir="ltr">{tracking}</strong><span>مرجع طلب متجرك</span><strong dir="ltr">{order.external_order_id}</strong></div>
+    :tracking?<><div className="dz-int-guided-meta"><span>الحالة</span><strong>{linked?'تم إنشاء الشحنة وربطها':'تم الإنشاء ويحتاج الربط المحلي إلى متابعة'}</strong><span>رقم التتبع</span><strong dir="ltr">{tracking}</strong><span>مرجع طلب متجرك</span><strong dir="ltr">{order.external_order_id}</strong></div>{!linked&&error&&<p role="alert" className="dz-int-guided-note" style={{color:'#92400e',background:'#fff7e6',padding:12,borderRadius:9}}>{error}</p>}</>
     :unresolved?<p role="alert" className="dz-int-guided-note" style={{color:'#92400e',background:'#fff7e6',padding:12,borderRadius:9}}>توجد محاولة سابقة غير محسومة. افحص لوحة E-com Delivery بالمرجع <b dir="ltr">{order.external_order_id}</b> قبل إعادة المحاولة. لا تنشئ طرداً مكرراً. {attempt.error_message||''}</p>
     :order.carrier_tracking_number?<p className="dz-int-guided-note">هذا الطلب مرتبط بالفعل برقم تتبع {order.carrier_tracking_number} لدى {order.carrier_name}. لن ننشئ شحنة ثانية.</p>
     :loading?<p className="dz-int-guided-note">جارٍ تحميل ولايات E-com Delivery...</p>
