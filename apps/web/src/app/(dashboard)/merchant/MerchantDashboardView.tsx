@@ -6311,7 +6311,7 @@ export async function registerSavedOrder(savedOrder) {
                   <div className="dz-order-detail-field"><span>تاريخ تسجيل الطلب</span><strong>{new Date(selectedOrder.created_at).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
                   <div className="dz-order-detail-field"><span>معرّف الطلب الداخلي</span><strong>{selectedOrder.id}</strong></div>
                 </div>
-                {selectedOrder.carrier_name === 'Elogistia' && (
+                {(selectedOrder.carrier_name === 'Elogistia' || !selectedOrder.carrier_tracking_number) && (
                   <ElogistiaDispatchPanel key={selectedOrder.id} order={selectedOrder} />
                 )}
                 <p className="dz-order-detail-note">يمكنك تعديل الحالة من القائمة أدناه. سجل التحديثات التفصيلي متاح في صفحة التتبع العامة، بينما تعرض هذه اللوحة البيانات المخزنة والمتاحة في لوحة التاجر.</p>
