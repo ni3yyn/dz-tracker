@@ -44,7 +44,7 @@ export function EcomV2ConnectionPanel() {
     finally { setBusy(false); }
   }
   return <article className="dz-int-guided-panel">
-    <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">EC</span><div><h4>ربط E-com Delivery v2</h4><p style={{fontSize:16,lineHeight:1.8}}>استخدم بيانات صفحة «Développement / التطوير» في حساب E-com Delivery. هذا اتصال API مباشر وليس رابط Webhook.</p></div></div>
+    <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">EC</span><div><h4>ربط E-com Delivery v2</h4><p style={{fontSize:16,lineHeight:1.8}}>اربط KEY وToken من صفحة «Développement / التطوير». تتم مزامنة الحالات في هذا الربط عبر API تلقائياً، ولا تحتاج إلى إضافة رابط استقبال.</p></div></div>
     {loading ? <p className="dz-int-guided-note">جارٍ تحميل حالة الربط...</p> : status?.connected ? <>
       <div className="dz-int-guided-meta"><span>الحالة</span><strong>الحساب متصل</strong><span>آخر مزامنة</span><strong>{status.last_sync_at ? new Date(status.last_sync_at).toLocaleString('ar-DZ') : 'بانتظار أول دورة مزامنة'}</strong></div>
       <div className="dz-int-guided-actions"><button type="button" className="dz-btn" disabled={busy} onClick={test}>{busy ? 'جارٍ الاختبار...' : 'اختبار الاتصال'}</button><button type="button" className="dz-btn dz-btn-outline" disabled={busy} onClick={disconnect}>فصل الحساب</button></div>
