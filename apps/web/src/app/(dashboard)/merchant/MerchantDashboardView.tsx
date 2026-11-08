@@ -6312,7 +6312,7 @@ export async function registerSavedOrder(savedOrder) {
                   <div className="dz-order-detail-field"><span>معرّف الطلب الداخلي</span><strong>{selectedOrder.id}</strong></div>
                 </div>
                 {selectedOrder.carrier_name === 'Elogistia' && (
-                  <ElogistiaDispatchPanel order={selectedOrder} />
+                  <ElogistiaDispatchPanel key={selectedOrder.id} order={selectedOrder} />
                 )}
                 <p className="dz-order-detail-note">يمكنك تعديل الحالة من القائمة أدناه. سجل التحديثات التفصيلي متاح في صفحة التتبع العامة، بينما تعرض هذه اللوحة البيانات المخزنة والمتاحة في لوحة التاجر.</p>
                 <div style={{ paddingTop: '17px' }}><span className="dz-order-detail-kicker">تعديل الحالة</span><StatusSelector orderId={selectedOrder.id} currentStatus={selectedOrder.current_status} /></div>
