@@ -733,3 +733,78 @@
 .upsellCard:hover .upsellCta span {
   transform: translate(-2px, -2px);
 }
+
+/* Premium customer-facing tracking presentation. Existing merchant settings remain authoritative. */
+.pageContainer { padding-top: clamp(20px, 3.4vh, 38px); padding-bottom: clamp(36px, 5vh, 64px); }
+.cardShell { width: 100%; }
+.header {
+  position: relative;
+  padding: 24px 28px 27px;
+  border: 1px solid color-mix(in srgb, var(--brand-primary, #355846) 12%, var(--border-soft));
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: 0 16px 42px -34px color-mix(in srgb, var(--brand-primary, #355846) 34%, transparent);
+}
+.brandAccentBar { height: 5px; border-radius: 99px; margin-bottom: 18px; }
+.brandAvatar { width: 60px; height: 60px; border-radius: 18px; box-shadow: 0 8px 20px color-mix(in srgb, var(--brand-primary, #355846) 18%, transparent); }
+.storeName { font-size: clamp(21px, 2vw, 26px); letter-spacing: -.035em; }
+.brandSubtitleText { font-size: 14px; line-height: 1.75; }
+.pageEyebrow { font-size: 13px; letter-spacing: -.01em; }
+.liveBadge, .orderNumberBadge { min-height: 35px; padding: 7px 12px; font-size: 12px; }
+.trackingSection { padding-top: 26px; }
+.orderIdentity {
+  padding: 18px 21px;
+  margin-bottom: 22px;
+  border: 1px solid var(--border-soft);
+  border-radius: 19px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+.orderCustomerName { font-size: clamp(22px, 2vw, 28px); }
+.orderProductBlock { display: flex; align-items: center; gap: 15px; padding-inline-start: 0; border-inline-start: 0; }
+.orderProductMedia {
+  width: 76px; height: 76px; flex: 0 0 76px; overflow: hidden;
+  display: grid; place-items: center; border: 1px solid var(--border-soft);
+  border-radius: 15px; background: var(--surface-raised);
+}
+.orderProductMedia img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.orderProductDetails { min-width: 0; flex: 1; padding-inline-start: 15px; border-inline-start: 3px solid var(--brand-primary, var(--status-ink)); }
+.orderProductName { font-size: 17px; line-height: 1.7; }
+.currentStatusPanel {
+  position: relative; overflow: hidden; padding: clamp(23px, 3vw, 34px);
+  border-radius: 22px; border-inline-start-width: 5px;
+  box-shadow: 0 18px 42px -34px color-mix(in srgb, var(--status-accent) 48%, transparent);
+}
+.currentStatusPanel::after {
+  content: ''; position: absolute; width: 190px; height: 190px; inset-inline-end: -92px; top: -116px;
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--status-accent) 13%, transparent), transparent 70%);
+}
+.currentStatusMark { width: 52px; height: 52px; border-radius: 16px; }
+.currentStatusCopy h2 { font-size: clamp(23px, 2.7vw, 30px); line-height: 1.42; }
+.currentStatusCopy p { max-width: 700px; font-size: 15px; line-height: 1.85; }
+.carrierBadge {
+  margin-top: 20px; padding: 16px 18px; border: 1px solid var(--border-soft);
+  border-radius: 17px; background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+.timelineHeading { margin-top: 38px; }
+.timelineHeading h2 { font-size: 22px; }
+.eventItem { padding-bottom: 31px; }
+.eventHeading h3 { font-size: 16px; }
+.eventContent p { font-size: 14px; line-height: 1.8; }
+.upsellSection { margin-top: 42px; }
+.floatingWhatsApp { box-shadow: 0 12px 28px color-mix(in srgb, var(--brand-primary, #355846) 24%, transparent); }
+@media (max-width: 640px) {
+  .pageContainer { padding: 12px 10px 34px; }
+  .header { padding: 17px 16px 19px; border-radius: 18px; }
+  .brandAccentBar { margin-bottom: 14px; }
+  .brandAvatar { width: 52px; height: 52px; border-radius: 15px; }
+  .orderIdentity { padding: 15px; gap: 14px; }
+  .orderIdentitySplit { grid-template-columns: minmax(0,1fr); }
+  .orderProductBlock { gap: 11px; }
+  .orderProductMedia { width: 62px; height: 62px; flex-basis: 62px; }
+  .orderProductDetails { padding-inline-start: 11px; }
+  .currentStatusPanel { padding: 20px 17px; }
+  .currentStatusMark { width: 44px; height: 44px; border-radius: 13px; }
+  .currentStatusCopy h2 { font-size: 22px; }
+  .carrierBadge { padding: 13px 12px; }
+}
