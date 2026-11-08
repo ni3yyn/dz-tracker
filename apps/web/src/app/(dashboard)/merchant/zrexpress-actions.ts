@@ -240,11 +240,13 @@ export async function saveZRExpressIntegration(
         if (!recreated.response.ok) throw zrApiError(recreated.response.status, recreated.body, 'إعادة إنشاء نقطة استقبال Webhook');
         const endpoint = unwrapApiBody(recreated.body);
         endpointId = String(endpoint?.id || '');
+        if (endpointId) {
+          createdEndpointId = endpointId;
+          createdEndpointCredentials = { apiKey, tenantId };
+        }
         if (!endpointId.startsWith('ep_')) {
           throw new Error('لم تُرجع ZR Express معرّفاً صالحاً لنقطة Webhook الجديدة.');
         }
-        createdEndpointId = endpointId;
-        createdEndpointCredentials = { apiKey, tenantId };
       } else if (!updated.response.ok) {
         throw zrApiError(updated.response.status, updated.body, 'تحديث نقطة استقبال Webhook');
       }
@@ -261,11 +263,13 @@ export async function saveZRExpressIntegration(
       if (!created.response.ok) throw zrApiError(created.response.status, created.body, 'إنشاء نقطة استقبال Webhook');
       const endpoint = unwrapApiBody(created.body);
       endpointId = String(endpoint?.id || '');
+      if (endpointId) {
+        createdEndpointId = endpointId;
+        createdEndpointCredentials = { apiKey, tenantId };
+      }
       if (!endpointId.startsWith('ep_')) {
         throw new Error('أنشأت ZR Express نقطة استقبال، لكنها لم تُرجع معرّف Svix صالحاً. راجع لوحة Webhooks لدى ZR.');
       }
-      createdEndpointId = endpointId;
-      createdEndpointCredentials = { apiKey, tenantId };
     }
 
     const secretResult = await zrApi(apiKey, tenantId, `/webhooks/endpoints/${encodeURIComponent(endpointId)}/secret`);
