@@ -394,6 +394,43 @@ After creation, the worker polls `GET getTracking/?apiKey=...&tracking=...` only
 The Postman-derived adapter references also mention `getOrders/?tracking=...`, `getManyTracking/`, label-print endpoints, and `deleteOrder/`. TajerTrack currently does not expose order discovery, label download, or cancellation: the read-by-known-tracking and mutation contracts need a real redacted account response before those operations are offered to merchants. In particular, do not add a cancellation call through an undocumented GET mutation merely because a secondary SDK lists it.
 
 
+## Yalidine / Guepex signed webhook integration
+
+Yalidine and Guepex are treated as one shared carrier API family in the third-party SkillHub reference, with the documented API base `https://api.guepex.app/v1/`. Their merchant accounts and callback signing secrets are still distinct. The current TajerTrack implementation below is the **Yalidine webhook receiver only**; do not describe it as a parcel-creation API integration.
+
+### Provider webhook contract used by TajerTrack
+
+- The provider sends an envelope: `{ type, events: [{ event_id, occurred_at, data }] }`.
+- Supported types in the provider reference: `parcel_created`, `parcel_edited`, `parcel_deleted`, `parcel_status_updated`, and `parcel_payment_updated`.
+- The signed receiver is `GET/POST /api/webhooks/yalidine/{endpointToken}`. The URL token identifies the merchant integration; it is **not** the authenticity check.
+- GET CRC validation requires both `subscribe` and `crc_token` query values and returns the exact `crc_token` as plain text with HTTP 200.
+- POST reads the raw request body and verifies `X-YALIDINE-SIGNATURE` as the hexadecimal HMAC-SHA256 of that exact raw body, keyed by the merchant's webhook secret. Use a constant-time comparison. Never verify a re-serialized JSON object.
+- After verification, the receiver persists the complete event envelope in `yalidine_webhook_events` with a unique `(merchant_id, event_id)` key, then returns HTTP 200. Do not synchronously run order creation, notifications, or other slow work inside the carrier request.
+- Railway's `YalidineWebhookWorker` claims queued events using leases and `claim_next_yalidine_webhook_event`, processes them through the internal HMAC-protected endpoint, and retries or dead-letters failures. Duplicate provider retries are ignored by the queue unique key and the shared ordered-history event ledger.
+- `occurred_at` is preserved for ordered history. Offset-less local timestamps are interpreted as Algeria time (UTC+1); never replace a provider timestamp with the receiver's current time.
+- Only `parcel_created` and `parcel_status_updated` currently affect the TajerTrack order timeline. The other three documented event types are queued and acknowledged, but intentionally do not mutate the timeline or payment data yet. Instruct merchants to subscribe to the two supported event types for tracking.
+- Status events match existing TajerTrack orders by the store reference when present, otherwise by carrier tracking number. Do not infer a store order reference from an arbitrary provider field unless the API contract confirms it.
+
+### Merchant setup
+
+1. In TajerTrack Integrations, choose **Yalidine** and generate the merchant-specific callback URL.
+2. In the merchant's Yalidine/Guepex dashboard, open **Webhooks**, select **Ajouter**, paste that exact HTTPS URL, name the integration, and supply the dashboard's alert email.
+3. Subscribe to `parcel_created` and `parcel_status_updated`. On save, the courier validates the URL through the CRC GET challenge.
+4. Copy the webhook secret displayed on the webhook card and paste it into TajerTrack. It is AES-256-GCM encrypted with merchant-scoped AAD `merchantId:yalidine-webhook:v1`; it is never returned to the browser after save.
+5. Use the carrier dashboard's **Faire des tests** function. Confirm that TajerTrack's last-received and last-processed timestamps update, then activate the webhook in the carrier dashboard. Provider webhooks are disabled by default until explicitly activated.
+6. To disconnect, first deactivate/delete the webhook in the courier dashboard, then remove the local integration in TajerTrack. The provider can otherwise keep retrying a URL which has been removed.
+
+Required environment:
+- `CARRIER_CREDENTIALS_ENCRYPTION_KEY` (same value in Vercel and Railway, at least 32 characters).
+- `YALIDINE_WEBHOOK_WORKER_ENABLED=true` in Railway.
+- Optional `YALIDINE_WEBHOOK_POLL_INTERVAL_MS=2000`.
+
+Apply `apps/web/src/app/migrations/20261108_yalidine_signed_webhooks.sql` before using the setup panel. The old `POST /api/webhooks/yalidine?key=...` flat-payload route remains for legacy integrations only; it is **not** the signed provider envelope endpoint and must not be supplied to a new Yalidine/Guepex dashboard webhook.
+
+### Explicit implementation boundary
+
+The SkillHub skill is a third-party implementation reference, not the carrier's official specification. Its webhook CRC/HMAC and event format are implemented here, but this is not live-verified until a merchant runs the provider dashboard test and an actual event reaches the queue and worker. TajerTrack does not yet implement Yalidine/Guepex API parcel creation, editing, list/history polling, payment updates, or automatic importing of parcels created outside TajerTrack. Do not claim those features exist. The shared API relationship makes adapter reuse possible later, but Guepex must get its own integration row, endpoint token, encrypted webhook secret, and displayed carrier identity; never reuse another merchant's credentials or callback identity.
+
 ## E-com Delivery v2 (API shipment creation + tracking-history polling)
 
 This is the modern **E-com Delivery v2** API at `https://ecom-dz.com/api_v2`; it is not the legacy E-COM Delivery API at `ecom-dz.net`. The merchant obtains two values from the E-com dashboard's **Développement** page: `KEY` (sent as `X-API-Key`) and `Token` (sent as `X-API-Token`). Store them together using AES-256-GCM with merchant-scoped AAD `merchantId:ecom-v2:v1`; never expose either credential to browser code or logs. Apply `apps/web/src/app/migrations/20261108_ecom_delivery_v2.sql` first. Set the same `CARRIER_CREDENTIALS_ENCRYPTION_KEY` in Vercel and Railway. Enable the Railway poller with `ECOM_V2_SYNC_ENABLED=true`; `ECOM_V2_SYNC_INTERVAL_MS` defaults to 300000 ms.
