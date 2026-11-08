@@ -37,11 +37,11 @@ export function mapElogistiaStatus(status: unknown, log?: unknown): { statusRaw:
   if (/ramassee|receptionnee|picked up/.test(normalized)) {
     return { statusRaw: 'dispatched', statusTitle: 'تم استلام الشحنة', description: 'سجلت Elogistia استلام الشحنة.' };
   }
+  if (/attente|cree|nouveau|pending|a expedie|a expedier|preparation/.test(normalized)) {
+    return { statusRaw: 'processing', statusTitle: 'الشحنة قيد المعالجة', description: 'الشحنة مسجلة وتنتظر استكمال إجراءات Elogistia.' };
+  }
   if (/transit|hub|expedi|dispatch|vers wilaya|en cours/.test(normalized)) {
     return { statusRaw: 'in_transit', statusTitle: 'الشحنة قيد النقل', description: 'تواصل الشحنة مسارها عبر شبكة Elogistia.' };
-  }
-  if (/attente|cree|nouveau|pending|a expedier|preparation/.test(normalized)) {
-    return { statusRaw: 'processing', statusTitle: 'الشحنة قيد المعالجة', description: 'الشحنة مسجلة وتنتظر استكمال إجراءات Elogistia.' };
   }
   if (/perdue|lost/.test(normalized)) {
     return { statusRaw: 'attempt_failed', statusTitle: 'تحتاج الشحنة إلى متابعة', description: 'سجلت Elogistia حالة فقدان أو تعذر تتطلب متابعة.' };
