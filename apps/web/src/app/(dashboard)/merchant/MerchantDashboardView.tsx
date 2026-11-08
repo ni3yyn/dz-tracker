@@ -5675,7 +5675,7 @@ export async function registerSavedOrder(savedOrder) {
         }
 
         /* Merchant mobile navigation uses the same full-width bottom drop-up as the public header. */
-        @media (max-width: 1024px) {
+        @media (max-width: 760px) {
           html body .dz-admin-root .dz-sidebar {
             position: fixed !important;
             inset: auto 0 0 !important;
@@ -5739,6 +5739,85 @@ export async function registerSavedOrder(savedOrder) {
             padding: 16px 16px max(16px, env(safe-area-inset-bottom)) !important;
             max-height: calc(100vh - 70px) !important;
             max-height: calc(100dvh - 70px) !important;
+          }
+        }
+
+
+        /* Keep the merchant's persistent side rail on tablet and desktop-sized screens.
+           Only phone widths use the bottom drop-up navigation. */
+        @media (min-width: 761px) and (max-width: 1024px) {
+          .dz-admin-root {
+            flex-direction: row !important;
+          }
+
+          html body .dz-admin-root .dz-sidebar {
+            position: relative !important;
+            inset: auto !important;
+            width: 280px !important;
+            min-width: 280px !important;
+            max-width: 280px !important;
+            height: 100vh !important;
+            max-height: none !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            padding: 28px 20px 22px !important;
+            border: 0 !important;
+            border-left: 1px solid var(--border-soft) !important;
+            border-radius: 0 !important;
+            background: #f8f8f4 !important;
+            box-shadow: none !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            transform: none !important;
+            transition: none !important;
+            z-index: 20 !important;
+            flex: 0 0 280px !important;
+          }
+
+          .dz-admin-root .dz-sidebar .dz-brand {
+            margin-bottom: 38px !important;
+          }
+
+          .dz-admin-root .dz-sidebar .dz-nav {
+            flex: 1 1 auto !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+            overflow: visible !important;
+          }
+
+          .dz-admin-root .dz-sidebar .dz-nav-item {
+            width: 100% !important;
+            white-space: normal !important;
+          }
+
+          .dz-admin-root .dz-sidebar .dz-sidebar-footer {
+            display: flex !important;
+          }
+
+          .dz-admin-root .dz-main {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            height: 100vh !important;
+            padding: 24px 18px 36px !important;
+          }
+
+          .dz-admin-root .dz-mobile-backdrop {
+            display: none !important;
+          }
+
+          .dz-admin-root .dz-main header:has(> div.dz-header) {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+
+          .dz-admin-root .dz-main header:has(> div.dz-header) > button {
+            display: none !important;
+          }
+
+          .dz-admin-root .dz-main header:has(> div.dz-header) .dz-header-titles {
+            grid-column: 1 !important;
+            grid-row: 1 !important;
           }
         }
 
