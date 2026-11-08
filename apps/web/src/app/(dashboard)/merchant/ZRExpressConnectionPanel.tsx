@@ -18,7 +18,7 @@ type ConnectionStatus = {
 
 const formatDate = (value?: string | null) => value
   ? new Date(value).toLocaleString('ar-DZ')
-  : 'لم يصل أي حدث بعد';
+  : 'لم يصل تحديث بعد';
 
 export function ZRExpressConnectionPanel() {
   const [status, setStatus] = useState<ConnectionStatus | null>(null);
@@ -27,8 +27,8 @@ export function ZRExpressConnectionPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageIsError, setMessageIsError] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -39,10 +39,14 @@ export function ZRExpressConnectionPanel() {
           setStatus(result.status);
         } else {
           setMessage(result.error || 'تعذر تحميل حالة الربط.');
+          setMessageIsError(true);
         }
       })
       .catch(() => {
-        if (active) setMessage('تعذر تحميل حالة الربط. حدّث الصفحة وحاول مجدداً.');
+        if (active) {
+          setMessage('تعذر تحميل حالة الربط. حدّث الصفحة وحاول مجدداً.');
+          setMessageIsError(true);
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -54,18 +58,22 @@ export function ZRExpressConnectionPanel() {
     event.preventDefault();
     setSaving(true);
     setMessage('');
+    setMessageIsError(false);
     try {
       const result = await saveZRExpressIntegration(apiKey, tenantId);
       if (!result.success || !result.status) {
-        setMessage(result.error || 'تعذر ربط حساب ZR Express.');
+        setMessage(result.error || 'تعذر ربط حساب ZR Express. راجع البيانات وحاول مجدداً.');
+        setMessageIsError(true);
         return;
       }
       setStatus(result.status);
       setApiKey('');
       setTenantId('');
-      setMessage('تم التحقق من حساب ZR Express وإنشاء Webhook آمن بنجاح. ستصل تحديثات الشحن تلقائياً.');
+      setMessage('تم ربط حسابك بنجاح! سيستقبل تاجر تراك تحديثات الشحن تلقائياً، ولا تحتاج إلى أي إعداد إضافي داخل ZR Express.');
+      setMessageIsError(false);
     } catch {
-      setMessage('تعذر إكمال الربط. تحقق من البيانات والاتصال ثم حاول مجدداً.');
+      setMessage('تعذر إكمال الربط. تأكد من نسخ البيانات كاملة من حساب ZR Express ثم حاول مجدداً.');
+      setMessageIsError(true);
     } finally {
       setSaving(false);
     }
@@ -74,45 +82,50 @@ export function ZRExpressConnectionPanel() {
   async function handleDisconnect() {
     setDisconnecting(true);
     setMessage('');
+    setMessageIsError(false);
     try {
       const result = await disconnectZRExpressIntegration();
       if (!result.success) {
-        setMessage(result.error || 'تعذر إلغاء الربط.');
+        setMessage(result.error || 'تعذر فصل حساب ZR Express.');
+        setMessageIsError(true);
         return;
       }
       setStatus({ connected: false });
       setApiKey('');
       setTenantId('');
-      setMessage('تم حذف نقطة Webhook وإلغاء ربط ZR Express. ستبقى الطلبات وسجل التتبع الحالي محفوظين.');
+      setMessage('تم فصل حساب ZR Express. ستبقى طلباتك وسجلات التتبع السابقة محفوظة.');
+      setMessageIsError(false);
     } catch {
-      setMessage('تعذر إلغاء الربط. حاول مجدداً.');
+      setMessage('تعذر فصل الحساب. حاول مجدداً.');
+      setMessageIsError(true);
     } finally {
       setDisconnecting(false);
-    }
-  }
-
-  async function copyEndpoint() {
-    if (!status?.endpointUrl) return;
-    try {
-      await navigator.clipboard.writeText(status.endpointUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setMessage('تعذر نسخ الرابط. حدده وانسخه يدوياً.');
     }
   }
 
   return (
     <article className="dz-int-guided-panel">
       <div className="dz-int-guided-panel-title">
-        <span className="dz-int-guided-number">02</span>
+        <span className="dz-int-guided-number">01</span>
         <div>
-          <h4>ربط حساب ZR Express مباشرة</h4>
+          <h4>ربط شركة التوصيل ZR Express</h4>
           <p style={{ fontSize: '16px', lineHeight: 1.8 }}>
-            ينشئ تاجر تراك Webhook داخل حساب ZR Express تلقائياً، ويتحقق من توقيع Svix لكل إشعار قبل قبول تحديث الشحنة.
-            لا تحتاج إلى إنشاء رابط Webhook يدوياً أو لصق مفتاح توقيع.
+            اتبع الخطوات التالية لإحضار بيانات حسابك. أدخلها هنا، وسيتولى تاجر تراك إكمال الربط واستقبال تحديثات الشحن تلقائياً.
           </p>
         </div>
+      </div>
+
+      <div style={{ marginTop: '6px' }}>
+        <h5 style={{ margin: '0 0 9px', fontSize: '16px', fontWeight: 800 }}>أولاً: أين تجد البيانات في حساب ZR Express؟</h5>
+        <ol className="dz-int-guided-steps">
+          <li>افتح حسابك في منصة <strong>ZR Express</strong> وسجّل الدخول.</li>
+          <li>من القائمة، افتح <strong dir="ltr">API Rest</strong> ثم اختر <strong dir="ltr">Token API</strong>.</li>
+          <li>في هذه الصفحة، انسخ قيمة <strong dir="ltr">API Key</strong>، ثم انسخ قيمة <strong dir="ltr">Tenant ID</strong>.</li>
+          <li>ارجع إلى تاجر تراك والصق كل قيمة في الخانة التي تحمل الاسم نفسه أدناه.</li>
+        </ol>
+        <p className="dz-int-guided-note" style={{ fontSize: '14px', lineHeight: 1.8 }}>
+          احتفظ بهذه البيانات لنفسك ولا ترسلها لأي شخص. لا تحتاج إلى إنشاء رابط استقبال أو ضبط إعدادات الإشعارات داخل ZR Express؛ سنقوم بذلك تلقائياً بعد التحقق من حسابك.
+        </p>
       </div>
 
       {loading ? (
@@ -120,35 +133,22 @@ export function ZRExpressConnectionPanel() {
       ) : (
         <>
           <div className="dz-int-guided-meta">
-            <span>حالة الحساب</span>
-            <strong style={{ fontSize: '16px' }}>{status?.connected ? 'متصل' : 'غير متصل'}</strong>
+            <span>حالة الربط</span>
+            <strong style={{ fontSize: '16px' }}>{status?.connected ? 'الحساب متصل' : 'لم يتم الربط بعد'}</strong>
             {status?.connected && (
               <>
-                <span>آخر إشعار وصل</span>
+                <span>آخر تحديث وصل من ZR Express</span>
                 <strong>{formatDate(status.lastWebhookReceivedAt)}</strong>
-                <span>آخر إشعار تمت معالجته</span>
+                <span>آخر تحديث تمت إضافته إلى سجل الشحنة</span>
                 <strong>{formatDate(status.lastWebhookProcessedAt)}</strong>
               </>
             )}
           </div>
 
-          {status?.connected && status.endpointUrl && (
-            <div className="dz-int-guided-copy">
-              <div>
-                <small>رابط الاستقبال المسجل لدى ZR Express</small>
-                <code dir="ltr">{status.endpointUrl}</code>
-              </div>
-              <button type="button" className="dz-support-copy" onClick={copyEndpoint}>
-                {copied ? 'تم النسخ' : 'نسخ الرابط'}
-              </button>
-            </div>
-          )}
-
           {status?.connected && (
-            <>
-              <p className="dz-int-guided-note">
-                يتلقى تاجر تراك حالات الشحنة، وتفاصيل الـ situations، وتغيّرات مسار الإرجاع.
-                {status.lastError ? ` آخر خطأ: ${status.lastError}` : ''}
+            <div style={{ display: 'grid', gap: '8px' }}>
+              <p className="dz-int-guided-note" style={{ fontSize: '14px', lineHeight: 1.8 }}>
+                حسابك مرتبط. عند تغيير حالة الشحنة لدى ZR Express، سيصل التحديث إلى صفحة التتبع في تاجر تراك تلقائياً.
               </p>
               <button
                 type="button"
@@ -156,32 +156,38 @@ export function ZRExpressConnectionPanel() {
                 disabled={disconnecting}
                 onClick={handleDisconnect}
               >
-                {disconnecting ? 'جارٍ إلغاء الربط...' : 'إلغاء الربط وحذف Webhook'}
+                {disconnecting ? 'جارٍ فصل الحساب...' : 'فصل حساب ZR Express'}
               </button>
-            </>
+            </div>
           )}
 
           <form onSubmit={handleSave} style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
-            <p className="dz-int-guided-note" style={{ fontSize: '15.5px', lineHeight: 1.8 }}>
-              خذ API Key وTenant ID من لوحة ZR Express ضمن API Rest ← Token API.
-            </p>
+            <h5 style={{ margin: '0', fontSize: '16px', fontWeight: 800 }}>
+              {status?.connected ? 'تحديث بيانات الربط' : 'ثانياً: أدخل البيانات هنا'}
+            </h5>
             <label style={{ display: 'grid', gap: '7px', fontSize: '16px', lineHeight: 1.6 }}>
-              <span>ZR Express API Key</span>
+              <span><b dir="ltr">API Key</b> — مفتاح API</span>
+              <small style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+                الصق المفتاح الذي نسخته من صفحة Token API في حساب ZR Express.
+              </small>
               <input
                 className="input"
                 type="password"
                 required
-                minLength={32}
-                maxLength={128}
+                minLength={16}
+                maxLength={512}
                 value={apiKey}
                 onChange={(event) => setApiKey(event.target.value)}
-                placeholder={status?.connected ? 'أدخل المفتاح لتحديث الربط' : 'ألصق مفتاح API من حساب ZR Express'}
+                placeholder="الصق API Key هنا"
                 dir="ltr"
                 autoComplete="new-password"
               />
             </label>
             <label style={{ display: 'grid', gap: '7px', fontSize: '16px', lineHeight: 1.6 }}>
-              <span>Tenant ID</span>
+              <span><b dir="ltr">Tenant ID</b> — معرّف Tenant</span>
+              <small style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+                الصق المعرّف الموجود في الصفحة نفسها. لا تضع البريد الإلكتروني أو رقم الهاتف مكانه.
+              </small>
               <input
                 className="input"
                 type="text"
@@ -195,18 +201,25 @@ export function ZRExpressConnectionPanel() {
                 autoComplete="off"
               />
             </label>
-            <p className="dz-int-guided-note">
-              يتم إنشاء نقطة Webhook والاشتراك في الأحداث الثلاثة تلقائياً. يُشفّر مفتاح API ومعرّف Tenant
-              ومفتاح توقيع Svix على الخادم ولا تُرسل إلى المتصفح بعد الحفظ. لا ينشئ تاجر تراك شحنات ولا
-              يغيّر بياناتها في حساب ZR Express.
+            <p className="dz-int-guided-note" style={{ fontSize: '14px', lineHeight: 1.8 }}>
+              بعد الضغط على زر الربط، سيتحقق تاجر تراك من البيانات ويحفظها بشكل آمن، ثم يجهّز استقبال تحديثات الشحن نيابة عنك. لن تحتاج إلى نسخ أي رابط أو إدخال بيانات أخرى في ZR Express.
             </p>
             <button type="submit" className="dz-btn" disabled={saving || !apiKey.trim() || !tenantId.trim()}>
-              {saving ? 'جارٍ التحقق وإنشاء Webhook...' : status?.connected ? 'تحديث بيانات الربط' : 'اختبار الحساب وربط ZR Express'}
+              {saving ? 'جارٍ التحقق من الحساب...' : status?.connected ? 'حفظ وتحديث الربط' : 'تحقق من الحساب واربط ZR Express'}
             </button>
           </form>
         </>
       )}
-      {message && <p className="dz-int-guided-note" role="status" aria-live="polite">{message}</p>}
+      {message && (
+        <p
+          className="dz-int-guided-note"
+          role="status"
+          aria-live="polite"
+          style={messageIsError ? { color: '#b42318', background: '#fff4f2', borderRadius: '9px', padding: '10px 12px' } : { fontSize: '14px', lineHeight: 1.8 }}
+        >
+          {message}
+        </p>
+      )}
     </article>
   );
 }
