@@ -147,7 +147,8 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
           <section
             ref={dialogRef}
             className={styles.dialog}
-            role={activeDialog.type === 'confirm' ? 'alertdialog' : 'dialog'}
+            data-tone={activeDialog.tone || 'info'}
+            role="alertdialog"
             aria-modal="true"
             aria-labelledby={`global-dialog-title-${activeDialog.id}`}
             aria-describedby={`global-dialog-message-${activeDialog.id}`}
