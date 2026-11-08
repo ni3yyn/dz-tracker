@@ -778,3 +778,132 @@
   .currentStatusCopy h2 { font-size: 22px; }
   .carrierBadge { padding: 13px 12px; }
 }
+
+
+/* Branded first impression: a short welcome card that wipes upward into the live tracking view. */
+.entranceIntro {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  padding: 28px 22px;
+  color: var(--intro-ink, #fff);
+  background:
+    radial-gradient(ellipse at 50% 16%, color-mix(in srgb, var(--intro-ink) 13%, transparent), transparent 48%),
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--intro-brand) 94%, var(--intro-ink)),
+      color-mix(in srgb, var(--intro-brand) 78%, var(--intro-ink)));
+  transform: translate3d(0, 0, 0);
+  transition: transform .54s cubic-bezier(.76, 0, .24, 1);
+  will-change: transform;
+}
+.entranceWipe {
+  transform: translate3d(0, -101%, 0);
+  pointer-events: none;
+}
+.entranceGlow {
+  position: absolute;
+  z-index: -1;
+  width: min(76vw, 620px);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--intro-ink) 12%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 42px color-mix(in srgb, var(--intro-ink) 3%, transparent),
+    0 0 0 86px color-mix(in srgb, var(--intro-ink) 2%, transparent);
+  opacity: .72;
+  animation: entranceHalo 1.8s ease-out both;
+}
+.entranceContent {
+  display: flex;
+  width: min(100%, 520px);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: entranceRise .72s cubic-bezier(.2, .75, .25, 1) both;
+}
+.entranceLogo {
+  width: clamp(82px, 17vw, 112px);
+  height: clamp(82px, 17vw, 112px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--intro-ink) 23%, transparent);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--intro-ink) 12%, transparent);
+  box-shadow: 0 20px 52px color-mix(in srgb, #000 17%, transparent), inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.entranceLogo img {
+  display: block;
+  width: 74%;
+  height: 74%;
+  object-fit: contain;
+}
+.entranceLogo span {
+  font-size: clamp(38px, 8vw, 54px);
+  font-weight: 850;
+  line-height: 1;
+}
+.entranceStoreName {
+  max-width: 100%;
+  margin: 22px 0 0;
+  font-size: clamp(18px, 3vw, 23px);
+  font-weight: 750;
+  line-height: 1.5;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+  opacity: .94;
+  animation: entranceRise .62s .08s both;
+}
+.entranceDivider {
+  width: 38px;
+  height: 2px;
+  margin: 25px 0 23px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--intro-ink) 58%, transparent);
+  animation: entranceDividerIn .55s .18s both;
+}
+.entranceGreeting {
+  margin: 0;
+  font-size: clamp(27px, 5.4vw, 43px);
+  font-weight: 800;
+  line-height: 1.42;
+  letter-spacing: -.045em;
+  overflow-wrap: anywhere;
+  animation: entranceRise .68s .2s both;
+}
+.entranceGreeting span { color: inherit; }
+.entranceCaption {
+  margin: 12px 0 0;
+  font-size: clamp(13px, 2vw, 16px);
+  font-weight: 450;
+  line-height: 1.8;
+  opacity: .78;
+  animation: entranceRise .68s .3s both;
+}
+@keyframes entranceRise {
+  from { opacity: 0; transform: translate3d(0, 17px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes entranceDividerIn {
+  from { opacity: 0; transform: scaleX(.2); }
+  to { opacity: .85; transform: scaleX(1); }
+}
+@keyframes entranceHalo {
+  from { opacity: 0; transform: scale(.88); }
+  to { opacity: .72; transform: scale(1); }
+}
+@media (max-width: 640px) {
+  .entranceLogo { border-radius: 24px; }
+  .entranceDivider { margin: 21px 0 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entranceIntro { transition: none !important; }
+  .entranceGlow, .entranceContent, .entranceStoreName, .entranceDivider,
+  .entranceGreeting, .entranceCaption { animation: none !important; }
+}
