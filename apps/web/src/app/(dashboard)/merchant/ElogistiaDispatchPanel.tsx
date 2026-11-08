@@ -49,8 +49,10 @@ export function ElogistiaDispatchPanel({ order }: Props) {
   const [isLinked, setIsLinked] = useState(Boolean(order.carrier_tracking_number));
   const [attemptState, setAttemptState] = useState<'pending' | 'failed' | 'uncertain' | 'created' | null>(null);
   const [attemptError, setAttemptError] = useState('');
+  const [expanded, setExpanded] = useState(order.carrier_name === 'Elogistia');
 
   useEffect(() => {
+    if (!expanded) return;
     let active = true;
     Promise.all([getElogistiaDispatchOptions(), getElogistiaDispatchStatus(order.id)]).then(([options, dispatch]) => {
       if (!active) return;
@@ -66,7 +68,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
       if (active) setError(reason?.message || 'تعذر تحميل بيانات Elogistia.');
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [order.id]);
+  }, [order.id, expanded]);
 
   async function selectWilaya(value: string) {
     setWilayaId(value); setCommune(''); setCommunes([]); setRates(null);
@@ -119,8 +121,11 @@ export function ElogistiaDispatchPanel({ order }: Props) {
     <div className="dz-int-guided-panel-title">
       <span className="dz-int-guided-number">E</span>
       <div><h4>شحنة Elogistia</h4><p style={{ fontSize: 15, lineHeight: 1.7 }}>أنشئ بوليصة الشحن من هذا الطلب. سيستخدم تاجر تراك رقم الطلب الحالي مرجعاً لدى Elogistia، ولن ينشئ طلباً داخلياً مكرراً.</p></div>
+      {order.carrier_name !== 'Elogistia' && <button type="button" className="dz-btn" onClick={() => setExpanded(value => !value)}>{expanded ? 'إخفاء خيارات Elogistia' : 'إنشاء شحنة عبر Elogistia'}</button>}
     </div>
-    {successTracking ? (
+    {!expanded && order.carrier_name !== 'Elogistia' ? (
+      <p className="dz-int-guided-note">يمكنك إنشاء بوليصة Elogistia لهذا الطلب دون مغادرة تفاصيله. لن يتم إرسال أي شيء إلى شركة التوصيل حتى تضغط زر إنشاء الشحنة.</p>
+    ) : successTracking ? (
       <div role="status" aria-live="polite" style={{ display: 'grid', gap: 10 }}>
         <div className="dz-int-guided-meta"><span>حالة الشحنة</span><strong>{isLinked ? 'تم إنشاء الشحنة وربطها بالطلب' : 'تم الإنشاء لدى Elogistia — الربط المحلي يحتاج متابعة'}</strong><span>رقم التتبع</span><strong dir="ltr">{successTracking}</strong><span>رقم طلب متجرك لدى Elogistia</span><strong dir="ltr">{order.external_order_id}</strong></div>
         {isLinked ? (!alreadyElogistia && <p className="dz-int-guided-note">تم إنشاء الشحنة وربطها بالطلب. حدّث تفاصيل الطلب لعرض جميع بيانات Elogistia المحفوظة.</p>) : <p role="alert" className="dz-int-guided-note" style={{ color: '#92400e', background: '#fff7e6', padding: 12, borderRadius: 9 }}>لا تنشئ شحنة أخرى. احتفظ برقم التتبع أعلاه واربطه بالطلب يدوياً أو تواصل مع الدعم حتى لا يتكرر الطرد.</p>}
