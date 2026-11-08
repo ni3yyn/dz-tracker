@@ -34,7 +34,8 @@ GRANT ALL ON public.merchant_carrier_integrations TO service_role;
 ALTER TABLE public.merchant_carrier_integrations
   ADD COLUMN IF NOT EXISTS webhook_endpoint_token TEXT,
   ADD COLUMN IF NOT EXISTS last_webhook_received_at TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS last_webhook_processed_at TIMESTAMPTZ;
+  ADD COLUMN IF NOT EXISTS last_webhook_processed_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS webhook_test_mode BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_merchant_carrier_integrations_yalidine_webhook_token
   ON public.merchant_carrier_integrations (webhook_endpoint_token)
