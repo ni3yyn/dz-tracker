@@ -6095,7 +6095,8 @@ export async function registerSavedOrder(savedOrder) {
         {/* SIDEBAR */}
         <aside id="dz-merchant-sidebar" className={`dz-sidebar ${mobileMenuOpen ? 'dz-mobile-nav-open' : ''}`}>
           <div className="dz-product-brand">
-            <img src="/tajertrack-animated.svg" alt="" width="38" height="38" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/tajertrack-animated.svg" alt="" aria-hidden="true" width="38" height="38" />
             <div className="dz-product-brand-copy">
               <strong>تاجر تراك</strong>
               <span>إدارة الشحنات بوضوح</span>
