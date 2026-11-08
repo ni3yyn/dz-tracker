@@ -22,7 +22,8 @@ function dateValue(v:unknown):number {
   if(match){const [,y,m,d,h='00',min='00',s='00']=match;return new Date(y+'-'+m+'-'+d+'T'+h+':'+min+':'+s+'+01:00').getTime();}
   const n=new Date(raw).getTime();return Number.isFinite(n)?n:0;
 }
-const NOTE=new Set(['','EnCours','BIZ','Suivi par E-com','Information','Type de Colis','Type de Livraison']);
+const NOTE=new Set(['','encours','biz','suivi par e-com','information','type de colis','type de livraison']);
+function normalizeSituation(value:unknown):string{return textValue(value).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();}
 export class EcomV2SyncWorker {
   private readonly supabase:SupabaseClient;
   private readonly instanceId=randomUUID();
@@ -81,17 +82,17 @@ export class EcomV2SyncWorker {
           if(response.status===429)throw new Error('E-com Delivery rate limit reached; the next cycle will retry.');
           let body:any;try{body=await response.json();}catch{throw new Error('E-com Delivery returned invalid JSON (HTTP '+response.status+').');}
           if(!response.ok||body?.error)throw new Error('E-com Delivery status request failed (HTTP '+response.status+').');
+          // The provider's track endpoint returns its authoritative event history. Do not
+          // invent a current timestamp when history is empty; that would create a new event on
+          // every polling cycle and could spam the customer's timeline.
           const history=historyFrom(body).sort((a,b)=>dateValue(a.date)-dateValue(b.date));
-          const useful=history.filter(x=>!NOTE.has(textValue(x.situation)));
-          const events=(useful.length?useful:[{
-            date:body.date||body.updated_at||new Date().toISOString(),
-            situation:body.situation||body.etat_logistique||'',
-            commentaire:body.commentaire||'',
-          }]).map((event,index)=>({
+          const useful=history.filter(x=>!NOTE.has(normalizeSituation(x.situation)));
+          if (!useful.length) { checked++; continue; }
+          const events=useful.map((event,index)=>({
             ...event,tracking:order.carrier_tracking_number,id_externe:order.external_order_id,
             nom_complet:order.customer_name||'',mobile_1:order.customer_phone||'',article:order.product_name||'',
             source_event_id:createEcomV2EventId(order.carrier_tracking_number,event),
-            suppressTriggers:index<((useful.length?useful.length:1)-1),
+            suppressTriggers:index<useful.length-1,
           }));
           for(let i=0;i<events.length;i+=50){
             const res=await fetch(this.config.trackingPublicBaseUrl.replace(/\/+$/,'')+'/api/webhooks/ecom-v2/sync',{
