@@ -820,6 +820,8 @@ export function MerchantDashboardView({
     return () => { cancelled = true; };
   }, [shouldLoadIntegrationApiKey, merchantId]);
   const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
+  const [isCustomMappingModalOpen, setIsCustomMappingModalOpen] = useState(false);
+  const customMappingTriggerRef = useRef<HTMLButtonElement>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [addOrderError, setAddOrderError] = useState<string | null>(null);
   const [newOrderSuccess, setNewOrderSuccess] = useState<{ trackingUuid: string; externalOrderId: string } | null>(null);
@@ -1557,6 +1559,22 @@ export async function registerSavedOrder(savedOrder) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [selectedOrderId]);
+  useEffect(() => {
+    if (!isCustomMappingModalOpen) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsCustomMappingModalOpen(false);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+      window.requestAnimationFrame(() => customMappingTriggerRef.current?.focus());
+    };
+  }, [isCustomMappingModalOpen]);
   const lastSevenDays = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -5046,6 +5064,155 @@ export async function registerSavedOrder(savedOrder) {
         .dz-admin-root .dz-mappings-add-button:hover { border-color:var(--green-deep); background:var(--green-deep); }
         .dz-admin-root .dz-mappings-add-button:focus-visible { outline:2px solid rgba(41,75,55,.34); outline-offset:3px; }
         .dz-admin-root .dz-mappings-add-button svg { width:15px; height:15px; }
+        .dz-admin-root .dz-mappings-add-button { border-radius: 0 !important; }
+
+        .dz-mapping-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 2147483001;
+          display: grid;
+          place-items: center;
+          overflow-y: auto;
+          padding: 20px;
+          background: rgba(22, 32, 25, .48);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          direction: rtl;
+        }
+        .dz-mapping-modal-panel,
+        .dz-mapping-modal-panel * { border-radius: 0 !important; }
+        .dz-mapping-modal-panel {
+          box-sizing: border-box;
+          width: min(620px, 100%);
+          max-height: min(88dvh, 720px);
+          overflow-y: auto;
+          padding: 26px;
+          border: 1px solid #dfe3d9;
+          background: #fffefa;
+          color: #202a23;
+          box-shadow: 0 24px 80px rgba(16, 28, 20, .24);
+          font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+        }
+        .dz-mapping-modal-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 18px;
+          padding-bottom: 19px;
+          margin-bottom: 20px;
+          border-bottom: 1px solid #dfe3d9;
+        }
+        .dz-mapping-modal-kicker {
+          display: block;
+          margin-bottom: 6px;
+          color: #788579;
+          font-size: 10px;
+          font-weight: 750;
+        }
+        .dz-mapping-modal-head h2 {
+          margin: 0;
+          color: #202a23;
+          font-size: 22px;
+          font-weight: 750;
+          letter-spacing: -.045em;
+        }
+        .dz-mapping-modal-head p {
+          margin: 6px 0 0;
+          color: #67736a;
+          font-size: 12px;
+          line-height: 1.8;
+        }
+        .dz-mapping-modal-close {
+          display: grid;
+          place-items: center;
+          flex: 0 0 38px;
+          width: 38px;
+          height: 38px;
+          border: 1px solid #dfe3d9;
+          background: transparent;
+          color: #294b37;
+          cursor: pointer;
+        }
+        .dz-mapping-modal-close:hover { background: #e6ece3; border-color: #cbd3c7; }
+        .dz-mapping-modal-close:focus-visible {
+          outline: 2px solid rgba(41,75,55,.34);
+          outline-offset: 3px;
+        }
+        .dz-custom-mapping-form {
+          margin: 0 !important;
+          padding: 0 !important;
+          border: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+        }
+        .dz-custom-mapping-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+          margin: 0 0 20px;
+        }
+        .dz-custom-mapping-form .inputGroup {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          min-width: 0;
+        }
+        .dz-custom-mapping-form label {
+          color: #34463a;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .dz-custom-mapping-input {
+          box-sizing: border-box;
+          width: 100%;
+          min-height: 46px;
+          padding: 10px 12px;
+          border: 1px solid #cbd3c7 !important;
+          background: #fffefa;
+          color: #202a23;
+          font-family: inherit;
+          font-size: 13px;
+          box-shadow: none !important;
+        }
+        .dz-custom-mapping-input:focus {
+          border-color: #294b37 !important;
+          outline: 2px solid rgba(41,75,55,.13);
+          outline-offset: 1px;
+        }
+        .dz-custom-mapping-input::placeholder { color: #879187; }
+        .dz-custom-mapping-actions {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+          padding-top: 17px;
+          border-top: 1px solid #dfe3d9;
+        }
+        .dz-custom-mapping-submit {
+          min-height: 44px;
+          padding: 0 18px;
+          border: 1px solid #294b37;
+          background: #294b37;
+          color: #fffefa;
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 750;
+          cursor: pointer;
+        }
+        .dz-custom-mapping-submit:hover:not(:disabled) {
+          border-color: #1d3427;
+          background: #1d3427;
+        }
+        .dz-custom-mapping-submit:disabled { opacity: .55; cursor: wait; }
+        @media (max-width: 600px) {
+          .dz-mapping-modal-backdrop { padding: 12px; }
+          .dz-mapping-modal-panel { padding: 20px 16px; max-height: 92dvh; }
+          .dz-mapping-modal-head h2 { font-size: 19px; }
+          .dz-custom-mapping-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+          .dz-custom-mapping-actions { align-items: stretch; flex-direction: column; }
+          .dz-custom-mapping-submit { width: 100%; }
+        }
+
 
         .dz-admin-root .dz-mappings-presets,.dz-admin-root .dz-mappings-create,.dz-admin-root .dz-mappings-list { padding:24px 0; border-bottom:1px solid #e5e9e2; }
         .dz-admin-root .dz-mappings-section-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; }
@@ -7486,13 +7653,10 @@ export async function registerSavedOrder(savedOrder) {
                 <div className="dz-mappings-intro-actions">
                   <span className="dz-mappings-count"><strong>{mappings.length}</strong> مطابقة مفعّلة</span>
                   <button
+                    ref={customMappingTriggerRef}
                     type="button"
                     className="dz-mappings-add-button"
-                    onClick={() => {
-                      const createSection = document.getElementById('dz-mappings-create');
-                      createSection?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
-                      createSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
+                    onClick={() => setIsCustomMappingModalOpen(true)}
                   >
                     <Icons.Plus />
                     إضافة مسمى مخصص
@@ -7525,16 +7689,6 @@ export async function registerSavedOrder(savedOrder) {
                     <button type="submit" className="dz-mapping-preset">شوبيفاي <span>تطبيق</span></button>
                   </form>
                 </div>
-              </section>
-
-              <section id="dz-mappings-create" className="dz-mappings-create" aria-labelledby="dz-create-mapping-title">
-                <div className="dz-mappings-section-head">
-                  <div>
-                    <h3 id="dz-create-mapping-title">إضافة مسمى مخصص</h3>
-                    <p>اربط الحالة الأصلية بالعبارة التي ستظهر في صفحة التتبع.</p>
-                  </div>
-                </div>
-                <MappingForm merchantId={merchantId} />
               </section>
 
               <section className="dz-mappings-list" aria-labelledby="dz-active-mappings-title">
@@ -7939,6 +8093,41 @@ export async function registerSavedOrder(savedOrder) {
               )}
             </div>
           )}
+
+          {isCustomMappingModalOpen && typeof document !== 'undefined' && createPortal((
+            <div
+              className="dz-mapping-modal-backdrop"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setIsCustomMappingModalOpen(false);
+              }}
+            >
+              <section
+                className="dz-mapping-modal-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="dz-create-mapping-title"
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <header className="dz-mapping-modal-head">
+                  <div>
+                    <span className="dz-mapping-modal-kicker">مطابقة الحالات والترجمة</span>
+                    <h2 id="dz-create-mapping-title">إضافة مسمى مخصص</h2>
+                    <p>اربط كود الحالة الأصلي بالعبارة التي ستظهر للعميل في صفحة التتبع.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="dz-mapping-modal-close"
+                    aria-label="إغلاق النافذة"
+                    onClick={() => setIsCustomMappingModalOpen(false)}
+                  >
+                    <Icons.X />
+                  </button>
+                </header>
+                <MappingForm merchantId={merchantId} />
+              </section>
+            </div>
+          ), document.body)}
 
           {selectedOrder && typeof document !== 'undefined' && createPortal((
             <div className="dz-order-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedOrderId(null); }}>
