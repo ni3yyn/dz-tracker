@@ -3197,7 +3197,8 @@ export async function registerSavedOrder(savedOrder) {
           .dz-order-mobile-meta > span { min-width: 0; overflow-wrap: anywhere; line-height: 1.55; }
           .dz-order-mobile-status { display: flex; width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft); }
           .dz-order-mobile-status .dz-status-selector { width: 100%; }
-          .dz-order-mobile-status .dz-status-select { min-width: 0; min-height: 46px; font-size: 13px; }
+          .dz-order-mobile-status .dz-status-selector > div { width: 100%; min-width: 0; }
+          .dz-order-mobile-status .dz-status-selector > div > button { min-height: 46px; font-size: 13px; }
           .dz-order-mobile-card .dz-order-action-grid { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 42px; gap: 8px; margin-top: 13px; }
           .dz-order-mobile-card .dz-order-action-btn { height: 42px; border-radius: 11px; }
           .dz-order-mobile-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
