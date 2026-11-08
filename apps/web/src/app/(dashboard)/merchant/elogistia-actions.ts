@@ -84,7 +84,7 @@ async function apiRequest(path: string, authName: 'key' | 'apiKey', apiKey: stri
     throw error;
   }
   if (!response.ok || body?.success === false || body?.error) {
-    const message = providerError(body);
+    const message = providerError(body).replaceAll(apiKey, '[redacted]');
     const error: any = new Error(message || 'فشل طلب Elogistia (HTTP ' + response.status + ').');
     error.statusCode = response.status;
     error.providerRejected = (response.status >= 400 && response.status < 500 && response.status !== 408) ||
@@ -265,6 +265,7 @@ export async function createElogistiaShipment(orderId: string, input: {
       .select('id,merchant_id,external_order_id,customer_name,customer_phone,product_name,carrier_name,carrier_tracking_number,carrier_metadata')
       .eq('id', orderId).eq('merchant_id', id).maybeSingle();
     if (orderError || !order) throw new Error('لم نعثر على الطلب داخل متجرك.');
+    if (!String(order.external_order_id || '').trim()) throw new Error('لا يحتوي الطلب على مرجع خارجي صالح لإرساله إلى Elogistia.');
     if (order.carrier_tracking_number) {
       throw new Error('هذا الطلب مرتبط بالفعل برقم تتبع (' + order.carrier_tracking_number + '). لا ننشئ شحنة ثانية تلقائياً.');
     }
