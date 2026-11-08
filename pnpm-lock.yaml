@@ -184,6 +184,9 @@ importers:
 
   apps/push-worker:
     dependencies:
+      '@saas/orchestrator':
+        specifier: workspace:*
+        version: link:../../packages/orchestrator
       '@saas/database':
         specifier: workspace:*
         version: link:../../packages/database
