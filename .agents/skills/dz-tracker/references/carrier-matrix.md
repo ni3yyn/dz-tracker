@@ -9,7 +9,8 @@ Snapshot checked: 2026-11-08.
 | TajerTrack route | Route imports / calls | Repository source |
 |---|---|---|
 | `POST /api/webhooks` | Direct merchant API; normalizes direct order/status fields | `apps/web/src/app/api/webhooks/route.ts` |
-| `POST /api/webhooks/yalidine` | `YalidineAdapter.normalize()` | `apps/web/src/app/api/webhooks/yalidine/route.ts` → `packages/orchestrator/src/carriers/yalidine.adapter.ts` |
+| `POST /api/webhooks/yalidine` | Legacy/query-key flat payload compatibility only | `apps/web/src/app/api/webhooks/yalidine/route.ts` → `YalidineAdapter.normalize()` |
+| `GET/POST /api/webhooks/yalidine/{endpointToken}` | Modern CRC challenge + raw-body HMAC-SHA256 verification + durable batched event queue | `apps/web/src/app/api/webhooks/yalidine/[endpointToken]/route.ts` → `yalidine_webhook_events` → Railway worker |
 | `POST /api/webhooks/ecotrack` | `EcoTrackAdapter.normalize()` | `apps/web/src/app/api/webhooks/ecotrack/route.ts` → `packages/orchestrator/src/carriers/ecotrack.adapter.ts` |
 | `POST /api/webhooks/ecotrack/sync` | Internal batch ingestion for the read-only polling worker (1–100 events) | `apps/web/src/app/api/webhooks/ecotrack/sync/route.ts` → same shared handler |
 | `POST /api/webhooks/zrexpress/[endpointToken]` | Modern ZR Express Svix receiver; verifies raw-body signature and queues signed events | `apps/web/src/app/api/webhooks/zrexpress/[endpointToken]/route.ts` → `ZRExpressWebhookAdapter` → `zrexpress_webhook_events` |
@@ -34,6 +35,28 @@ The Odoo route reads the first available carrier text from `carrier_name`, `deli
 - otherwise → defaults to `YalidineAdapter`
 
 This is the actual repository routing logic. Verify the merchant's carrier field values match these checks; an unknown value defaults to Yalidine.
+
+## 1A. Yalidine / Guepex signed webhook implementation
+
+| Purpose | Implementation |
+|---|---|
+| Merchant connection UI | `apps/web/src/app/(dashboard)/merchant/YalidineConnectionPanel.tsx` |
+| Authenticated setup and secret save | `apps/web/src/app/(dashboard)/merchant/yalidine-actions.ts` |
+| Merchant-scoped encrypted signing secret | `apps/web/src/lib/yalidine-webhook-credentials.ts` |
+| CRC + HMAC verifier and event envelope validation helpers | `apps/web/src/lib/yalidine-webhook.ts` |
+| Public per-merchant webhook | `GET/POST /api/webhooks/yalidine/{endpointToken}` |
+| Durable event queue and claim RPC | `apps/web/src/app/migrations/20261108_yalidine_signed_webhooks.sql` |
+| Event normalization and status mapping | `packages/orchestrator/src/carriers/yalidine.adapter.ts` |
+| Signed internal processor | `POST /api/internal/yalidine/process` |
+| Railway queue consumer | `apps/push-worker/src/yalidine-webhook-worker.ts` |
+
+This receiver uses the SkillHub third-party contract: GET requires `subscribe` and `crc_token` and echoes the exact token; POST verifies the raw body against `X-YALIDINE-SIGNATURE` using hexadecimal HMAC-SHA256 and a merchant-specific secret. It stores the original `type`, `event_id`, `occurred_at`, and `data` in the queue and returns HTTP 200 only after the batch is persisted. Duplicate event IDs are ignored. Processing occurs in the Railway worker under a database lease, with retries and dead-letter state; the worker's internal request is separately HMAC-authenticated.
+
+Only `parcel_created` and `parcel_status_updated` currently create/update TajerTrack orders and timeline events. `parcel_edited`, `parcel_deleted`, and `parcel_payment_updated` are durably queued and acknowledged without changing the timeline or payment state. Merchants should subscribe to the two supported types only. Provider event timestamps are retained; offset-less timestamps are interpreted as Algeria UTC+1. Event IDs are namespaced with `yalidine:` before entering the shared ordered-history ledger.
+
+The merchant first generates a unique callback URL in TajerTrack, creates a webhook in the courier dashboard, saves the signing secret from the webhook card, runs the provider's test function, then activates the webhook. Apply `20261108_yalidine_signed_webhooks.sql`; set `CARRIER_CREDENTIALS_ENCRYPTION_KEY` in Vercel and Railway and set `YALIDINE_WEBHOOK_WORKER_ENABLED=true` in Railway. The per-merchant secret is encrypted with AES-256-GCM and merchant-scoped AAD. The old query-key route is retained only for legacy flat-payload senders; it does not implement this envelope/signature contract.
+
+The SkillHub page is third-party reference, not official provider documentation. Live CRC, HMAC and event delivery must still be verified using a merchant's own Webhooks dashboard. TajerTrack's current Yalidine integration is webhook tracking only; it does not yet create parcels through the shared API. Guepex must use a separate integration identity and merchant secret even though the documented API family is shared.
 
 ## 1A. EcoTrack read-only account synchronization
 
