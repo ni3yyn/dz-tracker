@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './branded-select.module.css';
 
@@ -60,17 +60,20 @@ export function BrandedSelect({
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const selectedOption = options.find((option) => option.value === selectedValue);
-  const enabledIndexes = options.reduce<number[]>((indexes, option, index) => {
-    if (!option.disabled) indexes.push(index);
-    return indexes;
-  }, []);
+  const enabledIndexes = useMemo(
+    () => options.reduce<number[]>((indexes, option, index) => {
+      if (!option.disabled) indexes.push(index);
+      return indexes;
+    }, []),
+    [options]
+  );
 
-  const initialActiveIndex = () => {
+  const initialActiveIndex = useCallback(() => {
     const selectedIndex = options.findIndex((option) => option.value === selectedValue && !option.disabled);
     return selectedIndex >= 0 ? selectedIndex : (enabledIndexes[0] ?? -1);
-  };
+  }, [enabledIndexes, options, selectedValue]);
 
-  const updateMenuPosition = () => {
+  const updateMenuPosition = useCallback(() => {
     const trigger = triggerRef.current;
     if (!trigger || typeof window === 'undefined') return;
 
@@ -94,35 +97,35 @@ export function BrandedSelect({
       : Math.min(window.innerHeight - viewportPadding - 120, rect.bottom + gap);
 
     setMenuPosition({ top, left, width, maxHeight });
-  };
+  }, [enabledIndexes.length]);
 
-  const openMenu = () => {
+  const closeMenu = useCallback((restoreFocus = false) => {
+    setIsOpen(false);
+    if (restoreFocus) triggerRef.current?.focus();
+  }, []);
+
+  const openMenu = useCallback(() => {
     if (disabled || loading) return;
     setActiveIndex(initialActiveIndex());
     updateMenuPosition();
     setIsOpen(true);
-  };
+  }, [disabled, initialActiveIndex, loading, updateMenuPosition]);
 
-  const closeMenu = (restoreFocus = false) => {
-    setIsOpen(false);
-    if (restoreFocus) triggerRef.current?.focus();
-  };
-
-  const chooseOption = (option: BrandedSelectOption) => {
+  const chooseOption = useCallback((option: BrandedSelectOption) => {
     if (option.disabled) return;
     if (!isControlled) setLocalValue(option.value);
     onChange?.(option.value);
     closeMenu(true);
-  };
+  }, [closeMenu, isControlled, onChange]);
 
-  const moveActive = (direction: 1 | -1) => {
+  const moveActive = useCallback((direction: 1 | -1) => {
     if (enabledIndexes.length === 0) return;
     const currentPosition = enabledIndexes.indexOf(activeIndex);
     const nextPosition = currentPosition < 0
       ? (direction === 1 ? 0 : enabledIndexes.length - 1)
       : (currentPosition + direction + enabledIndexes.length) % enabledIndexes.length;
     setActiveIndex(enabledIndexes[nextPosition]);
-  };
+  }, [activeIndex, enabledIndexes]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -152,7 +155,7 @@ export function BrandedSelect({
       window.removeEventListener('resize', handleViewportChange);
       window.removeEventListener('scroll', handleViewportChange, true);
     };
-  }, [isOpen, enabledIndexes.length]);
+  }, [closeMenu, isOpen, updateMenuPosition]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -186,7 +189,7 @@ export function BrandedSelect({
       moveActive(event.key === 'ArrowDown' ? 1 : -1);
     } else if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault();
-      setActiveIndex(event.key === 'Home' ? (enabledIndexes[0] ?? -1) : (enabledIndexes.at(-1) ?? -1));
+      setActiveIndex(event.key === 'Home' ? (enabledIndexes[0] ?? -1) : (enabledIndexes[enabledIndexes.length - 1] ?? -1));
     } else if (event.key === 'Escape') {
       event.preventDefault();
       closeMenu(true);
