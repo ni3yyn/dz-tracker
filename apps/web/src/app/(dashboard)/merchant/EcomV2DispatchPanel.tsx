@@ -3,6 +3,7 @@
 import React, { useEffect, useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createEcomV2Shipment, getEcomV2DispatchOptions, getEcomV2DispatchStatus } from './ecom-v2-actions';
+import { BrandedSelect } from './BrandedSelect';
 
 type Props = { order: { id:string; external_order_id:string; customer_name:string|null; customer_phone:string|null; product_name:string|null; carrier_name:string|null; carrier_tracking_number:string|null; carrier_metadata?:any } };
 type Options = { id:string; name:string; home:boolean; stopdesk:boolean }[];
@@ -69,11 +70,56 @@ export function EcomV2DispatchPanel({ order }: Props) {
       </div>
       <label style={{display:'grid',gap:6}}>عنوان التوصيل (حتى 100 حرف) *<input className="dz-input-field" value={address} onChange={e=>setAddress(e.target.value)} maxLength={100} required /></label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-        <label style={{display:'grid',gap:6}}>الولاية *<select className="dz-input-field" value={wilaya} onChange={e=>void chooseWilaya(e.target.value)} required><option value="">اختر الولاية</option>{wilayas.map(w=><option key={w.id} value={w.id}>{w.id} — {w.name}</option>)}</select></label>
-        <label style={{display:'grid',gap:6}}>طريقة التوصيل *<select className="dz-input-field" value={mode} onChange={e=>{setMode(e.target.value as any);setCommune('');setDesk('');}}><option value="home">إلى المنزل</option><option value="stopdesk">مكتب استلام</option></select></label>
+        <label htmlFor={id+'-wilaya'} style={{display:'grid',gap:6}}>الولاية *
+          <BrandedSelect
+            id={id+'-wilaya'}
+            ariaLabel="الولاية"
+            value={wilaya}
+            onChange={(value)=>void chooseWilaya(value)}
+            placeholder="اختر الولاية"
+            variant="field"
+            options={wilayas.map((w)=>({value:w.id,label:`${w.id} — ${w.name}`}))}
+          />
+        </label>
+        <label htmlFor={id+'-delivery-mode'} style={{display:'grid',gap:6}}>طريقة التوصيل *
+          <BrandedSelect
+            id={id+'-delivery-mode'}
+            ariaLabel="طريقة التوصيل"
+            value={mode}
+            onChange={(value)=>{setMode(value as 'home'|'stopdesk');setCommune('');setDesk('');}}
+            variant="field"
+            options={[
+              {value:'home',label:'إلى المنزل'},
+              {value:'stopdesk',label:'مكتب استلام'},
+            ]}
+          />
+        </label>
       </div>
-      {mode==='home'?<label style={{display:'grid',gap:6}}>البلدية المتاحة *<select className="dz-input-field" value={commune} onChange={e=>setCommune(e.target.value)} required disabled={!wilaya||loadingWilaya}><option value="">{loadingWilaya?'جارٍ التحميل...':'اختر البلدية'}</option>{communes.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}</select></label>
-      :<label style={{display:'grid',gap:6}}>مكتب الاستلام *<select className="dz-input-field" value={desk} onChange={e=>setDesk(e.target.value)} required disabled={!wilaya||loadingWilaya}><option value="">اختر مكتب E-com</option>{desks.map(d=><option key={d.id} value={d.id}>{d.name}{d.commune?' — '+d.commune:''}</option>)}</select></label>}
+      {mode==='home'
+        ? <label htmlFor={id+'-commune'} style={{display:'grid',gap:6}}>البلدية المتاحة *
+            <BrandedSelect
+              id={id+'-commune'}
+              ariaLabel="البلدية المتاحة"
+              value={commune}
+              onChange={setCommune}
+              placeholder={loadingWilaya?'جارٍ التحميل...':'اختر البلدية'}
+              disabled={!wilaya||loadingWilaya}
+              variant="field"
+              options={communes.map((c)=>({value:c.name,label:c.name}))}
+            />
+          </label>
+        : <label htmlFor={id+'-desk'} style={{display:'grid',gap:6}}>مكتب الاستلام *
+            <BrandedSelect
+              id={id+'-desk'}
+              ariaLabel="مكتب الاستلام"
+              value={desk}
+              onChange={setDesk}
+              placeholder="اختر مكتب E-com"
+              disabled={!wilaya||loadingWilaya}
+              variant="field"
+              options={desks.map((d)=>({value:String(d.id),label:d.name+(d.commune?' — '+d.commune:'')}))}
+            />
+          </label>}
       {rates&&<p className="dz-int-guided-note" style={{fontSize:13}}>تعريفة الشركة: المنزل {rates.home.toLocaleString('ar-DZ')} دج · المكتب {rates.stopDesk.toLocaleString('ar-DZ')} دج. لا تُضاف تلقائياً إلى مبلغ التحصيل.</p>}
       <label style={{display:'grid',gap:6}}>المنتج *<input className="dz-input-field" value={product} onChange={e=>setProduct(e.target.value)} maxLength={200} required /></label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
