@@ -9,6 +9,10 @@ test('maps E-com Delivery v2 documented statuses without guessing unknown labels
   assert.equal(mapEcomV2Status('Commande Annuler').statusRaw,'cancelled');
   assert.equal(mapEcomV2Status('Au Bureau').statusRaw,'in_transit');
   assert.equal(mapEcomV2Status('En Préparation').statusRaw,'pending');
+  assert.equal(mapEcomV2Status('Commande Reporté').statusRaw,'pending');
+  assert.equal(mapEcomV2Status('Commande a Relancé').statusRaw,'pending');
+  assert.equal(mapEcomV2Status('En Traitement').statusRaw,'created');
+  assert.equal(mapEcomV2Status('Annuler').statusRaw,'returned');
   assert.equal(mapEcomV2Status('EnCours').statusRaw,'unknown');
   assert.equal(mapEcomV2Status('New label not in mapping').statusRaw,'unknown');
 });
