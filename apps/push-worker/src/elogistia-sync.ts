@@ -49,7 +49,7 @@ function parseDate(value: unknown): number {
 }
 
 export function createElogistiaEventId(tracking: string, event: Record<string, any>): string {
-  const stable = [tracking, event.Date ?? event.date, event.Statut ?? event.statut ?? event.status, event.Log ?? event.log].map(asText).join('|');
+  const stable = [tracking, event.Date ?? event.date ?? event.created_at ?? event.timestamp, event.Statut ?? event.statut ?? event.status, event.Log ?? event.log].map(asText).join('|');
   return createHash('sha256').update(stable, 'utf8').digest('hex');
 }
 
@@ -154,7 +154,7 @@ export class ElogistiaSyncWorker {
             throw new Error('Elogistia status request failed (HTTP ' + response.status + ').');
           }
 
-          const history = normalizeElogistiaHistory(body).sort((a, b) => parseDate(a.Date ?? a.date) - parseDate(b.Date ?? b.date));
+          const history = normalizeElogistiaHistory(body).sort((a, b) => parseDate(a.Date ?? a.date ?? a.created_at ?? a.timestamp) - parseDate(b.Date ?? b.date ?? b.created_at ?? b.timestamp));
           if (history.length) {
             const events = history.map((event, index) => ({
               ...event,
