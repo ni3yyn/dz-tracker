@@ -4562,6 +4562,278 @@ export async function registerSavedOrder(savedOrder) {
         @media (prefers-reduced-motion: reduce) {
           .dz-admin-root * { scroll-behavior: auto !important; }
         }
+
+        /* Homepage button language: clear rectangular actions, not pills. */
+        .dz-admin-root .dz-btn,
+        .dz-admin-root .dz-add-order-btn,
+        .dz-admin-root .dz-sub-alert-btn,
+        .dz-admin-root .dz-setup-primary,
+        .dz-admin-root .dz-brand-save-button,
+        .dz-admin-root .dz-smart-fetch-btn,
+        .dz-admin-root .dz-brand-tool-button,
+        .dz-admin-root .dz-int-guided-reset,
+        .dz-admin-root .dz-orders-load-more button,
+        .dz-admin-root .dz-order-action-btn,
+        .dz-admin-root .dz-upsell-action-btn,
+        .dz-admin-root .dz-upsell-toggle-btn,
+        .dz-admin-root .dz-shipment-select,
+        .dz-admin-root .dz-status-select {
+          border-radius: 8px;
+        }
+        .dz-admin-root .dz-btn:not(.dz-btn-outline),
+        .dz-admin-root .dz-add-order-btn,
+        .dz-admin-root .dz-setup-primary,
+        .dz-admin-root .dz-brand-save-button,
+        .dz-admin-root .dz-smart-fetch-btn,
+        .dz-admin-root .dz-int-guided-actions .dz-btn:not(.dz-btn-outline),
+        .dz-admin-root .dz-sub-alert-btn {
+          background: var(--green);
+          border: 1px solid var(--green);
+          color: #fffefa;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-btn:not(.dz-btn-outline):hover,
+        .dz-admin-root .dz-add-order-btn:hover,
+        .dz-admin-root .dz-setup-primary:hover,
+        .dz-admin-root .dz-brand-save-button:hover,
+        .dz-admin-root .dz-smart-fetch-btn:hover,
+        .dz-admin-root .dz-int-guided-actions .dz-btn:not(.dz-btn-outline):hover,
+        .dz-admin-root .dz-sub-alert-btn:hover {
+          background: var(--green-deep);
+          border-color: var(--green-deep);
+          color: #fffefa;
+          transform: translateY(-1px);
+        }
+        .dz-admin-root .dz-btn-outline {
+          border-radius: 8px;
+          border: 1px solid var(--border-strong);
+          background: transparent;
+          color: var(--green);
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-btn-outline:hover {
+          border-color: var(--green);
+          background: var(--green-soft);
+          color: var(--green-deep);
+        }
+        .dz-admin-root .dz-brand-tool-button {
+          border-color: var(--border-soft);
+          background: transparent;
+          color: var(--ink-main);
+        }
+        .dz-admin-root .dz-brand-tool-button:hover:not(:disabled) {
+          border-color: var(--border-strong);
+          background: var(--green-soft);
+        }
+        .dz-admin-root .dz-order-action-btn,
+        .dz-admin-root .dz-upsell-action-btn { border-radius: 7px; box-shadow: none; }
+
+        /* Analytics: editorial data layout matching the homepage. */
+        .dz-admin-root .dz-analytics { gap: 26px; }
+        .dz-admin-root .dz-analytics-kpis {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          margin: 0;
+          padding: 4px 0;
+          overflow: visible;
+          border: 0;
+          border-block: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi {
+          min-width: 0;
+          padding: 22px clamp(12px, 2vw, 25px);
+          border: 0;
+          border-inline-start: 1px solid var(--border-soft);
+          background: transparent;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:first-child { padding-inline-start: 0; }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child {
+          border-inline-start: 0;
+          padding-inline-end: 0;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-label {
+          margin-bottom: 10px;
+          color: var(--ink-muted);
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 1.7;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-value {
+          color: var(--ink-main);
+          font-size: clamp(32px, 3.6vw, 44px);
+          font-weight: 700;
+          letter-spacing: -.06em;
+          line-height: 1.15;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi.is-alert .dz-overview-kpi-value { color: var(--clay); }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-note {
+          margin-top: 9px;
+          color: var(--ink-light);
+          font-size: 11px;
+          line-height: 1.7;
+        }
+        .dz-admin-root .dz-analytics-grid {
+          grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+          gap: clamp(26px, 4vw, 54px);
+        }
+        .dz-admin-root .dz-analytics-section,
+        .dz-admin-root .dz-analytics-section.dz-overview-section:first-child {
+          min-width: 0;
+          padding: 23px 0;
+          border: 0;
+          border-top: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-analytics-section + .dz-analytics-section {
+          border-inline-start: 1px solid var(--border-soft);
+          padding-inline-start: clamp(20px, 3vw, 38px);
+        }
+        .dz-admin-root .dz-analytics-section .dz-overview-section-head {
+          align-items: flex-start;
+          margin-bottom: 23px;
+        }
+        .dz-admin-root .dz-analytics-section .dz-overview-section-title {
+          color: var(--ink-main);
+          font-size: 19px;
+          font-weight: 700;
+          letter-spacing: -.045em;
+        }
+        .dz-admin-root .dz-analytics-section .dz-overview-section-subtitle {
+          color: var(--ink-muted);
+          font-size: 11px;
+          line-height: 1.85;
+        }
+        .dz-admin-root .dz-analytics-total {
+          padding: 2px 0;
+          border: 0;
+          border-radius: 0;
+          border-bottom: 1px solid var(--clay);
+          background: transparent;
+          color: var(--green);
+          font-size: 12px;
+          font-weight: 750;
+        }
+        .dz-admin-root .dz-analytics-bars,
+        .dz-admin-root .dz-analytics-status-list { gap: 19px; }
+        .dz-admin-root .dz-analytics-bar-row {
+          grid-template-columns: minmax(80px, 112px) minmax(0, 1fr) 34px;
+          gap: 13px;
+        }
+        .dz-admin-root .dz-analytics-day { color: var(--ink-main); font-size: 12px; font-weight: 650; }
+        .dz-admin-root .dz-analytics-day small { color: var(--ink-light); font-size: 10px; }
+        .dz-admin-root .dz-analytics-bar-track {
+          height: 7px;
+          border-radius: 2px;
+          background: #e6ece3;
+        }
+        .dz-admin-root .dz-analytics-bar-fill { border-radius: 2px; background: var(--green); }
+        .dz-admin-root .dz-analytics-bar-count { color: var(--ink-main); font-size: 12px; font-weight: 700; }
+        .dz-admin-root .dz-analytics-status-list { gap: 21px; }
+        .dz-admin-root .dz-analytics-status-item { gap: 8px; }
+        .dz-admin-root .dz-analytics-status-heading { color: var(--ink-main); font-size: 12px; }
+        .dz-admin-root .dz-analytics-status-heading > span {
+          gap: 9px;
+          color: var(--ink-main);
+          font-size: 12px;
+          font-weight: 600;
+        }
+        .dz-admin-root .dz-analytics-status-heading i {
+          width: 8px;
+          height: 8px;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-analytics-status-heading strong {
+          color: var(--ink-main);
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .dz-admin-root .dz-analytics-status-heading small { color: var(--ink-light); font-size: 10px; }
+        .dz-admin-root .dz-analytics-footnote {
+          margin-top: 0;
+          padding: 7px 14px;
+          border: 0;
+          border-inline-start: 2px solid var(--clay);
+          border-radius: 0;
+          background: transparent;
+          color: var(--ink-muted);
+          font-size: 11px;
+          line-height: 1.95;
+        }
+        .dz-admin-root .dz-analytics-footnote svg { color: var(--clay) !important; }
+        .dz-admin-root .dz-analytics-footnote strong { color: var(--ink-main); }
+        .dz-admin-root .dz-analytics-action-row {
+          align-items: center;
+          gap: 18px;
+          margin-top: 0;
+          padding-top: 18px;
+          border-top: 1px solid var(--border-soft);
+        }
+        .dz-admin-root .dz-analytics-action-row .dz-btn {
+          min-height: 43px;
+          padding: 10px 17px;
+          border-radius: 8px;
+          font-size: 12px;
+        }
+        .dz-admin-root .dz-analytics-action-row .dz-btn-outline {
+          border: 0;
+          border-bottom: 1px solid var(--border-strong);
+          background: transparent;
+          color: var(--green);
+        }
+        .dz-admin-root .dz-analytics-action-row .dz-btn-outline:hover {
+          border-color: var(--green);
+          background: transparent;
+          color: var(--green-deep);
+        }
+        @media (max-width: 1100px) {
+          .dz-admin-root .dz-analytics-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+          .dz-admin-root .dz-analytics-section + .dz-analytics-section {
+            border-inline-start: 0;
+            padding-inline-start: 0;
+          }
+        }
+        @media (max-width: 760px) {
+          .dz-admin-root .dz-analytics-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi {
+            padding: 17px 13px;
+            border: 0;
+            border-inline-start: 1px solid var(--border-soft);
+            border-bottom: 1px solid var(--border-soft);
+          }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:first-child { padding-inline-start: 0; }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:nth-child(2n),
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child { border-inline-start: 0; }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child {
+            grid-column: 1 / -1;
+            border-bottom: 0;
+            padding-inline: 0;
+          }
+          .dz-admin-root .dz-analytics-section,
+          .dz-admin-root .dz-analytics-section.dz-overview-section:first-child { padding: 19px 0; }
+          .dz-admin-root .dz-analytics-section + .dz-analytics-section { border-top: 1px solid var(--border-soft); }
+          .dz-admin-root .dz-analytics-action-row { gap: 12px; }
+        }
+        @media (max-width: 520px) {
+          .dz-admin-root .dz-analytics-kpis { grid-template-columns: minmax(0, 1fr); }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi,
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:first-child,
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child {
+            grid-column: auto;
+            padding: 15px 0;
+            border-inline-start: 0;
+            border-bottom: 1px solid var(--border-soft);
+          }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child { border-bottom: 0; }
+          .dz-admin-root .dz-analytics-bar-row { grid-template-columns: 82px minmax(0, 1fr) 26px; gap: 8px; }
+          .dz-admin-root .dz-analytics-section,
+          .dz-admin-root .dz-analytics-section.dz-overview-section:first-child { padding: 17px 0; }
+          .dz-admin-root .dz-analytics-action-row { align-items: stretch; flex-direction: column; }
+          .dz-admin-root .dz-analytics-action-row .dz-btn { width: 100%; }
+        }
       `}} />
 
       <div className="dz-admin-root">
