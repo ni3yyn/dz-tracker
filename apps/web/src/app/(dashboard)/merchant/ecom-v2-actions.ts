@@ -73,7 +73,8 @@ async function request(path: string, auth: { apiKey: string; apiToken: string },
     throw e;
   }
   if (!response.ok) {
-    const e: any = new Error(safeMessage(body) || 'فشل طلب E-com Delivery (HTTP ' + response.status + ').');
+    const providerMessage = safeMessage(body).replaceAll(auth.apiKey, '[redacted]').replaceAll(auth.apiToken, '[redacted]');
+    const e: any = new Error(providerMessage || 'فشل طلب E-com Delivery (HTTP ' + response.status + ').');
     e.statusCode = response.status;
     e.providerRejected = response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429;
     throw e;
@@ -161,8 +162,8 @@ export async function getEcomV2DispatchOptions(wilayaId?: string) {
       .filter((x) => x.id && x.name) : [];
     const feeRows = wilayaId && Array.isArray(result[3]?.wilayas) ? result[3].wilayas : [];
     const feeRow = feeRows.find((x: any) => Number(x.wilaya) === Number(wilayaId));
-    const home = feeRow?.domicile == null ? null : Number(feeRow.domicile);
-    const stopDesk = feeRow?.stopdesk == null ? null : Number(feeRow.stopdesk);
+    const home = feeRow?.domicile == null || String(feeRow.domicile).trim() === '' ? null : Number(feeRow.domicile);
+    const stopDesk = feeRow?.stopdesk == null || String(feeRow.stopdesk).trim() === '' ? null : Number(feeRow.stopdesk);
     const rates = home !== null && Number.isFinite(home) && stopDesk !== null && Number.isFinite(stopDesk) ? { home, stopDesk } : null;
     return { success: true, wilayas, communes, desks, rates };
   } catch (e: any) { return { success: false, error: e?.message || 'تعذر تحميل بيانات E-com Delivery.' }; }
