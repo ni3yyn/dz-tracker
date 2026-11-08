@@ -178,7 +178,7 @@ export async function getEcomV2DispatchOptions(wilayaId?: string) {
       const numericId = Number(rawId);
       const id = Number.isInteger(numericId) && numericId >= 1 && numericId <= 58 ? String(numericId) : rawId;
       return { id, name: String(x.libelle ?? '').trim(), home: x.domicile !== false, stopdesk: x.stopdesk !== false };
-    }).filter((x) => /^\\d{1,2}$/.test(x.id) && x.name && (x.home || x.stopdesk));
+    }).filter((x) => /^\d{1,2}$/.test(x.id) && x.name && (x.home || x.stopdesk));
     const communes = wilayaId ? rows(result[1]).map((x) => ({ id: String(x.id ?? ''), name: String(x.commune ?? '').trim(), deliverable: x.livrable !== false }))
       .filter((x) => x.id && x.name && x.deliverable) : [];
     const desks = wilayaId ? rows(result[2]).map((x) => ({ id: String(x.code_stopdesk ?? '').trim(), name: String(x.nom_bureau ?? x.code_stopdesk ?? '').trim(), commune: String(x.commune ?? '').trim(), address: String(x.adresse ?? '').trim() }))
