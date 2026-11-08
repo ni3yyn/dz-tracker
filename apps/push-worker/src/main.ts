@@ -5,13 +5,14 @@ import { PushWorkerHealthMonitor } from './health.js';
 import { WebPushWorker } from './worker.js';
 import { EcoTrackSyncWorker } from './ecotrack-sync.js';
 import { ZRExpressWebhookWorker } from './zrexpress-webhook-worker.js';
+import { YalidineWebhookWorker } from './yalidine-webhook-worker.js';
 import { ZimouSyncWorker } from './zimou-sync.js';
 import { ElogistiaSyncWorker } from './elogistia-sync.js';
 import { EcomV2SyncWorker } from './ecom-v2-sync.js';
 
 async function bootstrap(): Promise<void> {
   console.log('====================================================');
-  console.log(' TajerTrack Background Workers (Web Push + EcoTrack + ZR Express + Zimou + Elogistia + E-com v2)');
+  console.log(' TajerTrack Background Workers (Web Push + EcoTrack + ZR Express + Yalidine + Zimou + Elogistia + E-com v2)');
   console.log('====================================================');
 
   let config;
@@ -21,9 +22,13 @@ async function bootstrap(): Promise<void> {
     console.log(`[Bootstrap]: Web Push enabled: ${config.isEnabled}`);
     console.log(`[Bootstrap]: EcoTrack read-only sync enabled: ${config.ecoTrackSyncEnabled}`);
     console.log(`[Bootstrap]: ZR Express webhook worker enabled: ${config.zrExpressWebhookWorkerEnabled}`);
+    console.log(`[Bootstrap]: Yalidine webhook worker enabled: ${config.yalidineWebhookWorkerEnabled}`);
     console.log(`[Bootstrap]: Zimou read-only status sync enabled: ${config.zimouSyncEnabled}`);
     console.log(`[Bootstrap]: Elogistia status polling enabled: ${config.elogistiaSyncEnabled}`);
     console.log(`[Bootstrap]: E-com Delivery v2 status polling enabled: ${config.ecomV2SyncEnabled}`);
+    if (process.env.YALIDINE_WEBHOOK_WORKER_ENABLED === 'true' && !config.yalidineWebhookWorkerEnabled) {
+      console.warn('[Bootstrap]: Yalidine webhook processing was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
+    }
     if (process.env.ZREXPRESS_WEBHOOK_WORKER_ENABLED === 'true' && !config.zrExpressWebhookWorkerEnabled) {
       console.warn('[Bootstrap]: ZR Express webhook processing was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
     }
@@ -49,6 +54,7 @@ async function bootstrap(): Promise<void> {
   const health = new PushWorkerHealthMonitor(config.workerId);
   const ecoTrackSync = config.ecoTrackSyncEnabled ? new EcoTrackSyncWorker(config) : null;
   const zrExpressWebhookWorker = config.zrExpressWebhookWorkerEnabled ? new ZRExpressWebhookWorker(config) : null;
+  const yalidineWebhookWorker = config.yalidineWebhookWorkerEnabled ? new YalidineWebhookWorker(config) : null;
   const zimouSync = config.zimouSyncEnabled ? new ZimouSyncWorker(config) : null;
   const elogistiaSync = config.elogistiaSyncEnabled ? new ElogistiaSyncWorker(config) : null;
   const ecomV2Sync = config.ecomV2SyncEnabled ? new EcomV2SyncWorker(config) : null;
@@ -57,6 +63,7 @@ async function bootstrap(): Promise<void> {
   let pushLoop: Promise<void> | null = null;
   let ecoTrackLoop: Promise<void> | null = null;
   let zrExpressWebhookLoop: Promise<void> | null = null;
+  let yalidineWebhookLoop: Promise<void> | null = null;
   let zimouSyncLoop: Promise<void> | null = null;
   let elogistiaSyncLoop: Promise<void> | null = null;
   let ecomV2SyncLoop: Promise<void> | null = null;
@@ -89,6 +96,12 @@ async function bootstrap(): Promise<void> {
     console.log('[Bootstrap]: ZREXPRESS_WEBHOOK_WORKER_ENABLED=false; ZR Express webhook processing is disabled.');
   }
 
+  if (yalidineWebhookWorker) {
+    yalidineWebhookLoop = yalidineWebhookWorker.start();
+  } else {
+    console.log('[Bootstrap]: YALIDINE_WEBHOOK_WORKER_ENABLED=false; Yalidine webhook processing is disabled.');
+  }
+
   if (zimouSync) {
     zimouSyncLoop = zimouSync.start();
   } else {
@@ -117,8 +130,9 @@ async function bootstrap(): Promise<void> {
       elogistiaSync?.stop();
       ecomV2Sync?.stop();
       await zrExpressWebhookWorker?.stop();
+      await yalidineWebhookWorker?.stop();
       await pushWorker?.stop();
-      const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop, elogistiaSyncLoop, ecomV2SyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
+      const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, yalidineWebhookLoop, zimouSyncLoop, elogistiaSyncLoop, ecomV2SyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
       await Promise.allSettled(loops);
       console.log('[Bootstrap]: Graceful shutdown complete.');
       process.exit(0);
@@ -132,7 +146,7 @@ async function bootstrap(): Promise<void> {
   const heartbeat = setInterval(() => {
     const status = health.getStatus();
     console.log(
-      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'} | Zimou sync: ${zimouSync ? 'enabled' : 'disabled'} | Elogistia sync: ${elogistiaSync ? 'enabled' : 'disabled'} | E-com v2 sync: ${ecomV2Sync ? 'enabled' : 'disabled'}`
+      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'} | Yalidine webhooks: ${yalidineWebhookWorker ? 'enabled' : 'disabled'} | Zimou sync: ${zimouSync ? 'enabled' : 'disabled'} | Elogistia sync: ${elogistiaSync ? 'enabled' : 'disabled'} | E-com v2 sync: ${ecomV2Sync ? 'enabled' : 'disabled'}`
     );
   }, 30000);
 
