@@ -9,6 +9,7 @@ export { YalidineAdapter } from './carriers/yalidine.adapter';
 export { EcoTrackAdapter } from './carriers/ecotrack.adapter';
 export { ZRExpressAdapter, ProcolisAdapter } from './carriers/zrexpress.adapter';
 export { ZRExpressWebhookAdapter, ZR_EXPRESS_WEBHOOK_EVENT_TYPES, verifyZRExpressWebhook, isZRExpressWebhookEvent } from './carriers/zrexpress-webhook.adapter';
+export type { ZRExpressWebhookEvent, ZRExpressWebhookEventType } from './carriers/zrexpress-webhook.adapter';
 export {
   MaystroAdapter,
   ALGERIA_WILAYAS_58,
