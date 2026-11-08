@@ -17,6 +17,13 @@ export function normalizeZimouStatusResponse(body: any): Record<string, any> {
   return value;
 }
 
+export function normalizeZimouPackageStatuses(body: any): Record<string, string> {
+  const rows = Array.isArray(body?.data) ? body.data : Array.isArray(body) ? body : [];
+  return Object.fromEntries(rows
+    .filter((row: any) => row && row.id != null && typeof row.name === 'string' && row.name.trim())
+    .map((row: any) => [String(row.id), row.name.trim()]));
+}
+
 export class ZimouSyncWorker {
   private readonly supabase: SupabaseClient;
   private readonly instanceId = randomUUID();
@@ -76,6 +83,24 @@ export class ZimouSyncWorker {
 
       let offset = 0;
       let checked = 0;
+      const statusesUrl = new URL(API + '/v3/helpers/package-statuses');
+      const statusWaitMs = Math.max(0, 1400 - (Date.now() - this.lastApiRequestAt));
+      if (statusWaitMs > 0) await new Promise(resolve => setTimeout(resolve, statusWaitMs));
+      this.lastApiRequestAt = Date.now();
+      const statusResponse = await fetch(statusesUrl, {
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+        cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      let statusBody: any;
+      try { statusBody = await statusResponse.json(); } catch { throw new Error('Zimou returned an invalid package-status dictionary.'); }
+      if (!statusResponse.ok || statusBody?.error === 1 || statusBody?.success === false) {
+        throw new Error('Could not load this Zimou account status dictionary (HTTP ' + statusResponse.status + ').');
+      }
+      const statusNames = normalizeZimouPackageStatuses(statusBody);
+      if (!Object.keys(statusNames).length) throw new Error('Zimou returned an empty package-status dictionary; refusing to guess status meanings.');
+
+      let offset = 0;
+      let checked = 0;
       while (this.running) {
         const { data: orders, error } = await (this.supabase as any)
           .from('orders')
@@ -112,6 +137,7 @@ export class ZimouSyncWorker {
             const existing = rows.find((row:any) => asText(row.carrier_tracking_number) === code);
             return {
               ...remote,
+              status_name: statusNames[asText(remote.status_id)] || asText(remote.status_name),
               tracking_code: code,
               order_id: asText(remote.order_id) || asText(existing?.external_order_id) || code,
               client_first_name: remote.client_first_name || existing?.customer_name || '',

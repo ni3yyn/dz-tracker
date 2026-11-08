@@ -8,6 +8,8 @@ test('maps Zimou numeric status IDs without guessing unknown values', () => {
   assert.equal(mapZimouStatus(20).statusRaw, 'returned');
   assert.equal(mapZimouStatus(31).statusRaw, 'cancelled');
   assert.equal(mapZimouStatus(999).statusRaw, 'unknown');
+  assert.equal(mapZimouStatus(8, 'LIVRÉ').statusRaw, 'delivered');
+  assert.equal(mapZimouStatus(8, 'Custom merchant state').statusRaw, 'unknown');
 });
 
 test('normalizes Zimou package and partner tracking details into a TajerTrack event', () => {

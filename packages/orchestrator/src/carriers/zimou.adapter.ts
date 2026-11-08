@@ -64,17 +64,37 @@ function first(...values: unknown[]): string {
   return '';
 }
 
-export function mapZimouStatus(value: unknown) {
+const STATUS_NAME_IDS: Record<string, string> = {
+  'en preparation':'1', 'pret a expedier':'2', 'en attente':'12',
+  'pas encore ramassé':'33', 'expedie':'3', 'pickup':'23', 'echange collecté':'39',
+  'vers wilaya ( sac )':'4', 'centre ( hub )':'5', 'transfert (sac)':'6',
+  'societe partenaire':'21', 'en dispatche':'24', 'dispatche':'25', 'au centre':'40',
+  'en localisation':'112', 'en transit':'114', 'en hub':'115',
+  'sortie en livraison':'7', 'pret pour livreur':'113', 'livre':'8',
+  'echec de livraison':'9', 'reporter (date)':'11', 'tentative echouee 1':'13',
+  'tentative echouee 2':'14', 'tentative echouee 3':'15', 'refuse':'22',
+  'retour vers centre':'16', 'retournee au centre':'17', 'retour vers vendeur (sac)':'19',
+  'retour (station)':'116', 'retournee au vendeur (sac)':'20', 'warehouse retournee':'29',
+  'dropships retournee':'37', 'retour a retirer':'18', 'echange a retirer':'36',
+  'alert':'10', 'warehouse hors stock':'27', 'bloque':'83', 'perdu':'118',
+  'annulee':'31', 'annulee':'31', 'annule':'31', 'annule':'31',
+};
+
+export function mapZimouStatus(value: unknown, statusName?: unknown) {
+  const named = first(statusName);
+  if (named) {
+    const normalizedName = normalizeDiacritics(safeLower(named));
+    const nameId = STATUS_NAME_IDS[normalizedName];
+    const namedRow = nameId ? STATUS[nameId] : undefined;
+    if (namedRow) return { statusRaw: namedRow[0], statusTitle: namedRow[1], description: namedRow[2] };
+    return { statusRaw:'unknown', statusTitle:'تحديث جديد من Zimou (' + named + ')', description:'وصلت حالة غير معروفة من Zimou: ' + named + '. لم يتم تخمين معناها.' };
+  }
   const raw = first(value);
   const row = STATUS[raw];
   if (row) return { statusRaw: row[0], statusTitle: row[1], description: row[2] };
   const normalized = normalizeDiacritics(safeLower(raw));
-  const aliases: Record<string, string> = {
-    livre:'8', delivered:'8', 'retournee au vendeur (sac)':'20',
-    'retour vers vendeur (sac)':'19', 'retour vers centre':'16',
-    'sortie en livraison':'7', expedie:'3', annulee:'31', annule:'31', refuse:'22',
-  };
-  const alias = STATUS[aliases[normalized] || ''];
+  const nameId = STATUS_NAME_IDS[normalized];
+  const alias = nameId ? STATUS[nameId] : undefined;
   if (alias) return { statusRaw: alias[0], statusTitle: alias[1], description: alias[2] };
   return { statusRaw:'unknown', statusTitle: raw ? 'تحديث جديد من Zimou (' + raw + ')' : 'تحديث جديد من Zimou', description: raw ? 'وصلت حالة غير معروفة من Zimou: ' + raw + '. لم يتم تخمين معناها.' : 'وصل تحديث دون رمز حالة معروف.' };
 }
@@ -83,7 +103,7 @@ export class ZimouAdapter {
   static normalize(merchantId: string, rawPayload: unknown): TrackingEvent {
     const root = rawPayload && typeof rawPayload === 'object' && !Array.isArray(rawPayload) ? rawPayload as Record<string, any> : {};
     const data = root.data && typeof root.data === 'object' && !Array.isArray(root.data) ? root.data : root;
-    const mapped = mapZimouStatus(data.status_id ?? data.status_name ?? data.status);
+    const mapped = mapZimouStatus(data.status_id ?? data.status, data.status_name);
     const tracking = first(data.tracking_code, data.tracking, data.tracking_number, data.code_suivi);
     const packageId = first(data.id, data.package_id);
     const external = first(data.order_id, data.external_order_id, data.reference) || tracking || (packageId ? 'ZIMOU-' + packageId : '');

@@ -22,6 +22,27 @@ async function verifyToken(token: string): Promise<void> {
   if (!response.ok) throw new Error('فشل اختبار الاتصال بـ Zimou (HTTP ' + response.status + ').');
   let body: any; try { body = await response.json(); } catch { throw new Error('أعادت Zimou استجابة غير مفهومة.'); }
   if (body && typeof body === 'object' && (body.error === 1 || body.success === false)) throw new Error(String(body.message || 'لم يتمكن Zimou من تأكيد صلاحية الرمز.'));
+
+  let statusesResponse: Response;
+  try {
+    statusesResponse = await fetch(ZIMOU_API + '/v3/helpers/package-statuses', {
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+      cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(12000),
+    });
+  } catch {
+    throw new Error('تم قبول الرمز، لكن تعذر الوصول إلى قائمة حالات الطرود المطلوبة للمزامنة.');
+  }
+  if (!statusesResponse.ok) {
+    throw new Error('تم قبول الرمز، لكن تعذر قراءة قائمة حالات Zimou (HTTP ' + statusesResponse.status + '). تحقق من صلاحيات API.');
+  }
+  let statusesBody: any;
+  try { statusesBody = await statusesResponse.json(); } catch {
+    throw new Error('أعادت Zimou قائمة حالات غير مفهومة.');
+  }
+  const statuses = Array.isArray(statusesBody?.data) ? statusesBody.data : Array.isArray(statusesBody) ? statusesBody : [];
+  if (!statuses.length || !statuses.some((row: any) => row?.id != null && typeof row?.name === 'string' && row.name.trim())) {
+    throw new Error('لم تُرجع Zimou قائمة حالات صالحة لهذا الحساب؛ لم يتم حفظ الربط.');
+  }
 }
 export async function getZimouIntegrationStatus() {
   try {
