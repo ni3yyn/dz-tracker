@@ -42,5 +42,6 @@ test('normalizes an Elogistia tracking history event to the merchant order', () 
 
 test('parses provider dates and leaves unknown dates unset', () => {
   assert.equal(parseElogistiaDate('08/11/2026 10:30:00'), '2026-11-08T09:30:00.000Z');
+  assert.equal(parseElogistiaDate('2026-11-08 10:30:00'), '2026-11-08T09:30:00.000Z');
   assert.equal(parseElogistiaDate('not a date'), undefined);
 });
