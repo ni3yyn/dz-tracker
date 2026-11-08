@@ -103,7 +103,14 @@ export async function getEcomV2Status() {
   try {
     const id = await merchantId();
     const row = await loadIntegration(id);
-    return { success: true, status: row ? { connected: Boolean(row.sync_enabled && row.credentials_encrypted), ...row } : { connected: false } };
+    return { success: true, status: row ? {
+      connected: Boolean(row.sync_enabled && row.credentials_encrypted),
+      connected_at: row.connected_at || null,
+      sync_enabled: Boolean(row.sync_enabled),
+      last_sync_at: row.last_sync_at || null,
+      last_success_at: row.last_success_at || null,
+      last_error: row.last_error || null,
+    } : { connected: false } };
   } catch (e: any) { return { success: false, error: e?.message || 'تعذر تحميل حالة الربط.' }; }
 }
 export async function saveEcomV2Integration(apiKeyInput: string, apiTokenInput: string) {
