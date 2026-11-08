@@ -150,7 +150,7 @@ export class ElogistiaSyncWorker {
 
           const history = normalizeElogistiaHistory(body).sort((a, b) => parseDate(a.Date ?? a.date) - parseDate(b.Date ?? b.date));
           if (history.length) {
-            const events = history.map((event) => ({
+            const events = history.map((event, index) => ({
               ...event,
               tracking: order.carrier_tracking_number,
               IdCommande: order.external_order_id,
@@ -158,6 +158,9 @@ export class ElogistiaSyncWorker {
               phone: order.customer_phone || '',
               product_name: order.product_name || '',
               source_event_id: createElogistiaEventId(order.carrier_tracking_number, event),
+              // Import older history without replaying customer notifications; only the newest
+              // event in the snapshot may fan out a notification.
+              suppressTriggers: index < history.length - 1,
             }));
             for (let index = 0; index < events.length; index += 50) {
               const batch = events.slice(index, index + 50);
