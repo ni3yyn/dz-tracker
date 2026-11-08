@@ -251,6 +251,7 @@ export async function createElogistiaShipment(orderId: string, input: {
   codAmount: number;
   deliveryType: 'home' | 'stopdesk';
   deliveryMode: 'standard' | 'exchange';
+  exchangeProduct?: string;
   note?: string;
   weight?: number | null;
 }) {
@@ -290,8 +291,10 @@ export async function createElogistiaShipment(orderId: string, input: {
     const commune = String(input?.commune || '').trim();
     const product = String(input?.product || '').trim();
     const note = String(input?.note || '').trim().slice(0, 500);
+    const exchangeProduct = String(input?.exchangeProduct || '').trim().slice(0, 250);
     const email = String(input?.email || '').trim();
-    const codAmount = Number(input?.codAmount);
+    if (input?.codAmount === null || input?.codAmount === undefined || String(input.codAmount).trim() === '') throw new Error('أدخل مبلغ التحصيل عند التسليم.');
+    const codAmount = Number(input.codAmount);
     const weight = input?.weight == null || input.weight === ('' as any) ? null : Number(input.weight);
 
     if (!firstName || !lastName || firstName.length > 100 || lastName.length > 100) throw new Error('أدخل الاسم الأول واسم العائلة بشكل صحيح.');
@@ -301,6 +304,7 @@ export async function createElogistiaShipment(orderId: string, input: {
     if (!Number.isFinite(codAmount) || codAmount < 0 || codAmount > 100000000) throw new Error('أدخل مبلغ التحصيل عند التسليم بصورة صحيحة.');
     if (input.deliveryType !== 'home' && input.deliveryType !== 'stopdesk') throw new Error('نوع التوصيل غير صالح.');
     if (input.deliveryMode !== 'standard' && input.deliveryMode !== 'exchange') throw new Error('نوع العملية غير صالح.');
+    if (input.deliveryMode === 'exchange' && !exchangeProduct) throw new Error('أدخل اسم المنتج الذي سيُستبدل به الطرد.');
     if (email && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) throw new Error('البريد الإلكتروني غير صالح.');
     if (weight !== null && (!Number.isFinite(weight) || weight <= 0 || weight > 1000)) throw new Error('وزن الطرد غير صالح.');
 
@@ -345,10 +349,10 @@ export async function createElogistiaShipment(orderId: string, input: {
       product,
       IdCommande: String(order.external_order_id),
     };
-    if (Number.isFinite(feeValue) && feeValue >= 0) params.fraisDeLivraison = String(Math.round(feeValue));
     if (email) params.mail = email;
     if (note) params.remarque = note;
     if (weight !== null) params.poids = String(weight);
+    if (exchangeProduct) params.exchangeName = exchangeProduct;
 
     // Acquire a durable per-order dispatch lock before calling the provider. Only a confirmed
     // provider rejection is retryable; network/5xx/ambiguous outcomes remain locked for review.
