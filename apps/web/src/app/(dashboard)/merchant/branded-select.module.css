@@ -1,0 +1,229 @@
+.root {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  color: #263b30;
+  font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  direction: rtl;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 13px;
+  border: 1px solid #d7e0d6;
+  border-radius: 0;
+  background: #fffefa;
+  color: #263b30;
+  box-shadow: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: right;
+  cursor: pointer;
+  transition: border-color .16s ease, background-color .16s ease, color .16s ease;
+}
+
+.trigger:hover:not(:disabled) {
+  border-color: #9aaf9a;
+  background: #fff;
+}
+
+.trigger:focus-visible {
+  outline: 2px solid rgba(65, 107, 82, .24);
+  outline-offset: 2px;
+}
+
+.trigger:disabled {
+  opacity: .62;
+  cursor: wait;
+}
+
+.value {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.indicator {
+  display: inline-flex;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: #58715d;
+}
+
+.chevron,
+.spinner {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chevron {
+  transition: transform .16s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.spinner {
+  stroke-width: 2.4;
+  animation: brandedSelectSpin .8s linear infinite;
+}
+
+.open {
+  border-color: #6e8a72;
+  background: #f4f7f1;
+}
+
+.menu {
+  position: fixed;
+  z-index: 2500;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid #cfd9ce;
+  border-radius: 0;
+  background: #fffefa;
+  color: #263b30;
+  box-shadow: 0 16px 36px rgba(25, 43, 30, .17);
+  font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  direction: rtl;
+  scrollbar-width: thin;
+  scrollbar-color: #bdcbbd transparent;
+  animation: brandedSelectMenuIn .12s ease-out both;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 0;
+  border-inline-start: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #34483a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.55;
+  text-align: right;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+
+.option:hover,
+.option:focus-visible,
+.active {
+  border-inline-start-color: #49694e;
+  outline: none;
+  background: #edf3eb;
+  color: #203d2a;
+}
+
+.selected {
+  color: #24452e;
+  font-weight: 800;
+}
+
+.selected:not(.active) {
+  background: #f5f7f2;
+}
+
+.option:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+
+.check {
+  display: block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: #3e6848;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.compact .trigger {
+  min-height: 42px;
+  padding: 8px 12px;
+  font-size: 11.5px;
+}
+
+.status {
+  width: max-content;
+  max-width: 100%;
+  min-width: 188px;
+}
+
+.status .trigger {
+  min-height: 42px;
+  padding: 9px 12px;
+  border-color: #d6e0d5;
+  background: #f4f7f2;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.status .trigger:hover:not(:disabled),
+.status .open {
+  border-color: #9aaf9a;
+  background: #fff;
+}
+
+.field .trigger {
+  min-height: 44px;
+  background: #fffefa;
+  font-size: 13px;
+}
+
+@keyframes brandedSelectSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes brandedSelectMenuIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .chevron,
+  .option {
+    transition: none;
+  }
+
+  .menu {
+    animation: none;
+  }
+
+  .spinner {
+    animation-duration: 1.6s;
+  }
+}
