@@ -82,7 +82,7 @@ export function BrandedSelect({
     const viewportPadding = 10;
     const width = Math.min(Math.max(rect.width, 200), window.innerWidth - viewportPadding * 2);
     const left = Math.min(
-      Math.max(viewportPadding, rect.left),
+      Math.max(viewportPadding, rect.right - width),
       window.innerWidth - width - viewportPadding
     );
     const availableBelow = Math.max(0, window.innerHeight - rect.bottom - gap - viewportPadding);
