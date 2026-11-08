@@ -61,6 +61,12 @@ export function parseElogistiaDate(value: unknown): string | undefined {
     const date = new Date(iso);
     return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
   }
+  const localIso = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (localIso) {
+    const [, year, month, day, hour = '00', minute = '00', second = '00'] = localIso;
+    const date = new Date(year + '-' + month + '-' + day + 'T' + hour + ':' + minute + ':' + second + '+01:00');
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  }
   const parsed = new Date(raw);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
