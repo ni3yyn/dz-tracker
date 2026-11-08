@@ -4045,6 +4045,523 @@ export async function registerSavedOrder(savedOrder) {
         @media (max-width: 640px) {
           .dz-settings-profile-grid { grid-template-columns: minmax(0, 1fr) !important; }
         }
+
+        /* =========================================================
+           Homepage visual language — paper, typography and open space
+           ========================================================= */
+        .dz-admin-root {
+          --bg-base: #f4f3ed;
+          --surface: #fffefa;
+          --surface-hover: #edf1e8;
+          --ink-main: #202a23;
+          --ink-muted: #67736a;
+          --ink-light: #879187;
+          --border-soft: #dfe3d9;
+          --border-strong: #cbd3c7;
+          --green: #294b37;
+          --green-deep: #1d3427;
+          --green-soft: #e6ece3;
+          --clay: #d57955;
+          --shadow-sm: none;
+          --shadow-md: none;
+          --shadow-hover: none;
+          background: var(--bg-base);
+          color: var(--ink-main);
+          font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+        }
+        .dz-admin-root .dz-sidebar {
+          background: #f4f3ed;
+          border-color: #dfe3d9;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-nav-item { border-radius: 7px; }
+        .dz-admin-root .dz-nav-item.active {
+          background: #e6ece3;
+          border-color: transparent;
+          color: #294b37;
+        }
+        .dz-admin-root .dz-nav-item.active .dz-nav-icon { color: #294b37; opacity: 1; }
+        .dz-admin-root .dz-nav-item:hover { background: #edf0e8; }
+        .dz-admin-root .dz-main { background: transparent; }
+        .dz-admin-root .dz-header {
+          background: transparent;
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          box-shadow: none;
+          padding: 0 0 18px;
+          margin-bottom: 26px;
+        }
+        .dz-admin-root .dz-header h1 {
+          color: var(--ink-main);
+          font-weight: 700;
+          letter-spacing: -.065em;
+        }
+        .dz-admin-root .dz-header p { color: var(--ink-muted); }
+        .dz-admin-root .dz-mobile-menu-toggle {
+          border: 0;
+          border-radius: 50%;
+          background: #fffefa;
+          color: var(--green);
+          box-shadow: 0 2px 10px rgba(32,42,35,.06);
+        }
+        .dz-admin-root .dz-search-box {
+          border: 0;
+          border-bottom: 1px solid var(--border-strong);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-search-box:focus-within {
+          border-color: var(--green);
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-add-order-btn,
+        .dz-admin-root .dz-btn:not(.dz-btn-outline) {
+          background: var(--green);
+          border-color: var(--green);
+          border-radius: 9px;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-add-order-btn:hover,
+        .dz-admin-root .dz-btn:not(.dz-btn-outline):hover { background: var(--green-deep); }
+        .dz-admin-root .dz-btn-outline {
+          border: 0;
+          border-bottom: 1px solid var(--border-strong);
+          border-radius: 0;
+          background: transparent;
+          color: var(--green);
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-btn-outline:hover { background: transparent; color: var(--green-deep); border-color: var(--green); }
+        .dz-admin-root .dz-filter-btn {
+          border: 0;
+          border-radius: 6px;
+          background: transparent;
+          box-shadow: none;
+          color: var(--ink-muted);
+        }
+        .dz-admin-root .dz-filter-btn:hover { background: var(--green-soft); color: var(--green); transform: none; }
+        .dz-admin-root .dz-filter-btn.active {
+          background: var(--green);
+          border-color: var(--green);
+          color: #fffefa;
+          box-shadow: none;
+        }
+
+        /* Remove nested panel framing. Use the homepage's fine rules and spacing. */
+        .dz-admin-root .dz-card-box,
+        .dz-admin-root .formContainer,
+        .dz-admin-root .dz-int-top-card,
+        .dz-admin-root .dz-int-creds-card,
+        .dz-admin-root .dz-carrier-card,
+        .dz-admin-root .dz-upsell-list-card,
+        .dz-admin-root .dz-table-wrap {
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-card-box,
+        .dz-admin-root .formContainer,
+        .dz-admin-root .dz-int-top-card,
+        .dz-admin-root .dz-int-creds-card,
+        .dz-admin-root .dz-upsell-list-card {
+          padding-inline: 0;
+        }
+        .dz-admin-root .dz-table-wrap { overflow: visible; }
+        .dz-admin-root .dz-table-header {
+          padding: 16px 0;
+          border-bottom: 1px solid var(--border-soft);
+          background: transparent;
+        }
+        .dz-admin-root .dz-table-scroll { background: transparent; }
+        .dz-admin-root .dz-table-scroll th {
+          background: transparent;
+          color: var(--ink-muted);
+          border-bottom: 1px solid var(--border-soft);
+        }
+        .dz-admin-root .dz-table-scroll td { border-bottom-color: rgba(103,115,106,.16); }
+        .dz-admin-root .dz-overview-kpis {
+          border-block-color: var(--border-soft);
+          background: transparent;
+        }
+        .dz-admin-root .dz-overview-kpi { border-inline-start-color: var(--border-soft); }
+        .dz-admin-root .dz-overview-kpi:hover { background: rgba(230,236,227,.55); }
+        .dz-admin-root .dz-overview-section { border-top-color: var(--border-soft); }
+        .dz-admin-root .dz-overview-item,
+        .dz-admin-root .dz-overview-actions,
+        .dz-admin-root .dz-overview-action { border-color: var(--border-soft); }
+        .dz-admin-root .dz-overview-action-icon {
+          border-radius: 50%;
+          background: var(--green-soft);
+          color: var(--green);
+        }
+        .dz-admin-root .dz-setup-empty {
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          padding: 28px 0;
+          border-block: 1px solid var(--border-soft);
+        }
+        .dz-admin-root .dz-setup-empty::after { display: none; }
+        .dz-admin-root .dz-setup-step,
+        .dz-admin-root .dz-setup-step-no { background: transparent; }
+        .dz-admin-root .dz-setup-step { border-bottom-color: var(--border-soft); }
+        .dz-admin-root .dz-setup-step-no {
+          border: 0;
+          color: var(--clay);
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-weight: 700;
+        }
+
+        /* Integration flow: one open surface, not cards nested inside cards. */
+        .dz-admin-root .dz-int-guided { max-width: 1100px; gap: 28px; }
+        .dz-admin-root .dz-int-guided-heading { align-items: end; padding-bottom: 17px; border-bottom: 1px solid var(--border-soft); }
+        .dz-admin-root .dz-int-guided-heading h2 { color: var(--ink-main); font-size: clamp(25px, 2.5vw, 34px); font-weight: 700; letter-spacing: -.065em; }
+        .dz-admin-root .dz-int-guided-heading p { color: var(--ink-muted); font-size: 13px; line-height: 1.95; }
+        .dz-admin-root .dz-int-guided-reset {
+          border: 0;
+          border-bottom: 1px solid var(--border-strong);
+          border-radius: 0;
+          background: transparent;
+          color: var(--green);
+        }
+        .dz-admin-root .dz-int-guided-card,
+        .dz-admin-root .dz-int-guided-panel {
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          padding: 22px 0;
+        }
+        .dz-admin-root .dz-int-guided-panel { border-top: 1px solid var(--border-soft); }
+        .dz-admin-root .dz-int-guided-loading {
+          border: 0;
+          border-block: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+        }
+        .dz-admin-root .dz-int-guided-step-label {
+          color: var(--clay);
+          font: 700 10px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+          letter-spacing: .06em;
+        }
+        .dz-admin-root .dz-int-guided-card h3 { color: var(--ink-main); font-weight: 700; letter-spacing: -.045em; }
+        .dz-admin-root .dz-int-guided-help { color: var(--ink-muted); }
+        .dz-admin-root .dz-int-guided-progress span { height: 2px; border-radius: 0; background: #dfe3d9; }
+        .dz-admin-root .dz-int-guided-progress span.is-active,
+        .dz-admin-root .dz-int-guided-progress span.is-done { background: var(--green); }
+        .dz-admin-root .dz-int-guided-option {
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          padding: 15px 2px;
+          box-shadow: none;
+          min-height: 76px;
+        }
+        .dz-admin-root .dz-int-guided-option:hover {
+          background: rgba(230,236,227,.42);
+          border-color: var(--border-strong);
+          transform: none;
+        }
+        .dz-admin-root .dz-int-guided-option.is-selected {
+          background: rgba(230,236,227,.7);
+          border-color: var(--border-strong);
+          box-shadow: inset -2px 0 0 var(--green);
+        }
+        .dz-admin-root .dz-int-guided-option-icon {
+          border-radius: 50%;
+          background: var(--green-soft);
+          color: var(--green);
+        }
+        .dz-admin-root .dz-int-guided-radio { border-color: #9eaa9e; }
+        .dz-admin-root .dz-int-guided-option.is-selected .dz-int-guided-radio { border-color: var(--green); }
+        .dz-admin-root .dz-int-guided-actions {
+          border-top: 1px solid var(--border-soft);
+          padding-top: 17px;
+        }
+        .dz-admin-root .dz-int-guided-completed {
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          padding: 0 0 14px;
+        }
+        .dz-admin-root .dz-int-guided-carrier-select {
+          border: 0;
+          border-top: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          padding: 17px 0 0;
+        }
+        .dz-admin-root .dz-int-guided-carrier-select select {
+          border: 0;
+          border-bottom: 1px solid var(--border-strong);
+          border-radius: 0;
+          background: transparent;
+        }
+        .dz-admin-root .dz-int-guided-result { gap: 0; }
+        .dz-admin-root .dz-int-guided-result-head {
+          padding: 0 0 18px;
+          border-bottom: 1px solid var(--border-soft);
+          margin-bottom: 2px;
+        }
+        .dz-admin-root .dz-int-guided-result-head h3 { color: var(--ink-main); font-weight: 700; letter-spacing: -.05em; }
+        .dz-admin-root .dz-int-guided-ready {
+          border-radius: 0;
+          padding: 4px 0;
+          background: transparent;
+          color: var(--green);
+        }
+        .dz-admin-root .dz-int-guided-summary {
+          flex-wrap: wrap;
+          gap: 20px 34px;
+          padding: 16px 0;
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+        }
+        .dz-admin-root .dz-int-guided-summary small { color: var(--ink-muted); font-size: 10px; }
+        .dz-admin-root .dz-int-guided-summary strong { color: var(--ink-main); font-size: 13px; }
+        .dz-admin-root .dz-int-guided-summary button { color: var(--green); }
+        .dz-admin-root .dz-int-guided-panel-title { gap: 14px; margin-bottom: 4px; }
+        .dz-admin-root .dz-int-guided-number {
+          width: auto;
+          height: auto;
+          flex: 0 0 28px;
+          display: block;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          color: var(--clay);
+          font: 700 11px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+        .dz-admin-root .dz-int-guided-panel-title h4 { color: var(--ink-main); font-size: 18px; font-weight: 700; letter-spacing: -.04em; }
+        .dz-admin-root .dz-int-guided-panel-title p { color: var(--ink-muted); font-size: 12px; line-height: 1.9; }
+        .dz-admin-root .dz-int-guided-copy {
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          padding: 13px 0;
+        }
+        .dz-admin-root .dz-int-guided-copy code {
+          color: var(--ink-main);
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+        .dz-admin-root .dz-int-guided-copy button,
+        .dz-admin-root .dz-int-guided-copy-link,
+        .dz-admin-root .dz-int-guided-agent-row button {
+          border: 0;
+          border-radius: 0;
+          border-bottom: 1px solid transparent;
+          background: transparent;
+          color: var(--green);
+          padding: 8px 0;
+          min-height: 36px;
+        }
+        .dz-admin-root .dz-int-guided-copy button:hover,
+        .dz-admin-root .dz-int-guided-copy-link:hover,
+        .dz-admin-root .dz-int-guided-agent-row button:hover {
+          border-bottom-color: var(--green);
+        }
+        .dz-admin-root .dz-int-guided-credentials {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0;
+          border-block: 1px solid var(--border-soft);
+        }
+        .dz-admin-root .dz-int-guided-credential {
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+          min-width: 0;
+          padding: 17px 18px;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+        }
+        .dz-admin-root .dz-int-guided-credential + .dz-int-guided-credential {
+          border-inline-start: 1px solid var(--border-soft);
+        }
+        .dz-admin-root .dz-int-guided-credential:last-child { grid-column: auto; }
+        .dz-admin-root .dz-int-guided-credential-head small { color: var(--ink-muted); font-size: 11px; font-weight: 700; }
+        .dz-admin-root .dz-int-guided-credential-head button { color: var(--green); }
+        .dz-admin-root .dz-int-guided-credential code {
+          min-width: 0;
+          color: var(--ink-main);
+          background: transparent;
+          font-size: 11px;
+          line-height: 1.8;
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+        .dz-admin-root .dz-int-guided-recommended {
+          border: 0;
+          border-top: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          padding: 20px 0;
+        }
+        .dz-admin-root .dz-int-guided-recommended h4 { color: var(--ink-main); font-weight: 700; font-size: 18px; letter-spacing: -.04em; }
+        .dz-admin-root .dz-int-guided-recommended p { color: var(--ink-muted); font-size: 12px; line-height: 1.9; }
+        .dz-admin-root .dz-int-guided-package-select button {
+          border: 0;
+          border-radius: 0;
+          border-bottom: 1px solid var(--border-soft);
+          background: transparent;
+        }
+        .dz-admin-root .dz-int-guided-package-select button.is-active {
+          border-bottom-color: var(--green);
+          background: transparent;
+          color: var(--green);
+        }
+        .dz-admin-root .dz-int-guided-package-row > code,
+        .dz-admin-root .dz-int-guided-agent-row > code {
+          border: 0;
+          border-radius: 0;
+          background: #e6ece3;
+          color: #294b37;
+        }
+        .dz-admin-root .dz-int-guided-package-row > button {
+          border-radius: 0;
+          background: transparent;
+          color: var(--green);
+          border-bottom: 1px solid var(--green);
+        }
+        .dz-admin-root .dz-int-guided-note {
+          border-inline-start: 2px solid var(--clay);
+          border-radius: 0;
+          background: transparent;
+          color: var(--ink-muted);
+          padding: 5px 13px;
+        }
+        .dz-admin-root .dz-int-guided-details {
+          padding: 0;
+          border: 0;
+          border-top: 1px solid var(--border-soft);
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+        }
+        .dz-admin-root .dz-int-guided-footer {
+          border-top: 1px solid var(--border-soft);
+          padding-top: 16px;
+        }
+        .dz-admin-root .dz-int-guided-footer button {
+          color: var(--green);
+          border-bottom: 1px solid transparent;
+          padding: 7px 0;
+        }
+        .dz-admin-root .dz-int-guided-footer button:hover { border-bottom-color: var(--green); }
+        .dz-admin-root .dz-int-guided-doc-link a { color: var(--green); }
+
+        /* Open rows across remaining dashboard tools. */
+        .dz-admin-root .dz-integration-question,
+        .dz-admin-root .dz-guide-step-panel {
+          border: 0;
+          border-top: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          padding-inline: 0;
+        }
+        .dz-admin-root .dz-integration-choice {
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-integration-choice.is-selected { background: rgba(230,236,227,.65); }
+        .dz-admin-root .dz-copy-field {
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          padding-inline: 0;
+        }
+        .dz-admin-root .dz-guide-note { background: transparent; border-radius: 0; }
+        .dz-admin-root .dz-order-mobile-card {
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          padding-inline: 0;
+        }
+        .dz-admin-root .dz-sub-alert-banner,
+        .dz-admin-root .dz-alert-banner {
+          border: 0;
+          border-inline-start: 3px solid var(--clay);
+          border-radius: 0;
+          background: rgba(213,121,85,.08);
+          box-shadow: none;
+          color: var(--ink-main);
+        }
+        .dz-admin-root .dz-sub-alert-banner.is-suspended { border-inline-start-color: #a9443c; background: rgba(169,68,60,.08); color: #703b35; }
+        .dz-admin-root .dz-sub-alert-banner.is-expired { border-inline-start-color: var(--clay); background: rgba(213,121,85,.08); color: var(--ink-main); }
+        .dz-admin-root .dz-sub-alert-banner.is-limit { border-inline-start-color: #b28a4e; background: rgba(178,138,78,.08); color: #6f572e; }
+        .dz-admin-root .dz-unlimited-card,
+        .dz-admin-root .dz-active-plan-card {
+          border: 0;
+          border-top: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-unlimited-aside {
+          border: 0;
+          border-radius: 0;
+          background: var(--green-soft);
+        }
+        .dz-admin-root .dz-upsell-item-card {
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-upsell-item-card:hover { box-shadow: none; transform: none; background: rgba(230,236,227,.35); }
+        .dz-admin-root input,
+        .dz-admin-root textarea,
+        .dz-admin-root select {
+          accent-color: var(--green);
+        }
+        .dz-admin-root input:focus-visible,
+        .dz-admin-root textarea:focus-visible,
+        .dz-admin-root select:focus-visible {
+          outline: 2px solid rgba(41,75,55,.24);
+          outline-offset: 2px;
+        }
+        @media (max-width: 760px) {
+          .dz-admin-root .dz-int-guided-credentials {
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .dz-admin-root .dz-int-guided-credential {
+            padding: 15px 0;
+          }
+          .dz-admin-root .dz-int-guided-credential + .dz-int-guided-credential {
+            border-inline-start: 0;
+            border-top: 1px solid var(--border-soft);
+          }
+          .dz-admin-root .dz-int-guided-credential:last-child { grid-column: auto; }
+          .dz-admin-root .dz-int-guided-copy {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+          .dz-admin-root .dz-int-guided-copy button { align-self: flex-start; }
+          .dz-admin-root .dz-int-guided-result-head { align-items: flex-start; }
+          .dz-admin-root .dz-int-guided-panel { padding: 18px 0; }
+          .dz-admin-root .dz-int-guided-summary { gap: 13px 24px; }
+          .dz-admin-root .dz-main { padding-inline: 18px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .dz-admin-root * { scroll-behavior: auto !important; }
+        }
       `}} />
 
       <div className="dz-admin-root">
