@@ -272,7 +272,7 @@ export async function saveZRExpressIntegration(
         webhook_endpoint_id: endpointId,
         webhook_endpoint_token: endpointToken,
         sync_enabled: true,
-        connected_at: now,
+        connected_at: sameAccount ? merchantIntegration.connected_at : now,
         last_error: null,
         last_error_at: null,
         updated_at: now,
