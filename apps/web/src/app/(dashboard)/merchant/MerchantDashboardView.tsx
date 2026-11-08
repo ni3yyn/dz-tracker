@@ -45,10 +45,7 @@ import {
   CardSurface,
   ThemeMode,
   FontFamily,
-  CardWidth,
   AnimationLevel,
-  HeaderDensity,
-  AccentBarStyle,
 } from '@saas/ui';
 
 interface OrderItem {
@@ -191,7 +188,7 @@ const SAMPLE_PREVIEW_EVENTS: TimelineEvent[] = [
 const BRANDING_CATEGORIES = [
   { id: 'identity', number: '01', label: 'الهوية', description: 'العلامة والألوان' },
   { id: 'appearance', number: '02', label: 'المظهر', description: 'الخلفية والخطوط والحركة' },
-  { id: 'layout', number: '03', label: 'تخطيط الصفحة', description: 'الترتيب والمسافات' },
+  { id: 'layout', number: '03', label: 'سجل الشحنة', description: 'طريقة عرض مراحل التوصيل' },
   { id: 'customer', number: '04', label: 'معلومات الزبون', description: 'الدعم والمحتوى الظاهر' },
 ] as const;
 type BrandingCategory = typeof BRANDING_CATEGORIES[number]['id'];
@@ -276,20 +273,13 @@ const BrandingPhonePreview = memo(function BrandingPhonePreview({
     : String(brandConfig.cardSurface) === 'elevated' ? '0 18px 38px rgba(17,31,22,.17)'
     : String(brandConfig.cardSurface) === 'paper' ? '0 3px 0 rgba(50,43,32,.035), 0 12px 24px rgba(17,31,22,.055)'
     : '0 12px 30px rgba(17,31,22,.10)';
-  const accentBarBg = brandConfig.accentBarStyle === 'gradient'
-    ? `linear-gradient(90deg, ${brandConfig.brandColor}, ${brandConfig.brandColor}35)`
-    : brandConfig.brandColor;
   const fontFamily = brandConfig.fontFamily === 'cairo' ? "'Cairo', system-ui, sans-serif"
     : brandConfig.fontFamily === 'tajawal' ? "'Tajawal', system-ui, sans-serif"
     : brandConfig.fontFamily === 'ibm-plex' ? "'IBM Plex Sans Arabic', system-ui, sans-serif"
     : brandConfig.fontFamily === 'noto-kufi' ? "'Noto Kufi Arabic', system-ui, sans-serif"
     : "'Readex Pro', system-ui, sans-serif";
-  const cardWidth = brandConfig.cardWidth === 'narrow' ? '88%' : '100%';
-  const density = brandConfig.headerDensity === 'compact'
-    ? { padding: '13px 13px', gap: '10px', avatar: '34px', avatarRadius: '9px', topMargin: '12px' }
-    : brandConfig.headerDensity === 'spacious'
-    ? { padding: '22px 16px', gap: '15px', avatar: '45px', avatarRadius: '15px', topMargin: '17px' }
-    : { padding: '16px 14px', gap: '12px', avatar: '39px', avatarRadius: '12px', topMargin: '14px' };
+  const cardWidth = '100%';
+  const density = { padding: '16px 14px', gap: '12px', avatar: '39px', avatarRadius: '12px', topMargin: '14px' };
   const panelRadius = brandConfig.cardRadius === 'sleek' ? '10px' : brandConfig.cardRadius === 'pebble' ? '21px' : '16px';
   const softFill = isDark ? 'rgba(255,255,255,.045)' : 'rgba(32,40,36,.035)';
   const brandTint = `${brandConfig.brandColor}16`;
@@ -330,9 +320,7 @@ const BrandingPhonePreview = memo(function BrandingPhonePreview({
         />
         <div className="dz-phone-scroll-viewport">
         <div style={{ width: cardWidth, maxWidth: '100%', margin: '0 auto', background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none', overflow: 'visible', position: 'relative', zIndex: 1, transition: 'width .2s ease' }}>
-          {brandConfig.accentBarStyle !== 'hidden' && (
-            <div style={{ height: '4px', width: '100%', background: accentBarBg }} />
-          )}
+          <div style={{ height: '4px', width: '100%', background: brandConfig.brandColor }} />
 
           <header style={{ padding: density.padding, borderBottom: `1px solid ${borderColor}` }}>
             {brandConfig.announcementText && (
@@ -348,11 +336,6 @@ const BrandingPhonePreview = memo(function BrandingPhonePreview({
                 تتبّع الطلب
               </span>
               <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
-                {brandConfig.showLiveBadge !== false && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: isDark ? '#D4E6D8' : '#2C5A45', background: isDark ? 'rgba(255,255,255,.07)' : '#EDF3EE', border: `1px solid ${isDark ? 'rgba(255,255,255,.12)' : '#DCE8DE'}`, padding: '5px 7px', borderRadius: '99px', whiteSpace: 'nowrap', fontWeight: 700 }}>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4A946C' }} /> مباشر
-                  </span>
-                )}
                 {brandConfig.showOrderNumberBadge !== false && (
                   <span style={{ fontSize: '10px', color: mutedColor, background: softFill, border: `1px solid ${borderColor}`, padding: '5px 7px', borderRadius: '99px', whiteSpace: 'nowrap' }}>
                     طلب <b style={{ color: textColor }} dir="ltr">DZ-1042</b>
@@ -564,44 +547,25 @@ const FONT_FAMILIES: { id: FontFamily; name: string; sample: string }[] = [
   { id: 'noto-kufi',name: 'Noto Kufi Arabic',    sample: 'كوفي أصيل' },
 ];
 
-const CARD_WIDTHS: { id: CardWidth; name: string; desc: string; icon: string }[] = [
-  { id: 'narrow',   name: 'مضغوط', desc: 'محتوى مركز بعرض محدود', icon: '┃' },
-  { id: 'standard', name: 'متوازن', desc: 'مساحة مريحة لمعظم الطلبات', icon: '▮' },
-  { id: 'wide',     name: 'واسع', desc: 'مساحة إضافية للتفاصيل الطويلة', icon: '█' },
-  { id: 'full',     name: 'ممتد', desc: 'لواجهات العرض الكبيرة', icon: '▐█▌' },
-];
-
 const ANIMATION_LEVELS: { id: AnimationLevel; name: string; desc: string; icon: string }[] = [
   { id: 'full',   name: 'حركة كاملة',   desc: 'انتقالات أوضح مع بقاء المحتوى مقروءاً', icon: '∿' },
   { id: 'subtle', name: 'حركة هادئة', desc: 'انتقالات قصيرة دون تشتيت', icon: '⌁' },
   { id: 'none',   name: 'ثابت',   desc: 'من دون انتقالات أو حركات إضافية', icon: '—' },
 ];
 
-const HEADER_DENSITIES: { id: HeaderDensity; name: string; desc: string; icon: string }[] = [
-  { id: 'compact',     name: 'مختصر', desc: 'ترويسة أخف للمعلومات السريعة', icon: '→' },
-  { id: 'comfortable', name: 'متوازن', desc: 'توازن بين العلامة والتفاصيل', icon: '□' },
-  { id: 'spacious',    name: 'واسع', desc: 'مساحات أكبر وهوية أكثر حضوراً', icon: '▱' },
-];
-
-const ACCENT_BAR_STYLES: { id: AccentBarStyle; name: string; desc: string; icon: string }[] = [
-  { id: 'solid',    name: 'صلب موحد',  desc: 'لون علامتك التجارية بالكامل', icon: '▬' },
-  { id: 'gradient', name: 'تدرج لوني',  desc: 'انتقال لوني محدود من لون العلامة إلى درجة أفتح', icon: '◒' },
-  { id: 'hidden',   name: 'مخفي تماماً', desc: 'بدون شريط لوني على الإطلاق', icon: '✕' },
-];
-
 const BRAND_PRESETS: BrandPreset[] = [
-  { id: 'atelier', name: 'Atelier', description: 'حرفي، دافئ، ومساحة مفتوحة', colors: ['#4F6A55', '#F2F0E8', '#C6A47A'], settings: { brandColor: '#4F6A55', bgStyle: 'zellige' as BackgroundStyle, themeMode: 'light' as ThemeMode, cardSurface: 'solid' as CardSurface, cardRadius: 'modern' as CardRadius, timelineDesign: 'editorial' as TimelineDesign, timelineLineStyle: 'curved', fontFamily: 'cairo' as FontFamily, cardWidth: 'wide' as CardWidth, headerDensity: 'spacious' as HeaderDensity, accentBarStyle: 'gradient' as AccentBarStyle, animationLevel: 'subtle' as AnimationLevel, backgroundBlur: true, animateBackgroundBlobs: false } },
-  { id: 'botanical', name: 'Botanical', description: 'عضوي وهادئ مع إضاءة ناعمة', colors: ['#416B52', '#E9EFE7', '#D6AC91'], settings: { brandColor: '#416B52', bgStyle: 'blobs' as BackgroundStyle, themeMode: 'light' as ThemeMode, cardSurface: 'glass' as CardSurface, cardRadius: 'pebble' as CardRadius, timelineDesign: 'journey' as TimelineDesign, timelineLineStyle: 'wave', fontFamily: 'tajawal' as FontFamily, cardWidth: 'wide' as CardWidth, headerDensity: 'comfortable' as HeaderDensity, accentBarStyle: 'solid' as AccentBarStyle, animationLevel: 'subtle' as AnimationLevel, backgroundBlur: true, animateBackgroundBlobs: true } },
-  { id: 'editorial', name: 'Editorial', description: 'طباعة واضحة وفواصل دقيقة', colors: ['#27342D', '#F7F7F2', '#B9BDB2'], settings: { brandColor: '#27342D', bgStyle: 'minimal' as BackgroundStyle, themeMode: 'light' as ThemeMode, cardSurface: 'borderless' as CardSurface, cardRadius: 'sleek' as CardRadius, timelineDesign: 'editorial' as TimelineDesign, timelineLineStyle: 'straight', fontFamily: 'ibm-plex' as FontFamily, cardWidth: 'full' as CardWidth, headerDensity: 'spacious' as HeaderDensity, accentBarStyle: 'hidden' as AccentBarStyle, animationLevel: 'none' as AnimationLevel, backgroundBlur: false, animateBackgroundBlobs: false } },
-  { id: 'obsidian', name: 'Obsidian', description: 'داكن، تقني، وتباين واضح', colors: ['#B4D4C0', '#202722', '#647D70'], settings: { brandColor: '#B4D4C0', bgStyle: 'midnight' as BackgroundStyle, themeMode: 'dark' as ThemeMode, cardSurface: 'elevated' as CardSurface, cardRadius: 'modern' as CardRadius, timelineDesign: 'rail' as TimelineDesign, timelineLineStyle: 'dashed', fontFamily: 'readex' as FontFamily, cardWidth: 'wide' as CardWidth, headerDensity: 'compact' as HeaderDensity, accentBarStyle: 'gradient' as AccentBarStyle, animationLevel: 'subtle' as AnimationLevel, backgroundBlur: true, animateBackgroundBlobs: false } },
-  { id: 'playful', name: 'Playful', description: 'ألوان مرحة وتفاصيل أكثر ليونة', colors: ['#9A536B', '#F4EAF0', '#E3B27F'], settings: { brandColor: '#9A536B', bgStyle: 'porcelain' as BackgroundStyle, themeMode: 'light' as ThemeMode, cardSurface: 'tinted' as CardSurface, cardRadius: 'pebble' as CardRadius, timelineDesign: 'milestones' as TimelineDesign, timelineLineStyle: 'wave', fontFamily: 'cairo' as FontFamily, cardWidth: 'standard' as CardWidth, headerDensity: 'comfortable' as HeaderDensity, accentBarStyle: 'gradient' as AccentBarStyle, animationLevel: 'full' as AnimationLevel, backgroundBlur: true, animateBackgroundBlobs: false } },
+  { id: 'atelier', name: 'Atelier', description: 'حرفي، دافئ، ومساحة مفتوحة', colors: ['#4F6A55', '#F2F0E8', '#C6A47A'], settings: { brandColor: '#4F6A55', bgStyle: 'zellige' as BackgroundStyle, themeMode: 'light' as ThemeMode, cardSurface: 'solid' as CardSurface, cardRadius: 'modern' as CardRadius, timelineDesign: 'editorial' as TimelineDesign, timelineLineStyle: 'curved', fontFamily: 'cairo' as FontFamily, animationLevel: 'subtle' as AnimationLevel, backgroundBlur: true, animateBackgroundBlobs: false } },
+  { id: 'botanical', name: 'Botanical', description: 'عضوي وهادئ مع إضاءة ناعمة', colors: ['#416B52', '#E9EFE7', '#D6AC91'], settings: { brandColor: '#416B52', bgStyle: 'blobs' as BackgroundStyle, themeMode: 'light' as ThemeMode, cardSurface: 'glass' as CardSurface, cardRadius: 'pebble' as CardRadius, timelineDesign: 'journey' as TimelineDesign, timelineLineStyle: 'wave', fontFamily: 'tajawal' as FontFamily, animationLevel: 'subtle' as AnimationLevel, backgroundBlur: true, animateBackgroundBlobs: true } },
+  { id: 'editorial', name: 'Editorial', description: 'طباعة واضحة وفواصل دقيقة', colors: ['#27342D', '#F7F7F2', '#B9BDB2'], settings: { brandColor: '#27342D', bgStyle: 'minimal' as BackgroundStyle, themeMode: 'light' as ThemeMode, cardSurface: 'borderless' as CardSurface, cardRadius: 'sleek' as CardRadius, timelineDesign: 'editorial' as TimelineDesign, timelineLineStyle: 'straight', fontFamily: 'ibm-plex' as FontFamily, animationLevel: 'none' as AnimationLevel, backgroundBlur: false, animateBackgroundBlobs: false } },
+  { id: 'obsidian', name: 'Obsidian', description: 'داكن، تقني، وتباين واضح', colors: ['#B4D4C0', '#202722', '#647D70'], settings: { brandColor: '#B4D4C0', bgStyle: 'midnight' as BackgroundStyle, themeMode: 'dark' as ThemeMode, cardSurface: 'elevated' as CardSurface, cardRadius: 'modern' as CardRadius, timelineDesign: 'rail' as TimelineDesign, timelineLineStyle: 'dashed', fontFamily: 'readex' as FontFamily, animationLevel: 'subtle' as AnimationLevel, backgroundBlur: true, animateBackgroundBlobs: false } },
+  { id: 'playful', name: 'Playful', description: 'ألوان مرحة وتفاصيل أكثر ليونة', colors: ['#9A536B', '#F4EAF0', '#E3B27F'], settings: { brandColor: '#9A536B', bgStyle: 'porcelain' as BackgroundStyle, themeMode: 'light' as ThemeMode, cardSurface: 'tinted' as CardSurface, cardRadius: 'pebble' as CardRadius, timelineDesign: 'milestones' as TimelineDesign, timelineLineStyle: 'wave', fontFamily: 'cairo' as FontFamily, animationLevel: 'full' as AnimationLevel, backgroundBlur: true, animateBackgroundBlobs: false } },
 ];
 
 const BRAND_CATEGORY_DEFAULT_KEYS: Record<BrandingCategory, (keyof EditableBrandSettings)[]> = {
   identity: ['brandColor', 'brandSubtitle'],
   appearance: ['bgStyle', 'themeMode', 'backgroundBlur', 'cardSurface', 'cardRadius', 'fontFamily', 'animationLevel', 'animateBackgroundBlobs'],
-  layout: ['timelineDesign', 'timelineLineStyle', 'cardWidth', 'headerDensity', 'accentBarStyle'],
-  customer: ['showWhatsAppButton', 'supportPhone', 'announcementText', 'showCarrierBadge', 'showProductSection', 'showLiveBadge', 'showOrderNumberBadge'],
+  layout: ['timelineDesign', 'timelineLineStyle'],
+  customer: ['showWhatsAppButton', 'supportPhone', 'announcementText', 'showCarrierBadge', 'showProductSection', 'showOrderNumberBadge'],
 };
 
 const Icons = {
@@ -5049,35 +5013,6 @@ export async function registerSavedOrder(savedOrder) {
 
                 )}
 
-                {brandingCategory === 'layout' && (
-                /* 6. CARD WIDTH / LAYOUT */
-                <div className="dz-card-box" style={{ marginBottom: '24px' }}>
-                  <h3 style={{ margin: '0 0 14px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: 'var(--ink-muted)' }}><Icons.Tag /></span> <span>عرض البطاقة وتخطيط الصفحة (Layout)</span>
-                  </h3>
-                  <div className="dz-choice-grid">
-                    {CARD_WIDTHS.map((cw) => (
-                      <div
-                        key={cw.id}
-                        className={`dz-choice-card ${brandConfig.cardWidth === cw.id ? 'active' : ''}`}
-                        onClick={() => updateBrandConfig('cardWidth', cw.id)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); updateBrandConfig('cardWidth', cw.id); } }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                          <span style={{ fontSize: '20px', letterSpacing: '-2px' }}>{cw.icon}</span>
-                          <span className="dz-choice-indicator" />
-                        </div>
-                        <span className="dz-choice-title">{cw.name}</span>
-                        <span className="dz-choice-desc">{cw.desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                )}
-
                 {brandingCategory === 'appearance' && (
                 /* 7. ANIMATION LEVEL */
                 <div className="dz-card-box" style={{ marginBottom: '24px' }}>
@@ -5102,67 +5037,6 @@ export async function registerSavedOrder(savedOrder) {
                         <span className="dz-choice-desc">{al.desc}</span>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                )}
-
-                {brandingCategory === 'layout' && (
-                /* 8. HEADER DENSITY + ACCENT BAR */
-                <div className="dz-card-box" style={{ marginBottom: '24px' }}>
-                  <h3 style={{ margin: '0 0 14px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: 'var(--ink-muted)' }}><Icons.Edit /></span> <span>تفاصيل بصرية إضافية (Visual Details)</span>
-                  </h3>
-
-                  <div style={{ marginBottom: '20px' }}>
-                    <label className="formLabel">كثافة رأس الصفحة (Header Density)</label>
-                    <div className="dz-choice-grid">
-                      {HEADER_DENSITIES.map((hd) => (
-                        <div
-                          key={hd.id}
-                          className={`dz-choice-card ${brandConfig.headerDensity === hd.id ? 'active' : ''}`}
-                          onClick={() => updateBrandConfig('headerDensity', hd.id)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); updateBrandConfig('headerDensity', hd.id); } }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                            <span style={{ fontSize: '18px' }}>{hd.icon}</span>
-                            <span className="dz-choice-indicator" />
-                          </div>
-                          <span className="dz-choice-title">{hd.name}</span>
-                          <span className="dz-choice-desc">{hd.desc}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="formLabel">إظهار اللون التجاري</label>
-                    <div className="dz-choice-grid">
-                      {ACCENT_BAR_STYLES.map((ab) => (
-                        <div
-                          key={ab.id}
-                          className={`dz-choice-card ${brandConfig.accentBarStyle === ab.id ? 'active' : ''}`}
-                          onClick={() => updateBrandConfig('accentBarStyle', ab.id)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); updateBrandConfig('accentBarStyle', ab.id); } }}
-                        >
-                          {/* Live mini-preview of the bar */}
-                          <div style={{
-                            height: '4px', width: '100%', borderRadius: '2px', marginBottom: '8px',
-                            background: ab.id === 'hidden'
-                              ? 'var(--border-soft)'
-                              : ab.id === 'gradient'
-                              ? `linear-gradient(90deg, ${brandConfig.brandColor}, ${brandConfig.brandColor}65)`
-                              : brandConfig.brandColor,
-                          }} />
-                          <span className="dz-choice-title">{ab.name}</span>
-                          <span className="dz-choice-desc">{ab.desc}</span>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </div>
 
@@ -5225,14 +5099,6 @@ export async function registerSavedOrder(savedOrder) {
                         onChange={(e) => updateBrandConfig('showProductSection', e.target.checked)}
                       />
                       <span>إظهار قسم محتويات الشحنة والمنتجات</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={brandConfig.showLiveBadge ?? true}
-                        onChange={(e) => updateBrandConfig('showLiveBadge', e.target.checked)}
-                      />
-                      <span>إظهار شارة «تحديثات لحظية» في أعلى البطاقة</span>
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                       <input

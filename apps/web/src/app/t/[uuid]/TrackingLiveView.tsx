@@ -160,7 +160,6 @@ export function TrackingLiveView({
   const [confirmationStatus, setConfirmationStatus] = useState<
     'pending' | 'confirmed' | 'cancelled' | null
   >(initialConfirmationStatus ?? null);
-  const [isLive, setIsLive] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const storedSettings = brandSettings as TrackingBrandSettings | undefined;
@@ -169,7 +168,6 @@ export function TrackingLiveView({
     ...(storedSettings || {}),
     ...(brandColor ? { brandColor } : {}),
     ...(brandSubtitle ? { brandSubtitle } : {}),
-    // Existing merchants keep the current enabled-by-default behavior; the new toggle can turn it off.
     showWhatsAppButton: storedSettings?.showWhatsAppButton ?? true,
     animateBackgroundBlobs: storedSettings?.animateBackgroundBlobs ?? false,
     backgroundBlur: storedSettings?.backgroundBlur ?? true,
@@ -290,7 +288,7 @@ export function TrackingLiveView({
           setConfirmationStatus(updatedOrder.confirmation_status ?? null);
         }
       )
-      .subscribe((status) => setIsLive(status === 'SUBSCRIBED'));
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -337,12 +335,6 @@ export function TrackingLiveView({
     : settings.cardRadius === 'pebble' ? styles.radiusPebble
     : styles.radiusModern;
 
-  const widthClass =
-    settings.cardWidth === 'narrow' ? styles.widthNarrow
-    : settings.cardWidth === 'wide' ? styles.widthWide
-    : settings.cardWidth === 'full' ? styles.widthFull
-    : styles.widthStandard;
-
   const fontClass =
     settings.fontFamily === 'cairo' ? styles.fontCairo
     : settings.fontFamily === 'tajawal' ? styles.fontTajawal
@@ -351,8 +343,6 @@ export function TrackingLiveView({
     : styles.fontReadex;
 
   const animationClass = settings.animationLevel === 'none' ? styles.animNone : settings.animationLevel === 'subtle' ? styles.animSubtle : '';
-  const densityClass = settings.headerDensity === 'compact' ? styles.densityCompact : settings.headerDensity === 'spacious' ? styles.densitySpacious : styles.densityComfortable;
-  const accentClass = settings.accentBarStyle === 'gradient' ? styles.accentGradient : settings.accentBarStyle === 'hidden' ? styles.accentHidden : '';
   const darkMode = settings.themeMode === 'dark';
 
   const timelineLineClass =
@@ -385,12 +375,12 @@ export function TrackingLiveView({
 
   return (
     <main
-      className={`${styles.pageContainer} ${backgroundClass} ${darkMode ? styles.themeDark : ''} ${fontClass} ${animationClass} ${densityClass} ${accentClass} ${waSupportUrl ? styles.hasFloatingSupport : ''} ${blobAnimationClass} ${backgroundBlurClass}`}
+      className={`${styles.pageContainer} ${backgroundClass} ${darkMode ? styles.themeDark : ''} ${fontClass} ${animationClass} ${waSupportUrl ? styles.hasFloatingSupport : ''} ${blobAnimationClass} ${backgroundBlurClass}`}
       style={dynamicStyle}
     >
       <div className={styles.backgroundBlurLayer} aria-hidden="true" />
       <div className={styles.cardShell}>
-        <div className={`${styles.card} ${surfaceClass} ${radiusClass} ${widthClass}`}>
+        <div className={`${styles.card} ${surfaceClass} ${radiusClass}`}>
           <div className={styles.brandAccentBar} />
 
           <header className={styles.header}>
@@ -404,12 +394,6 @@ export function TrackingLiveView({
             <div className={styles.topStatusRow}>
               <span className={styles.pageEyebrow}>تتبّع الطلب</span>
               <div className={styles.topStatusActions}>
-                {settings.showLiveBadge !== false && (
-                  <span className={`${styles.liveBadge} ${isLive ? styles.liveBadgeOn : ''}`} aria-live="polite">
-                    <span className={styles.liveDot} />
-                    {isLive ? 'مباشر' : 'جارٍ الاتصال'}
-                  </span>
-                )}
                 {settings.showOrderNumberBadge !== false && (
                   <span className={styles.orderNumberBadge}>
                     <span>طلب</span>
