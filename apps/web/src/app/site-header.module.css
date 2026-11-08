@@ -278,6 +278,11 @@
     border-top: 1px solid #e1e5dc;
     border-radius: 0;
     background: rgba(255, 254, 250, .99);
+    color: #435147;
+    direction: rtl;
+    font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
     box-shadow: 0 -16px 38px rgba(31, 48, 35, .13);
     opacity: 0;
     visibility: hidden;
@@ -307,9 +312,17 @@
   }
 
   .mobileMenu nav a,
-  .mobileActions > a:first-child:not(.mobilePrimary),
+  .mobileActions > a:first-child:not(.mobilePrimary) {
+    border-radius: 0;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
   .mobilePrimary {
     border-radius: 0;
+    min-height: 46px;
+    font-size: 12px;
+    line-height: 1.4;
   }
 }
 
