@@ -110,7 +110,10 @@ export class ZimouSyncWorker {
         if (error) throw new Error('Could not load Zimou tracking records: ' + error.message);
         const rows = (orders || []).filter((row:any) => row.carrier_tracking_number &&
           !['delivered','returned','cancelled'].includes(String(row.current_status || '').toLowerCase()));
-        const tracking = Array.from(new Set(rows.map((row:any) => asText(row.carrier_tracking_number)).filter(Boolean)));
+        const tracking: string[] = Array.from(new Set<string>(
+          rows.map((row: any): string => asText(row.carrier_tracking_number))
+            .filter((value: string): value is string => value.length > 0),
+        ));
         for (let index=0; index<tracking.length; index+=BATCH_SIZE) {
           const batch = tracking.slice(index,index+BATCH_SIZE);
           const url = new URL(API + '/v3/packages/status');
