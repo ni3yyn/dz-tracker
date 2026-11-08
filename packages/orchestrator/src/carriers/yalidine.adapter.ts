@@ -7,7 +7,57 @@ import {
   normalizeAlgerianPhone,
 } from '../utils/safe';
 
+export interface YalidineWebhookEventInput {
+  event_id: string;
+  occurred_at: string;
+  type: 'parcel_created' | 'parcel_edited' | 'parcel_deleted' | 'parcel_status_updated' | 'parcel_payment_updated';
+  data: Record<string, unknown>;
+}
+
+function parseYalidineEventTime(value: string): string {
+  const raw = String(value || '').trim();
+  if (!raw) throw new Error('Yalidine webhook event is missing occurred_at.');
+  const normalized = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?$/.test(raw)
+    ? raw.replace(' ', 'T') + '+01:00'
+    : raw;
+  const timestamp = Date.parse(normalized);
+  if (!Number.isFinite(timestamp)) throw new Error('Yalidine webhook event has an invalid occurred_at timestamp.');
+  return new Date(timestamp).toISOString();
+}
+
 export class YalidineAdapter {
+  static normalizeWebhookEvent(
+    merchantId: string,
+    event: YalidineWebhookEventInput,
+    carrierName: 'Yalidine Express' | 'Guepex' = 'Yalidine Express',
+    sourceProvider: 'yalidine' | 'guepex' = 'yalidine'
+  ): TrackingEvent {
+    if (!event || !event.event_id || !event.data || typeof event.data !== 'object' || Array.isArray(event.data)) {
+      throw new Error('Invalid Yalidine webhook event.');
+    }
+    if (event.type !== 'parcel_created' && event.type !== 'parcel_status_updated') {
+      throw new Error('This Yalidine event type does not represent a parcel tracking status.');
+    }
+
+    const data = event.data as Record<string, unknown>;
+    const eventOrderId = data.order_id ?? data.external_order_id ?? data.order_number;
+    const normalized = this.normalize(merchantId, {
+      ...data,
+      ...(eventOrderId !== undefined && eventOrderId !== null && String(eventOrderId).trim()
+        ? { order_id: String(eventOrderId).trim() }
+        : {}),
+    });
+
+    return {
+      ...normalized,
+      carrierName,
+      sourceProvider,
+      sourceEventId: sourceProvider + ':' + event.event_id,
+      sourceOccurredAt: parseYalidineEventTime(event.occurred_at),
+      sourceEventType: event.type,
+    };
+  }
+
   /**
    * تحويل payload ياليدين إلى صيغة TrackingEvent المعيارية بطريقة آمنة تماماً ضد الأخطاء
    */
