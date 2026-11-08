@@ -2108,6 +2108,17 @@ export async function registerSavedOrder(savedOrder) {
           padding-inline: 13px;
           box-shadow: none;
         }
+        .sr-only {
+          position: absolute !important;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
         .dz-status-selector {
           position: relative;
           display: inline-flex;
