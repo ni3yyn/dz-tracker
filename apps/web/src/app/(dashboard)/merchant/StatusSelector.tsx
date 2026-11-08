@@ -43,56 +43,15 @@ export function StatusSelector({ orderId, currentStatus }: Props) {
   }
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        display: 'inline-flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        opacity: loading ? 0.7 : 1,
-        transition: 'opacity 0.2s ease',
-      }}
-    >
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-            @keyframes statusSelectorSpin {
-              100% { transform: rotate(360deg); }
-            }
-          `,
-        }}
-      />
+    <div className="dz-status-selector" aria-busy={loading} style={{ opacity: loading ? 0.68 : 1 }}>
+
 
       <select
+        className="dz-status-select"
         aria-label="تغيير حالة الشحنة"
         value={status}
         onChange={handleChange}
         disabled={loading}
-        style={{
-          appearance: 'none',
-          WebkitAppearance: 'none',
-          padding: '0.55rem 0.9rem 0.55rem 2.2rem',
-          borderRadius: '9px',
-          border: '1px solid rgba(9, 9, 11, 0.12)',
-          fontSize: '0.875rem',
-          fontWeight: '600',
-          backgroundColor: '#FFFFFF',
-          color: '#09090B',
-          cursor: loading ? 'wait' : 'pointer',
-          outline: 'none',
-          fontFamily: 'inherit',
-          boxShadow: '0 1px 2px rgba(9, 9, 11, 0.03)',
-          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-          minHeight: '40px',
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = '#09090B';
-          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(9, 9, 11, 0.05)';
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(9, 9, 11, 0.1)';
-          e.currentTarget.style.boxShadow = '0 1px 2px rgba(9, 9, 11, 0.03)';
-        }}
       >
         <option value="order_placed">تم استلام الطلب</option>
         <option value="processing">قيد التجهيز في المستودع</option>
@@ -120,17 +79,7 @@ export function StatusSelector({ orderId, currentStatus }: Props) {
         )}
       </select>
 
-      <span
-        style={{
-          position: 'absolute',
-          left: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-          color: '#71717A',
-        }}
-      >
+      <span className="dz-status-select-icon" aria-hidden="true">
         {loading ? (
           <svg
             width="12"
@@ -141,7 +90,7 @@ export function StatusSelector({ orderId, currentStatus }: Props) {
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            style={{ animation: 'statusSelectorSpin 0.9s linear infinite' }}
+            className="dz-status-select-spinner"
           >
             <path d="M21 12a9 9 0 1 1-6.219-8.56" />
           </svg>
@@ -160,7 +109,7 @@ export function StatusSelector({ orderId, currentStatus }: Props) {
           </svg>
         )}
       </span>
-      {errorMessage && <span role="alert" style={{ display: 'block', maxWidth: '220px', marginTop: '5px', color: '#a43f35', fontSize: '10px', lineHeight: 1.5 }}>{errorMessage}</span>}
+      {errorMessage && <span className="dz-status-select-error" role="alert">{errorMessage}</span>}
     </div>
   );
 }
