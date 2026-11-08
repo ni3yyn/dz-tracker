@@ -417,7 +417,7 @@ Yalidine and Guepex are treated as one shared carrier API family in the third-pa
 2. In the merchant's Yalidine/Guepex dashboard, open **Webhooks**, select **Ajouter**, paste that exact HTTPS URL, name the integration, and supply the dashboard's alert email.
 3. Subscribe to `parcel_created` and `parcel_status_updated`. On save, the courier validates the URL through the CRC GET challenge.
 4. Copy the webhook secret displayed on the webhook card and paste it into TajerTrack. It is AES-256-GCM encrypted with merchant-scoped AAD `merchantId:yalidine-webhook:v1`; it is never returned to the browser after save.
-5. Use the carrier dashboard's **Faire des tests** function. Confirm that TajerTrack's last-received and last-processed timestamps update, then activate the webhook in the carrier dashboard. Provider webhooks are disabled by default until explicitly activated.
+5. In TajerTrack, turn on **وضع الاختبار الآمن** before using the carrier dashboard's **Faire des tests** function. The signed sample deliveries are validated and acknowledged but discarded before queueing, so sample `parcel_created` payloads cannot create fake orders. Confirm that TajerTrack's last-received time updates. Then turn off test mode and activate the webhook in the carrier dashboard. Provider webhooks are disabled by default until explicitly activated.
 6. To disconnect, first deactivate/delete the webhook in the courier dashboard, then remove the local integration in TajerTrack. The provider can otherwise keep retrying a URL which has been removed.
 
 Required environment:
