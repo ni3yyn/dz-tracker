@@ -2652,15 +2652,18 @@ export async function registerSavedOrder(savedOrder) {
         .dz-brand-save-button { min-height: 44px; min-width: 160px; font-size: 13px !important; }
         @media (max-width: 1100px) {
           .dz-admin-root .dz-main-branding { padding-inline: 18px !important; }
-          .dz-brand-savebar { left: 18px; right: 18px; }
-          .dz-branding-preview-sticky { min-height: 0; }
+          /* Keep the fixed save bar inside the content column while the desktop sidebar remains visible. */
+          .dz-brand-savebar { left: 18px; right: calc(280px + 18px); }
           .dz-phone-chassis { width: min(100%, 420px); height: min(72svh, 720px); min-height: 520px; }
         }
-        @media (max-width: 820px) {
+        @media (max-width: 1024px) {
+          .dz-brand-savebar { left: 18px; right: 18px; }
+        }
+        @media (max-width: 1140px) {
           .dz-customizer-grid { grid-template-columns: minmax(0,1fr); gap: 22px; }
           .dz-branding-preview-sticky { position: relative; top: auto; min-height: 0; order: 2; }
           #merchant-branding-form { order: 1; }
-          .dz-phone-chassis { height: min(700px, calc(100svh - 145px)); min-height: 500px; }
+          .dz-phone-chassis { width: min(100%, 420px); height: min(700px, calc(100svh - 145px)); min-height: 500px; }
         }
         @media (max-width: 620px) {
           .dz-branding-workspace { padding-bottom: 106px; }
