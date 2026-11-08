@@ -16,6 +16,7 @@ type YalidineWebhookStatus = {
   connectedAt: string | null;
   lastWebhookReceivedAt: string | null;
   lastWebhookProcessedAt: string | null;
+  testMode: boolean;
   lastError: string | null;
 };
 
@@ -91,6 +92,7 @@ function statusFromRow(row: any): YalidineWebhookStatus {
     connectedAt: row?.connected_at || null,
     lastWebhookReceivedAt: row?.last_webhook_received_at || null,
     lastWebhookProcessedAt: row?.last_webhook_processed_at || null,
+    testMode: Boolean(row?.webhook_test_mode),
     lastError: row?.last_error || null,
   };
 }
@@ -112,6 +114,7 @@ export async function getYalidineWebhookStatus(): Promise<{
         connectedAt: null,
         lastWebhookReceivedAt: null,
         lastWebhookProcessedAt: null,
+        testMode: false,
         lastError: null,
       },
     };
@@ -234,6 +237,37 @@ export async function saveYalidineWebhookSecret(secretInput: string): Promise<{
     return { success: true, status: statusFromRow({ ...data, merchant_id: merchantId }) };
   } catch (error: any) {
     return { success: false, error: error?.message || 'تعذر حفظ مفتاح Webhook.' };
+  }
+}
+
+export async function setYalidineWebhookTestMode(enabled: boolean): Promise<{
+  success: boolean;
+  status?: YalidineWebhookStatus;
+  error?: string;
+}> {
+  try {
+    const merchantId = await authenticatedMerchantId();
+    const existing = await loadIntegration(merchantId);
+    if (!existing?.webhook_endpoint_token) {
+      throw new Error('جهّز رابط الاستقبال أولاً.');
+    }
+    if (!existing?.sync_enabled) {
+      throw new Error('احفظ مفتاح توقيع Webhook أولاً.');
+    }
+
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .update({ webhook_test_mode: enabled, updated_at: new Date().toISOString() })
+      .eq('merchant_id', merchantId)
+      .eq('provider', 'yalidine')
+      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error')
+      .single();
+    if (error || !data) throw new Error('تعذر تغيير وضع الاختبار.');
+    revalidatePath('/merchant');
+    return { success: true, status: statusFromRow({ ...data, merchant_id: merchantId }) };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'تعذر تغيير وضع الاختبار.' };
   }
 }
 
