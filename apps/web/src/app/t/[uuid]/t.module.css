@@ -237,14 +237,35 @@
 .retryBtn:hover { transform: translateY(-1px); }
 .homeLink { color: var(--ink-main); border: 1px solid var(--border-strong); background: var(--surface); }
 .homeLink:hover { background: var(--canvas); }
-.skeletonLine, .skeletonBadge, .skeletonAvatar, .skeletonTimelineDot { background: #e4e9e2; border-radius: 7px; }
-.skeletonAvatar { width: 46px; height: 46px; border-radius: 14px; }
+.skeletonLine, .skeletonBadge, .skeletonAvatar, .skeletonTimelineDot {
+  display: block;
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 0;
+  background: #e8ece6;
+}
+.skeletonAvatar { width: 46px; height: 46px; flex: 0 0 auto; }
 .skeletonTimelineDot { position: absolute; top: 2px; right: 0; width: 23px; height: 23px; border-radius: 50%; }
-.shimmer { position: relative; overflow: hidden; }
-.shimmer::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.58), transparent); animation: trackingShimmer 1.5s infinite; }
-@keyframes trackingShimmer { to { transform: translateX(100%); } }
-.themeDark .skeletonLine, .themeDark .skeletonTimelineDot, .themeDark .skeletonBadge, .themeDark .skeletonAvatar { background: #2c352e; }
-.themeDark .shimmer::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent); }
+.shimmer { isolation: isolate; }
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 62%;
+  pointer-events: none;
+  transform: translate3d(220%, 0, 0);
+  background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.22) 34%, rgba(255,255,255,.72) 50%, rgba(255,255,255,.22) 66%, transparent 100%);
+  animation: trackingSkeletonSweep 1.9s cubic-bezier(.4, 0, .2, 1) infinite;
+  will-change: transform;
+}
+@keyframes trackingSkeletonSweep {
+  from { transform: translate3d(220%, 0, 0); }
+  to { transform: translate3d(-220%, 0, 0); }
+}
+.themeDark .skeletonLine, .themeDark .skeletonTimelineDot, .themeDark .skeletonBadge, .themeDark .skeletonAvatar { background: #2d3730; }
+.themeDark .shimmer::after { background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.025) 34%, rgba(255,255,255,.11) 50%, rgba(255,255,255,.025) 66%, transparent 100%); }
 @media (max-width: 640px) {
   .pageContainer { padding: 12px 10px 32px; }
   .hasFloatingSupport { padding-bottom: 104px; }
