@@ -4526,7 +4526,7 @@ export async function registerSavedOrder(savedOrder) {
                   const badgeStyle = getStatusBadgeStyle(order.current_status);
                   return (
                     <article key={`mobile-${order.id}`} className="dz-order-mobile-card">
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 9, fontSize: 12, fontWeight: 650, cursor: 'pointer' }}>
+                      <label className="dz-order-mobile-select">
                         <input
                           type="checkbox"
                           aria-label={`تحديد الطلب ${order.external_order_id}`}
@@ -4538,7 +4538,7 @@ export async function registerSavedOrder(savedOrder) {
                       </label>
                       <div className="dz-order-mobile-top">
                         <div className="dz-order-mobile-number"><strong>{order.external_order_id}</strong><small>تاريخ التسجيل: {formatOrderDate(order.created_at)}</small></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <div className="dz-order-mobile-badges">
                           {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600, whiteSpace: 'nowrap' }}>بانتظار تأكيد العميل</span>}
                           {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600, whiteSpace: 'nowrap' }}>أكد العميل الطلب</span>}
                           {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600, whiteSpace: 'nowrap' }}>طلب العميل إلغاء الطلب</span>}
