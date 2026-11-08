@@ -31,12 +31,15 @@ export function normalizeElogistiaHistory(body: any): Record<string, any>[] {
 function parseDate(value: unknown): number {
   const raw = asText(value);
   if (!raw) return 0;
-  const direct = new Date(raw).getTime();
-  if (Number.isFinite(direct)) return direct;
   const match = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
-  if (!match) return 0;
-  const [, day, month, year, hour = '00', minute = '00', second = '00'] = match;
-  return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second)).getTime();
+  if (match) {
+    const [, day, month, year, hour = '00', minute = '00', second = '00'] = match;
+    const iso = year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T' + hour.padStart(2, '0') + ':' + minute + ':' + second + '+01:00';
+    const timestamp = new Date(iso).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+  const timestamp = new Date(raw).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 export function createElogistiaEventId(tracking: string, event: Record<string, any>): string {
