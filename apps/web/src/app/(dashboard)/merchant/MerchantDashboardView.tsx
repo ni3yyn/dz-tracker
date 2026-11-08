@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback, useTransition, useDeferredValue, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { StatusSelector } from './StatusSelector';
+import { BrandedSelect } from './BrandedSelect';
 import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
 import { ImageUploadField } from './ImageUploadField';
@@ -5531,23 +5532,31 @@ export async function registerSavedOrder(savedOrder) {
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'returned' ? 'active' : ''}`} aria-pressed={statusFilter === 'returned'} onClick={() => { setActiveTab('orders'); setStatusFilter('returned'); }}>مرتجع</button>
                 </div>
                 <div className="dz-shipment-filter-controls">
-                  <label className="dz-shipment-select-wrap">
-                    <span className="sr-only">تصفية حسب شركة الشحن</span>
-                    <select aria-label="تصفية حسب شركة الشحن" value={carrierFilter} onChange={(e) => setCarrierFilter(e.target.value)} className="dz-shipment-select">
-                      <option value="all">كل شركات الشحن</option>
-                      {uniqueCarriers.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <svg className="dz-shipment-select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
-                  </label>
-                  <label className="dz-shipment-select-wrap">
-                    <span className="sr-only">ترتيب الشحنات</span>
-                    <select aria-label="ترتيب الشحنات" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'risk')} className="dz-shipment-select">
-                      <option value="newest">الأحدث أولاً</option>
-                      <option value="risk">الأكثر خطورة</option>
-                      <option value="oldest">الأقدم أولاً</option>
-                    </select>
-                    <svg className="dz-shipment-select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
-                  </label>
+                  <div className="dz-shipment-select-wrap">
+                    <BrandedSelect
+                      ariaLabel="تصفية حسب شركة الشحن"
+                      value={carrierFilter}
+                      onChange={setCarrierFilter}
+                      variant="compact"
+                      options={[
+                        { value: 'all', label: 'كل شركات الشحن' },
+                        ...uniqueCarriers.map((carrier) => ({ value: carrier, label: carrier })),
+                      ]}
+                    />
+                  </div>
+                  <div className="dz-shipment-select-wrap">
+                    <BrandedSelect
+                      ariaLabel="ترتيب الشحنات"
+                      value={sortBy}
+                      onChange={(value) => setSortBy(value as 'newest' | 'oldest' | 'risk')}
+                      variant="compact"
+                      options={[
+                        { value: 'newest', label: 'الأحدث أولاً' },
+                        { value: 'risk', label: 'الأكثر خطورة' },
+                        { value: 'oldest', label: 'الأقدم أولاً' },
+                      ]}
+                    />
+                  </div>
                   {(searchTerm || statusFilter !== 'all' || carrierFilter !== 'all' || sortBy !== 'newest') && (
                     <button type="button" className="dz-filter-btn dz-filter-reset" onClick={() => { setSearchTerm(''); setStatusFilter('all'); setCarrierFilter('all'); setSortBy('newest'); setActiveTab('orders'); }}>مسح الفلاتر</button>
                   )}
@@ -6822,11 +6831,18 @@ export async function registerSavedOrder(savedOrder) {
                       {trackingSource === 'carrier' && (
                         <div className="dz-int-guided-carrier-select">
                           <label htmlFor="dz-int-guided-carrier">اختر شركة التوصيل</label>
-                          <select id="dz-int-guided-carrier" value={selectedCarrier ?? ''} onChange={(event) => setSelectedCarrier(event.target.value as Exclude<typeof selectedCarrier, null>)}>
-                            <option value="" disabled>اختر الشركة...</option>
-                            {carrierConnections.map((carrier) => <option key={carrier.id} value={carrier.id}>{carrier.name}</option>)}
-                            <option value="other">شركة أخرى / غير موجودة</option>
-                          </select>
+                          <BrandedSelect
+                            id="dz-int-guided-carrier"
+                            ariaLabel="اختر شركة التوصيل"
+                            value={selectedCarrier ?? ''}
+                            onChange={(value) => setSelectedCarrier(value as Exclude<typeof selectedCarrier, null>)}
+                            placeholder="اختر الشركة..."
+                            variant="field"
+                            options={[
+                              ...carrierConnections.map((carrier) => ({ value: carrier.id, label: carrier.name })),
+                              { value: 'other', label: 'شركة أخرى / غير موجودة' },
+                            ]}
+                          />
                         </div>
                       )}
                       <div className="dz-int-guided-actions">
@@ -7417,11 +7433,17 @@ export async function registerSavedOrder(savedOrder) {
                   <form onSubmit={handleSubmitProof}>
                     <div style={{ marginBottom: '16px' }}>
                       <label className="formLabel">اختر الباقة</label>
-                      <select value={selectedUpgradeTier} onChange={(e) => setSelectedUpgradeTier(e.target.value as any)} className="input">
-                        <option value="basic">100 طلب شهرياً — 1,000 دج</option>
-                        <option value="growth">200 طلب شهرياً — 1,800 دج</option>
-                        <option value="scale">طلبات غير محدودة — 2,500 دج</option>
-                      </select>
+                      <BrandedSelect
+                        ariaLabel="اختر الباقة"
+                        value={selectedUpgradeTier}
+                        onChange={(value) => setSelectedUpgradeTier(value as 'basic' | 'growth' | 'scale')}
+                        variant="field"
+                        options={[
+                          { value: 'basic', label: '100 طلب شهرياً — 1,000 دج' },
+                          { value: 'growth', label: '200 طلب شهرياً — 1,800 دج' },
+                          { value: 'scale', label: 'طلبات غير محدودة — 2,500 دج' },
+                        ]}
+                      />
                     </div>
                     <div style={{ marginBottom: '16px' }}>
                       <label className="formLabel">رقم العملية (Transaction Ref)</label>
@@ -7786,15 +7808,21 @@ export async function registerSavedOrder(savedOrder) {
                           <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
                             شركة الشحن
                           </label>
-                          <select name="carrier_name" className="dz-input-field" defaultValue="Yalidine Express">
-                            <option value="Yalidine Express">Yalidine Express (ياليدين)</option>
-                            <option value="ZR Express">ZR Express</option>
-                            <option value="Maystro Delivery">Maystro Delivery</option>
-                            <option value="EcoTrack">EcoTrack</option>
-                            <option value="Zimou Express">Zimou Express</option>
-                            <option value="Elogistia">Elogistia</option>
-                            <option value="توصيل خاص">توصيل خاص (متجرنا)</option>
-                          </select>
+                          <BrandedSelect
+                            name="carrier_name"
+                            ariaLabel="شركة الشحن"
+                            defaultValue="Yalidine Express"
+                            variant="field"
+                            options={[
+                              { value: 'Yalidine Express', label: 'Yalidine Express (ياليدين)' },
+                              { value: 'ZR Express', label: 'ZR Express' },
+                              { value: 'Maystro Delivery', label: 'Maystro Delivery' },
+                              { value: 'EcoTrack', label: 'EcoTrack' },
+                              { value: 'Zimou Express', label: 'Zimou Express' },
+                              { value: 'Elogistia', label: 'Elogistia' },
+                              { value: 'توصيل خاص', label: 'توصيل خاص (متجرنا)' },
+                            ]}
+                          />
                         </div>
 
                         <div>
@@ -7828,11 +7856,17 @@ export async function registerSavedOrder(savedOrder) {
                           <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
                             حالة الشحنة الأولية
                           </label>
-                          <select name="status_raw" className="dz-input-field" defaultValue="order_placed">
-                            <option value="order_placed">تم استلام الطلب (order_placed)</option>
-                            <option value="processing">قيد التجهيز (processing)</option>
-                            <option value="shipped">خرج للشحن والتوصيل (shipped)</option>
-                          </select>
+                          <BrandedSelect
+                            name="status_raw"
+                            ariaLabel="حالة الشحنة الأولية"
+                            defaultValue="order_placed"
+                            variant="field"
+                            options={[
+                              { value: 'order_placed', label: 'تم استلام الطلب (order_placed)' },
+                              { value: 'processing', label: 'قيد التجهيز (processing)' },
+                              { value: 'shipped', label: 'خرج للشحن والتوصيل (shipped)' },
+                            ]}
+                          />
                         </div>
                       </div>
 
