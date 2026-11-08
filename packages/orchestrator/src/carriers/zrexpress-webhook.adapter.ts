@@ -166,9 +166,20 @@ export class ZRExpressWebhookAdapter {
     } else if (phone && typeof phone === 'object') {
       const countryCode = firstText(phone.countryCode);
       const number = firstText(phone.number, phone.number1, phone.number2, phone.number3);
-      phoneValue = countryCode && number && !number.startsWith('+')
-        ? `${countryCode}${number}`
-        : number;
+      if (countryCode && number) {
+        const countryDigits = countryCode.replace(/\\D/g, '');
+        const numberDigits = number.replace(/\\D/g, '');
+        if (countryDigits && !numberDigits.startsWith(countryDigits)) {
+          const nationalNumber = countryDigits === '213' && numberDigits.startsWith('0')
+            ? numberDigits.slice(1)
+            : numberDigits;
+          phoneValue = `${countryDigits}${nationalNumber}`;
+        } else {
+          phoneValue = number;
+        }
+      } else {
+        phoneValue = number;
+      }
     }
     const customerPhone = normalizeAlgerianPhone(phoneValue);
 
