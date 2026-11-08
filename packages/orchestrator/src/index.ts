@@ -458,7 +458,7 @@ export class TrackingOrchestrator {
         trackingUuid = newOrder.tracking_uuid;
 
         // Explicitly classify initial history as order_created (bypasses push notification fanout)
-        await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description, 'order_created', event.sourceOccurredAt);
+        await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description, 'order_created', event.sourceOccurredAt, Boolean(event.sourceEventId));
         if (event.sourceEventId && event.sourceOccurredAt) {
           const { error: appliedEventError } = await (this.supabase as any)
             .from('zrexpress_webhook_applied_events')
@@ -543,9 +543,10 @@ export class TrackingOrchestrator {
     statusTitle: string,
     description?: string,
     eventType: 'order_created' | 'status_changed' = 'status_changed',
-    createdAt?: string
+    createdAt?: string,
+    throwOnError = false
   ) {
-    await this.supabase.from('order_history').insert({
+    const { error } = await this.supabase.from('order_history').insert({
       order_id: orderId,
       status_raw: statusRaw,
       status_title: statusTitle,
@@ -553,6 +554,7 @@ export class TrackingOrchestrator {
       event_type: eventType,
       ...(createdAt ? { created_at: createdAt } : {}),
     });
+    if (throwOnError && error) throw error;
   }
 
   /**
