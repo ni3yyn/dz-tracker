@@ -36,6 +36,8 @@ export interface TrackingEvent {
   /** Provider event time used to reject out-of-order ZR Express webhook deliveries. */
   sourceOccurredAt?: string;
   sourceEventType?: string;
+  /** Svix delivery id, persisted with the processed event for durable replay safety. */
+  sourceEventId?: string;
   customerTelegramConsent?: boolean;
   telegramConsentSource?: string;
   telegramConsentVersion?: string;
@@ -176,6 +178,7 @@ export class TrackingOrchestrator {
               p_status_title: displayStatus,
               p_description: event.description || null,
               p_occurred_at: event.sourceOccurredAt,
+              p_source_event_id: event.sourceEventId || null,
             }
           );
           if (orderedError) throw orderedError;
@@ -388,6 +391,7 @@ export class TrackingOrchestrator {
                   p_status_title: displayStatus,
                   p_description: event.description || null,
                   p_occurred_at: event.sourceOccurredAt,
+                  p_source_event_id: event.sourceEventId || null,
                 }
               );
               if (orderedError) throw orderedError;
@@ -454,6 +458,17 @@ export class TrackingOrchestrator {
 
         // Explicitly classify initial history as order_created (bypasses push notification fanout)
         await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description, 'order_created', event.sourceOccurredAt);
+        if (event.sourceEventId && event.sourceOccurredAt) {
+          const { error: appliedEventError } = await (this.supabase as any)
+            .from('zrexpress_webhook_applied_events')
+            .insert({
+              merchant_id: event.merchantId,
+              svix_id: event.sourceEventId,
+              order_id: orderId,
+              occurred_at: event.sourceOccurredAt,
+            });
+          if (appliedEventError && appliedEventError.code !== '23505') throw appliedEventError;
+        }
 
         const triggers = await this.dispatchTriggers({
           event,
