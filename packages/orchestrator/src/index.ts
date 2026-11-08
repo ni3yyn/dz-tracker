@@ -8,6 +8,7 @@ export { ShopifyAdapter } from './sources/shopify.adapter';
 export { YalidineAdapter } from './carriers/yalidine.adapter';
 export { EcoTrackAdapter } from './carriers/ecotrack.adapter';
 export { ZRExpressAdapter, ProcolisAdapter } from './carriers/zrexpress.adapter';
+export { ZRExpressWebhookAdapter, ZR_EXPRESS_WEBHOOK_EVENT_TYPES, verifyZRExpressWebhook, isZRExpressWebhookEvent } from './carriers/zrexpress-webhook.adapter';
 export {
   MaystroAdapter,
   ALGERIA_WILAYAS_58,
@@ -32,6 +33,9 @@ export interface TrackingEvent {
   description?: string;
   carrierName?: string;
   carrierTrackingNumber?: string;
+  /** Provider event time used to reject out-of-order ZR Express webhook deliveries. */
+  sourceOccurredAt?: string;
+  sourceEventType?: string;
   customerTelegramConsent?: boolean;
   telegramConsentSource?: string;
   telegramConsentVersion?: string;
@@ -136,7 +140,7 @@ export class TrackingOrchestrator {
           updated_at: new Date().toISOString(),
         };
 
-        if (!isSameStatus) {
+        if (!isSameStatus && !event.sourceOccurredAt) {
           updatePayload.current_status = event.statusRaw;
         }
         if (event.carrierName) {
@@ -159,6 +163,43 @@ export class TrackingOrchestrator {
           .from('orders')
           .update(updatePayload)
           .eq('id', orderId);
+
+        // ZR Express deliveries may arrive out of order. The database RPC locks the
+        // order, rejects stale provider timestamps, and records every verified
+        // state/situation/return event (including same-category situations).
+        if (event.sourceOccurredAt) {
+          const { data: orderedResult, error: orderedError } = await (this.supabase as any).rpc(
+            'record_order_status_change_ordered',
+            {
+              p_order_id: orderId,
+              p_status_raw: event.statusRaw,
+              p_status_title: displayStatus,
+              p_description: event.description || null,
+              p_occurred_at: event.sourceOccurredAt,
+            }
+          );
+          if (orderedError) throw orderedError;
+          const actuallyChanged = orderedResult?.[0]?.changed === true;
+          if (!actuallyChanged) {
+            return { success: true, trackingUuid, deduplicated: true, isNewOrder: false };
+          }
+          const triggers = await this.dispatchTriggers({
+            event,
+            orderId,
+            trackingUuid,
+            isNewOrder: false,
+            statusChanged: true,
+            displayStatus,
+            options,
+          });
+          return {
+            success: true,
+            trackingUuid,
+            deduplicated: false,
+            isNewOrder: false,
+            triggers,
+          };
+        }
 
         // إضافة سجل تاريخي فقط إذا تغيرت الحالة ذرّياً عبر RPC
         if (!isSameStatus) {
@@ -309,7 +350,7 @@ export class TrackingOrchestrator {
         }
 
         // إنشاء طلب جديد إذا لم يكن موجوداً
-        const { data: newOrder, error: createError } = await this.supabase
+        const { data: newOrder, error: createError } = await (this.supabase as any)
           .from('orders')
           .insert({
             merchant_id: event.merchantId,
@@ -319,6 +360,7 @@ export class TrackingOrchestrator {
             product_name: event.productName || null,
             product_image: event.productImage || null,
             current_status: event.statusRaw,
+            carrier_last_event_at: event.sourceOccurredAt || null,
             carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,
             telegram_consent_at: event.customerTelegramConsent ? new Date().toISOString() : null,
@@ -336,6 +378,39 @@ export class TrackingOrchestrator {
             trackingUuid = retryExisting.tracking_uuid;
             const changed = retryExisting.current_status !== event.statusRaw;
             let triggers: TriggerResult[] | undefined = undefined;
+
+            if (event.sourceOccurredAt) {
+              const { data: orderedResult, error: orderedError } = await (this.supabase as any).rpc(
+                'record_order_status_change_ordered',
+                {
+                  p_order_id: orderId,
+                  p_status_raw: event.statusRaw,
+                  p_status_title: displayStatus,
+                  p_description: event.description || null,
+                  p_occurred_at: event.sourceOccurredAt,
+                }
+              );
+              if (orderedError) throw orderedError;
+              const actuallyChanged = orderedResult?.[0]?.changed === true;
+              if (actuallyChanged) {
+                triggers = await this.dispatchTriggers({
+                  event,
+                  orderId,
+                  trackingUuid,
+                  isNewOrder: false,
+                  statusChanged: true,
+                  displayStatus,
+                  options,
+                });
+              }
+              return {
+                success: true,
+                trackingUuid,
+                deduplicated: !actuallyChanged,
+                isNewOrder: false,
+                triggers,
+              };
+            }
 
             if (changed) {
               await this.supabase.rpc('record_order_status_change', {
@@ -378,7 +453,7 @@ export class TrackingOrchestrator {
         trackingUuid = newOrder.tracking_uuid;
 
         // Explicitly classify initial history as order_created (bypasses push notification fanout)
-        await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description, 'order_created');
+        await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description, 'order_created', event.sourceOccurredAt);
 
         const triggers = await this.dispatchTriggers({
           event,
@@ -451,7 +526,8 @@ export class TrackingOrchestrator {
     statusRaw: string,
     statusTitle: string,
     description?: string,
-    eventType: 'order_created' | 'status_changed' = 'status_changed'
+    eventType: 'order_created' | 'status_changed' = 'status_changed',
+    createdAt?: string
   ) {
     await this.supabase.from('order_history').insert({
       order_id: orderId,
@@ -459,6 +535,7 @@ export class TrackingOrchestrator {
       status_title: statusTitle,
       description: description || null,
       event_type: eventType,
+      ...(createdAt ? { created_at: createdAt } : {}),
     });
   }
 
