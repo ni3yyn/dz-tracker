@@ -17,6 +17,13 @@ export interface ZRExpressWebhookEvent {
 }
 
 const STATE_MAP: Record<string, { status: string; title: string }> = {
+  picked_up: { status: 'dispatched', title: 'استلمت ZR Express الشحنة من التاجر' },
+  in_transit: { status: 'in_transit', title: 'الشحنة في الطريق بين الولايات' },
+  out_for_delivery: { status: 'out_for_delivery', title: 'خرج المندوب لتسليم الشحنة' },
+  delivered: { status: 'delivered', title: 'تم تسليم الشحنة' },
+  returned: { status: 'returned', title: 'الشحنة في مسار الإرجاع' },
+  returned_to_hub: { status: 'returned', title: 'عادت الشحنة إلى مركز ZR Express' },
+  cancelled: { status: 'cancelled', title: 'تم إلغاء الشحنة' },
   commande_recue: { status: 'order_placed', title: 'تم استلام الشحنة لدى ZR Express' },
   en_traitement: { status: 'processing', title: 'الشحنة قيد المعالجة' },
   appel_confirmation: { status: 'processing', title: 'جارٍ تأكيد بيانات الشحنة' },
@@ -139,7 +146,7 @@ export function verifyZRExpressWebhook(
 }
 
 export class ZRExpressWebhookAdapter {
-  static normalize(merchantId: string, webhook: ZRExpressWebhookEvent): TrackingEvent {
+  static normalize(merchantId: string, webhook: ZRExpressWebhookEvent, sourceEventId?: string): TrackingEvent {
     const parcel = webhook.data;
     const state = parcel.state && typeof parcel.state === 'object' ? parcel.state : {};
     const situation = parcel.situation && typeof parcel.situation === 'object' ? parcel.situation : {};
@@ -203,6 +210,7 @@ export class ZRExpressWebhookAdapter {
       carrierTrackingNumber: trackingNumber,
       sourceOccurredAt: webhook.occurredAt,
       sourceEventType: webhook.eventType,
+      sourceEventId,
     };
   }
 }
