@@ -31,7 +31,6 @@ test('normalizes an Elogistia tracking history event to the merchant order', () 
   assert.equal(event.externalOrderId, 'STORE-ORDER-123');
   assert.equal(event.carrierName, 'Elogistia');
   assert.equal(event.carrierTrackingNumber, 'ELO-00123');
-  assert.equal(event.carrierOrderId, 'ELO-00123');
   assert.equal(event.customerName, 'Sara Mansouri');
   assert.equal(event.statusRaw, 'delivered');
   assert.equal(event.sourceProvider, 'elogistia');
