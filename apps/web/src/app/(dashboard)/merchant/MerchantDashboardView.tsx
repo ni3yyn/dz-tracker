@@ -12,6 +12,8 @@ import { MaystroConnectionPanel } from './MaystroConnectionPanel';
 import { ZimouConnectionPanel } from './ZimouConnectionPanel';
 import { ElogistiaConnectionPanel } from './ElogistiaConnectionPanel';
 import { ElogistiaDispatchPanel } from './ElogistiaDispatchPanel';
+import { EcomV2ConnectionPanel } from './EcomV2ConnectionPanel';
+import { EcomV2DispatchPanel } from './EcomV2DispatchPanel';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
@@ -826,7 +828,7 @@ export function MerchantDashboardView({
     activeTab === 'integrations' &&
     integrationChoicesHydratedFor === merchantId &&
     (integrationPlatform === 'website' || integrationPlatform === 'shopify' ||
-      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia'));
+      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia' && selectedCarrier !== 'ecom_v2'));
 
   useEffect(() => {
     let cancelled = false;
@@ -1452,6 +1454,16 @@ export function MerchantDashboardView({
       hint: 'اربط حساب Elogistia عبر API Key. يمكنك إنشاء بوليصة من تفاصيل الطلب، ثم يقرأ تاجر تراك سجل التتبع ويحدّث الحالة تلقائياً.',
       caveat: 'لا يوجد إعداد Webhook في هذا المسار. تتم مزامنة الشحنات التي أنشأها تاجر تراك فقط؛ لا يتم استيراد طرود أُنشئت خارج المنصة تلقائياً.',
       supportQuestion: 'أحتاج إلى API Key لحساب Elogistia وتفعيل صلاحيات إنشاء الشحنات وقراءة سجل التتبع.'
+    },
+    {
+      id: 'ecom_v2' as const,
+      name: 'E-com Delivery v2',
+      symbol: 'EC',
+      url: '',
+      method: 'KEY + Token + إنشاء شحنات + مزامنة دورية',
+      hint: 'اربط حساب E-com Delivery v2 باستخدام KEY وToken من صفحة Développement. أنشئ الشحنة من تفاصيل الطلب، ثم تُزامن حالاتها تلقائياً.',
+      caveat: 'هذا هو API v2 على ecom-dz.com/api_v2، وليس واجهة E-COM القديمة v1. الشحنات المنشأة تبقى «En Préparation» حتى تؤكدها من حساب E-com. المزامنة تخص الشحنات المرتبطة بطلبات تاجر تراك.',
+      supportQuestion: 'أحتاج إلى KEY وToken لواجهة E-com Delivery API v2 من صفحة Développement مع صلاحيات إنشاء الشحنات وقراءة التتبع.'
     },
   ];
 
@@ -5667,7 +5679,11 @@ export async function registerSavedOrder(savedOrder) {
                         <ElogistiaConnectionPanel />
                       )}
 
-                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'maystro' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia' && activeCarrierConnection && (
+                      {trackingSource === 'carrier' && selectedCarrier === 'ecom_v2' && (
+                        <EcomV2ConnectionPanel />
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'maystro' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia' && selectedCarrier !== 'ecom_v2' && activeCarrierConnection && (
                         <article className="dz-int-guided-panel">
                           <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
                           <div className="dz-int-guided-copy">
@@ -5687,7 +5703,7 @@ export async function registerSavedOrder(savedOrder) {
 
                       {integrationPlatform === 'website' && (
                         <article className="dz-int-guided-panel">
-                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{trackingSource === 'carrier' && (selectedCarrier === 'zrexpress' || selectedCarrier === 'maystro' || selectedCarrier === 'zimou' || selectedCarrier === 'elogistia') ? '02' : '01'}</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{trackingSource === 'carrier' && (selectedCarrier === 'zrexpress' || selectedCarrier === 'maystro' || selectedCarrier === 'zimou' || selectedCarrier === 'elogistia' || selectedCarrier === 'ecom_v2') ? '02' : '01'}</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
                           <div className="dz-int-guided-credentials">
                             <div className="dz-int-guided-credential">
                               <div className="dz-int-guided-credential-head"><small>مفتاح API</small><button type="button" onClick={() => setApiKeyRevealed((value) => !value)}>{apiKeyRevealed ? <Icons.EyeOff /> : <Icons.Eye />}{apiKeyRevealed ? 'إخفاء' : 'إظهار'}</button></div>
@@ -6295,6 +6311,17 @@ export async function registerSavedOrder(savedOrder) {
                       <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.codAmount != null ? `${selectedOrder.carrier_metadata.codAmount} دج` : 'غير متوفر'}</strong></div>
                     </>
                   )}
+                  {selectedOrder.carrier_name === 'E-com Delivery v2' && selectedOrder.carrier_metadata?.ecomV2 && (
+                    <>
+                      <div className="dz-order-detail-field"><span>رقم التتبع لدى E-com Delivery</span><strong dir="ltr">{selectedOrder.carrier_metadata.ecomV2.trackingNumber || selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.ecomV2.wilayaId || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.ecomV2.commune || 'مكتب استلام'}</strong></div>
+                      <div className="dz-order-detail-field"><span>مكتب الاستلام</span><strong dir="ltr">{selectedOrder.carrier_metadata.ecomV2.stopDeskId || '—'}</strong></div>
+                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.codAmount != null ? Number(selectedOrder.carrier_metadata.ecomV2.codAmount).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>تعريفة التوصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.shippingFee != null ? Number(selectedOrder.carrier_metadata.ecomV2.shippingFee).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>الحالة الأصلية</span><strong>{selectedOrder.carrier_metadata.rawSituation || 'بانتظار أول تحديث'}</strong></div>
+                    </>
+                  )}
                   {selectedOrder.carrier_name === 'Elogistia' && selectedOrder.carrier_metadata?.elogistia && (
                     <>
                       <div className="dz-order-detail-field"><span>رقم التتبع لدى Elogistia</span><strong dir="ltr">{selectedOrder.carrier_metadata.elogistia.trackingNumber || selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
@@ -6313,6 +6340,9 @@ export async function registerSavedOrder(savedOrder) {
                 </div>
                 {(selectedOrder.carrier_name === 'Elogistia' || !selectedOrder.carrier_tracking_number) && (
                   <ElogistiaDispatchPanel key={selectedOrder.id} order={selectedOrder} />
+                )}
+                {(selectedOrder.carrier_name === 'E-com Delivery v2' || !selectedOrder.carrier_tracking_number) && (
+                  <EcomV2DispatchPanel key={selectedOrder.id + '-ecom-v2'} order={selectedOrder} />
                 )}
                 <p className="dz-order-detail-note">يمكنك تعديل الحالة من القائمة أدناه. سجل التحديثات التفصيلي متاح في صفحة التتبع العامة، بينما تعرض هذه اللوحة البيانات المخزنة والمتاحة في لوحة التاجر.</p>
                 <div style={{ paddingTop: '17px' }}><span className="dz-order-detail-kicker">تعديل الحالة</span><StatusSelector orderId={selectedOrder.id} currentStatus={selectedOrder.current_status} /></div>
