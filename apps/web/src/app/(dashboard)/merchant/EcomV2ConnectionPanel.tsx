@@ -50,7 +50,7 @@ export function EcomV2ConnectionPanel() {
       <div className="dz-int-guided-actions"><button type="button" className="dz-btn" disabled={busy} onClick={test}>{busy ? 'جارٍ الاختبار...' : 'اختبار الاتصال'}</button><button type="button" className="dz-btn dz-btn-outline" disabled={busy} onClick={disconnect}>فصل الحساب</button></div>
       {status.last_error && <p className="dz-int-guided-note" role="status">آخر خطأ مزامنة: {status.last_error}</p>}
     </> : <form onSubmit={connect} style={{display:'grid',gap:12}}>
-      <label style={{display:'grid',gap:6}}>KEY <input className="dz-input-field" dir="ltr" autoComplete="off" value={key} onChange={e=>setKey(e.target.value)} required minLength={4} /></label>
+      <label style={{display:'grid',gap:6}}>KEY <input className="dz-input-field" dir="ltr" autoComplete="off" type="password" value={key} onChange={e=>setKey(e.target.value)} required minLength={4} /></label>
       <label style={{display:'grid',gap:6}}>Token <input className="dz-input-field" dir="ltr" autoComplete="off" type="password" value={token} onChange={e=>setToken(e.target.value)} required minLength={4} /></label>
       <p className="dz-int-guided-note">من لوحة E-com Delivery افتح صفحة «Développement»، ثم انسخ KEY وToken. لا تستخدم بيانات API v1 القديمة ولا تشارك هذه القيم مع أي شخص.</p>
       <button type="submit" className="dz-btn" disabled={busy || !key.trim() || !token.trim()}>{busy ? 'جارٍ التحقق والحفظ...' : 'التحقق من الحساب وربطه'}</button>
