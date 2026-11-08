@@ -1,10 +1,5 @@
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import {
-  TrackingOrchestrator,
-  ZRExpressWebhookAdapter,
-  type ZRExpressWebhookEvent,
-} from '@saas/orchestrator';
 import type { PushWorkerConfig } from './config.js';
 
 type ZRWebhookJob = {
@@ -13,7 +8,7 @@ type ZRWebhookJob = {
   svix_id: string;
   event_type: string;
   occurred_at: string;
-  payload: ZRExpressWebhookEvent;
+  payload: Record<string, unknown>;
   status: 'pending' | 'processing' | 'retry' | 'completed' | 'dead_letter';
   attempt_count: number;
   max_attempts: number;
@@ -22,12 +17,20 @@ type ZRWebhookJob = {
 const RETRY_DELAYS_SECONDS = [5, 30, 120, 600, 1800, 3600, 7200];
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 
+function deriveWorkerSigningKey(rootKey: string): Buffer {
+  if (!rootKey || rootKey.length < 32) {
+    throw new Error('CARRIER_CREDENTIALS_ENCRYPTION_KEY is required for ZR Express worker authentication.');
+  }
+  return createHmac('sha256', rootKey)
+    .update('tajertrack:zrexpress:worker-request:v1', 'utf8')
+    .digest();
+}
+
 export class ZRExpressWebhookWorker {
   private readonly supabase;
   private readonly workerId = `zr-webhook-${randomUUID()}`;
   private readonly pollIntervalMs: number;
   private running = false;
-  private readonly orchestrator = new TrackingOrchestrator();
 
   constructor(private readonly config: PushWorkerConfig) {
     this.pollIntervalMs = Math.max(
@@ -44,6 +47,7 @@ export class ZRExpressWebhookWorker {
         },
       }
     );
+    deriveWorkerSigningKey(config.credentialsEncryptionKey);
   }
 
   async start(): Promise<void> {
@@ -70,10 +74,8 @@ export class ZRExpressWebhookWorker {
 
   async stop(): Promise<void> {
     this.running = false;
-    // The current event is deliberately left leased when it is already being
-    // processed. A replacement instance reclaims it if the lease expires.
-    // Releasing it immediately could cause a second replica to process it
-    // while the first instance is still completing a database operation.
+    // The current job remains leased while its internal processor request is
+    // in flight. A replacement worker reclaims it if the lease expires.
   }
 
   private async claimNext(): Promise<ZRWebhookJob | null> {
@@ -92,37 +94,50 @@ export class ZRExpressWebhookWorker {
   private async process(job: ZRWebhookJob): Promise<void> {
     const startedAt = Date.now();
     try {
-      if (!job.payload || job.payload.eventType !== job.event_type) {
+      if (
+        !job.payload ||
+        job.payload.eventType !== job.event_type ||
+        Date.parse(String(job.payload.occurredAt)) !== Date.parse(job.occurred_at)
+      ) {
         throw new Error('Queued ZR Express event envelope is inconsistent.');
       }
-      if (Date.parse(job.payload.occurredAt) !== Date.parse(job.occurred_at)) {
-        throw new Error('Queued ZR Express event timestamp is inconsistent.');
+
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      const body = JSON.stringify({ eventId: job.id, workerId: this.workerId });
+      const signature = createHmac('sha256', deriveWorkerSigningKey(this.config.credentialsEncryptionKey))
+        .update(`${timestamp}.${body}`, 'utf8')
+        .digest('base64');
+      const processorUrl = new URL(
+        '/api/internal/zrexpress/process',
+        this.config.trackingPublicBaseUrl
+      ).toString();
+
+      let response: Response;
+      try {
+        response = await fetch(processorUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-zrexpress-worker-timestamp': timestamp,
+            'x-zrexpress-worker-signature': signature,
+          },
+          body,
+          cache: 'no-store',
+          redirect: 'error',
+          signal: AbortSignal.timeout(45_000),
+        });
+      } catch {
+        throw new Error('Could not reach TajerTrack internal ZR Express processor.');
       }
 
-      const event = ZRExpressWebhookAdapter.normalize(
-        job.merchant_id,
-        job.payload,
-        job.svix_id
-      );
-      const result = await this.orchestrator.processEvent(event, {
-        siteUrl: this.config.trackingPublicBaseUrl,
-      });
-
-      if (!result.success) {
-        const errorText = typeof result.error === 'string'
-          ? result.error
-          : result.message || 'TajerTrack could not process the ZR Express event.';
-        throw new Error(errorText);
+      const rawResult = await response.text().catch(() => '');
+      let result: any = null;
+      if (rawResult) {
+        try { result = JSON.parse(rawResult); } catch { result = null; }
       }
-
-      if (result.isNewOrder && result.orderId) {
-        try {
-          await this.enqueueOrderConfirmation(job.merchant_id, result.orderId, event.customerPhone);
-        } catch (error: any) {
-          // Keep shipment tracking successful; Telegram confirmation is a
-          // separate notification and must never block the carrier event.
-          console.warn('[ZRExpressWebhookWorker]: Confirmation enqueue failed:', error?.message || error);
-        }
+      if (!response.ok || result?.success !== true) {
+        const detail = typeof result?.error === 'string' ? result.error : `Internal processor returned HTTP ${response.status}.`;
+        throw new Error(detail);
       }
 
       const now = new Date().toISOString();
@@ -160,43 +175,6 @@ export class ZRExpressWebhookWorker {
     } catch (error: any) {
       await this.failOrRetry(job, error);
     }
-  }
-
-  private async enqueueOrderConfirmation(
-    merchantId: string,
-    orderId: string,
-    customerPhone?: string
-  ): Promise<void> {
-    if (!customerPhone?.trim()) return;
-
-    const { data: merchant, error: merchantError } = await this.supabase
-      .from('merchants')
-      .select('confirmation_telegram_enabled, subscription_tier, subscription_status')
-      .eq('id', merchantId)
-      .maybeSingle();
-    if (merchantError) throw merchantError;
-
-    const isPaidActivePlan =
-      (merchant?.subscription_tier || 'starter') !== 'starter' &&
-      merchant?.subscription_status === 'active';
-    if (!isPaidActivePlan || !merchant?.confirmation_telegram_enabled) return;
-
-    const { error: enqueueError } = await this.supabase
-      .from('order_confirmation_outbox')
-      .insert({
-        order_id: orderId,
-        merchant_id: merchantId,
-        idempotency_key: `confirm:${merchantId}:${orderId}`,
-      });
-
-    if (enqueueError && enqueueError.code !== '23505') throw enqueueError;
-
-    const { error: statusError } = await this.supabase
-      .from('orders')
-      .update({ confirmation_status: 'pending' } as any)
-      .eq('id', orderId)
-      .is('confirmation_status', null);
-    if (statusError) throw statusError;
   }
 
   private async failOrRetry(job: ZRWebhookJob, error: unknown): Promise<void> {
