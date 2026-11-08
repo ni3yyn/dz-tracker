@@ -301,7 +301,7 @@ export async function createElogistiaShipment(orderId: string, input: {
     if (!firstName || !lastName || firstName.length > 100 || lastName.length > 100) throw new Error('أدخل الاسم الأول واسم العائلة بشكل صحيح.');
     if (!phone || !/^\+?[0-9\s()-]{8,20}$/.test(phone)) throw new Error('أدخل رقم هاتف صحيحاً للعميل.');
     if (!address || !commune || !wilayaId || !product) throw new Error('أكمل عنوان التوصيل والولاية والبلدية واسم المنتج.');
-    if (!/^\\d{1,3}$/.test(wilayaId) || Number(wilayaId) < 1 || Number(wilayaId) > 999) throw new Error('رمز الولاية الذي اخترته غير صالح.');
+    if (!/^\d{1,3}$/.test(wilayaId) || Number(wilayaId) < 1 || Number(wilayaId) > 999) throw new Error('رمز الولاية الذي اخترته غير صالح.');
     if (!Number.isFinite(codAmount) || codAmount < 0 || codAmount > 100000000) throw new Error('أدخل مبلغ التحصيل عند التسليم بصورة صحيحة.');
     if (input.deliveryType !== 'home' && input.deliveryType !== 'stopdesk') throw new Error('نوع التوصيل غير صالح.');
     if (input.deliveryMode !== 'standard' && input.deliveryMode !== 'exchange') throw new Error('نوع العملية غير صالح.');
