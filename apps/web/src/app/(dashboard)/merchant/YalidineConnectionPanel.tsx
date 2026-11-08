@@ -6,6 +6,7 @@ import {
   getYalidineWebhookStatus,
   prepareYalidineWebhookEndpoint,
   saveYalidineWebhookSecret,
+  setYalidineWebhookTestMode,
 } from './yalidine-actions';
 
 type Status = {
@@ -15,6 +16,7 @@ type Status = {
   connectedAt: string | null;
   lastWebhookReceivedAt: string | null;
   lastWebhookProcessedAt: string | null;
+  testMode: boolean;
   lastError: string | null;
 };
 
@@ -25,6 +27,7 @@ const emptyStatus: Status = {
   connectedAt: null,
   lastWebhookReceivedAt: null,
   lastWebhookProcessedAt: null,
+  testMode: false,
   lastError: null,
 };
 
@@ -127,6 +130,29 @@ export function YalidineConnectionPanel() {
     }
   }
 
+  async function handleTestMode(enabled: boolean) {
+    setMessage('');
+    setMessageIsError(false);
+    setSaving(true);
+    try {
+      const result = await setYalidineWebhookTestMode(enabled);
+      if (!result.success || !result.status) {
+        setMessage(result.error || 'تعذر تغيير وضع الاختبار.');
+        setMessageIsError(true);
+        return;
+      }
+      setStatus(result.status);
+      setMessage(enabled
+        ? 'وضع الاختبار مفعّل: سيتم التحقق من الإشعارات دون إنشاء أو تعديل طلبات.'
+        : 'تم إيقاف وضع الاختبار. الإشعارات الحقيقية ستُرسل الآن إلى معالجة الطلبات.');
+    } catch {
+      setMessage('تعذر تغيير وضع الاختبار. حاول مجدداً.');
+      setMessageIsError(true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleDisconnect() {
     if (!window.confirm('هل فصلت Webhook أو عطّلته من لوحة شركة التوصيل؟ سيؤدي هذا إلى حذف رابط الاستقبال ومفتاحه المحفوظ في تاجر تراك.')) return;
     setDisconnecting(true);
@@ -175,6 +201,8 @@ export function YalidineConnectionPanel() {
                 <strong>{formatDate(status.lastWebhookReceivedAt)}</strong>
                 <span>آخر إشعار تمت معالجته</span>
                 <strong>{formatDate(status.lastWebhookProcessedAt)}</strong>
+                <span>وضع استقبال الاختبارات</span>
+                <strong>{status.testMode ? 'مفعّل — لن تُنشأ طلبات من عينات الاختبار' : 'متوقف — تُعالج الأحداث الحقيقية'}</strong>
               </>
             )}
           </div>
@@ -190,12 +218,23 @@ export function YalidineConnectionPanel() {
                 <button type="button" onClick={handleCopy}>{copied ? 'تم النسخ' : 'نسخ الرابط'}</button>
               </div>
 
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '12px 0' }}>
+                <button type="button" className="dz-btn" disabled={saving || status.testMode} onClick={() => handleTestMode(true)}>
+                  تفعيل وضع الاختبار الآمن
+                </button>
+                <button type="button" className="dz-support-copy" disabled={saving || !status.testMode} onClick={() => handleTestMode(false)}>
+                  إيقاف وضع الاختبار
+                </button>
+              </div>
+              <p className="dz-int-guided-note" style={{ fontSize: '14px', lineHeight: 1.8 }}>
+                فعّل وضع الاختبار قبل الضغط على Faire des tests. ستُقبل العينات الموقّعة ويُسجّل وقت وصولها، لكن لن تُنشئ طلبات تجريبية أو تغيّر حالات طلباتك.
+              </p>
               <ol className="dz-int-guided-steps">
                 <li>افتح لوحة حساب Yalidine / Guepex، ثم صفحة <strong>Webhooks</strong>.</li>
                 <li>اضغط <strong>Ajouter</strong>، واكتب اسماً مثل <strong>TajerTrack</strong>، ثم الصق رابط الاستقبال أعلاه وأضف بريد التنبيهات المطلوب.</li>
                 <li>فعّل الحدثين <code dir="ltr">parcel_created</code> و<code dir="ltr">parcel_status_updated</code>. هذان الحدثان هما المستخدمان حالياً لإنشاء سجل الشحنة وتحديث مسارها.</li>
                 <li>احفظ Webhook. ستتحقق لوحة الشركة من الرابط عبر CRC تلقائياً، وسيظهر مفتاح التوقيع على بطاقة Webhook.</li>
-                <li>انسخ مفتاح التوقيع من البطاقة والصقه في الخانة أدناه، ثم شغّل <strong>Faire des tests</strong> من لوحة الشركة. بعد نجاح الاختبار، غيّر حالة Webhook إلى <strong>Actif</strong>.</li>
+                <li>انسخ مفتاح التوقيع من البطاقة والصقه في الخانة أدناه، ثم فعّل وضع الاختبار الآمن أعلاه. شغّل <strong>Faire des tests</strong> من لوحة الشركة. بعد نجاح الاختبار، أوقف وضع الاختبار ثم غيّر حالة Webhook إلى <strong>Actif</strong>.</li>
               </ol>
 
               <form onSubmit={handleSaveSecret} style={{ display: 'grid', gap: '10px', marginTop: '14px' }}>
