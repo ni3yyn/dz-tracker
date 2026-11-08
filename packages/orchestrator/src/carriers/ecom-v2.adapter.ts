@@ -13,17 +13,49 @@ function first(...values: unknown[]): string {
 }
 
 const NOTE_LABELS = new Set(['', 'encours', 'biz', 'suivi par e-com', 'information', 'type de colis', 'type de livraison']);
+const STATUS_MAP: Record<string, { statusRaw: string; statusTitle: string; description: string }> = {
+  'en preparation': { statusRaw: 'pending', statusTitle: 'الشحنة قيد التحضير', description: 'الشحنة مسجلة وتنتظر تأكيدها لدى E-com Delivery.' },
+  'attend confirmation': { statusRaw: 'pending', statusTitle: 'بانتظار تأكيد الشحنة', description: 'تنتظر الشحنة تأكيدها لدى E-com Delivery.' },
+  'commande reporte': { statusRaw: 'pending', statusTitle: 'تم تأجيل تأكيد الطلب', description: 'سجلت E-com Delivery تأجيل تأكيد الطلب.' },
+  'commande a relance': { statusRaw: 'pending', statusTitle: 'الطلب بحاجة إلى إعادة الاتصال', description: 'سجلت E-com Delivery إعادة محاولة التواصل مع العميل.' },
+  'en traitement': { statusRaw: 'processing', statusTitle: 'الشحنة قيد المعالجة', description: 'بدأت E-com Delivery معالجة الشحنة.' },
+  'commande confirmee': { statusRaw: 'processing', statusTitle: 'تم تأكيد الشحنة', description: 'أكدت E-com Delivery الشحنة.' },
+  'au bureau': { statusRaw: 'in_transit', statusTitle: 'وصلت الشحنة إلى المكتب', description: 'وصلت الشحنة إلى أحد مكاتب E-com Delivery.' },
+  'en livraison': { statusRaw: 'in_transit', statusTitle: 'الشحنة قيد التوصيل', description: 'تتابع الشحنة مسارها لدى E-com Delivery.' },
+  'sortir en livraison': { statusRaw: 'in_transit', statusTitle: 'خرجت الشحنة للتوصيل', description: 'سجلت E-com Delivery خروج الشحنة للتوصيل.' },
+  'dispatcher': { statusRaw: 'in_transit', statusTitle: 'تم توجيه الشحنة', description: 'تم توجيه الشحنة ضمن شبكة E-com Delivery.' },
+  'ne reponde pas #1': { statusRaw: 'in_transit', statusTitle: 'تعذر الاتصال بالعميل', description: 'سجلت E-com Delivery تعذر الاتصال بالعميل للمرة الأولى.' },
+  'ne reponde pas #2': { statusRaw: 'in_transit', statusTitle: 'تعذر الاتصال بالعميل', description: 'سجلت E-com Delivery تعذر الاتصال بالعميل للمرة الثانية.' },
+  'ne reponde pas #3': { statusRaw: 'in_transit', statusTitle: 'تعذر الاتصال بالعميل', description: 'سجلت E-com Delivery تعذر الاتصال بالعميل للمرة الثالثة.' },
+  'en attente du client': { statusRaw: 'in_transit', statusTitle: 'بانتظار رد العميل', description: 'تنتظر E-com Delivery رد العميل لمتابعة التسليم.' },
+  'reporte': { statusRaw: 'in_transit', statusTitle: 'تم تأجيل التوصيل', description: 'سجلت E-com Delivery تأجيل محاولة التوصيل.' },
+  'reporte commune erronee': { statusRaw: 'in_transit', statusTitle: 'مراجعة البلدية', description: 'سجلت E-com Delivery تأجيلاً بسبب بيانات البلدية.' },
+  'reporte wilaya erronee': { statusRaw: 'in_transit', statusTitle: 'مراجعة الولاية', description: 'سجلت E-com Delivery تأجيلاً بسبب بيانات الولاية.' },
+  'appel tel': { statusRaw: 'in_transit', statusTitle: 'تم الاتصال بالعميل', description: 'سجلت E-com Delivery محاولة اتصال بالعميل.' },
+  'sms envoye': { statusRaw: 'in_transit', statusTitle: 'تم إرسال رسالة للعميل', description: 'سجلت E-com Delivery إرسال رسالة نصية للعميل.' },
+  'whatsapp ok': { statusRaw: 'in_transit', statusTitle: 'تم التواصل عبر واتساب', description: 'سجلت E-com Delivery التواصل مع العميل عبر واتساب.' },
+  'livree': { statusRaw: 'delivered', statusTitle: 'تم تسليم الشحنة', description: 'أكدت E-com Delivery تسليم الشحنة.' },
+  'encaisser': { statusRaw: 'delivered', statusTitle: 'تم تحصيل المبلغ', description: 'سجلت E-com Delivery تحصيل مبلغ الشحنة.' },
+  'recouvert': { statusRaw: 'delivered', statusTitle: 'تم تحصيل المبلغ', description: 'سجلت E-com Delivery تحصيل مبلغ الشحنة.' },
+  'recuperer': { statusRaw: 'delivered', statusTitle: 'تم استرجاع المبلغ', description: 'سجلت E-com Delivery استرجاع المبلغ.' },
+  'retour fournisseur': { statusRaw: 'returned', statusTitle: 'أُعيدت الشحنة إلى المرسل', description: 'سجلت E-com Delivery إرجاع الشحنة إلى المرسل.' },
+  'retour stock': { statusRaw: 'returned', statusTitle: 'عادت الشحنة إلى المخزون', description: 'سجلت E-com Delivery إعادة الشحنة إلى المخزون.' },
+  'annuler': { statusRaw: 'returned', statusTitle: 'الشحنة في مسار الإرجاع', description: 'سجلت E-com Delivery حالة إلغاء/إرجاع.' },
+  'annuler x3': { statusRaw: 'returned', statusTitle: 'الشحنة في مسار الإرجاع', description: 'سجلت E-com Delivery حالة إلغاء/إرجاع متكررة.' },
+  'retour de dispatche': { statusRaw: 'returned', statusTitle: 'عادت الشحنة من التوزيع', description: 'سجلت E-com Delivery عودة الشحنة من التوزيع.' },
+  'retour navette': { statusRaw: 'returned', statusTitle: 'عادت الشحنة عبر النقل', description: 'سجلت E-com Delivery عودة الشحنة عبر النقل.' },
+  'commande annuler': { statusRaw: 'cancelled', statusTitle: 'تم إلغاء الشحنة', description: 'سجلت E-com Delivery إلغاء الطلب.' },
+  'supprimee': { statusRaw: 'cancelled', statusTitle: 'تم حذف الشحنة', description: 'سجلت E-com Delivery حذف الشحنة.' },
+};
 export function mapEcomV2Status(value: unknown): { statusRaw: string; statusTitle: string; description: string } {
   const raw = first(value);
-  const key = normalizeDiacritics(safeLower(raw)).replace(/\s+/g, ' ').trim();
+  const key = normalizeDiacritics(safeLower(raw)).replace(/\\s+/g, ' ').trim();
   if (NOTE_LABELS.has(key)) return { statusRaw: 'unknown', statusTitle: 'معلومة من E-com Delivery', description: 'سجلت الشركة معلومة إضافية دون تغيير واضح في حالة الشحنة.' };
-  if (/commande annuler|supprimee|supprime/.test(key)) return { statusRaw: 'cancelled', statusTitle: 'تم إلغاء الشحنة', description: 'سجلت E-com Delivery إلغاء الشحنة.' };
-  if (/annuler|retour de dispatche|retour navette|retour fournisseur|retour stock|retour/.test(key)) return { statusRaw: 'returned', statusTitle: 'الشحنة في مسار الإرجاع', description: 'سجلت E-com Delivery مرحلة من مراحل إرجاع الشحنة.' };
-  if (/livree|encaisser|recouvert|recuperer|delivered/.test(key)) return { statusRaw: 'delivered', statusTitle: 'تم تسليم الشحنة', description: 'أكدت E-com Delivery تسليم الشحنة أو تحصيل مبلغها.' };
-  if (/ne reponde|attente du client|report|appel tel|sms envoye|whatsapp ok|au bureau|en livraison|sortir en livraison|dispatcher/.test(key)) return { statusRaw: 'in_transit', statusTitle: 'الشحنة قيد التوصيل', description: 'تتابع الشحنة مسارها لدى E-com Delivery.' };
-  if (/en traitement|commande confirmee/.test(key)) return { statusRaw: 'processing', statusTitle: 'تم تأكيد الشحنة', description: 'أكدت E-com Delivery الشحنة وبدأت معالجتها.' };
-  if (/en preparation|attend confirmation/.test(key)) return { statusRaw: 'pending', statusTitle: 'الشحنة قيد التحضير', description: 'الشحنة مسجلة وتنتظر تأكيدها لدى E-com Delivery.' };
-  return { statusRaw: 'unknown', statusTitle: 'تحديث جديد من E-com Delivery (' + raw + ')', description: 'وصلت حالة غير معروفة من E-com Delivery؛ لم يتم تخمين معناها.' };
+  return STATUS_MAP[key] || {
+    statusRaw: 'unknown',
+    statusTitle: 'تحديث جديد من E-com Delivery (' + raw + ')',
+    description: 'وصلت حالة غير معروفة من E-com Delivery؛ لم يتم تخمين معناها.',
+  };
 }
 
 export function parseEcomV2Date(value: unknown): string | undefined {
