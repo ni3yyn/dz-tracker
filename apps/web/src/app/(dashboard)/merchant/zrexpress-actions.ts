@@ -32,15 +32,15 @@ type ZRApiResult<T = Record<string, unknown>> = {
 
 async function zrApi<T = Record<string, unknown>>(
   apiKey: string,
-  tenantId: string,
+  tenantId: string | null,
   path: string,
   options: { method?: 'GET' | 'POST' | 'PUT' | 'DELETE'; body?: unknown } = {}
 ): Promise<ZRApiResult<T>> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'X-Api-Key': apiKey,
-    'X-Tenant': tenantId,
   };
+  if (tenantId) headers['X-Tenant'] = tenantId;
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
 
   let response: Response;
@@ -177,7 +177,7 @@ export async function saveZRExpressIntegration(
     if (!/^[A-Za-z0-9_-]{32,128}$/.test(apiKey)) {
       throw new Error('أدخل مفتاح API الخاص بـ ZR Express. يجب أن يكون المفتاح كاملاً كما ظهر عند إنشائه.');
     }
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
       throw new Error('أدخل Tenant ID الصحيح (UUID) من حساب ZR Express.');
     }
 
@@ -198,7 +198,7 @@ export async function saveZRExpressIntegration(
 
     // Validate the API key without tenant context, then validate tenant access
     // by listing endpoints before creating or updating anything.
-    const profile = await zrApi(apiKey, tenantId, '/users/profile');
+    const profile = await zrApi(apiKey, null, '/users/profile');
     if (!profile.response.ok) throw zrApiError(profile.response.status, profile.body, 'التحقق من مفتاح API');
     const endpointList = await zrApi(apiKey, tenantId, '/webhooks/endpoints');
     if (!endpointList.response.ok) throw zrApiError(endpointList.response.status, endpointList.body, 'التحقق من صلاحيات إدارة Webhooks');
@@ -226,7 +226,28 @@ export async function saveZRExpressIntegration(
           eventTypes: [...ZR_EVENT_TYPES],
         },
       });
-      if (!updated.response.ok) throw zrApiError(updated.response.status, updated.body, 'تحديث نقطة استقبال Webhook');
+      if (updated.response.status === 404) {
+        // The endpoint may have been deleted in the provider portal. Recreate it
+        // with the same callback token so the already-saved local route remains valid.
+        const recreated = await zrApi(apiKey, tenantId, '/webhooks/endpoints', {
+          method: 'POST',
+          body: {
+            url,
+            description: 'TajerTrack shipment tracking',
+            eventTypes: [...ZR_EVENT_TYPES],
+          },
+        });
+        if (!recreated.response.ok) throw zrApiError(recreated.response.status, recreated.body, 'إعادة إنشاء نقطة استقبال Webhook');
+        const endpoint = unwrapApiBody(recreated.body);
+        endpointId = String(endpoint?.id || '');
+        if (!endpointId.startsWith('ep_')) {
+          throw new Error('لم تُرجع ZR Express معرّفاً صالحاً لنقطة Webhook الجديدة.');
+        }
+        createdEndpointId = endpointId;
+        createdEndpointCredentials = { apiKey, tenantId };
+      } else if (!updated.response.ok) {
+        throw zrApiError(updated.response.status, updated.body, 'تحديث نقطة استقبال Webhook');
+      }
     } else {
       const created = await zrApi(apiKey, tenantId, '/webhooks/endpoints', {
         method: 'POST',
