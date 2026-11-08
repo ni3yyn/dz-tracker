@@ -174,7 +174,7 @@ export async function saveZRExpressIntegration(
     const merchantId = await getAuthenticatedMerchantId();
     const apiKey = apiKeyInput.trim();
     const tenantId = tenantIdInput.trim();
-    if (apiKey.length < 16 || apiKey.length > 512 || !/^[\\x21-\\x7E]+$/.test(apiKey)) {
+    if (apiKey.length < 16 || apiKey.length > 512 || ![...apiKey].every((character) => character.charCodeAt(0) >= 33 && character.charCodeAt(0) <= 126)) {
       throw new Error('أدخل مفتاح API الخاص بـ ZR Express. يجب أن يكون المفتاح كاملاً كما ظهر عند إنشائه.');
     }
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
