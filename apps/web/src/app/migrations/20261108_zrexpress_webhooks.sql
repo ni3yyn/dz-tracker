@@ -134,6 +134,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_carrier_event_at TIMESTAMPTZ;
+  v_latest_history_at TIMESTAMPTZ;
   v_history_id UUID;
   v_merchant_id UUID;
 BEGIN
@@ -177,7 +178,15 @@ BEGIN
     RETURN;
   END IF;
 
-  IF p_occurred_at < COALESCE(v_carrier_event_at, '-infinity'::TIMESTAMPTZ) THEN
+  SELECT MAX(created_at)
+    INTO v_latest_history_at
+  FROM public.order_history
+  WHERE order_id = p_order_id;
+
+  IF p_occurred_at < GREATEST(
+    COALESCE(v_carrier_event_at, '-infinity'::TIMESTAMPTZ),
+    COALESCE(v_latest_history_at, '-infinity'::TIMESTAMPTZ)
+  ) THEN
     RETURN QUERY SELECT FALSE, NULL::UUID;
     RETURN;
   END IF;
