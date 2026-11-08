@@ -81,15 +81,12 @@ export class ZimouSyncWorker {
         .from('merchants').select('api_key').eq('id',integration.merchant_id).maybeSingle();
       if (merchantError || !merchant?.api_key) throw new Error('Merchant API key could not be loaded.');
 
-      let offset = 0;
-      let checked = 0;
       const statusesUrl = new URL(API + '/v3/helpers/package-statuses');
       const statusWaitMs = Math.max(0, 1400 - (Date.now() - this.lastApiRequestAt));
       if (statusWaitMs > 0) await new Promise(resolve => setTimeout(resolve, statusWaitMs));
       this.lastApiRequestAt = Date.now();
       const statusResponse = await fetch(statusesUrl, {
-        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
-        cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(TIMEOUT_MS),
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       let statusBody: any;
       try { statusBody = await statusResponse.json(); } catch { throw new Error('Zimou returned an invalid package-status dictionary.'); }
@@ -122,16 +119,15 @@ export class ZimouSyncWorker {
           if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
           this.lastApiRequestAt = Date.now();
           const response = await fetch(url, {
-            headers:{ Authorization:'Bearer ' + token, Accept:'application/json' },
-            cache:'no-store', redirect:'error', signal:AbortSignal.timeout(TIMEOUT_MS),
+            headers:{ Authorization:'Bearer ' + token, Accept:'application/json' }, redirect:'error', signal:AbortSignal.timeout(TIMEOUT_MS),
           });
           let body:any;
           try { body = await response.json(); } catch { throw new Error('Zimou returned invalid JSON (HTTP ' + response.status + ').'); }
           if (response.status === 401 || response.status === 403) throw new Error('Zimou rejected the saved API Token. Reconnect the account.');
           if (response.status === 429) throw new Error('Zimou rate limit reached; the next cycle will retry.');
           if (!response.ok || body?.error === 1 || body?.success === false) throw new Error('Zimou status request failed (HTTP ' + response.status + '): ' + asText(body?.message));
-          const statusMap = normalizeZimouStatusResponse(body);
-          const events = batch.map(code => {
+          const statusMap = normalizeZimouStatusResponse(body) as Record<string, Record<string, unknown>>;
+          const events: Record<string, unknown>[] = batch.map(code => {
             const remote = statusMap[code];
             if (!remote || typeof remote !== 'object') return null;
             const existing = rows.find((row:any) => asText(row.carrier_tracking_number) === code);
@@ -144,7 +140,7 @@ export class ZimouSyncWorker {
               client_phone: remote.client_phone || existing?.customer_phone || '',
               name: remote.name || existing?.product_name || '',
             };
-          }).filter(Boolean);
+          }).filter((event): event is Record<string, unknown> => event !== null);
           if (events.length) await this.ingest(events, merchant.api_key);
           checked += batch.length;
         }

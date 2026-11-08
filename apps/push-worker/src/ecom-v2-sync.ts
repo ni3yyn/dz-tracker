@@ -75,7 +75,7 @@ export class EcomV2SyncWorker {
           await this.rateLimit();
           const url=new URL('colis/'+encodeURIComponent(order.carrier_tracking_number),API+'/');
           let response:Response;
-          try{response=await fetch(url,{headers:{Accept:'application/json','X-API-Key':auth.apiKey,'X-API-Token':auth.apiToken},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(TIMEOUT_MS)});}
+          try{response=await fetch(url,{headers:{Accept:'application/json','X-API-Key':auth.apiKey,'X-API-Token':auth.apiToken},redirect:'error',signal:AbortSignal.timeout(TIMEOUT_MS)});}
           catch(e:any){throw new Error(e?.name==='TimeoutError'||e?.name==='AbortError'?'E-com Delivery tracking request timed out.':'E-com Delivery tracking request could not reach the API.');}
           if(response.status===404)continue;
           if(response.status===401||response.status===403)throw new Error('E-com Delivery rejected the saved KEY or Token. Reconnect the account.');
