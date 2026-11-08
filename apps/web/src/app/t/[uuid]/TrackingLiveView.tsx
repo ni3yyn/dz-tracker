@@ -244,7 +244,7 @@ export function TrackingLiveView({
   };
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (settings.animationLevel === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setIntroPhase('done');
       return;
     }
