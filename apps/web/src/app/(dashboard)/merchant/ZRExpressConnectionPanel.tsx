@@ -108,7 +108,7 @@ export function ZRExpressConnectionPanel() {
         <span className="dz-int-guided-number">02</span>
         <div>
           <h4>ربط حساب ZR Express مباشرة</h4>
-          <p>
+          <p style={{ fontSize: '16px', lineHeight: 1.8 }}>
             ينشئ تاجر تراك Webhook داخل حساب ZR Express تلقائياً، ويتحقق من توقيع Svix لكل إشعار قبل قبول تحديث الشحنة.
             لا تحتاج إلى إنشاء رابط Webhook يدوياً أو لصق مفتاح توقيع.
           </p>
@@ -116,12 +116,12 @@ export function ZRExpressConnectionPanel() {
       </div>
 
       {loading ? (
-        <p className="dz-int-guided-note">جارٍ التحقق من حالة الربط...</p>
+        <p className="dz-int-guided-note" style={{ fontSize: '15.5px', lineHeight: 1.8 }}>جارٍ التحقق من حالة الربط...</p>
       ) : (
         <>
           <div className="dz-int-guided-meta">
             <span>حالة الحساب</span>
-            <strong>{status?.connected ? 'متصل' : 'غير متصل'}</strong>
+            <strong style={{ fontSize: '16px' }}>{status?.connected ? 'متصل' : 'غير متصل'}</strong>
             {status?.connected && (
               <>
                 <span>آخر إشعار وصل</span>
@@ -162,7 +162,7 @@ export function ZRExpressConnectionPanel() {
           )}
 
           <form onSubmit={handleSave} style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
-            <label style={{ display: 'grid', gap: '7px' }}>
+            <label style={{ display: 'grid', gap: '7px', fontSize: '16px', lineHeight: 1.6 }}>
               <span>ZR Express API Key</span>
               <input
                 className="input"
@@ -177,7 +177,7 @@ export function ZRExpressConnectionPanel() {
                 autoComplete="new-password"
               />
             </label>
-            <label style={{ display: 'grid', gap: '7px' }}>
+            <label style={{ display: 'grid', gap: '7px', fontSize: '16px', lineHeight: 1.6 }}>
               <span>Tenant ID</span>
               <input
                 className="input"
