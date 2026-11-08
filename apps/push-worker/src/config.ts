@@ -58,7 +58,7 @@ export function loadConfig(): PushWorkerConfig {
     credentialsEncryptionKey: process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '',
     ecoTrackSyncEnabled: process.env.CARRIER_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
     ecoTrackSyncIntervalMs: Math.max(60_000, parseInt(process.env.CARRIER_SYNC_INTERVAL_MS || '300000', 10)),
-    zrExpressWebhookWorkerEnabled: process.env.ZREXPRESS_WEBHOOK_WORKER_ENABLED === 'true',
+    zrExpressWebhookWorkerEnabled: process.env.ZREXPRESS_WEBHOOK_WORKER_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
     zrExpressWebhookPollIntervalMs: Math.max(1000, parseInt(process.env.ZREXPRESS_WEBHOOK_POLL_INTERVAL_MS || '2000', 10)),
   };
 }
