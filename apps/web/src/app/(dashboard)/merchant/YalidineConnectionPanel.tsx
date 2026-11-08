@@ -109,7 +109,7 @@ export function YalidineConnectionPanel() {
       }
       setStatus(result.status);
       setSecret('');
-      setMessage('تم حفظ مفتاح التوقيع مشفّراً. شغّل الاختبار من لوحة شركة التوصيل ثم فعّل Webhook هناك.');
+      setMessage('تم حفظ مفتاح التوقيع مشفّراً. فعّل وضع الاختبار الآمن قبل تشغيل الاختبارات من لوحة شركة التوصيل.');
     } catch {
       setMessage('تعذر حفظ مفتاح التوقيع. حاول مجدداً.');
       setMessageIsError(true);
@@ -218,17 +218,21 @@ export function YalidineConnectionPanel() {
                 <button type="button" onClick={handleCopy}>{copied ? 'تم النسخ' : 'نسخ الرابط'}</button>
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '12px 0' }}>
-                <button type="button" className="dz-btn" disabled={saving || status.testMode} onClick={() => handleTestMode(true)}>
-                  تفعيل وضع الاختبار الآمن
-                </button>
-                <button type="button" className="dz-support-copy" disabled={saving || !status.testMode} onClick={() => handleTestMode(false)}>
-                  إيقاف وضع الاختبار
-                </button>
-              </div>
-              <p className="dz-int-guided-note" style={{ fontSize: '14px', lineHeight: 1.8 }}>
-                فعّل وضع الاختبار قبل الضغط على Faire des tests. ستُقبل العينات الموقّعة ويُسجّل وقت وصولها، لكن لن تُنشئ طلبات تجريبية أو تغيّر حالات طلباتك.
-              </p>
+              {status.connected && (
+                <>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '12px 0' }}>
+                    <button type="button" className="dz-btn" disabled={saving || status.testMode} onClick={() => handleTestMode(true)}>
+                      تفعيل وضع الاختبار الآمن
+                    </button>
+                    <button type="button" className="dz-support-copy" disabled={saving || !status.testMode} onClick={() => handleTestMode(false)}>
+                      إيقاف وضع الاختبار
+                    </button>
+                  </div>
+                  <p className="dz-int-guided-note" style={{ fontSize: '14px', lineHeight: 1.8 }}>
+                    فعّل وضع الاختبار قبل الضغط على Faire des tests. ستُقبل العينات الموقّعة ويُسجّل وقت وصولها، لكن لن تُنشئ طلبات تجريبية أو تغيّر حالات طلباتك.
+                  </p>
+                </>
+              )}
               <ol className="dz-int-guided-steps">
                 <li>افتح لوحة حساب Yalidine / Guepex، ثم صفحة <strong>Webhooks</strong>.</li>
                 <li>اضغط <strong>Ajouter</strong>، واكتب اسماً مثل <strong>TajerTrack</strong>، ثم الصق رابط الاستقبال أعلاه وأضف بريد التنبيهات المطلوب.</li>
