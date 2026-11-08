@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './site-header.module.css';
 
 type HeaderVariant = 'site' | 'dashboard';
@@ -51,12 +52,17 @@ export default function SiteHeader({
   children,
 }: Props) {
   const [siteMenuOpen, setSiteMenuOpen] = useState(false);
+  const [menuPortalTarget, setMenuPortalTarget] = useState<HTMLElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
   const isDashboard = variant === 'dashboard';
   const effectiveMenuOpen = isDashboard ? menuOpen : siteMenuOpen;
   const accountHref = isAuthenticated ? '/merchant' : '/login';
   const primaryHref = isAuthenticated ? '/merchant' : '/register';
   const closeSiteMenu = () => setSiteMenuOpen(false);
+
+  useEffect(() => {
+    if (!isDashboard) setMenuPortalTarget(document.body);
+  }, [isDashboard]);
 
   useEffect(() => {
     if (!effectiveMenuOpen) return;
@@ -70,7 +76,8 @@ export default function SiteHeader({
       if (!target) return;
       const inHeader = headerRef.current?.contains(target) ?? false;
       const inDashboardMenu = isDashboard && (document.getElementById(menuId)?.contains(target) ?? false);
-      if (inHeader || inDashboardMenu) return;
+      const inSiteMenu = !isDashboard && (document.getElementById(menuId)?.contains(target) ?? false);
+      if (inHeader || inDashboardMenu || inSiteMenu) return;
       if (isDashboard) onMenuToggle?.();
       else setSiteMenuOpen(false);
     };
@@ -155,23 +162,29 @@ export default function SiteHeader({
         <Hamburger />
       </button>
 
-      <div id={menuId} className={`${styles.mobileMenu} ${siteMenuOpen ? styles.mobileMenuOpen : ''}`} aria-hidden={!siteMenuOpen}>
-        <div className={styles.mobileMenuInner}>
+
+    </header>
+    {menuPortalTarget
+      ? createPortal(
+          <div id={menuId} className={`${styles.mobileMenu} ${siteMenuOpen ? styles.mobileMenuOpen : ''}`} aria-hidden={!siteMenuOpen}>
+          <div className={styles.mobileMenuInner}>
           <nav aria-label="التنقل على الهاتف">
-            <a href="/#how-it-works" onClick={closeSiteMenu}>كيف يعمل</a>
-            <a href="/#features" onClick={closeSiteMenu}>المزايا</a>
-            <a href="/#pricing" onClick={closeSiteMenu}>الأسعار</a>
-            <a href="/#faq" onClick={closeSiteMenu}>الأسئلة الشائعة</a>
+          <a href="/#how-it-works" onClick={closeSiteMenu}>كيف يعمل</a>
+          <a href="/#features" onClick={closeSiteMenu}>المزايا</a>
+          <a href="/#pricing" onClick={closeSiteMenu}>الأسعار</a>
+          <a href="/#faq" onClick={closeSiteMenu}>الأسئلة الشائعة</a>
           </nav>
           <div className={styles.mobileActions}>
-            {!isAuthenticated && <a href={accountHref} onClick={closeSiteMenu}>تسجيل الدخول</a>}
-            <a className={styles.mobilePrimary} href={primaryHref} onClick={closeSiteMenu}>
-              {isAuthenticated ? 'لوحة التاجر' : 'إنشاء حساب'}
-              <span aria-hidden="true">↗</span>
-            </a>
+          {!isAuthenticated && <a href={accountHref} onClick={closeSiteMenu}>تسجيل الدخول</a>}
+          <a className={styles.mobilePrimary} href={primaryHref} onClick={closeSiteMenu}>
+          {isAuthenticated ? 'لوحة التاجر' : 'إنشاء حساب'}
+          <span aria-hidden="true">↗</span>
+          </a>
           </div>
-        </div>
-      </div>
-    </header>
+          </div>
+          </div>,
+          menuPortalTarget
+        )
+      : null}
   );
 }
