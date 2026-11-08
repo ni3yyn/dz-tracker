@@ -47,7 +47,7 @@ export interface TrackingEvent {
   /** Selected provider order fields retained for merchant-side auditing/display. */
   carrierMetadata?: Record<string, unknown>;
   /** Distinguishes provider-specific event ledgers when a webhook has no signature ID. */
-  sourceProvider?: 'zrexpress' | 'maystro' | 'zimou' | 'elogistia' | 'ecom_v2';
+  sourceProvider?: 'zrexpress' | 'maystro' | 'zimou' | 'elogistia' | 'ecom_v2' | 'yalidine' | 'guepex';
   /** Import a historical provider event without firing customer notifications. */
   suppressTriggers?: boolean;
   /** Provider event time used to reject out-of-order courier status events. */
@@ -195,7 +195,7 @@ export class TrackingOrchestrator {
         if (event.carrierName) {
           updatePayload.carrier_name = event.carrierName;
         }
-        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2') {
+        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') {
           // Carrier API snapshots refresh authoritative provider metadata and recipient fields.
           // refresh the snapshot from the authenticated API instead of retaining stale values.
           if (event.carrierTrackingNumber) updatePayload.carrier_tracking_number = event.carrierTrackingNumber;
