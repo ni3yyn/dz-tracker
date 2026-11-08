@@ -135,6 +135,8 @@ export function ElogistiaDispatchPanel({ order }: Props) {
       <p className="dz-int-guided-note" role={error ? 'alert' : 'status'}>{error || 'اربط حساب Elogistia أولاً من قسم التكاملات، ثم أعد فتح تفاصيل الطلب.'}</p>
     ) : (
       <form onSubmit={submit} style={{ display: 'grid', gap: 12, marginTop: 10 }}>
+        {attemptState === 'failed' && attemptError && <p role="status" className="dz-int-guided-note" style={{ color: '#8a4b08', background: '#fff7e6', padding: 11, borderRadius: 9 }}>رفضت Elogistia المحاولة السابقة بشكل واضح؛ يمكنك تصحيح البيانات ثم إعادة المحاولة. {attemptError}</p>}
+        {error && <p role="alert" className="dz-int-guided-note" style={{ color: '#b42318', background: '#fff4f2', padding: 11, borderRadius: 9 }}>{error}</p>}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <label htmlFor={prefix+'-first'} style={{ display: 'grid', gap: 6 }}>الاسم الأول *
             <input id={prefix+'-first'} className="dz-input-field" value={firstName} onChange={e=>setFirstName(e.target.value)} required maxLength={100}/>
