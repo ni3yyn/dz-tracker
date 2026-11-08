@@ -213,13 +213,26 @@ export async function getElogistiaDispatchStatus(orderId: string) {
     if (!orderId || typeof orderId !== 'string') throw new Error('الطلب المحدد غير صالح.');
     const db = getSupabaseAdminClient();
     const { data: order, error: orderError } = await (db as any).from('orders')
-      .select('id').eq('id', orderId).eq('merchant_id', id).maybeSingle();
+      .select('id,carrier_tracking_number,carrier_metadata').eq('id', orderId).eq('merchant_id', id).maybeSingle();
     if (orderError || !order) throw new Error('لم نعثر على الطلب داخل متجرك.');
     const { data, error } = await (db as any).from('merchant_carrier_dispatch_attempts')
       .select('attempt_state,tracking_number,error_message,updated_at')
       .eq('merchant_id', id).eq('order_id', orderId).eq('provider', 'elogistia').maybeSingle();
     if (error) throw new Error('تعذر قراءة حالة محاولة الشحن.');
-    return { success: true, attempt: data || null };
+    const metadata = order.carrier_metadata && typeof order.carrier_metadata === 'object' ? order.carrier_metadata : {};
+    const elogistia = metadata.elogistia && typeof metadata.elogistia === 'object' ? metadata.elogistia : {};
+    const trackingNumber = data?.tracking_number || elogistia.trackingNumber || '';
+    const attemptState = data?.attempt_state || elogistia.creationStatus || null;
+    return {
+      success: true,
+      attempt: data || attemptState || trackingNumber ? {
+        ...(data || {}),
+        attempt_state: attemptState,
+        tracking_number: trackingNumber || null,
+        linked: Boolean(trackingNumber && order.carrier_tracking_number === trackingNumber),
+        error_message: data?.error_message || elogistia.creationError || null,
+      } : null,
+    };
   } catch (error: any) {
     return { success: false, error: error?.message || 'تعذر قراءة حالة محاولة الشحن.' };
   }
