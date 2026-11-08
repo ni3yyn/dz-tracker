@@ -162,6 +162,9 @@ export function ZRExpressConnectionPanel() {
           )}
 
           <form onSubmit={handleSave} style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
+            <p className="dz-int-guided-note" style={{ fontSize: '15.5px', lineHeight: 1.8 }}>
+              خذ API Key وTenant ID من لوحة ZR Express ضمن API Rest ← Token API.
+            </p>
             <label style={{ display: 'grid', gap: '7px', fontSize: '16px', lineHeight: 1.6 }}>
               <span>ZR Express API Key</span>
               <input
