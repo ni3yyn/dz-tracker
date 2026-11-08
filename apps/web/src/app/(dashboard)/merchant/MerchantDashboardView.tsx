@@ -6295,6 +6295,18 @@ export async function registerSavedOrder(savedOrder) {
                       <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.codAmount != null ? `${selectedOrder.carrier_metadata.codAmount} دج` : 'غير متوفر'}</strong></div>
                     </>
                   )}
+                  {selectedOrder.carrier_name === 'Elogistia' && selectedOrder.carrier_metadata?.elogistia && (
+                    <>
+                      <div className="dz-order-detail-field"><span>رقم التتبع لدى Elogistia</span><strong dir="ltr">{selectedOrder.carrier_metadata.elogistia.trackingNumber || selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.elogistia.wilayaName || selectedOrder.carrier_metadata.elogistia.wilayaId || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.elogistia.commune || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.address || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.codAmount != null ? Number(selectedOrder.carrier_metadata.elogistia.codAmount).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>طريقة التوصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.deliveryType === 'stopdesk' ? 'مكتب Elogistia' : 'توصيل إلى المنزل'}</strong></div>
+                      <div className="dz-order-detail-field"><span>نوع العملية</span><strong>{selectedOrder.carrier_metadata.elogistia.deliveryMode === 'exchange' ? 'تبادل' : 'إرسال عادي'}</strong></div>
+                      <div className="dz-order-detail-field"><span>آخر حالة أصلية</span><strong>{selectedOrder.carrier_metadata.elogistia.rawStatus || 'بانتظار أول تحديث'}</strong></div>
+                    </>
+                  )}
                   <div className="dz-order-detail-field"><span>تاريخ تسجيل الطلب</span><strong>{new Date(selectedOrder.created_at).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
                   <div className="dz-order-detail-field"><span>معرّف الطلب الداخلي</span><strong>{selectedOrder.id}</strong></div>
                 </div>
