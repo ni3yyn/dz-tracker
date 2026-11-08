@@ -5026,7 +5026,7 @@ export async function registerSavedOrder(savedOrder) {
         .dz-admin-root .dz-mappings-section-head h3 { margin:0; color:#26372c; font-size:16px; font-weight:800; }
         .dz-admin-root .dz-mappings-preset-actions { display:flex; flex-wrap:wrap; gap:9px; }
         .dz-admin-root .dz-mappings-preset-actions form { margin:0; }
-        .dz-admin-root .dz-mapping-preset { display:inline-flex; align-items:center; justify-content:space-between; gap:18px; min-height:42px; padding:0 13px; border:0; border-radius:4px; background:#e9eee7; color:#344b39; font:700 12px inherit; cursor:pointer; transition:background .16s ease,color .16s ease; }
+        .dz-admin-root .dz-mapping-preset { display:inline-flex; align-items:center; justify-content:space-between; gap:18px; min-height:42px; padding:0 13px; border:0; border-radius:4px; background:#e9eee7; color:#344b39; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; transition:background .16s ease,color .16s ease; }
         .dz-admin-root .dz-mapping-preset span { color:#718174; font-size:10px; font-weight:700; }
         .dz-admin-root .dz-mapping-preset:hover { background:#dce7d9; color:var(--green-deep); }
         .dz-admin-root .dz-mappings-tab .formContainer { margin:0; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
@@ -5035,7 +5035,7 @@ export async function registerSavedOrder(savedOrder) {
         .dz-admin-root .dz-mappings-tab .label { color:#526356; font-size:12px; font-weight:750; }
         .dz-admin-root .dz-mappings-tab .input { min-height:46px; padding:11px 13px; border:1px solid #e1e7df; border-radius:4px; background:#f7f9f5; color:#263b30; font-size:13px; }
         .dz-admin-root .dz-mappings-tab .input:focus { border-color:#91a895; background:#fff; box-shadow:0 0 0 3px rgba(65,107,82,.09); }
-        .dz-admin-root .dz-mappings-tab .submitBtn { min-height:42px; padding:0 18px; border:1px solid var(--green); border-radius:4px; background:var(--green); color:#fffefa; font:750 12px inherit; box-shadow:none; }
+        .dz-admin-root .dz-mappings-tab .submitBtn { min-height:42px; padding:0 18px; border:1px solid var(--green); border-radius:4px; background:var(--green); color:#fffefa; font-family:inherit; font-size:12px; font-weight:750; box-shadow:none; }
         .dz-admin-root .dz-mappings-tab .submitBtn:hover:not(:disabled) { background:var(--green-deep); border-color:var(--green-deep); }
         .dz-admin-root .dz-mappings-tab .submitBtn:disabled { opacity:.55; cursor:wait; }
         .dz-admin-root .dz-mappings-tab .feedbackSuccess,.dz-admin-root .dz-mappings-tab .feedbackError { font-size:12px; font-weight:650; }
@@ -5050,7 +5050,7 @@ export async function registerSavedOrder(savedOrder) {
         .dz-admin-root .dz-mapping-arrow { color:#9aa69a; text-align:center; font-size:17px; }
         .dz-admin-root .dz-mapping-actions { display:flex; align-items:center; justify-content:flex-end; gap:6px; }
         .dz-admin-root .dz-mapping-actions form { margin:0; }
-        .dz-admin-root .dz-mapping-action { min-height:34px; padding:0 11px; border:0; border-radius:4px; background:#e9eee7; color:#45634b; font:700 11px inherit; cursor:pointer; }
+        .dz-admin-root .dz-mapping-action { min-height:34px; padding:0 11px; border:0; border-radius:4px; background:#e9eee7; color:#45634b; font-family:inherit; font-size:11px; font-weight:700; cursor:pointer; }
         .dz-admin-root .dz-mapping-action:hover:not(:disabled) { background:#dce7d9; color:var(--green-deep); }
         .dz-admin-root .dz-mapping-action-primary { background:var(--green); color:#fffefa; }
         .dz-admin-root .dz-mapping-action-primary:hover:not(:disabled) { background:var(--green-deep); color:#fffefa; }
