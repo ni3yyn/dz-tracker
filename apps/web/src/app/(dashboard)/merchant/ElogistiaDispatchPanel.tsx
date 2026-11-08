@@ -45,6 +45,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successTracking, setSuccessTracking] = useState(order.carrier_tracking_number || '');
+  const [isLinked, setIsLinked] = useState(Boolean(order.carrier_tracking_number));
   const [attemptState, setAttemptState] = useState<'pending' | 'failed' | 'uncertain' | 'created' | null>(null);
   const [attemptError, setAttemptError] = useState('');
 
@@ -58,6 +59,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
         setAttemptState(dispatch.attempt.attempt_state);
         setAttemptError(dispatch.attempt.error_message || '');
         if (dispatch.attempt.tracking_number) setSuccessTracking(dispatch.attempt.tracking_number);
+        setIsLinked(Boolean(dispatch.attempt.linked));
       }
     }).catch((reason: any) => {
       if (active) setError(reason?.message || 'تعذر تحميل بيانات Elogistia.');
@@ -90,10 +92,11 @@ export function ElogistiaDispatchPanel({ order }: Props) {
         weight: weight ? Number(weight) : null, note,
       });
       if (!result.success || !result.trackingNumber) {
-        if (result.trackingNumber) setSuccessTracking(result.trackingNumber);
+        if (result.trackingNumber) { setSuccessTracking(result.trackingNumber); setIsLinked(false); }
         throw new Error(result.error || 'تعذر إنشاء الشحنة لدى Elogistia.');
       }
       setSuccessTracking(result.trackingNumber);
+      setIsLinked(true);
       setAttemptState('created');
       router.refresh();
     } catch (reason: any) {
@@ -103,6 +106,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
         setAttemptState(latest.attempt.attempt_state);
         setAttemptError(latest.attempt.error_message || '');
         if (latest.attempt.tracking_number) setSuccessTracking(latest.attempt.tracking_number);
+        setIsLinked(Boolean(latest.attempt.linked));
       }
     } finally { setSubmitting(false); }
   }
@@ -117,8 +121,8 @@ export function ElogistiaDispatchPanel({ order }: Props) {
     </div>
     {successTracking ? (
       <div role="status" aria-live="polite" style={{ display: 'grid', gap: 10 }}>
-        <div className="dz-int-guided-meta"><span>حالة الشحنة</span><strong>تم ربط الشحنة بـ Elogistia</strong><span>رقم التتبع</span><strong dir="ltr">{successTracking}</strong><span>رقم طلب متجرك لدى Elogistia</span><strong dir="ltr">{order.external_order_id}</strong></div>
-        {!alreadyElogistia && <p className="dz-int-guided-note">تم إنشاء الشحنة. حدّث تفاصيل الطلب لعرض بيانات Elogistia المحفوظة.</p>}
+        <div className="dz-int-guided-meta"><span>حالة الشحنة</span><strong>{isLinked ? 'تم إنشاء الشحنة وربطها بالطلب' : 'تم الإنشاء لدى Elogistia — الربط المحلي يحتاج متابعة'}</strong><span>رقم التتبع</span><strong dir="ltr">{successTracking}</strong><span>رقم طلب متجرك لدى Elogistia</span><strong dir="ltr">{order.external_order_id}</strong></div>
+        {isLinked ? (!alreadyElogistia && <p className="dz-int-guided-note">تم إنشاء الشحنة وربطها بالطلب. حدّث تفاصيل الطلب لعرض جميع بيانات Elogistia المحفوظة.</p>) : <p role="alert" className="dz-int-guided-note" style={{ color: '#92400e', background: '#fff7e6', padding: 12, borderRadius: 9 }}>لا تنشئ شحنة أخرى. احتفظ برقم التتبع أعلاه واربطه بالطلب يدوياً أو تواصل مع الدعم حتى لا يتكرر الطرد.</p>}
       </div>
     ) : assigned ? (
       <p className="dz-int-guided-note" role="status">هذا الطلب مرتبط بالفعل بشركة {order.carrier_name || 'توصيل'} وبرقم تتبع {order.carrier_tracking_number}. لن ننشئ بوليصة ثانية لتفادي الشحن المكرر.</p>
