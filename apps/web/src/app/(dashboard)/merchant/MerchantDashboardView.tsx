@@ -5079,6 +5079,387 @@ export async function registerSavedOrder(savedOrder) {
           .dz-admin-root .dz-mapping-source code { font-size:11px; }
         }
 
+        /* UPSELLS — open paper layout, stronger actions and responsive product rows. */
+        .dz-admin-root .dz-upsell-container {
+          width: 100%;
+          max-width: 1120px;
+          margin-inline: auto;
+          gap: clamp(22px, 3vw, 34px);
+          padding-bottom: 48px;
+        }
+        .dz-admin-root .dz-upsell-hero-banner {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: end;
+          gap: 24px;
+          padding: 4px 0 24px;
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          color: var(--ink-main);
+        }
+        .dz-admin-root .dz-upsell-hero-text { min-width: 0; }
+        .dz-admin-root .dz-upsell-hero-text h3 {
+          align-items: center;
+          gap: 10px;
+          margin: 0 0 9px;
+          color: var(--ink-main);
+          font-size: clamp(23px, 2.5vw, 31px);
+          font-weight: 700;
+          letter-spacing: -.055em;
+          line-height: 1.35;
+        }
+        .dz-admin-root .dz-upsell-hero-text h3 svg { color: var(--green); }
+        .dz-admin-root .dz-upsell-hero-text p {
+          max-width: 720px;
+          color: var(--ink-muted);
+          font-size: 13px;
+          line-height: 1.9;
+        }
+        .dz-admin-root .dz-upsell-hero-badge {
+          min-height: 43px;
+          justify-content: center;
+          padding: 0 16px;
+          border: 1px solid var(--green);
+          border-radius: 0;
+          background: var(--green);
+          color: #fffefa;
+          box-shadow: none;
+          font-size: 12px;
+          font-weight: 750;
+          transition: background .16s ease, border-color .16s ease;
+        }
+        .dz-admin-root .dz-upsell-hero-badge:hover {
+          border-color: var(--green-deep);
+          background: var(--green-deep);
+          color: #fffefa;
+        }
+
+        .dz-admin-root .dz-upsell-form-card {
+          padding: 24px 0;
+          border: 0;
+          border-block: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-upsell-form-head {
+          align-items: flex-start;
+          margin-bottom: 19px;
+          padding-bottom: 15px;
+          border-bottom: 1px solid var(--border-soft);
+        }
+        .dz-admin-root .dz-upsell-form-head h3 {
+          color: var(--ink-main);
+          font-size: 20px;
+          font-weight: 700;
+          letter-spacing: -.04em;
+        }
+        .dz-admin-root .dz-upsell-form-head h3 svg { color: var(--green); }
+        .dz-admin-root .dz-upsell-form-head span { color: var(--ink-muted) !important; line-height: 1.8; }
+        .dz-admin-root .dz-smart-fetch-box {
+          margin-bottom: 22px;
+          padding: 15px 16px;
+          border: 0;
+          border-inline-start: 3px solid var(--green);
+          border-radius: 0;
+          background: rgba(230,236,227,.62);
+        }
+        .dz-admin-root .dz-smart-fetch-label { color: var(--green-deep); font-size: 12px; font-weight: 750; }
+        .dz-admin-root .dz-smart-fetch-row { align-items: stretch; gap: 9px; }
+        .dz-admin-root .dz-smart-fetch-input {
+          box-sizing: border-box;
+          min-width: 0;
+          min-height: 44px;
+          padding: 10px 13px;
+          border: 1px solid var(--border-strong);
+          border-radius: 0;
+          background: var(--surface);
+          color: var(--ink-main);
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-smart-fetch-input:focus {
+          border-color: var(--green);
+          outline: 2px solid rgba(41,75,55,.13);
+          outline-offset: 1px;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-smart-fetch-btn {
+          min-height: 44px;
+          justify-content: center;
+          padding: 0 18px;
+          border: 1px solid var(--green);
+          border-radius: 0 !important;
+          background: var(--green);
+          color: #fffefa;
+          box-shadow: none;
+          font-weight: 750;
+        }
+        .dz-admin-root .dz-smart-fetch-btn:hover:not(:disabled) {
+          border-color: var(--green-deep);
+          background: var(--green-deep);
+          color: #fffefa;
+          transform: none;
+        }
+        .dz-admin-root .dz-smart-fetch-btn:focus-visible,
+        .dz-admin-root .dz-upsell-hero-badge:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 3px;
+        }
+
+        .dz-admin-root .dz-upsell-inputs-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 18px 22px;
+          margin-bottom: 22px;
+        }
+        .dz-admin-root .dz-upsell-field { min-width: 0; gap: 8px; }
+        .dz-admin-root .dz-upsell-field label { color: var(--ink-main); font-size: 12px; font-weight: 700; }
+        .dz-admin-root .dz-upsell-field small { color: var(--ink-muted); font-size: 11px; line-height: 1.75; }
+        .dz-admin-root .dz-upsell-field > input {
+          box-sizing: border-box;
+          width: 100%;
+          min-height: 44px;
+          padding: 10px 12px;
+          border: 1px solid var(--border-strong);
+          border-radius: 0;
+          background: var(--surface);
+          color: var(--ink-main);
+          box-shadow: none;
+          font: inherit;
+          font-size: 13px;
+        }
+        .dz-admin-root .dz-upsell-field > input:focus {
+          border-color: var(--green);
+          outline: 2px solid rgba(41,75,55,.13);
+          outline-offset: 1px;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-upsell-field > input::placeholder,
+        .dz-admin-root .dz-smart-fetch-input::placeholder { color: var(--ink-light); }
+        .dz-admin-root .dz-upsell-form-card form > div:last-child {
+          padding-top: 17px !important;
+          border-top-color: var(--border-soft) !important;
+        }
+        .dz-admin-root .dz-upsell-form-card form button[type="submit"].dz-btn {
+          min-height: 44px;
+          padding: 0 18px !important;
+          border: 1px solid var(--green) !important;
+          border-radius: 0 !important;
+          background: var(--green) !important;
+          color: #fffefa !important;
+          box-shadow: none !important;
+          font-weight: 750;
+        }
+        .dz-admin-root .dz-upsell-form-card form button[type="submit"].dz-btn:hover:not(:disabled) {
+          border-color: var(--green-deep) !important;
+          background: var(--green-deep) !important;
+          color: #fffefa !important;
+          transform: none;
+        }
+        .dz-admin-root .dz-upsell-form-card .dz-btn-outline {
+          min-height: 42px;
+          border-radius: 0 !important;
+        }
+
+        .dz-admin-root .dz-upsell-list-card {
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-upsell-list-head {
+          align-items: flex-end;
+          margin-bottom: 0;
+          padding: 0 0 17px;
+          border-bottom: 1px solid var(--border-soft);
+        }
+        .dz-admin-root .dz-upsell-list-head h3 {
+          color: var(--ink-main);
+          font-size: 21px;
+          font-weight: 700;
+          letter-spacing: -.045em;
+        }
+        .dz-admin-root .dz-upsell-list-head > div:first-child > span {
+          display: block;
+          margin-top: 5px;
+          color: var(--ink-muted) !important;
+          line-height: 1.8;
+        }
+        .dz-admin-root .dz-upsell-stats-pills {
+          align-items: stretch;
+          gap: 0;
+        }
+        .dz-admin-root .dz-upsell-stat-pill {
+          min-height: 36px;
+          padding: 0 14px;
+          border: 0;
+          border-inline-start: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          color: var(--ink-muted);
+          font-size: 11px;
+          font-weight: 650;
+        }
+        .dz-admin-root .dz-upsell-stat-pill:first-child { padding-inline-start: 0; border-inline-start: 0; }
+        .dz-admin-root .dz-upsell-stat-pill b { color: var(--ink-main); font-size: 16px; font-weight: 750; }
+        .dz-admin-root .dz-upsell-stat-pill.active { background: transparent; color: var(--green); }
+        .dz-admin-root .dz-upsell-stat-pill.active b { color: var(--green); }
+
+        .dz-admin-root .dz-upsell-cards-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0;
+        }
+        .dz-admin-root .dz-upsell-item-card {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 20px;
+          min-width: 0;
+          padding: 18px 0;
+          border: 0;
+          border-bottom: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          opacity: 1;
+        }
+        .dz-admin-root .dz-upsell-item-card:hover {
+          border-color: var(--border-soft);
+          background: rgba(230,236,227,.32);
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-upsell-item-card.is-inactive { background: transparent; opacity: .62; }
+        .dz-admin-root .dz-upsell-item-card-top { min-width: 0; align-items: center; gap: 16px; }
+        .dz-admin-root .dz-upsell-item-card-img {
+          width: 76px;
+          height: 76px;
+          border: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: var(--green-soft);
+        }
+        .dz-admin-root .dz-upsell-item-card-meta { gap: 6px; }
+        .dz-admin-root .dz-upsell-order-badge {
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          color: var(--clay);
+          font: 700 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+        .dz-admin-root .dz-upsell-clicks-badge {
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          color: var(--ink-muted);
+          padding: 0;
+          font-size: 11px;
+          font-weight: 650;
+        }
+        .dz-admin-root .dz-upsell-clicks-badge svg { width: 13px; height: 13px; }
+        .dz-admin-root .dz-upsell-item-card-title {
+          color: var(--ink-main);
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1.6;
+        }
+        .dz-admin-root .dz-upsell-item-card-price { color: var(--green); font-size: 13px; font-weight: 750; }
+        .dz-admin-root .dz-upsell-item-card-noprice { color: var(--ink-light); font-size: 11px; }
+        .dz-admin-root .dz-upsell-item-card-bottom {
+          justify-content: flex-end;
+          gap: 10px;
+          padding: 0;
+          border: 0;
+          flex-wrap: nowrap;
+        }
+        .dz-admin-root .dz-upsell-order-controls,
+        .dz-admin-root .dz-upsell-action-btns { gap: 5px; }
+        .dz-admin-root .dz-upsell-action-btn {
+          box-sizing: border-box;
+          width: 35px;
+          height: 35px;
+          border: 1px solid var(--border-strong);
+          border-radius: 0 !important;
+          background: transparent;
+          color: var(--green);
+          box-shadow: none;
+        }
+        .dz-admin-root .dz-upsell-action-btn:hover:not(:disabled) {
+          border-color: var(--green);
+          background: var(--green-soft);
+          color: var(--green-deep);
+        }
+        .dz-admin-root .dz-upsell-action-btn:focus-visible,
+        .dz-admin-root .dz-upsell-toggle-btn:focus-visible {
+          outline: 2px solid rgba(41,75,55,.34);
+          outline-offset: 2px;
+        }
+        .dz-admin-root .dz-upsell-action-btn:disabled { opacity: .35; cursor: not-allowed; }
+        .dz-admin-root .dz-upsell-action-btn.danger { color: #a44739; }
+        .dz-admin-root .dz-upsell-action-btn.danger:hover:not(:disabled) {
+          border-color: #a44739;
+          background: rgba(213,121,85,.1);
+          color: #8d382e;
+        }
+        .dz-admin-root .dz-upsell-toggle-btn {
+          min-height: 35px;
+          padding: 0 12px;
+          border: 1px solid var(--border-strong);
+          border-radius: 0 !important;
+          background: transparent;
+          color: var(--ink-muted);
+          font-size: 11px;
+          font-weight: 700;
+        }
+        .dz-admin-root .dz-upsell-toggle-btn.active {
+          border-color: #b8c9b7;
+          background: var(--green-soft);
+          color: var(--green-deep);
+        }
+        .dz-admin-root .dz-upsell-toggle-btn.inactive {
+          border-color: var(--border-soft);
+          background: transparent;
+          color: var(--ink-muted);
+        }
+        .dz-admin-root .dz-upsell-toggle-btn:hover:not(:disabled) { border-color: var(--green); }
+        .dz-admin-root .dz-upsell-list-card > div[style*="text-align: center"] {
+          padding: 34px 0 !important;
+          color: var(--ink-muted) !important;
+        }
+        .dz-admin-root .dz-upsell-list-card > div[style*="text-align: center"] > div {
+          border-radius: 0 !important;
+          background: var(--green-soft) !important;
+          color: var(--green) !important;
+        }
+        .dz-admin-root .dz-upsell-list-card > div[style*="text-align: center"] strong { color: var(--ink-main) !important; }
+        .dz-admin-root .dz-upsell-list-card > div[style*="text-align: center"] p { color: var(--ink-muted) !important; }
+        @media (max-width: 760px) {
+          .dz-admin-root .dz-upsell-hero-banner { grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 15px; }
+          .dz-admin-root .dz-upsell-hero-badge { width: 100%; box-sizing: border-box; }
+          .dz-admin-root .dz-upsell-form-card { padding: 20px 0; }
+          .dz-admin-root .dz-upsell-inputs-grid { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+          .dz-admin-root .dz-smart-fetch-row { flex-direction: column; align-items: stretch; }
+          .dz-admin-root .dz-smart-fetch-input { width: 100%; }
+          .dz-admin-root .dz-smart-fetch-btn { width: 100%; }
+          .dz-admin-root .dz-upsell-list-head { align-items: flex-start; flex-direction: column; gap: 13px; }
+          .dz-admin-root .dz-upsell-stat-pill { padding-inline: 12px; }
+          .dz-admin-root .dz-upsell-stat-pill:first-child { padding-inline-start: 0; }
+          .dz-admin-root .dz-upsell-item-card { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 16px 0; }
+          .dz-admin-root .dz-upsell-item-card-bottom { justify-content: space-between; flex-wrap: wrap; }
+        }
+        @media (max-width: 420px) {
+          .dz-admin-root .dz-upsell-stats-pills { width: 100%; justify-content: flex-start; }
+          .dz-admin-root .dz-upsell-stat-pill { min-height: 32px; padding-inline: 9px; font-size: 10px; }
+          .dz-admin-root .dz-upsell-item-card-top { align-items: flex-start; gap: 12px; }
+          .dz-admin-root .dz-upsell-item-card-img { width: 64px; height: 64px; }
+          .dz-admin-root .dz-upsell-item-card-bottom { gap: 8px; }
+          .dz-admin-root .dz-upsell-toggle-btn { min-height: 36px; padding-inline: 9px; }
+          .dz-admin-root .dz-upsell-action-btn { width: 36px; height: 36px; }
+        }
+
         /* The dashboard menu is built by SiteHeader's CSS module, not the legacy toggle class. */
         .dz-admin-root .dz-sidebar {
           border-radius: 0 !important;
