@@ -4289,27 +4289,35 @@ export async function registerSavedOrder(savedOrder) {
                 </div>
               </div>
 
-              <div className="dz-filter-row dz-shipment-filters" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button className={`dz-filter-btn ${statusFilter === 'all' && activeTab === 'orders' ? 'active' : ''}`} onClick={() => { setStatusFilter('all'); if (activeTab !== 'orders') setActiveTab('orders'); }}>الكل</button>
-                  <button className={`dz-filter-btn ${statusFilter === 'transit' ? 'active' : ''}`} onClick={() => { setActiveTab('orders'); setStatusFilter('transit'); }}>في الطريق</button>
-                  <button className={`dz-filter-btn ${statusFilter === 'stopdesk' ? 'active' : ''}`} onClick={() => { setActiveTab('orders'); setStatusFilter('stopdesk'); }}>نقطة الاستلام</button>
-                  <button className={`dz-filter-btn ${statusFilter === 'alerts' || activeTab === 'alerts' ? 'active' : ''}`} onClick={() => { setActiveTab('alerts'); setStatusFilter('alerts'); setMobileMenuOpen(false); }}>تنبيهات ({alertCount})</button>
-                  <button className={`dz-filter-btn ${statusFilter === 'delivered' ? 'active' : ''}`} onClick={() => { setActiveTab('orders'); setStatusFilter('delivered'); }}>تم التسليم</button>
-                  <button className={`dz-filter-btn ${statusFilter === 'returned' ? 'active' : ''}`} onClick={() => { setActiveTab('orders'); setStatusFilter('returned'); }}>مرتجع</button>
+              <div className="dz-filter-row dz-shipment-filters">
+                <div className="dz-shipment-status-tabs" role="group" aria-label="تصفية حسب حالة الشحنة">
+                  <button type="button" className={`dz-filter-btn ${statusFilter === 'all' && activeTab === 'orders' ? 'active' : ''}`} aria-pressed={statusFilter === 'all' && activeTab === 'orders'} onClick={() => { setStatusFilter('all'); if (activeTab !== 'orders') setActiveTab('orders'); }}>الكل</button>
+                  <button type="button" className={`dz-filter-btn ${statusFilter === 'transit' ? 'active' : ''}`} aria-pressed={statusFilter === 'transit'} onClick={() => { setActiveTab('orders'); setStatusFilter('transit'); }}>في الطريق</button>
+                  <button type="button" className={`dz-filter-btn ${statusFilter === 'stopdesk' ? 'active' : ''}`} aria-pressed={statusFilter === 'stopdesk'} onClick={() => { setActiveTab('orders'); setStatusFilter('stopdesk'); }}>نقطة الاستلام</button>
+                  <button type="button" className={`dz-filter-btn ${statusFilter === 'alerts' || activeTab === 'alerts' ? 'active' : ''}`} aria-pressed={statusFilter === 'alerts' || activeTab === 'alerts'} onClick={() => { setActiveTab('alerts'); setStatusFilter('alerts'); setMobileMenuOpen(false); }}>تنبيهات ({alertCount})</button>
+                  <button type="button" className={`dz-filter-btn ${statusFilter === 'delivered' ? 'active' : ''}`} aria-pressed={statusFilter === 'delivered'} onClick={() => { setActiveTab('orders'); setStatusFilter('delivered'); }}>تم التسليم</button>
+                  <button type="button" className={`dz-filter-btn ${statusFilter === 'returned' ? 'active' : ''}`} aria-pressed={statusFilter === 'returned'} onClick={() => { setActiveTab('orders'); setStatusFilter('returned'); }}>مرتجع</button>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <select aria-label="تصفية حسب شركة الشحن" value={carrierFilter} onChange={(e) => setCarrierFilter(e.target.value)} className="dz-filter-btn" style={{ outline: 'none' }}>
-                    <option value="all">كل شركات الشحن</option>
-                    {uniqueCarriers.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <select aria-label="ترتيب الشحنات" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'risk')} className="dz-filter-btn" style={{ outline: 'none' }}>
-                    <option value="newest">الأحدث أولاً</option>
-                    <option value="risk">الأكثر خطورة</option>
-                    <option value="oldest">الأقدم أولاً</option>
-                  </select>
+                <div className="dz-shipment-filter-controls">
+                  <label className="dz-shipment-select-wrap">
+                    <span className="sr-only">تصفية حسب شركة الشحن</span>
+                    <select aria-label="تصفية حسب شركة الشحن" value={carrierFilter} onChange={(e) => setCarrierFilter(e.target.value)} className="dz-shipment-select">
+                      <option value="all">كل شركات الشحن</option>
+                      {uniqueCarriers.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <svg className="dz-shipment-select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
+                  </label>
+                  <label className="dz-shipment-select-wrap">
+                    <span className="sr-only">ترتيب الشحنات</span>
+                    <select aria-label="ترتيب الشحنات" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'risk')} className="dz-shipment-select">
+                      <option value="newest">الأحدث أولاً</option>
+                      <option value="risk">الأكثر خطورة</option>
+                      <option value="oldest">الأقدم أولاً</option>
+                    </select>
+                    <svg className="dz-shipment-select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
+                  </label>
                   {(searchTerm || statusFilter !== 'all' || carrierFilter !== 'all' || sortBy !== 'newest') && (
-                    <button className="dz-filter-btn" onClick={() => { setSearchTerm(''); setStatusFilter('all'); setCarrierFilter('all'); setSortBy('newest'); setActiveTab('orders'); }}>مسح الفلاتر</button>
+                    <button type="button" className="dz-filter-btn dz-filter-reset" onClick={() => { setSearchTerm(''); setStatusFilter('all'); setCarrierFilter('all'); setSortBy('newest'); setActiveTab('orders'); }}>مسح الفلاتر</button>
                   )}
                 </div>
               </div>
@@ -4449,7 +4457,6 @@ export async function registerSavedOrder(savedOrder) {
                                 {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600 }}>بانتظار تأكيد العميل</span>}
                                 {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600 }}>أكد العميل الطلب</span>}
                                 {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600 }}>طلب العميل إلغاء الطلب</span>}
-                                <span style={{ fontSize: 10, color: 'var(--ink-muted)', fontWeight: 600 }}>حالة الشحنة</span>
                                 <span className={`dz-pill dz-pill-${badgeStyle}`}>{getStatusLabel(order.current_status)}</span>
                                 <StatusSelector orderId={order.id} currentStatus={order.current_status} />
                               </div>
@@ -4544,7 +4551,7 @@ export async function registerSavedOrder(savedOrder) {
                         {order.customer_phone && <button type="button" aria-label="نسخ رقم العميل" className="dz-icon-btn" onClick={() => copyToClipboard(order.customer_phone!, `mobile-ph_${order.id}`)}>{copiedKey === `mobile-ph_${order.id}` ? <Icons.Check /> : <Icons.Copy />}</button>}
                       </div>
                       <div className="dz-order-mobile-meta"><span>{order.carrier_name || 'شركة الشحن غير محددة'}</span><span>{order.carrier_tracking_number || 'لا يوجد رقم تتبع'}</span></div>
-                      <div style={{ marginTop: '10px' }}><StatusSelector orderId={order.id} currentStatus={order.current_status} /></div>
+                      <div className="dz-order-mobile-status"><StatusSelector orderId={order.id} currentStatus={order.current_status} /></div>
                       <div className="dz-order-action-grid" role="group" aria-label={`إجراءات الطلب ${order.external_order_id}`}>
                         <button
                           type="button"
