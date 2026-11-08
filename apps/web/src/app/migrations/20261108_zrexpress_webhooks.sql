@@ -102,6 +102,19 @@ $$;
 REVOKE ALL ON FUNCTION public.claim_next_zrexpress_webhook_event(TEXT, INTEGER) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_next_zrexpress_webhook_event(TEXT, INTEGER) TO service_role;
 
+CREATE TABLE IF NOT EXISTS public.zrexpress_webhook_applied_events (
+  merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+  svix_id TEXT NOT NULL,
+  order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  occurred_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (merchant_id, svix_id)
+);
+
+ALTER TABLE public.zrexpress_webhook_applied_events ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.zrexpress_webhook_applied_events FROM anon, authenticated;
+GRANT ALL ON public.zrexpress_webhook_applied_events TO service_role;
+
 -- Atomically apply an event only when it is not older than the latest known
 -- order timeline entry. This protects against Svix retries/reordering and
 -- concurrent Railway worker replicas. Each distinct signed provider event
@@ -111,7 +124,8 @@ CREATE OR REPLACE FUNCTION public.record_order_status_change_ordered(
   p_status_raw TEXT,
   p_status_title TEXT,
   p_description TEXT,
-  p_occurred_at TIMESTAMPTZ
+  p_occurred_at TIMESTAMPTZ,
+  p_source_event_id TEXT DEFAULT NULL
 )
 RETURNS TABLE (changed BOOLEAN, history_id UUID)
 LANGUAGE plpgsql
@@ -122,9 +136,10 @@ DECLARE
   v_latest_history_at TIMESTAMPTZ;
   v_carrier_event_at TIMESTAMPTZ;
   v_history_id UUID;
+  v_merchant_id UUID;
 BEGIN
-  SELECT carrier_last_event_at
-    INTO v_carrier_event_at
+  SELECT merchant_id, carrier_last_event_at
+    INTO v_merchant_id, v_carrier_event_at
   FROM public.orders
   WHERE id = p_order_id
   FOR UPDATE;
@@ -134,15 +149,24 @@ BEGIN
     RETURN;
   END IF;
 
+  IF p_source_event_id IS NOT NULL THEN
+    INSERT INTO public.zrexpress_webhook_applied_events (merchant_id, svix_id, order_id, occurred_at)
+    VALUES (v_merchant_id, p_source_event_id, p_order_id, p_occurred_at)
+    ON CONFLICT (merchant_id, svix_id) DO NOTHING;
+
+    IF NOT FOUND THEN
+      RETURN QUERY SELECT FALSE, NULL::UUID;
+      RETURN;
+    END IF;
+  END IF;
+
+
   SELECT MAX(created_at)
     INTO v_latest_history_at
   FROM public.order_history
   WHERE order_id = p_order_id;
 
-  IF p_occurred_at < GREATEST(
-    COALESCE(v_carrier_event_at, '-infinity'::TIMESTAMPTZ),
-    COALESCE(v_latest_history_at, '-infinity'::TIMESTAMPTZ)
-  ) THEN
+  IF p_occurred_at <= COALESCE(v_carrier_event_at, '-infinity'::TIMESTAMPTZ) THEN
     RETURN QUERY SELECT FALSE, NULL::UUID;
     RETURN;
   END IF;
@@ -178,5 +202,5 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.record_order_status_change_ordered(UUID, TEXT, TEXT, TEXT, TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.record_order_status_change_ordered(UUID, TEXT, TEXT, TEXT, TIMESTAMPTZ) TO service_role;
+REVOKE ALL ON FUNCTION public.record_order_status_change_ordered(UUID, TEXT, TEXT, TEXT, TIMESTAMPTZ, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_order_status_change_ordered(UUID, TEXT, TEXT, TEXT, TIMESTAMPTZ, TEXT) TO service_role;
