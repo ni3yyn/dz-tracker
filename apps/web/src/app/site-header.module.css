@@ -51,27 +51,63 @@
 .mobileMenu {
   position: absolute; top: calc(100% + 8px); inset-inline: clamp(12px, 3vw, 36px); z-index: 1;
   display: grid; grid-template-rows: 0fr; max-height: calc(100dvh - 100px); overflow: hidden;
-  padding: 0 18px; border: 1px solid transparent; border-radius: 4px;
-  background: rgba(255, 254, 250, .99); box-shadow: 0 10px 28px rgba(31, 48, 35, .08);
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  background: rgba(255, 254, 250, .99);
+  box-shadow: 0 16px 38px rgba(31, 48, 35, .13);
   opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-8px); transform-origin: top center;
   transition: grid-template-rows .42s cubic-bezier(.2,.65,.25,1), opacity .28s ease,
     transform .38s cubic-bezier(.2,.65,.25,1), visibility .32s ease,
     padding .32s ease, border-color .32s ease;
 }
-.mobileMenuOpen { grid-template-rows: 1fr; padding: 13px 18px 16px; border-color: #e1e5dc; opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); overflow: hidden; }
+.mobileMenuOpen { grid-template-rows: 1fr; padding: 12px; border-color: #e1e5dc; opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); overflow: hidden; }
 .mobileMenuInner { min-height: 0; overflow: hidden; scrollbar-width: none; -ms-overflow-style: none; }
 .mobileMenuOpen .mobileMenuInner { overflow-x: hidden; overflow-y: auto; scrollbar-width: none; }
 .mobileMenuInner::-webkit-scrollbar { display: none; width: 0; height: 0; }
-.mobileMenu nav, .mobileActions { display: flex; flex-direction: column; }
+.mobileMenu nav, .mobileActions { display: flex; flex-direction: column; width: 100%; }
+.mobileMenu nav { gap: 4px; }
 .mobileMenu nav a, .mobileActions > a:first-child:not(.mobilePrimary) {
-  padding: 13px 3px; border-bottom: 1px solid #e9ece5; color: #435147;
-  font-size: 13px; font-weight: 600; text-decoration: none;
-  transition: color .25s ease, padding-inline .25s ease;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #435147;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color .18s ease, background-color .18s ease;
 }
-.mobileMenu nav a:hover, .mobileActions > a:first-child:not(.mobilePrimary):hover { color: #294b37; padding-inline-start: 8px; }
-.mobileActions { gap: 8px; padding-top: 12px; }
+.mobileMenu nav a:hover,
+.mobileMenu nav a:focus-visible,
+.mobileActions > a:first-child:not(.mobilePrimary):hover,
+.mobileActions > a:first-child:not(.mobilePrimary):focus-visible {
+  outline: none;
+  background: #edf3eb;
+  color: #294b37;
+}
+.mobileMenu nav a:focus-visible,
+.mobileActions > a:first-child:not(.mobilePrimary):focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(41, 75, 55, .2);
+}
+.mobileMenu nav a:active,
+.mobileActions > a:first-child:not(.mobilePrimary):active {
+  background: #e5eee3;
+}
+.mobileActions { gap: 7px; padding-top: 10px; }
 .mobileActions > a:first-child:not(.mobilePrimary) { border: 0; }
-.mobilePrimary { width: 100%; min-height: 46px; }
+.mobilePrimary {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  border-radius: 11px;
+}
 .compact { min-height: 82px; }
 
 /* Dashboard header: sleek sticky header for both Merchant & Admin */
@@ -199,7 +235,7 @@
   }
   .compact { min-height: 70px; }
   .mobileMenu { inset-inline: 8px; }
-  .mobileMenuOpen { padding: 11px 15px 14px; }
+  .mobileMenuOpen { padding: 10px; }
 
   .dashboardHeader {
     padding: 8px 12px 10px !important;
