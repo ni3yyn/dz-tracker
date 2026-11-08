@@ -10,6 +10,8 @@ import { EcoTrackConnectionPanel } from './EcoTrackConnectionPanel';
 import { ZRExpressConnectionPanel } from './ZRExpressConnectionPanel';
 import { MaystroConnectionPanel } from './MaystroConnectionPanel';
 import { ZimouConnectionPanel } from './ZimouConnectionPanel';
+import { ElogistiaConnectionPanel } from './ElogistiaConnectionPanel';
+import { ElogistiaDispatchPanel } from './ElogistiaDispatchPanel';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
@@ -1440,6 +1442,16 @@ export function MerchantDashboardView({
       hint: 'اربط حساب Zimou عبر API Token. تُقرأ حالات أرقام التتبع المسجلة في طلبات متجرك دورياً من API مباشرة.',
       caveat: 'لا نفترض وجود Webhooks أصلية غير موثقة. لا يستورد هذا المسار طروداً جديدة تلقائياً؛ يجب أن يكون رقم تتبع Zimou موجوداً في طلب تاجر تراك.',
       supportQuestion: 'أحتاج إلى API Token لحساب Zimou Express لاستخدام واجهة API للقراءة وتتبع الطرود.'
+    },
+    {
+      id: 'elogistia' as const,
+      name: 'Elogistia',
+      symbol: 'EL',
+      url: '',
+      method: 'API Key + إنشاء شحنات + مزامنة دورية',
+      hint: 'اربط حساب Elogistia عبر API Key. يمكنك إنشاء بوليصة من تفاصيل الطلب، ثم يقرأ تاجر تراك سجل التتبع ويحدّث الحالة تلقائياً.',
+      caveat: 'لا يوجد إعداد Webhook في هذا المسار. تتم مزامنة الشحنات التي أنشأها تاجر تراك فقط؛ لا يتم استيراد طرود أُنشئت خارج المنصة تلقائياً.',
+      supportQuestion: 'أحتاج إلى API Key لحساب Elogistia وتفعيل صلاحيات إنشاء الشحنات وقراءة سجل التتبع.'
     },
   ];
 
@@ -5651,7 +5663,11 @@ export async function registerSavedOrder(savedOrder) {
                         <ZimouConnectionPanel />
                       )}
 
-                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'maystro' && selectedCarrier !== 'zimou' && activeCarrierConnection && (
+                      {trackingSource === 'carrier' && selectedCarrier === 'elogistia' && (
+                        <ElogistiaConnectionPanel />
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'maystro' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia' && activeCarrierConnection && (
                         <article className="dz-int-guided-panel">
                           <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
                           <div className="dz-int-guided-copy">
@@ -6282,6 +6298,9 @@ export async function registerSavedOrder(savedOrder) {
                   <div className="dz-order-detail-field"><span>تاريخ تسجيل الطلب</span><strong>{new Date(selectedOrder.created_at).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
                   <div className="dz-order-detail-field"><span>معرّف الطلب الداخلي</span><strong>{selectedOrder.id}</strong></div>
                 </div>
+                {selectedOrder.carrier_name === 'Elogistia' && (
+                  <ElogistiaDispatchPanel order={selectedOrder} />
+                )}
                 <p className="dz-order-detail-note">يمكنك تعديل الحالة من القائمة أدناه. سجل التحديثات التفصيلي متاح في صفحة التتبع العامة، بينما تعرض هذه اللوحة البيانات المخزنة والمتاحة في لوحة التاجر.</p>
                 <div style={{ paddingTop: '17px' }}><span className="dz-order-detail-kicker">تعديل الحالة</span><StatusSelector orderId={selectedOrder.id} currentStatus={selectedOrder.current_status} /></div>
                 <div className="dz-order-detail-actions">
@@ -6479,6 +6498,7 @@ export async function registerSavedOrder(savedOrder) {
                             <option value="Maystro Delivery">Maystro Delivery</option>
                             <option value="EcoTrack">EcoTrack</option>
                             <option value="Zimou Express">Zimou Express</option>
+                            <option value="Elogistia">Elogistia</option>
                             <option value="توصيل خاص">توصيل خاص (متجرنا)</option>
                           </select>
                         </div>
