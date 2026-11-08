@@ -14,3 +14,13 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Keep form fields clean on click across the whole app.
+   Existing focus border colors still indicate the active field. */
+input:focus,
+textarea:focus,
+select:focus,
+[contenteditable="true"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}

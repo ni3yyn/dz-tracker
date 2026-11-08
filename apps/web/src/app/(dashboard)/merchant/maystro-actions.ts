@@ -21,6 +21,10 @@ type MaystroIntegrationStatus = {
   lastError?: string | null;
 };
 
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 async function getAuthenticatedMerchantId(): Promise<string> {
   const authSupabase = await createClient();
   const { data: { user }, error: authError } = await authSupabase.auth.getUser();
@@ -62,7 +66,7 @@ function callbackUrl(endpointToken: string): string {
     throw new Error('يجب ضبط NEXT_PUBLIC_SITE_URL على عنوان HTTPS عام قبل ربط Maystro.');
   }
 
-  return new URL(`/api/webhooks/maystro/${endpointToken}`, base.origin).toString();
+  return new URL('/api/webhooks/maystro/' + endpointToken, base.origin).toString();
 }
 
 async function loadMaystroIntegration(merchantId: string) {
@@ -82,10 +86,14 @@ async function loadMaystroIntegration(merchantId: string) {
 }
 
 function toStatus(row: any): MaystroIntegrationStatus {
-  const connected = Boolean(row?.sync_enabled && row?.webhook_endpoint_token);
+  const connected = Boolean(
+    row?.sync_enabled &&
+    row?.webhook_endpoint_token &&
+    row?.credentials_encrypted
+  );
   return {
     connected,
-    endpointUrl: connected ? callbackUrl(row.webhook_endpoint_token) : undefined,
+    endpointUrl: connected ? callbackUrl(String(row.webhook_endpoint_token)) : undefined,
     connectedAt: row?.connected_at || null,
     lastWebhookReceivedAt: row?.last_webhook_received_at || null,
     lastWebhookProcessedAt: row?.last_webhook_processed_at || null,
@@ -100,36 +108,53 @@ async function validateMaystroToken(apiToken: string): Promise<void> {
       method: 'GET',
       headers: {
         Accept: 'application/json',
-        Authorization: `Token ${apiToken}`,
+        Authorization: 'Token ' + apiToken,
       },
       cache: 'no-store',
       redirect: 'error',
       signal: AbortSignal.timeout(12_000),
     });
-  } catch {
+  } catch (error) {
+    const name = error instanceof Error ? error.name : '';
+    if (name === 'TimeoutError' || name === 'AbortError') {
+      throw new Error('انتهت مهلة الاتصال بمنصة Maystro. أعد المحاولة بعد قليل.');
+    }
     throw new Error('تعذر الاتصال بمنصة Maystro. تحقق من اتصال الإنترنت وحاول مجدداً.');
   }
 
   if (response.status === 401 || response.status === 403) {
     throw new Error('رفضت Maystro رمز API. تأكد من نسخه من Paramètres ← Info personnelles.');
   }
+  if (response.status === 429) {
+    throw new Error('Maystro يستقبل طلبات كثيرة حالياً. انتظر قليلاً ثم أعد المحاولة.');
+  }
+  if (response.status >= 500) {
+    throw new Error('خدمة Maystro غير متاحة مؤقتاً. لم يتم حفظ الربط؛ حاول لاحقاً.');
+  }
   if (!response.ok) {
-    throw new Error(`تعذر التحقق من حساب Maystro (HTTP ${response.status}). حاول مجدداً لاحقاً.`);
+    throw new Error('تعذر التحقق من حساب Maystro (HTTP ' + response.status + '). راجع بيانات الربط وحاول مجدداً.');
   }
 
-  // The wilayas endpoint is intentionally read-only; a valid response confirms
-  // token authentication without creating, editing or cancelling any shipment.
-  const text = await response.text().catch(() => '');
-  if (!text) {
+  let text = '';
+  try {
+    text = await response.text();
+  } catch {
+    throw new Error('تعذر قراءة استجابة Maystro. لم يتم حفظ الربط.');
+  }
+  if (!text.trim()) {
     throw new Error('استجاب Maystro دون بيانات تحقق. لم يتم حفظ الربط.');
   }
+
   try {
     const body = JSON.parse(text);
     const rows = Array.isArray(body) ? body
       : Array.isArray(body?.results) ? body.results
       : Array.isArray(body?.data) ? body.data
       : null;
-    if (!rows) throw new Error('Unexpected Maystro validation response.');
+
+    if (!rows || rows.some((row: unknown) => !row || typeof row !== 'object' || Array.isArray(row))) {
+      throw new Error('Unexpected Maystro validation response.');
+    }
   } catch {
     throw new Error('لم نتمكن من تأكيد صلاحية رمز Maystro. أعد المحاولة أو اطلب رمز API صالحاً من الشركة.');
   }
@@ -144,11 +169,51 @@ export async function getMaystroIntegrationStatus(): Promise<{
     const merchantId = await getAuthenticatedMerchantId();
     const row = await loadMaystroIntegration(merchantId);
     return { success: true, status: row ? toStatus(row) : { connected: false } };
-  } catch (error: any) {
+  } catch (error) {
     return {
       success: false,
       status: { connected: false },
-      error: error?.message || 'تعذر تحميل حالة ربط Maystro.',
+      error: errorMessage(error, 'تعذر تحميل حالة ربط Maystro.'),
+    };
+  }
+}
+
+export async function checkMaystroConnection(): Promise<{
+  success: boolean;
+  checkedAt?: string;
+  error?: string;
+}> {
+  try {
+    const merchantId = await getAuthenticatedMerchantId();
+    const row = await loadMaystroIntegration(merchantId);
+
+    if (!row?.sync_enabled || !row?.credentials_encrypted) {
+      throw new Error('لا يوجد حساب Maystro نشط لاختبار الاتصال. اربط حسابك أولاً.');
+    }
+
+    const encryptionKey = process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '';
+    if (encryptionKey.length < 32) {
+      throw new Error('إعداد التشفير غير مكتمل على الخادم. تواصل مع دعم تاجر تراك.');
+    }
+
+    let credentials: { apiToken: string };
+    try {
+      credentials = decryptMaystroCredentials(
+        String(row.credentials_encrypted),
+        merchantId,
+        encryptionKey
+      );
+    } catch {
+      throw new Error('تعذر فك تشفير بيانات الربط المحفوظة. أعد إدخال Store API Token لربط حسابك من جديد.');
+    }
+
+    // A read-only request verifies the stored token without changing any shipment.
+    await validateMaystroToken(credentials.apiToken);
+    return { success: true, checkedAt: new Date().toISOString() };
+  } catch (error) {
+    return {
+      success: false,
+      error: errorMessage(error, 'تعذر اختبار الاتصال بحساب Maystro.'),
     };
   }
 }
@@ -158,10 +223,15 @@ export async function saveMaystroIntegration(
 ): Promise<{ success: boolean; status?: MaystroIntegrationStatus; error?: string }> {
   try {
     const merchantId = await getAuthenticatedMerchantId();
-    const apiToken = apiTokenInput.trim().replace(/^Token\\s+/i, '');
+    const suppliedToken = typeof apiTokenInput === 'string' ? apiTokenInput : '';
+    const apiToken = suppliedToken.trim().replace(/^Token\s+/i, '').trim();
 
-    if (apiToken.length < 8 || apiToken.length > 512 || !/^[\\x21-\\x7E]+$/.test(apiToken)) {
-      throw new Error('أدخل Store API Token كاملاً كما يظهر في حساب Maystro.');
+    if (
+      apiToken.length < 8 ||
+      apiToken.length > 512 ||
+      !/^[\x21-\x7E]+$/.test(apiToken)
+    ) {
+      throw new Error('أدخل Store API Token كاملاً دون مسافات أو أسطر إضافية.');
     }
 
     const encryptionKey = process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '';
@@ -194,7 +264,7 @@ export async function saveMaystroIntegration(
         last_error_at: null,
         updated_at: now,
       }, { onConflict: 'merchant_id,provider' })
-      .select('connected_at, sync_enabled, webhook_endpoint_token, last_webhook_received_at, last_webhook_processed_at, last_error')
+      .select('connected_at, sync_enabled, webhook_endpoint_token, last_webhook_received_at, last_webhook_processed_at, last_error, credentials_encrypted')
       .single();
 
     if (error || !data) {
@@ -204,10 +274,10 @@ export async function saveMaystroIntegration(
 
     revalidatePath('/merchant');
     return { success: true, status: toStatus(data) };
-  } catch (error: any) {
+  } catch (error) {
     return {
       success: false,
-      error: error?.message || 'تعذر ربط حساب Maystro.',
+      error: errorMessage(error, 'تعذر ربط حساب Maystro.'),
     };
   }
 }
@@ -228,7 +298,7 @@ export async function disconnectMaystroIntegration(): Promise<{ success: boolean
 
     revalidatePath('/merchant');
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error?.message || 'تعذر فصل حساب Maystro.' };
+  } catch (error) {
+    return { success: false, error: errorMessage(error, 'تعذر فصل حساب Maystro.') };
   }
 }
