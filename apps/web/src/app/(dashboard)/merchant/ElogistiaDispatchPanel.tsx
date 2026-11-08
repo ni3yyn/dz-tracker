@@ -30,7 +30,8 @@ export function ElogistiaDispatchPanel({ order }: Props) {
   const [phone, setPhone] = useState(order.customer_phone || '');
   const [address, setAddress] = useState('');
   const [product, setProduct] = useState(order.product_name || '');
-  const [codAmount, setCodAmount] = useState('0');
+  const [codAmount, setCodAmount] = useState('');
+  const [exchangeProduct, setExchangeProduct] = useState('');
   const [deliveryType, setDeliveryType] = useState<'home' | 'stopdesk'>('home');
   const [deliveryMode, setDeliveryMode] = useState<'standard' | 'exchange'>('standard');
   const [weight, setWeight] = useState('');
@@ -88,7 +89,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
     try {
       const result = await createElogistiaShipment(order.id, {
         firstName, lastName, email, phone, address, wilayaId, wilayaName: wilayas.find(row => row.id === wilayaId)?.name || '', commune, product,
-        codAmount: Number(codAmount), deliveryType, deliveryMode,
+        codAmount: codAmount === '' ? null as any : Number(codAmount), deliveryType, deliveryMode, exchangeProduct,
         weight: weight ? Number(weight) : null, note,
       });
       if (!result.success || !result.trackingNumber) {
@@ -180,6 +181,11 @@ export function ElogistiaDispatchPanel({ order }: Props) {
             <input id={prefix+'-weight'} className="dz-input-field" dir="ltr" type="number" min="0.1" max="1000" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} placeholder="اختياري"/>
           </label>
         </div>
+        {deliveryMode === 'exchange' && (
+          <label htmlFor={prefix+'-exchange-product'} style={{ display: 'grid', gap: 6 }}>المنتج الذي سيُستبدل به الطرد *
+            <input id={prefix+'-exchange-product'} className="dz-input-field" value={exchangeProduct} onChange={e=>setExchangeProduct(e.target.value)} required maxLength={250} placeholder="اسم المنتج البديل"/>
+          </label>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <label htmlFor={prefix+'-delivery'} style={{ display: 'grid', gap: 6 }}>طريقة التوصيل *
             <select id={prefix+'-delivery'} className="dz-input-field" value={deliveryType} onChange={e=>setDeliveryType(e.target.value as 'home'|'stopdesk')}>
@@ -197,7 +203,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
         </label>
         <p className="dz-int-guided-note" style={{ fontSize: 13 }}>مرجع الطلب المرسل إلى Elogistia: <b dir="ltr">{order.external_order_id}</b>. سيتم إرسال بيانات الشحنة عند الضغط على زر الإنشاء، لذلك راجع العنوان ومبلغ التحصيل قبل المتابعة.</p>
         {error && <p role="alert" className="dz-int-guided-note" style={{ color: '#b42318', background: '#fff4f2', padding: 12, borderRadius: 9 }}>{error}</p>}
-        <button type="submit" className="dz-btn" disabled={submitting||loadingCommunes||!wilayaId||!commune||!phone.trim()||!address.trim()||!product.trim()||!firstName.trim()||!lastName.trim()}>{submitting?'جارٍ إنشاء الشحنة لدى Elogistia...':'إنشاء شحنة Elogistia وربط رقم التتبع'}</button>
+        <button type="submit" className="dz-btn" disabled={submitting||loadingCommunes||!wilayaId||!commune||!phone.trim()||!address.trim()||!product.trim()||!firstName.trim()||!lastName.trim()||codAmount.trim()===''||(deliveryMode==='exchange'&&!exchangeProduct.trim())}>{submitting?'جارٍ إنشاء الشحنة لدى Elogistia...':'إنشاء شحنة Elogistia وربط رقم التتبع'}</button>
       </form>
     )}
   </section>;
