@@ -191,3 +191,20 @@ Use a redacted payload captured from the exact provider integration when testing
 | SQL | `apps/web/src/app/migrations/20261108_zimou_readonly_sync.sql` |
 
 Zimou token validation uses `GET https://zimou.express/api/v3/user`. Status polling uses `GET /v3/packages/status` with repeated `packages[]` tracking query parameters. The status response is a map keyed by Zimou tracking code. The worker fetches `/v3/helpers/package-statuses` per merchant because IDs and labels can vary by account; it maps the account's status names and keeps unknown labels as `unknown` rather than assuming a universal numeric ID. The adapter retains Zimou package ID, Zimou tracking code, partner carrier, partner tracking code, address, delivery price, COD amount, delivery type, and raw status. The worker checks only existing TajerTrack orders whose `carrier_name` is `Zimou Express` and `carrier_tracking_number` is populated, in batches of 50 every five minutes by default. It is strictly read-only: no parcel creation, cancellation, dispatch, or discovery of untracked shipments. This is polling, not a native Zimou webhook integration. The linked Feeef Zimou reference documents Feeef's wrapper operations (test, send/sendMany, geo lookups and statistics), not a native Zimou webhook subscription; this integration uses the direct Zimou merchant token instead. Enable `ZIMOU_SYNC_ENABLED=true` and keep `CARRIER_CREDENTIALS_ENCRYPTION_KEY` identical in Vercel and Railway. Apply the migration before connecting.
+
+### Elogistia
+
+| Purpose | Implementation |
+|---|---|
+| Merchant connection panel | `apps/web/src/app/(dashboard)/merchant/ElogistiaConnectionPanel.tsx` |
+| Shipment create form in order details | `apps/web/src/app/(dashboard)/merchant/ElogistiaDispatchPanel.tsx` |
+| Authenticated server actions | `apps/web/src/app/(dashboard)/merchant/elogistia-actions.ts` |
+| AES-256-GCM credential encryption | `apps/web/src/lib/elogistia-credentials.ts` |
+| Provider event normalizer | `packages/orchestrator/src/carriers/elogistia.adapter.ts` |
+| Polling worker | `apps/push-worker/src/elogistia-sync.ts` |
+| Internal status ingestion | `POST /api/webhooks/elogistia/sync` |
+| Migration | `apps/web/src/app/migrations/20261108_elogistia_api_sync.sql` |
+
+Elogistia's API key is passed as query parameter `key` for the wilaya/commune/rates catalogue, and `apiKey` for shipment creation/history. Base URL: `https://api.elogistia.com`. Do not send credentials from the browser. Create a parcel only from an existing order with a nonempty `external_order_id`; this is sent as `IdCommande`. The create fields currently mapped are `name`, `firstname`, `phone`, `address`, `commune`, numeric `wilaya`, `modeDeLivraison` (1 standard / 4 exchange), `price` (COD), `fraisDeLivraison` (from Elogistia's rate table when available), `stop_desk` (1 home / 2 desk), `product`, and `IdCommande`; optional `mail`, `remarque`, and `poids` are only supplied when entered. The exact request uses POST with URL query parameters per the Postman-derived adapter.
+
+Shipment creation is protected by a unique `merchant_carrier_dispatch_attempts` row. Confirmed provider rejections can be retried; ambiguous responses/timeouts are not retryable until the merchant checks the Elogistia dashboard by `IdCommande`. The polling worker uses `GET getTracking/?apiKey=...&tracking=...` on tracking numbers already stored for `carrier_name='Elogistia'`, every five minutes by default, with a 1.4-second minimum gap between requests. It reads `Date`, `Statut`, and `Log`, sorts events chronologically, and submits stable event IDs to the shared orchestrator. No native webhook subscription or complete parcel-list endpoint is assumed. The integration does not import shipments created outside TajerTrack. Although secondary adapters mention getOrders, bulk tracking, label and delete endpoints, the current implementation deliberately does not expose discovery, label retrieval, or cancellation pending verification against a real merchant account.
