@@ -25,7 +25,7 @@ export function MappingForm({ merchantId }: { merchantId: string }) {
     if (res?.error) {
       setFeedback({ message: res.error, isError: true });
     } else {
-      setFeedback({ message: 'تم حفظ المطابقة بنجاح! ✅', isError: false });
+      setFeedback({ message: 'تم حفظ المطابقة بنجاح', isError: false });
       setSourceStatus('');
       setDisplayStatus('');
     }
