@@ -130,11 +130,12 @@ export class ZimouSyncWorker {
           if (response.status === 429) throw new Error('Zimou rate limit reached; the next cycle will retry.');
           if (!response.ok || body?.error === 1 || body?.success === false) throw new Error('Zimou status request failed (HTTP ' + response.status + '): ' + asText(body?.message));
           const statusMap = normalizeZimouStatusResponse(body) as Record<string, Record<string, unknown>>;
-          const events: Record<string, unknown>[] = batch.map(code => {
+          const events: Record<string, unknown>[] = [];
+          for (const code of batch) {
             const remote = statusMap[code];
-            if (!remote || typeof remote !== 'object') return null;
+            if (!remote || typeof remote !== 'object') continue;
             const existing = rows.find((row:any) => asText(row.carrier_tracking_number) === code);
-            return {
+            events.push({
               ...remote,
               status_name: statusNames[asText(remote.status_id)] || asText(remote.status_name),
               tracking_code: code,
@@ -142,8 +143,8 @@ export class ZimouSyncWorker {
               client_first_name: remote.client_first_name || existing?.customer_name || '',
               client_phone: remote.client_phone || existing?.customer_phone || '',
               name: remote.name || existing?.product_name || '',
-            };
-          }).filter((event): event is Record<string, unknown> => event !== null);
+            });
+          }
           if (events.length) await this.ingest(events, merchant.api_key);
           checked += batch.length;
         }
