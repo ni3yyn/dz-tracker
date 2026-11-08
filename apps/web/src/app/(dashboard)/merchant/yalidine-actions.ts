@@ -62,7 +62,7 @@ async function loadIntegration(merchantId: string) {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await (supabase as any)
     .from('merchant_carrier_integrations')
-    .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, last_error')
+    .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error')
     .eq('merchant_id', merchantId)
     .eq('provider', 'yalidine')
     .maybeSingle();
