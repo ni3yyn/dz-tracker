@@ -109,6 +109,7 @@ export class YalidineWebhookWorker {
             'x-yalidine-worker-signature': signature,
           },
           body,
+          cache: 'no-store',
           redirect: 'error',
           signal: AbortSignal.timeout(45_000),
         });

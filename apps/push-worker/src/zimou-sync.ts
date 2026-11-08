@@ -81,12 +81,15 @@ export class ZimouSyncWorker {
         .from('merchants').select('api_key').eq('id',integration.merchant_id).maybeSingle();
       if (merchantError || !merchant?.api_key) throw new Error('Merchant API key could not be loaded.');
 
+      let offset = 0;
+      let checked = 0;
       const statusesUrl = new URL(API + '/v3/helpers/package-statuses');
       const statusWaitMs = Math.max(0, 1400 - (Date.now() - this.lastApiRequestAt));
       if (statusWaitMs > 0) await new Promise(resolve => setTimeout(resolve, statusWaitMs));
       this.lastApiRequestAt = Date.now();
       const statusResponse = await fetch(statusesUrl, {
-        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(TIMEOUT_MS),
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+        cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       let statusBody: any;
       try { statusBody = await statusResponse.json(); } catch { throw new Error('Zimou returned an invalid package-status dictionary.'); }
@@ -110,9 +113,7 @@ export class ZimouSyncWorker {
         if (error) throw new Error('Could not load Zimou tracking records: ' + error.message);
         const rows = (orders || []).filter((row:any) => row.carrier_tracking_number &&
           !['delivered','returned','cancelled'].includes(String(row.current_status || '').toLowerCase()));
-        const tracking: string[] = Array.from(new Set<string>(
-          rows.map((row: any) => asText(row.carrier_tracking_number)).filter((value: string) => value.length > 0)
-        ));
+        const tracking = Array.from(new Set(rows.map((row:any) => asText(row.carrier_tracking_number)).filter(Boolean)));
         for (let index=0; index<tracking.length; index+=BATCH_SIZE) {
           const batch = tracking.slice(index,index+BATCH_SIZE);
           const url = new URL(API + '/v3/packages/status');
@@ -121,7 +122,8 @@ export class ZimouSyncWorker {
           if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
           this.lastApiRequestAt = Date.now();
           const response = await fetch(url, {
-            headers:{ Authorization:'Bearer ' + token, Accept:'application/json' }, redirect:'error', signal:AbortSignal.timeout(TIMEOUT_MS),
+            headers:{ Authorization:'Bearer ' + token, Accept:'application/json' },
+            cache:'no-store', redirect:'error', signal:AbortSignal.timeout(TIMEOUT_MS),
           });
           let body:any;
           try { body = await response.json(); } catch { throw new Error('Zimou returned invalid JSON (HTTP ' + response.status + ').'); }
