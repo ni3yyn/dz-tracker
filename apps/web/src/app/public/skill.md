@@ -308,14 +308,19 @@ Use the endpoint matching the actual event source:
 | Shopify order event | /api/webhooks/shopify |
 | Yalidine | /api/webhooks/yalidine |
 | EcoTrack | /api/webhooks/ecotrack |
-| ZR Express | /api/webhooks/zrexpress |
-| Procolis | /api/webhooks/procolis |
+| Modern ZR Express Supplier API (Svix) | **Managed by the merchant integration panel** → /api/webhooks/zrexpress/{endpointToken} |
+| Legacy Procolis-compatible payload | /api/webhooks/zrexpress (legacy only) |
+| Procolis | /api/webhooks/procolis (legacy Procolis-compatible normalizer) |
 | Maystro | /api/webhooks/maystro |
 | Odoo carrier normalization | /api/webhooks/odoo |
 
-The courier adapters are provider-specific. Inspect the selected repository adapter and the provider's current documented payload before changing anything. Do not send a generic payload to all carrier endpoints. **Procolis implementation caveat:** the current `/api/webhooks/procolis` route imports `ProcolisAdapter`, but that export is currently an alias of `ZRExpressAdapter`; both use the same normalizer and it emits `carrierName: 'ZR Express'`. Do not claim a distinct Procolis normalizer exists. The Odoo route also has explicit string-based adapter selection; read its source before assuming it chooses a carrier correctly.
+The courier adapters are provider-specific. Inspect the selected repository adapter and the provider's current documented payload before changing anything. Do not send a generic payload to all carrier endpoints.
 
-Courier webhook URLs can use **?key={merchantApiKey}** when the provider cannot send a custom header. Treat the complete URL as a secret; don't commit it or put it into prompts/issues/logs.
+**Modern ZR Express integration:** use the dashboard's managed connection flow, not the legacy route. It creates a ZR webhook endpoint for all three event types (`parcel.state.updated`, `parcel.state.situation.created`, `parcel.isReturn.updated`), stores the API key, tenant ID, and Svix signing secret encrypted, and receives events at `/api/webhooks/zrexpress/{endpointToken}`. The receiver verifies the raw body against `svix-id`, `svix-timestamp`, and `svix-signature` before queueing anything. Do not append the merchant API key to this URL, manually register a second endpoint, bypass Svix verification, or send the modern event envelope to the legacy route. The Railway push-worker must have `ZREXPRESS_WEBHOOK_WORKER_ENABLED=true` after the ZR migration has been applied.
+
+**Legacy compatibility:** `/api/webhooks/zrexpress` still accepts the older Procolis-shaped payload for existing integrations only. The `/api/webhooks/procolis` route imports `ProcolisAdapter`, which remains an alias of `ZRExpressAdapter`; both use the legacy normalizer and emit `carrierName: 'ZR Express'`. Do not describe that legacy normalizer as compatible with the modern ZR Express Supplier API. The Odoo route also has explicit string-based adapter selection; read its source before assuming it chooses a carrier correctly.
+
+Other legacy/simple courier webhook URLs can use **?key={merchantApiKey}** when the provider cannot send a custom header. This does not apply to modern ZR Express. Treat every complete webhook URL as a secret; don't commit it or put it into prompts/issues/logs.
 
 The Shopify route currently normalizes Shopify's order payload but does not call the ShopifyAdapter.verifyHmac helper. Do not claim Shopify signature verification is active. Implement and test Shopify HMAC verification before relying on signed-webhook authenticity.
 
