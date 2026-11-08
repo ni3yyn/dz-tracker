@@ -18,6 +18,8 @@ export interface PushWorkerConfig {
   ecoTrackSyncIntervalMs: number;
   zrExpressWebhookWorkerEnabled: boolean;
   zrExpressWebhookPollIntervalMs: number;
+  yalidineWebhookWorkerEnabled: boolean;
+  yalidineWebhookPollIntervalMs: number;
   zimouSyncEnabled: boolean;
   zimouSyncIntervalMs: number;
   elogistiaSyncEnabled: boolean;
@@ -66,6 +68,8 @@ export function loadConfig(): PushWorkerConfig {
     ecoTrackSyncIntervalMs: Math.max(60_000, parseInt(process.env.CARRIER_SYNC_INTERVAL_MS || '300000', 10)),
     zrExpressWebhookWorkerEnabled: process.env.ZREXPRESS_WEBHOOK_WORKER_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
     zrExpressWebhookPollIntervalMs: Math.max(1000, parseInt(process.env.ZREXPRESS_WEBHOOK_POLL_INTERVAL_MS || '2000', 10)),
+    yalidineWebhookWorkerEnabled: process.env.YALIDINE_WEBHOOK_WORKER_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
+    yalidineWebhookPollIntervalMs: Math.max(1000, parseInt(process.env.YALIDINE_WEBHOOK_POLL_INTERVAL_MS || '2000', 10)),
     zimouSyncEnabled: process.env.ZIMOU_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
     zimouSyncIntervalMs: Math.max(60_000, parseInt(process.env.ZIMOU_SYNC_INTERVAL_MS || '300000', 10)),
     elogistiaSyncEnabled: process.env.ELOGISTIA_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
