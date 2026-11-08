@@ -136,6 +136,34 @@ export async function POST(req: Request, context: RouteContext) {
   }
 
   const receivedAt = new Date().toISOString();
+
+  // "Faire des tests" sends synthetic sample events, including parcel_created.
+  // A merchant-controlled test mode prevents those samples from becoming
+  // customer orders while still validating CRC/signature/envelope and receipt.
+  if (integration.webhook_test_mode === true) {
+    const supabase = getSupabaseAdminClient();
+    const { error: updateError } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .update({
+        last_webhook_received_at: receivedAt,
+        last_error: null,
+        last_error_at: null,
+        updated_at: receivedAt,
+      })
+      .eq('id', integration.id);
+    if (updateError) {
+      console.error('[YalidineWebhook]: Could not save test delivery timestamp:', updateError.message);
+      return NextResponse.json({ error: 'Webhook test was received but its state could not be updated.' }, { status: 500 });
+    }
+    return NextResponse.json({
+      success: true,
+      testMode: true,
+      received: body.events.length,
+      type: body.type,
+      message: 'Signed test delivery accepted without creating or changing any orders.',
+    }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+  }
+
   const rows = [];
   for (const event of body.events) {
     if (
