@@ -38,6 +38,12 @@ function parseDate(value: unknown): number {
     const timestamp = new Date(iso).getTime();
     return Number.isFinite(timestamp) ? timestamp : 0;
   }
+  const localIso = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (localIso) {
+    const [, year, month, day, hour = '00', minute = '00', second = '00'] = localIso;
+    const timestamp = new Date(year + '-' + month + '-' + day + 'T' + hour + ':' + minute + ':' + second + '+01:00').getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
   const timestamp = new Date(raw).getTime();
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
