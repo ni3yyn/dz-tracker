@@ -49,7 +49,7 @@ const STATUS_MAP: Record<string, { statusRaw: string; statusTitle: string; descr
 };
 export function mapEcomV2Status(value: unknown): { statusRaw: string; statusTitle: string; description: string } {
   const raw = first(value);
-  const key = normalizeDiacritics(safeLower(raw)).replace(/\\s+/g, ' ').trim();
+  const key = normalizeDiacritics(safeLower(raw)).replace(/\s+/g, ' ').trim();
   if (NOTE_LABELS.has(key)) return { statusRaw: 'unknown', statusTitle: 'معلومة من E-com Delivery', description: 'سجلت الشركة معلومة إضافية دون تغيير واضح في حالة الشحنة.' };
   return STATUS_MAP[key] || {
     statusRaw: 'unknown',
