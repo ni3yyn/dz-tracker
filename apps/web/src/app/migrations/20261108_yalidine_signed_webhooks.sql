@@ -114,7 +114,7 @@ RETURNS TABLE (changed BOOLEAN, history_id UUID)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $$
 DECLARE
   v_carrier_event_at TIMESTAMPTZ;
   v_latest_history_at TIMESTAMPTZ;
@@ -189,7 +189,7 @@ BEGIN
 
   RETURN QUERY SELECT TRUE, v_history_id;
 END;
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.record_order_status_change_ordered(UUID, TEXT, TEXT, TEXT, TIMESTAMPTZ, TEXT)
   FROM PUBLIC, anon, authenticated;
