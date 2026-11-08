@@ -3,6 +3,7 @@
 import React, { useEffect, useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createElogistiaShipment, getElogistiaDispatchOptions, getElogistiaDispatchStatus } from './elogistia-actions';
+import { BrandedSelect } from './BrandedSelect';
 
 type Props = {
   order: {
@@ -164,14 +165,27 @@ export function ElogistiaDispatchPanel({ order }: Props) {
         </label>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <label htmlFor={prefix+'-wilaya'} style={{ display: 'grid', gap: 6 }}>الولاية *
-            <select id={prefix+'-wilaya'} className="dz-input-field" value={wilayaId} onChange={e=>void selectWilaya(e.target.value)} required>
-              <option value="">اختر الولاية</option>{wilayas.map(row=><option key={row.id} value={row.id}>{row.id} — {row.name}</option>)}
-            </select>
+            <BrandedSelect
+              id={prefix+'-wilaya'}
+              ariaLabel="الولاية"
+              value={wilayaId}
+              onChange={(value)=>void selectWilaya(value)}
+              placeholder="اختر الولاية"
+              variant="field"
+              options={wilayas.map((row)=>({value:row.id,label:`${row.id} — ${row.name}`}))}
+            />
           </label>
           <label htmlFor={prefix+'-commune'} style={{ display: 'grid', gap: 6 }}>البلدية *
-            <select id={prefix+'-commune'} className="dz-input-field" value={commune} onChange={e=>setCommune(e.target.value)} required disabled={!wilayaId||loadingCommunes}>
-              <option value="">{loadingCommunes?'جارٍ التحميل...':'اختر البلدية'}</option>{communes.map((row,index)=><option key={row.id||row.name+index} value={row.name}>{row.name}</option>)}
-            </select>
+            <BrandedSelect
+              id={prefix+'-commune'}
+              ariaLabel="البلدية"
+              value={commune}
+              onChange={setCommune}
+              placeholder={loadingCommunes?'جارٍ التحميل...':'اختر البلدية'}
+              disabled={!wilayaId||loadingCommunes}
+              variant="field"
+              options={communes.map((row)=>({value:row.name,label:row.name}))}
+            />
           </label>
         </div>
         {rates && <p className="dz-int-guided-note" style={{ fontSize: 13 }}>تعريفة Elogistia لهذه الولاية: المنزل <b>{rates.home.toLocaleString('ar-DZ')} دج</b> · المكتب <b>{rates.stopDesk.toLocaleString('ar-DZ')} دج</b>. هذه تعريفة الشركة ولا تُضاف تلقائياً إلى مبلغ التحصيل.</p>}
@@ -193,14 +207,30 @@ export function ElogistiaDispatchPanel({ order }: Props) {
         )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <label htmlFor={prefix+'-delivery'} style={{ display: 'grid', gap: 6 }}>طريقة التوصيل *
-            <select id={prefix+'-delivery'} className="dz-input-field" value={deliveryType} onChange={e=>setDeliveryType(e.target.value as 'home'|'stopdesk')}>
-              <option value="home">إلى المنزل</option><option value="stopdesk">مكتب Elogistia</option>
-            </select>
+            <BrandedSelect
+              id={prefix+'-delivery'}
+              ariaLabel="طريقة التوصيل"
+              value={deliveryType}
+              onChange={(value)=>setDeliveryType(value as 'home'|'stopdesk')}
+              variant="field"
+              options={[
+                {value:'home',label:'إلى المنزل'},
+                {value:'stopdesk',label:'مكتب Elogistia'},
+              ]}
+            />
           </label>
           <label htmlFor={prefix+'-mode'} style={{ display: 'grid', gap: 6 }}>نوع العملية *
-            <select id={prefix+'-mode'} className="dz-input-field" value={deliveryMode} onChange={e=>setDeliveryMode(e.target.value as 'standard'|'exchange')}>
-              <option value="standard">إرسال عادي</option><option value="exchange">تبادل (Exchange)</option>
-            </select>
+            <BrandedSelect
+              id={prefix+'-mode'}
+              ariaLabel="نوع العملية"
+              value={deliveryMode}
+              onChange={(value)=>setDeliveryMode(value as 'standard'|'exchange')}
+              variant="field"
+              options={[
+                {value:'standard',label:'إرسال عادي'},
+                {value:'exchange',label:'تبادل (Exchange)'},
+              ]}
+            />
           </label>
         </div>
         <label htmlFor={prefix+'-note'} style={{ display: 'grid', gap: 6 }}>ملاحظة لشركة التوصيل
