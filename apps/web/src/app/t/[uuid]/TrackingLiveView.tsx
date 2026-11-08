@@ -175,6 +175,8 @@ export function TrackingLiveView({
     timelineLineStyle: storedSettings?.timelineLineStyle ?? 'straight',
   };
 
+  const skipEntranceAnimation = settings.animationLevel === 'none';
+
   const dynamicStyle = {
     '--brand-primary': settings.brandColor,
     '--brand-primary-light': `${settings.brandColor}14`,
@@ -359,7 +361,6 @@ export function TrackingLiveView({
 
   const animationClass = settings.animationLevel === 'none' ? styles.animNone : settings.animationLevel === 'subtle' ? styles.animSubtle : '';
   const darkMode = settings.themeMode === 'dark';
-  const skipEntranceAnimation = settings.animationLevel === 'none';
 
   const timelineLineClass =
     settings.timelineLineStyle === 'dashed' ? styles.connectorDashed
