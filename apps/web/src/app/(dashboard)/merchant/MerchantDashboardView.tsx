@@ -1403,7 +1403,7 @@ export function MerchantDashboardView({
       url: '',
       method: 'API + Svix Webhooks (تلقائي)',
       hint: 'اربط حساب ZR Express مباشرة عبر API Key وTenant ID. ينشئ تاجر تراك Webhook تلقائياً ويتحقق من توقيع Svix دون إعداد رابط يدوي.',
-      caveave: 'هذا اتصال ZR Express API المباشر؛ لا تستخدم رابط Procolis القديم لهذا المسار.',
+      caveat: 'هذا اتصال ZR Express API المباشر؛ لا تستخدم رابط Procolis القديم لهذا المسار.',
       supportQuestion: 'أستخدم واجهة ZR Express API المباشرة وأحتاج إلى تفعيل صلاحيات Webhooks (Svix) لحسابي.'
     },
     {
