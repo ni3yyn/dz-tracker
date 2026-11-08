@@ -208,7 +208,6 @@ export function YalidineConnectionPanel() {
                     className="input"
                     type="password"
                     required
-                    minLength={16}
                     maxLength={512}
                     value={secret}
                     onChange={(event) => setSecret(event.target.value)}
@@ -217,7 +216,7 @@ export function YalidineConnectionPanel() {
                     autoComplete="new-password"
                   />
                 </label>
-                <button type="submit" className="dz-btn" disabled={saving || secret.trim().length < 16}>
+                <button type="submit" className="dz-btn" disabled={saving || !secret.trim()}>
                   {saving ? 'جارٍ حفظ المفتاح...' : status.connected ? 'تحديث مفتاح التوقيع' : 'حفظ مفتاح التوقيع'}
                 </button>
               </form>
