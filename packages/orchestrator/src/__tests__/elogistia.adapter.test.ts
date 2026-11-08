@@ -24,6 +24,7 @@ test('normalizes an Elogistia tracking history event to the merchant order', () 
     customer_name: 'Sara Mansouri',
     phone: '0555123456',
     product_name: 'Sac à main',
+    suppressTriggers: true,
   });
 
   assert.equal(event.merchantId, 'merchant-1');
@@ -34,6 +35,7 @@ test('normalizes an Elogistia tracking history event to the merchant order', () 
   assert.equal(event.customerName, 'Sara Mansouri');
   assert.equal(event.statusRaw, 'delivered');
   assert.equal(event.sourceProvider, 'elogistia');
+  assert.equal(event.suppressTriggers, true);
   assert.equal(event.sourceOccurredAt, '2026-11-08T09:30:00.000Z');
   assert.equal(event.carrierMetadata?.['elogistiaTrackingNumber'], 'ELO-00123');
 });
