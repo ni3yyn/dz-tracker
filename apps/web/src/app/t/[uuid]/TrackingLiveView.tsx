@@ -244,7 +244,7 @@ export function TrackingLiveView({
   };
 
   useEffect(() => {
-    if (settings.animationLevel === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (skipEntranceAnimation || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setIntroPhase('done');
       return;
     }
@@ -255,7 +255,7 @@ export function TrackingLiveView({
       window.clearTimeout(wipeTimer);
       window.clearTimeout(finishTimer);
     };
-  }, []);
+  }, [skipEntranceAnimation]);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -359,6 +359,7 @@ export function TrackingLiveView({
 
   const animationClass = settings.animationLevel === 'none' ? styles.animNone : settings.animationLevel === 'subtle' ? styles.animSubtle : '';
   const darkMode = settings.themeMode === 'dark';
+  const skipEntranceAnimation = settings.animationLevel === 'none';
 
   const timelineLineClass =
     settings.timelineLineStyle === 'dashed' ? styles.connectorDashed
