@@ -10,6 +10,9 @@
 
 .trigger {
   display: flex;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
