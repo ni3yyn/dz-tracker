@@ -7,6 +7,7 @@ import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
 import { ImageUploadField } from './ImageUploadField';
 import { EcoTrackConnectionPanel } from './EcoTrackConnectionPanel';
+import { ZRExpressConnectionPanel } from './ZRExpressConnectionPanel';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
@@ -818,7 +819,7 @@ export function MerchantDashboardView({
     activeTab === 'integrations' &&
     integrationChoicesHydratedFor === merchantId &&
     (integrationPlatform === 'website' || integrationPlatform === 'shopify' ||
-      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack'));
+      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress'));
 
   useEffect(() => {
     let cancelled = false;
@@ -1369,7 +1370,6 @@ export function MerchantDashboardView({
   const shopifyUrl = `${siteUrl}/api/webhooks/shopify?key=${integrationApiKey}`;
   const yalidineUrl = `${siteUrl}/api/webhooks/yalidine?key=${integrationApiKey}`;
   const ecotrackUrl = `${siteUrl}/api/webhooks/ecotrack?key=${integrationApiKey}`;
-  const zrexpressUrl = `${siteUrl}/api/webhooks/zrexpress?key=${integrationApiKey}`;
   const procolisUrl = `${siteUrl}/api/webhooks/procolis?key=${integrationApiKey}`;
   const odooUrl = `${siteUrl}/api/webhooks/odoo?key=${integrationApiKey}`;
   const maystroUrl = `${siteUrl}/api/webhooks/maystro?key=${integrationApiKey}`;
@@ -1395,16 +1395,6 @@ export function MerchantDashboardView({
       hint: 'يدعم جميع شركات الشحن التي تعمل بنظام EcoTrack في الجزائر. ضع الرابط في خانة Webhook URL في لوحة حساب الشركة.',
       caveat: 'يدعم جميع أحداث شبكة إيكوتراك (cree, ramasse, transit, en_livraison, stopdesk, livre, retour).',
       supportQuestion: 'مرحباً، أود ربط حسابي لديكم مع تاجر تراك عبر Webhooks لتحديث مسار التوصيل للزبائن تلقائياً. هل يمكنكم تفعيل إرسال Webhook خارجي عند تغيير حالة الشحنات؟'
-    },
-    {
-      id: 'zrexpress' as const,
-      name: 'ZR Express',
-      symbol: 'ZR',
-      url: zrexpressUrl,
-      method: 'POST (JSON)',
-      hint: 'من لوحة تحكم ZR Express، ابحث عن قسم Webhooks أو إشعارات الحالات، وأضف رابط تاجر تراك.',
-      caveat: 'احفظ الإعدادات واطلب إرسال إشعار تجريبي للتأكد من المزامنة الفورية.',
-      supportQuestion: 'مرحباً، أريد ربط حسابي في ZR Express مع تاجر تراك عبر Webhooks لتحديث مسار التوصيل للزبائن تلقائياً. أين يمكنني تفعيل ذلك في لوحة الحساب؟'
     },
     {
       id: 'procolis' as const,
@@ -5706,6 +5696,10 @@ export async function registerSavedOrder(savedOrder) {
 
                       {trackingSource === 'carrier' && selectedCarrier === 'ecotrack' && (
                         <EcoTrackConnectionPanel />
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier === 'zrexpress' && (
+                        <ZRExpressConnectionPanel />
                       )}
 
                       {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && activeCarrierConnection && (
