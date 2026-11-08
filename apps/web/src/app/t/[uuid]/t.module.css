@@ -237,6 +237,17 @@
 .retryBtn:hover { transform: translateY(-1px); }
 .homeLink { color: var(--ink-main); border: 1px solid var(--border-strong); background: var(--surface); }
 .homeLink:hover { background: var(--canvas); }
+.loadingStatusText {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .skeletonLine, .skeletonBadge, .skeletonAvatar, .skeletonTimelineDot {
   display: block;
   position: relative;
