@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import {
   TrackingOrchestrator,
   ZRExpressWebhookAdapter,
+  type ZRExpressWebhookEvent,
 } from '@saas/orchestrator';
 import type { PushWorkerConfig } from './config.js';
 
