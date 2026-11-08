@@ -10,7 +10,7 @@ const TIMEOUT_MS = 15000;
 type Integration = { id:string; merchant_id:string; credentials_encrypted:string; sync_enabled:boolean };
 type Order = { external_order_id:string; customer_name:string|null; customer_phone:string|null; product_name:string|null; carrier_tracking_number:string; current_status:string };
 function textValue(v:unknown):string{return v==null?'':String(v).trim();}
-function eventId(tracking:string,event:Record<string,any>):string{
+export function createEcomV2EventId(tracking:string,event:Record<string,any>):string{
   return createHash('sha256').update([tracking,event.date,event.situation,event.commentaire,event.etat_logistique].map(textValue).join('|')).digest('hex');
 }
 function historyFrom(body:any):Record<string,any>[] {
@@ -72,7 +72,7 @@ export class EcomV2SyncWorker {
           if(!this.running)return;
           if(!order.carrier_tracking_number||['delivered','returned','cancelled'].includes(textValue(order.current_status).toLowerCase()))continue;
           await this.rateLimit();
-          const url=new URL('/colis/'+encodeURIComponent(order.carrier_tracking_number),API);
+          const url=new URL('colis/'+encodeURIComponent(order.carrier_tracking_number),API+'/');
           let response:Response;
           try{response=await fetch(url,{headers:{Accept:'application/json','X-API-Key':auth.apiKey,'X-API-Token':auth.apiToken},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(TIMEOUT_MS)});}
           catch(e:any){throw new Error(e?.name==='TimeoutError'||e?.name==='AbortError'?'E-com Delivery tracking request timed out.':'E-com Delivery tracking request could not reach the API.');}
@@ -90,7 +90,7 @@ export class EcomV2SyncWorker {
           }]).map((event,index)=>({
             ...event,tracking:order.carrier_tracking_number,id_externe:order.external_order_id,
             nom_complet:order.customer_name||'',mobile_1:order.customer_phone||'',article:order.product_name||'',
-            source_event_id:eventId(order.carrier_tracking_number,event),
+            source_event_id:createEcomV2EventId(order.carrier_tracking_number,event),
             suppressTriggers:index<((useful.length?useful.length:1)-1),
           }));
           for(let i=0;i<events.length;i+=50){
