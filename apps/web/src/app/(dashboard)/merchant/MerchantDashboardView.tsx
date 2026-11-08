@@ -5613,9 +5613,43 @@ export async function registerSavedOrder(savedOrder) {
                         </article>
                       )}
 
+                      {trackingSource === 'carrier' && selectedCarrier === 'other' && (
+                        <article className="dz-int-guided-panel">
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>تحقّق من دعم شركة التوصيل</h4><p>لا نملك رابطاً مخصصاً لهذه الشركة حالياً. يجب التأكد من أنها تستطيع إرسال Webhook خارجي عند تغيّر حالة الشحنة.</p></div></div>
+                          <button type="button" className="dz-support-copy" onClick={() => copyToClipboard('مرحباً، أريد ربط شركة التوصيل لديّ مع تاجر تراك. هل تدعمون إرسال Webhook خارجي عند تغيّر حالة الشحنة؟ ما طريقة تفعيله من لوحة التاجر وما تنسيق الأحداث المرسلة؟', 'guided-other-carrier-question')}>{copiedKey === 'guided-other-carrier-question' ? <Icons.Check /> : <Icons.Copy />} نسخ سؤال جاهز للدعم</button>
+                          <div className="dz-int-guided-note">إلى أن تتأكد من دعم Webhooks، يمكنك تحديث الحالات يدوياً من لوحة الطلبات.</div>
+                        </article>
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier === 'ecotrack' && (
+                        <EcoTrackConnectionPanel />
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier === 'zrexpress' && (
+                        <ZRExpressConnectionPanel />
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && activeCarrierConnection && (
+                        <article className="dz-int-guided-panel">
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
+                          <div className="dz-int-guided-copy">
+                            <div><small>رابط استقبال تحديثات الشحن</small><code dir="ltr">{activeCarrierConnection.url}</code></div>
+                            <button type="button" disabled={!integrationApiKey || integrationApiKeyLoading} onClick={() => copyToClipboard(activeCarrierConnection.url, `guided-carrier-${activeCarrierConnection.id}`)}>{copiedKey === `guided-carrier-${activeCarrierConnection.id}` ? <Icons.Check /> : <Icons.Copy />} نسخ الرابط</button>
+                          </div>
+                          <div className="dz-int-guided-meta"><span>طريقة الإرسال</span><strong>{activeCarrierConnection.method}</strong><span>المصادقة</span><strong>مضمّنة في رابط الاستقبال الخاص بمتجرك</strong></div>
+                          <ol className="dz-int-guided-steps">
+                            <li>افتح لوحة شركة التوصيل أو تواصل مع دعمها لتفعيل Webhook خارجي.</li>
+                            <li>أضف رابط الاستقبال وحدد أحداث تغيّر الحالة التي تريد إرسالها.</li>
+                            <li>اطلب إرسال حدث تجريبي وتأكد من وصوله إلى تاجر تراك.</li>
+                          </ol>
+                          <p className="dz-int-guided-note">{activeCarrierConnection.caveat} نسخ الرابط وحده لا يفعّل إرسال الأحداث من حساب شركة التوصيل.</p>
+                          <button type="button" className="dz-support-copy" onClick={() => copyToClipboard(activeCarrierConnection.supportQuestion, `guided-carrier-question-${activeCarrierConnection.id}`)}>{copiedKey === `guided-carrier-question-${activeCarrierConnection.id}` ? <Icons.Check /> : <Icons.Copy />} نسخ سؤال جاهز لدعم الشركة</button>
+                        </article>
+                      )}
+
                       {integrationPlatform === 'website' && (
                         <article className="dz-int-guided-panel">
-                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">01</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{trackingSource === 'carrier' && selectedCarrier === 'zrexpress' ? '02' : '01'}</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
                           <div className="dz-int-guided-credentials">
                             <div className="dz-int-guided-credential">
                               <div className="dz-int-guided-credential-head"><small>مفتاح API</small><button type="button" onClick={() => setApiKeyRevealed((value) => !value)}>{apiKeyRevealed ? <Icons.EyeOff /> : <Icons.Eye />}{apiKeyRevealed ? 'إخفاء' : 'إظهار'}</button></div>
@@ -5693,40 +5727,6 @@ export async function registerSavedOrder(savedOrder) {
                             setActiveTab('orders');
                             setIsAddOrderModalOpen(true);
                           }}>إضافة طلب جديد <Icons.ArrowLeft /></button>
-                        </article>
-                      )}
-
-                      {trackingSource === 'carrier' && selectedCarrier === 'other' && (
-                        <article className="dz-int-guided-panel">
-                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>تحقّق من دعم شركة التوصيل</h4><p>لا نملك رابطاً مخصصاً لهذه الشركة حالياً. يجب التأكد من أنها تستطيع إرسال Webhook خارجي عند تغيّر حالة الشحنة.</p></div></div>
-                          <button type="button" className="dz-support-copy" onClick={() => copyToClipboard('مرحباً، أريد ربط شركة التوصيل لديّ مع تاجر تراك. هل تدعمون إرسال Webhook خارجي عند تغيّر حالة الشحنة؟ ما طريقة تفعيله من لوحة التاجر وما تنسيق الأحداث المرسلة؟', 'guided-other-carrier-question')}>{copiedKey === 'guided-other-carrier-question' ? <Icons.Check /> : <Icons.Copy />} نسخ سؤال جاهز للدعم</button>
-                          <div className="dz-int-guided-note">إلى أن تتأكد من دعم Webhooks، يمكنك تحديث الحالات يدوياً من لوحة الطلبات.</div>
-                        </article>
-                      )}
-
-                      {trackingSource === 'carrier' && selectedCarrier === 'ecotrack' && (
-                        <EcoTrackConnectionPanel />
-                      )}
-
-                      {trackingSource === 'carrier' && selectedCarrier === 'zrexpress' && (
-                        <ZRExpressConnectionPanel />
-                      )}
-
-                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && activeCarrierConnection && (
-                        <article className="dz-int-guided-panel">
-                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
-                          <div className="dz-int-guided-copy">
-                            <div><small>رابط استقبال تحديثات الشحن</small><code dir="ltr">{activeCarrierConnection.url}</code></div>
-                            <button type="button" disabled={!integrationApiKey || integrationApiKeyLoading} onClick={() => copyToClipboard(activeCarrierConnection.url, `guided-carrier-${activeCarrierConnection.id}`)}>{copiedKey === `guided-carrier-${activeCarrierConnection.id}` ? <Icons.Check /> : <Icons.Copy />} نسخ الرابط</button>
-                          </div>
-                          <div className="dz-int-guided-meta"><span>طريقة الإرسال</span><strong>{activeCarrierConnection.method}</strong><span>المصادقة</span><strong>مضمّنة في رابط الاستقبال الخاص بمتجرك</strong></div>
-                          <ol className="dz-int-guided-steps">
-                            <li>افتح لوحة شركة التوصيل أو تواصل مع دعمها لتفعيل Webhook خارجي.</li>
-                            <li>أضف رابط الاستقبال وحدد أحداث تغيّر الحالة التي تريد إرسالها.</li>
-                            <li>اطلب إرسال حدث تجريبي وتأكد من وصوله إلى تاجر تراك.</li>
-                          </ol>
-                          <p className="dz-int-guided-note">{activeCarrierConnection.caveat} نسخ الرابط وحده لا يفعّل إرسال الأحداث من حساب شركة التوصيل.</p>
-                          <button type="button" className="dz-support-copy" onClick={() => copyToClipboard(activeCarrierConnection.supportQuestion, `guided-carrier-question-${activeCarrierConnection.id}`)}>{copiedKey === `guided-carrier-question-${activeCarrierConnection.id}` ? <Icons.Check /> : <Icons.Copy />} نسخ سؤال جاهز لدعم الشركة</button>
                         </article>
                       )}
 
