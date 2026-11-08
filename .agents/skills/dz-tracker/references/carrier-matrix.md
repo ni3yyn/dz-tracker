@@ -1,8 +1,8 @@
-# Carrier webhook adapter inventory (repository-verified)
+# Carrier webhook and account-sync inventory (repository-verified)
 
-**This is a map of what the current TajerTrack repository code reads and normalizes. It is not a carrier's official webhook specification.** Candidate field names below are taken from the adapters' `extractFirst` calls. They do not prove that a provider will send those fields in every account, region, or webhook event. Before configuring a live courier integration, obtain a real sample payload or consult the provider's current documentation and compare it with the corresponding adapter.
+**This is a map of what the current TajerTrack repository implements.** Webhook adapter field names are code-level candidates, not an official provider payload contract. EcoTrack account synchronization is based on its public Postman collection; tenant behavior and credentials still need a live connection test.
 
-Snapshot checked: 2026-11-07.
+Snapshot checked: 2026-11-08.
 
 ## 1. Implemented webhook routes
 
@@ -11,6 +11,7 @@ Snapshot checked: 2026-11-07.
 | `POST /api/webhooks` | Direct merchant API; normalizes direct order/status fields | `apps/web/src/app/api/webhooks/route.ts` |
 | `POST /api/webhooks/yalidine` | `YalidineAdapter.normalize()` | `apps/web/src/app/api/webhooks/yalidine/route.ts` → `packages/orchestrator/src/carriers/yalidine.adapter.ts` |
 | `POST /api/webhooks/ecotrack` | `EcoTrackAdapter.normalize()` | `apps/web/src/app/api/webhooks/ecotrack/route.ts` → `packages/orchestrator/src/carriers/ecotrack.adapter.ts` |
+| `POST /api/webhooks/ecotrack/sync` | Internal batch ingestion for the read-only polling worker (1–100 events) | `apps/web/src/app/api/webhooks/ecotrack/sync/route.ts` → same shared handler |
 | `POST /api/webhooks/zrexpress` | `ZRExpressAdapter.normalize()` | `apps/web/src/app/api/webhooks/zrexpress/route.ts` → `packages/orchestrator/src/carriers/zrexpress.adapter.ts` |
 | `POST /api/webhooks/procolis` | `ProcolisAdapter.normalize()` | `apps/web/src/app/api/webhooks/procolis/route.ts` → same ZR Express source |
 | `POST /api/webhooks/maystro` | `MaystroAdapter.normalize()` | `apps/web/src/app/api/webhooks/maystro/route.ts` → `packages/orchestrator/src/carriers/maystro.adapter.ts` |
@@ -31,6 +32,35 @@ The Odoo route reads the first available carrier text from `carrier_name`, `deli
 
 This is the actual repository routing logic. Verify the merchant's carrier field values match these checks; an unknown value defaults to Yalidine.
 
+## 1A. EcoTrack read-only account synchronization
+
+EcoTrack's public Postman collection is [ECOTRACK API](https://documenter.getpostman.com/view/14517169/Tz5je15g). Its documented requests include token validation, shipment listing, individual/bulk tracking, and shipment-status filtering. The collection does not contain an endpoint to register a webhook or subscribe to courier events, so this integration uses **read-only polling**.
+
+Implementation:
+
+| Purpose | Implementation |
+|---|---|
+| Merchant connection UI | `apps/web/src/app/(dashboard)/merchant/EcoTrackConnectionPanel.tsx` |
+| Authenticated save/test/disconnect actions | `apps/web/src/app/(dashboard)/merchant/actions.ts` |
+| Encrypted credentials and sync state | `apps/web/src/app/migrations/20261108_ecotrack_readonly_sync.sql` |
+| Background polling | `apps/push-worker/src/ecotrack-sync.ts` |
+| Credential decryption | `apps/push-worker/src/ecotrack-credentials.ts` |
+| Normal ingestion path | `POST /api/webhooks/ecotrack/sync` → existing orchestrator |
+
+The merchant supplies a tenant-specific HTTPS company URL and its EcoTrack API token. The web server validates the token using `GET /api/v1/validate/token?api_token=...`, then verifies that the account can read `GET /api/v1/get/orders`. Credentials are encrypted with AES-256-GCM and are never returned to the browser. The exact same `CARRIER_CREDENTIALS_ENCRYPTION_KEY` must be configured in Vercel and Railway.
+
+The worker performs only these read operations:
+
+- `GET /api/v1/get/orders?page=...&start_date=...&end_date=...` — paginated list, 40 shipments per page. The official response is Laravel-style `{ current_page, data: [...], last_page, ... }`. The endpoint returns orders in process and excludes archived orders.
+- `GET /api/v1/get/orders/status?api_token=...&trackings=...&status=all` — current status and activity map keyed by tracking number; up to 100 tracking numbers per request. This endpoint specifically uses the token as an `api_token` query parameter.
+- The token-check endpoint above is used during connection setup.
+
+The official collection documents a limit of **50 requests per minute**. The worker spaces EcoTrack API calls by at least 1.25 seconds. It scans from the connection date and re-reads the last scanned date on subsequent cycles to catch late-arriving shipments. It does not intentionally backfill earlier account history.
+
+**Read-only invariant:** do not add calls to `create/order`, `create/orders`, `valid/order`, `update/order`, `delete/order`, or other write operations in this worker. The merchant continues creating shipments inside the courier's own account. TajerTrack only discovers and tracks them.
+
+Runtime activation is opt-in: set `CARRIER_SYNC_ENABLED=true` and `CARRIER_CREDENTIALS_ENCRYPTION_KEY` (at least 32 characters) in the Railway push-worker environment, and set the same encryption key in Vercel. The database migration must be applied before a merchant can connect.
+
 ## 2. Candidate fields currently read by each adapter
 
 These are code-level extraction candidates, not a promise that all are present or officially supported in live provider payloads.
@@ -49,10 +79,10 @@ Source: `packages/orchestrator/src/carriers/yalidine.adapter.ts`
 
 Source: `packages/orchestrator/src/carriers/ecotrack.adapter.ts`
 
-- Tracking number candidates: `tracking_code`, `trackingCode`, `tracking`, `barcode`, `code`, `code_suivi`, `id`.
+- Tracking number candidates: `tracking`, `tracking_code`, `trackingCode`, `tracking_number`, `tracking_id`, `barcode`, `code`, `code_suivi`, `n_tracking`, `id`.
 - External order ID candidates include `reference`, `order_id`, `order_number`, `orderId`, `orderNumber`, `external_id`, `code_commande`.
 - Carrier name candidates: `carrier_name`, `carrierName`, `company_name`, `transporteur`, `societe`.
-- Customer fields include `client_name` / `customer_name` / `name` and `client_phone` / `customer_phone` / `phone` / `telephone` / `tel` / `mobile`.
+- Customer fields include `client_name` / `customer_name` / `name` / `nom_client` / `destinataire` / `client` and `client_phone` / `customer_phone` / `phone` / `telephone` / `tel` / `mobile` / `contact_phone`.
 - Status candidates: `status`, `current_status`, `statut`, `etat`; reason candidates include `reason`, `motif`, `sub_status`, `comment`, `remarque`, `observation`.
 
 ### ZR Express / Procolis adapter
@@ -79,6 +109,8 @@ Source: `packages/orchestrator/src/carriers/maystro.adapter.ts`
 - Status candidates include `status`, `current_status`, `statut`, `etat`, `state`, `order_status`; reason candidates include `reason`, `motif`, `motif_retour`, `sub_status`, `note_to_driver`, `note`, `comment`, `commentaire`.
 
 ## 3. Status normalization and event behavior
+
+EcoTrack API status keys from `get/orders` and `get/orders/status` are handled explicitly by `EcoTrackAdapter.parseEcoTrackStatus()`. Do not replace those exact mappings with fuzzy translations of tenant-specific French display labels. The list endpoint excludes archived orders, so keep the known-tracking status lookup as the separate status-reconciliation step.
 
 The adapters use fuzzy string matching, diacritic normalization, and their own status/reason parser. Depending on the input, they emit values such as `processing`, `dispatched`, `in_transit`, `at_local_hub`, `ready_for_pickup`, `out_for_delivery`, `attempt_failed`, `attempt_failed_no_answer`, `attempt_failed_unreachable`, `postponed`, `delivered`, or `returned`.
 

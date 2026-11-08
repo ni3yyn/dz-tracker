@@ -27,7 +27,24 @@ Determine each independently:
 - **Shipment status updates:** whether the courier posts tracking webhooks or the store updates statuses itself.
 - **Customer tracking page:** whether the store returns/redirects the customer to the real TajerTrack tracking URL.
 
-A Shopify order-created event is an order-intake event. A Yalidine/EcoTrack/other carrier webhook is a shipment-status event. They are not interchangeable.
+A Shopify order-created event is an order-intake event. A Yalidine or other carrier webhook is a shipment-status event; EcoTrack account synchronization uses read-only API polling. They are not interchangeable.
+
+### Carrier-side shipment discovery: webhooks versus read-only polling
+
+Do not assume every courier supports outgoing webhooks. First inspect the provider's actual API/documentation and choose the integration mode it supports:
+
+- **Webhook-capable courier:** configure its account to POST new-shipment and status events to the matching TajerTrack inbound route. Confirm with a real test event.
+- **Read API, no webhook subscription:** connect the merchant's courier account with its provider-specific credentials and use read/list/tracking endpoints in a server-side scheduled worker. Do not simulate an incoming webhook as a provider capability.
+- **Manual-only provider:** tell the merchant that automatic discovery is unavailable; do not display the provider as connected.
+
+**EcoTrack is a read-only polling integration in the current TajerTrack source.** Use the merchant's tenant-specific HTTPS company URL and token. The official [EcoTrack Postman collection](https://documenter.getpostman.com/view/14517169/Tz5je15g) documents:
+- `GET /api/v1/validate/token?api_token=...` to validate the token.
+- `GET /api/v1/get/orders?page=...&start_date=...&end_date=...` to list in-process shipments (40 per page; archived orders are excluded).
+- `GET /api/v1/get/orders/status?api_token=...&trackings=...&status=all` to retrieve status/activity for up to 100 known tracking numbers. This endpoint uses the token as a query parameter.
+
+The EcoTrack Postman collection documents a 50-requests-per-minute limit. Current source has a paced polling worker. Its merchant token is encrypted server-side using `CARRIER_CREDENTIALS_ENCRYPTION_KEY`; the same secret is required in the Vercel web app and Railway push-worker. The SQL migration `apps/web/src/app/migrations/20261108_ecotrack_readonly_sync.sql` must be applied, and the Railway worker requires `CARRIER_SYNC_ENABLED=true`.
+
+**Read-only rule for this requested EcoTrack workflow:** do not call `create/order`, `create/orders`, `valid/order`, `update/order`, or `delete/order`. Merchants create and manage shipments in their courier account; TajerTrack only discovers and tracks them. Do not claim a successful live connection until a real merchant account passes token validation and shipment-list read verification.
 
 ## Step 2 — Verify which SDK is actually installed
 

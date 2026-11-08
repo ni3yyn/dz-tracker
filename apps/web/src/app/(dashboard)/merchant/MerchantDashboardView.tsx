@@ -6,6 +6,7 @@ import { StatusSelector } from './StatusSelector';
 import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
 import { ImageUploadField } from './ImageUploadField';
+import { EcoTrackConnectionPanel } from './EcoTrackConnectionPanel';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
@@ -817,7 +818,7 @@ export function MerchantDashboardView({
     activeTab === 'integrations' &&
     integrationChoicesHydratedFor === merchantId &&
     (integrationPlatform === 'website' || integrationPlatform === 'shopify' ||
-      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other'));
+      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack'));
 
   useEffect(() => {
     let cancelled = false;
@@ -5703,7 +5704,11 @@ export async function registerSavedOrder(savedOrder) {
                         </article>
                       )}
 
-                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && activeCarrierConnection && (
+                      {trackingSource === 'carrier' && selectedCarrier === 'ecotrack' && (
+                        <EcoTrackConnectionPanel />
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && activeCarrierConnection && (
                         <article className="dz-int-guided-panel">
                           <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
                           <div className="dz-int-guided-copy">

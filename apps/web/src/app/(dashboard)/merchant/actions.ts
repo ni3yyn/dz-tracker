@@ -1,5 +1,8 @@
 'use server';
 
+import { createCipheriv, createHash, randomBytes } from 'node:crypto';
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
@@ -31,6 +34,302 @@ export async function getMerchantIntegrationApiKey(): Promise<{ apiKey: string |
     return { apiKey: null, error: 'تعذر تحميل بيانات الربط. حدّث الصفحة ثم حاول مجدداً.' };
   }
   return { apiKey: merchant.api_key };
+}
+
+
+type EcoTrackIntegrationStatus = {
+  connected: boolean;
+  baseUrl?: string;
+  connectedAt?: string | null;
+  lastSyncAt?: string | null;
+  lastSuccessAt?: string | null;
+  lastError?: string | null;
+};
+
+function isPrivateIpv4(address: string): boolean {
+  const parts = address.split('.').map(Number);
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return true;
+  const [a, b, c] = parts;
+  return a === 0 || a === 10 || a === 127 || a >= 224 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 192 && b === 0 && c === 0) ||
+    (a === 192 && b === 0 && c === 2) ||
+    (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
+    (a === 203 && b === 0 && c === 113);
+}
+
+function isPrivateAddress(address: string): boolean {
+  const version = isIP(address);
+  if (version === 4) return isPrivateIpv4(address);
+  if (version !== 6) return true;
+  const normalized = address.toLowerCase();
+  if (normalized.startsWith('::ffff:')) {
+    const mapped = normalized.slice(7);
+    return isIP(mapped) === 4 ? isPrivateIpv4(mapped) : true;
+  }
+  // Only globally routable IPv6 unicast (2000::/3) is allowed.
+  const first = Number.parseInt(normalized.split(':')[0] || '0', 16);
+  return !(first >= 0x2000 && first <= 0x3fff);
+}
+
+async function normalizeEcoTrackCompanyUrl(input: string): Promise<string> {
+  let url: URL;
+  try {
+    url = new URL(input.trim());
+  } catch {
+    throw new Error('أدخل رابط API الصحيح الذي زودتك به شركة التوصيل.');
+  }
+
+  const hostname = url.hostname.toLowerCase();
+  const approvedTenantHost =
+    hostname.endsWith('.ecotrack.dz') ||
+    hostname === 'platform.dhd-dz.com' ||
+    hostname === 'app.conexlog-dz.com';
+  if (
+    url.protocol !== 'https:' ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    (url.port && url.port !== '443') ||
+    !hostname ||
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.local') ||
+    isIP(hostname) !== 0 ||
+    !approvedTenantHost
+  ) {
+    throw new Error('يجب أن يكون رابط EcoTrack عنوان HTTPS عاماً تابعاً لنطاق EcoTrack أو أحد النطاقين المعتمدين لـ DHD وConexlog.');
+  }
+
+  const path = url.pathname.replace(/\/+$/, '');
+  if (path && !/^\/api\/v1$/i.test(path)) {
+    throw new Error('استخدم عنوان الشركة الأساسي أو العنوان المنتهي بـ /api/v1.');
+  }
+
+  let addresses: Array<{ address: string; family: number }>;
+  try {
+    addresses = await lookup(hostname, { all: true, verbatim: true });
+  } catch {
+    throw new Error('تعذر العثور على خادم عنوان EcoTrack. تحقق من رابط الشركة.');
+  }
+  if (!addresses.length || addresses.some((entry) => isPrivateAddress(entry.address))) {
+    throw new Error('عنوان خادم EcoTrack غير صالح للاستخدام الخارجي.');
+  }
+
+  return url.origin;
+}
+
+function encryptEcoTrackToken(token: string, merchantId: string): string {
+  const secret = process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY;
+  if (!secret || secret.length < 32) {
+    throw new Error('أكمل إعداد CARRIER_CREDENTIALS_ENCRYPTION_KEY بطول 32 حرفاً على الأقل في Vercel وRailway أولاً.');
+  }
+  const key = createHash('sha256').update(secret, 'utf8').digest();
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  cipher.setAAD(Buffer.from(`${merchantId}:ecotrack:v1`, 'utf8'));
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify({ token }), 'utf8'),
+    cipher.final(),
+  ]);
+  return [
+    'v1',
+    iv.toString('base64'),
+    cipher.getAuthTag().toString('base64'),
+    ciphertext.toString('base64'),
+  ].join('.');
+}
+
+async function getAuthenticatedMerchantId(): Promise<string> {
+  const authSupabase = await createClient();
+  const { data: { user }, error } = await authSupabase.auth.getUser();
+  if (error || !user) throw new Error('انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مجدداً.');
+  const supabase = getSupabaseAdminClient();
+  const { data: merchant, error: merchantError } = await supabase
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+  if (merchantError || !merchant) throw new Error('تعذر العثور على متجر مرتبط بحسابك.');
+  return merchant.id;
+}
+
+export async function saveEcoTrackIntegration(
+  companyUrl: string,
+  accessToken: string
+): Promise<{ success: boolean; status?: EcoTrackIntegrationStatus; error?: string }> {
+  try {
+    const merchantId = await getAuthenticatedMerchantId();
+    const token = accessToken.trim();
+    if (token.length < 8 || token.length > 4096) {
+      return { success: false, error: 'رمز الوصول غير صالح. تحقق من الرمز الذي زودتك به الشركة.' };
+    }
+
+    const baseUrl = await normalizeEcoTrackCompanyUrl(companyUrl);
+    const validationUrl = new URL(`${baseUrl}/api/v1/validate/token`);
+    validationUrl.searchParams.set('api_token', token);
+
+    let response: Response;
+    try {
+      response = await fetch(validationUrl.toString(), {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+        redirect: 'error',
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch {
+      return { success: false, error: 'تعذر الوصول إلى خادم EcoTrack. تحقق من رابط الشركة أو تواصل مع دعمها.' };
+    }
+
+    let validation: any = null;
+    try { validation = await response.json(); } catch { /* normalized below */ }
+    if (!response.ok || validation?.success !== true || validation?.message !== 'VALID_TOKEN') {
+      const reason = validation?.message === 'TOKEN_NOT_ALLOWED'
+        ? 'الوصول إلى API العام غير مفعّل لهذا الحساب. اطلب من EcoTrack تفعيله.'
+        : validation?.message === 'INVALID_TOKEN'
+          ? 'رفض EcoTrack رمز الوصول. تحقق من الرمز أو اطلب رمزاً جديداً.'
+          : 'لم يتمكن EcoTrack من التحقق من بيانات الربط.';
+      return { success: false, error: reason };
+    }
+
+    // Verify that this credential can actually read the account's shipment list.
+    // This is a GET-only permission check; it never creates or changes a shipment.
+    const algeriaDateParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Algiers',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const dateParts = Object.fromEntries(algeriaDateParts.map((part) => [part.type, part.value]));
+    const today = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+    const listUrl = new URL(`${baseUrl}/api/v1/get/orders`);
+    listUrl.searchParams.set('page', '1');
+    listUrl.searchParams.set('start_date', today);
+    listUrl.searchParams.set('end_date', today);
+
+    let listResponse: Response;
+    try {
+      listResponse = await fetch(listUrl.toString(), {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        cache: 'no-store',
+        redirect: 'error',
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch {
+      return { success: false, error: 'الرمز صالح، لكن تعذر الوصول إلى واجهة قراءة الشحنات في EcoTrack.' };
+    }
+
+    let listBody: any = null;
+    try { listBody = await listResponse.json(); } catch { /* normalized below */ }
+    if (!listResponse.ok || listBody?.success === false || (!Array.isArray(listBody) && !Array.isArray(listBody?.data))) {
+      const detail = listResponse.status === 429
+        ? 'تجاوزت طلبات EcoTrack الحد المؤقت. انتظر قليلاً ثم أعد الاختبار.'
+        : `تعذر قراءة قائمة الشحنات من EcoTrack (HTTP ${listResponse.status}). اطلب تفعيل صلاحية قراءة الطلبات من الشركة.`;
+      return { success: false, error: detail };
+    }
+
+    const credentialsEncrypted = encryptEcoTrackToken(token, merchantId);
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .upsert({
+        merchant_id: merchantId,
+        provider: 'ecotrack',
+        base_url: baseUrl,
+        credentials_encrypted: credentialsEncrypted,
+        sync_enabled: true,
+        connected_at: new Date().toISOString(),
+        last_orders_scan_at: null,
+        last_status_sync_at: null,
+        last_sync_at: null,
+        last_success_at: null,
+        last_error: null,
+        last_error_at: null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'merchant_id,provider' })
+      .select('base_url, connected_at, last_sync_at, last_success_at, last_error')
+      .single();
+
+    if (error || !data) {
+      console.error('[EcoTrackIntegration] Could not save verified connection:', error?.message);
+      return { success: false, error: 'تم التحقق من الرمز، لكن تعذر حفظ الاتصال. تأكد من تطبيق تحديث قاعدة البيانات.' };
+    }
+
+    revalidatePath('/merchant');
+    return {
+      success: true,
+      status: {
+        connected: true,
+        baseUrl: data.base_url,
+        connectedAt: data.connected_at,
+        lastSyncAt: data.last_sync_at,
+        lastSuccessAt: data.last_success_at,
+        lastError: data.last_error,
+      },
+    };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'تعذر حفظ اتصال EcoTrack.' };
+  }
+}
+
+export async function getEcoTrackIntegrationStatus(): Promise<{
+  success: boolean;
+  status: EcoTrackIntegrationStatus;
+  error?: string;
+}> {
+  try {
+    const merchantId = await getAuthenticatedMerchantId();
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .select('base_url, connected_at, last_sync_at, last_success_at, last_error, sync_enabled')
+      .eq('merchant_id', merchantId)
+      .eq('provider', 'ecotrack')
+      .maybeSingle();
+
+    if (error) throw new Error('تعذر قراءة حالة اتصال EcoTrack.');
+    return {
+      success: true,
+      status: data ? {
+        connected: Boolean(data.sync_enabled),
+        baseUrl: data.base_url,
+        connectedAt: data.connected_at,
+        lastSyncAt: data.last_sync_at,
+        lastSuccessAt: data.last_success_at,
+        lastError: data.last_error,
+      } : { connected: false },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      status: { connected: false },
+      error: error?.message || 'تعذر قراءة حالة اتصال EcoTrack.',
+    };
+  }
+}
+
+export async function disconnectEcoTrackIntegration(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const merchantId = await getAuthenticatedMerchantId();
+    const supabase = getSupabaseAdminClient();
+    const { error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .delete()
+      .eq('merchant_id', merchantId)
+      .eq('provider', 'ecotrack');
+
+    if (error) throw new Error('تعذر إلغاء اتصال EcoTrack.');
+    revalidatePath('/merchant');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'تعذر إلغاء اتصال EcoTrack.' };
+  }
 }
 
 export async function saveStatusMapping(formData: FormData) {

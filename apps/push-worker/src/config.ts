@@ -13,6 +13,9 @@ export interface PushWorkerConfig {
   trackingPublicBaseUrl: string;
   pollIntervalMs: number;
   leaseDurationSeconds: number;
+  credentialsEncryptionKey: string;
+  ecoTrackSyncEnabled: boolean;
+  ecoTrackSyncIntervalMs: number;
 }
 
 export function loadConfig(): PushWorkerConfig {
@@ -50,6 +53,9 @@ export function loadConfig(): PushWorkerConfig {
     trackingPublicBaseUrl: process.env.TRACKING_PUBLIC_BASE_URL || 'https://tajertrack.vercel.app',
     pollIntervalMs: Math.max(1000, parseInt(process.env.POLL_INTERVAL_MS || '3000', 10)),
     leaseDurationSeconds: Math.max(10, parseInt(process.env.LEASE_DURATION_SECONDS || '30', 10)),
+    credentialsEncryptionKey: process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '',
+    ecoTrackSyncEnabled: process.env.CARRIER_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
+    ecoTrackSyncIntervalMs: Math.max(60_000, parseInt(process.env.CARRIER_SYNC_INTERVAL_MS || '300000', 10)),
   };
 }
 

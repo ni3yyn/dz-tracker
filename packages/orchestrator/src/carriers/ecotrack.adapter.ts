@@ -16,12 +16,15 @@ export class EcoTrackAdapter {
 
     // 1. استخراج رقم الطرد وبوليصة الشحن بمرونة تشمل 80+ شركة شحن
     const trackingNumber = extractFirst(payload, [
+      'tracking',
       'tracking_code',
       'trackingCode',
-      'tracking',
+      'tracking_number',
+      'tracking_id',
       'barcode',
       'code',
       'code_suivi',
+      'n_tracking',
       'id',
     ]);
 
@@ -53,6 +56,7 @@ export class EcoTrackAdapter {
       'name',
       'nom_client',
       'destinataire',
+      'client',
     ]);
 
     const rawPhone = extractFirst(payload, [
@@ -62,6 +66,7 @@ export class EcoTrackAdapter {
       'telephone',
       'tel',
       'mobile',
+      'contact_phone',
     ]);
     const customerPhone = normalizeAlgerianPhone(rawPhone);
 
@@ -76,6 +81,13 @@ export class EcoTrackAdapter {
       ['reason', 'motif', 'sub_status', 'comment', 'remarque', 'observation'],
       ''
     );
+    const productName = extractFirst(payload, [
+      'product_name',
+      'products',
+      'product',
+      'produit',
+      'logistical_description',
+    ]);
 
     // فحص وتحليل الحالات التشغيلية
     const parsed = this.parseEcoTrackStatus(rawStatus!, rawReason!, payload, carrierName);
@@ -85,6 +97,7 @@ export class EcoTrackAdapter {
       externalOrderId: safeString(externalOrderId),
       customerName: customerName ? safeString(customerName).replace(/[-_]$/, '').trim() : undefined,
       customerPhone: customerPhone || undefined,
+      productName: productName ? safeString(productName).trim() : undefined,
       statusRaw: parsed.statusRaw,
       description: parsed.description,
       carrierName: carrierName,
@@ -103,6 +116,45 @@ export class EcoTrackAdapter {
   ): { statusRaw: string; description: string } {
     const status = normalizeDiacritics(safeLower(statusRaw));
     const reason = normalizeDiacritics(safeLower(reasonRaw));
+    const statusKey = status.replace(/[\\s-]+/g, '_');
+
+    // EcoTrack account APIs expose stable enum keys (unlike the French labels
+    // that vary between tenants). Handle those keys explicitly before fuzzy
+    // text matching so list and bulk-status syncs map consistently.
+    const exactStatuses: Record<string, { statusRaw: string; description: string }> = {
+      prete_a_expedier: { statusRaw: 'processing', description: 'تم تسجيل الشحنة لدى شركة التوصيل وهي جاهزة للإرسال 📦' },
+      prete_a_preparer: { statusRaw: 'processing', description: 'تم تسجيل الشحنة وهي قيد التجهيز لدى شركة التوصيل 📦' },
+      en_preparation_stock: { statusRaw: 'processing', description: 'الشحنة قيد التحضير لدى شركة التوصيل 📦' },
+      en_preparation: { statusRaw: 'processing', description: 'الشحنة قيد التحضير لدى شركة التوصيل 📦' },
+      en_ramassage: { statusRaw: 'processing', description: 'الشحنة بانتظار استلامها من المتجر 📦' },
+      order_information_received_by_carrier: { statusRaw: 'processing', description: 'استلمت شركة التوصيل معلومات الشحنة وتم تسجيلها 📦' },
+      picked: { statusRaw: 'dispatched', description: 'استلمت شركة التوصيل الطرد وبدأت عملية التوجيه 🚚' },
+      accepted_by_carrier: { statusRaw: 'dispatched', description: 'وصل الطرد إلى شركة التوصيل وبدأت عملية المعالجة 🚚' },
+      vers_hub: { statusRaw: 'in_transit', description: 'الشحنة في طريقها إلى مركز الفرز 🚛' },
+      vers_wilaya: { statusRaw: 'in_transit', description: 'الشحنة في طريقها إلى ولاية الوجهة 🚛' },
+      en_hub: { statusRaw: 'at_local_hub', description: 'وصلت الشحنة إلى مركز التوزيع 📍' },
+      dispatched_to_driver: { statusRaw: 'out_for_delivery', description: 'تم تسليم الشحنة إلى المندوب وهي في طريقها إليك 🛵' },
+      attempt_delivery: { statusRaw: 'out_for_delivery', description: 'مندوب التوصيل يحاول تسليم شحنتك 🛵' },
+      en_livraison: { statusRaw: 'out_for_delivery', description: 'مندوب التوصيل في طريقه إليك 🛵' },
+      suspendu: { statusRaw: 'held_at_hub', description: 'تم تعليق الشحنة مؤقتاً لدى شركة التوصيل ⏸️' },
+      livred: { statusRaw: 'delivered', description: 'تم تسليم الشحنة بنجاح ✅' },
+      livre_non_encaisse: { statusRaw: 'delivered', description: 'تم تسليم الشحنة وهي بانتظار تسوية المبلغ ✅' },
+      encaissed: { statusRaw: 'delivered', description: 'تم تسليم الشحنة واستلام المبلغ بنجاح ✅' },
+      encaisse_non_paye: { statusRaw: 'delivered', description: 'تم تسليم الشحنة واستلام المبلغ وهي بانتظار تحويله ✅' },
+      payed: { statusRaw: 'delivered', description: 'تمت تسوية مبلغ الشحنة بنجاح ✅' },
+      paiements_prets: { statusRaw: 'delivered', description: 'تم تسليم الشحنة وأصبح مبلغها جاهزاً للتسوية ✅' },
+      paye_et_archive: { statusRaw: 'delivered', description: 'اكتملت الشحنة وتمت تسوية المبلغ ✅' },
+      return_asked: { statusRaw: 'returned', description: 'بدأت إجراءات إرجاع الشحنة إلى المتجر 🔄' },
+      return_in_transit: { statusRaw: 'returned', description: 'الشحنة في طريق العودة إلى المتجر 🔄' },
+      return_received: { statusRaw: 'returned', description: 'استلم المتجر الشحنة المرتجعة 🔄' },
+      retour_chez_livreur: { statusRaw: 'returned', description: 'الشحنة في مسار الإرجاع لدى شركة التوصيل 🔄' },
+      retour_transit_entrepot: { statusRaw: 'returned', description: 'الشحنة في طريقها إلى مستودع شركة التوصيل 🔄' },
+      retour_en_traitement: { statusRaw: 'returned', description: 'تتم معالجة إرجاع الشحنة 🔄' },
+      retour_recu: { statusRaw: 'returned', description: 'وصلت الشحنة المرتجعة إلى شركة التوصيل 🔄' },
+      retour_archive: { statusRaw: 'returned', description: 'اكتملت عملية إرجاع الشحنة 🔄' },
+      annule: { statusRaw: 'cancelled', description: 'تم إلغاء الشحنة لدى شركة التوصيل.' },
+    };
+    if (exactStatuses[statusKey]) return exactStatuses[statusKey];
 
     const hub = extractFirst(payload, ['hub', 'center', 'agence', 'centre', 'depot']) || '';
     const wilaya = extractFirst(payload, ['wilaya', 'destination', 'wilaya_name']) || '';
