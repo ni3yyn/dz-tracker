@@ -277,8 +277,8 @@ export class TrackingOrchestrator {
           const actuallyChanged = statusChangeData?.[0]?.changed ?? true;
 
           if (actuallyChanged) {
-            // إطلاق التنبيهات والأحداث الموجهة (Automated Multi-Channel Triggers)
-            const triggers = await this.dispatchTriggers({
+            // Historical carrier snapshots must not replay customer notifications.
+            const triggers = event.suppressTriggers ? [] : await this.dispatchTriggers({
               event,
               orderId,
               trackingUuid,
@@ -484,7 +484,7 @@ export class TrackingOrchestrator {
                 p_description: event.description || null,
               });
 
-              triggers = await this.dispatchTriggers({
+              triggers = event.suppressTriggers ? [] : await this.dispatchTriggers({
                 event,
                 orderId,
                 trackingUuid,
