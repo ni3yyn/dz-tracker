@@ -3,6 +3,8 @@ import test from 'node:test';
 import {
   buildOrderEvent,
   carrierNameFromBaseUrl,
+  getLatestMeaningfulActivity,
+  buildStatusEvent,
   getRows,
   getStatusMap,
 } from '../ecotrack-sync.js';
@@ -49,13 +51,16 @@ test('reads the official get/orders/status data map keyed by tracking number', (
   const response = {
     data: {
       ECTEST0001: {
-        status: 'en_livraison',
-        activity: [{ reason: 'Client absent', date: '2026-11-08', time: '12:00:00' }],
+        status: 'notification_on_order',
+        activity: [
+          { status: 'vers_hub', reason: 'En route vers le centre', date: '2026-11-08', time: '11:00:00' },
+          { status: 'notification_on_order', reason: 'Client absent', date: '2026-11-08', time: '12:00:00' },
+        ],
       },
     },
   };
   const map = getStatusMap(response);
-  assert.equal(map.ECTEST0001.status, 'en_livraison');
+  assert.equal(map.ECTEST0001.status, 'notification_on_order');
   assert.equal(map.UNKNOWN, undefined);
 });
 
@@ -64,4 +69,32 @@ test('identifies known EcoTrack tenants and readable custom tenant names', () =>
   assert.equal(carrierNameFromBaseUrl('https://app.conexlog-dz.com'), 'Conexlog');
   assert.equal(carrierNameFromBaseUrl('https://rocketdelivery.ecotrack.dz'), 'Rocket Delivery');
   assert.equal(carrierNameFromBaseUrl('https://custom-express.ecotrack.dz'), 'Custom Express');
+});
+
+
+test('keeps the last real EcoTrack activity when notification_on_order is appended', () => {
+  const activity = [
+    { status: 'vers_hub', reason: 'En route vers le centre', date: '2026-11-08', time: '11:00:00' },
+    { status: 'notification_on_order', reason: 'Client absent', date: '2026-11-08', time: '12:00:00' },
+  ];
+  assert.equal(getLatestMeaningfulActivity(activity)?.status, 'vers_hub');
+
+  const event = buildStatusEvent(
+    { external_order_id: 'STORE-1042', customer_name: 'Ahmed', customer_phone: '0550123456', product_name: 'Test' },
+    { status: 'notification_on_order', activity },
+    'ECTEST0001',
+    'DHD'
+  );
+  assert.equal(event?.status, 'vers_hub');
+  assert.equal(event?.reason, 'En route vers le centre');
+});
+
+test('does not convert a standalone EcoTrack notification into a shipment status', () => {
+  const event = buildStatusEvent(
+    { external_order_id: 'STORE-1042' },
+    { status: 'notification_on_order', activity: [{ status: 'notification_on_order', reason: 'Client absent' }] },
+    'ECTEST0001',
+    'DHD'
+  );
+  assert.equal(event, null);
 });

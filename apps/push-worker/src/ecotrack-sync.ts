@@ -129,16 +129,32 @@ export function buildOrderEvent(row: EcoTrackOrder, carrierName: string): Record
   };
 }
 
-function buildStatusEvent(order: any, remote: any, tracking: string, carrierName: string): Record<string, unknown> {
+export function getLatestMeaningfulActivity(activity: unknown): any | null {
+  if (!Array.isArray(activity)) return null;
+  for (let index = activity.length - 1; index >= 0; index -= 1) {
+    const item = activity[index];
+    const status = asText(item?.status).toLowerCase();
+    // EcoTrack emits this as an order remark/notification, not a shipment stage.
+    if (status && status !== 'notification_on_order') return item;
+  }
+  return null;
+}
+
+export function buildStatusEvent(order: any, remote: any, tracking: string, carrierName: string): Record<string, unknown> | null {
   const activity = Array.isArray(remote?.activity) ? remote.activity : [];
-  const latest = activity.length ? activity[activity.length - 1] : {};
+  const latest = getLatestMeaningfulActivity(activity);
+  const latestActivityStatus = asText(latest?.status);
+  const remoteStatus = asText(remote?.status);
+  const status = latestActivityStatus || (remoteStatus.toLowerCase() === 'notification_on_order' ? '' : remoteStatus);
+  if (!status) return null;
+
   return {
     tracking,
     reference: asText(order.external_order_id) || tracking,
     client: asText(order.customer_name),
     phone: asText(order.customer_phone),
     products: asText(order.product_name),
-    status: asText(remote?.status),
+    status,
     reason: asText(latest?.reason) || asText(latest?.details),
     wilaya: asText(latest?.station) || asText(remote?.desk_commune),
     carrier_name: carrierName,
@@ -368,8 +384,9 @@ export class EcoTrackSyncWorker {
         for (const tracking of group) {
           const remote = statusMap[tracking];
           const order = trackingToOrder.get(tracking);
-          if (!remote || !order || !asText(remote.status)) continue;
-          events.push(buildStatusEvent(order, remote, tracking, args.carrierName));
+          if (!remote || !order) continue;
+          const event = buildStatusEvent(order, remote, tracking, args.carrierName);
+          if (event) events.push(event);
         }
         if (events.length) await this.ingestBatch(events, args.apiKey);
         checked += group.length;

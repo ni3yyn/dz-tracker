@@ -27,6 +27,8 @@ export interface TrackingEvent {
   productName?: string;
   productImage?: string;
   statusRaw: string;
+  /** Arabic provider-specific timeline title; keeps canonical statusRaw unchanged. */
+  statusTitle?: string;
   description?: string;
   carrierName?: string;
   carrierTrackingNumber?: string;
@@ -114,7 +116,7 @@ export class TrackingOrchestrator {
         .eq('source_status', event.statusRaw)
         .maybeSingle();
 
-      const displayStatus = mapping?.display_status || this.formatFallbackStatus(event.statusRaw);
+      const displayStatus = event.statusTitle || mapping?.display_status || this.formatFallbackStatus(event.statusRaw);
 
       // 2. البحث الذكي عن الطلب (Smart Multi-Key Resolution: رقم الطلب -> بوليصة الشحن -> هاتف الزبون)
       const existingOrder = await this.findExistingOrder(event);
@@ -196,6 +198,47 @@ export class TrackingOrchestrator {
               isNewOrder: false,
             };
           }
+        } else if (event.statusTitle) {
+          // EcoTrack may advance through multiple official sub-states while its
+          // normalized TajerTrack category remains the same (e.g. vers_hub -> vers_wilaya).
+          // Preserve each distinct Arabic stage in the customer timeline.
+          const { data: latestHistory, error: historyReadError } = await this.supabase
+            .from('order_history')
+            .select('status_title')
+            .eq('order_id', orderId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (historyReadError) throw historyReadError;
+
+          if (latestHistory?.status_title !== displayStatus) {
+            const { error: historyInsertError } = await this.supabase
+              .from('order_history')
+              .insert({
+                order_id: orderId,
+                status_raw: event.statusRaw,
+                status_title: displayStatus,
+                description: event.description || null,
+                event_type: 'status_changed',
+              });
+
+            if (historyInsertError) throw historyInsertError;
+
+            return {
+              success: true,
+              trackingUuid,
+              deduplicated: false,
+              isNewOrder: false,
+            };
+          }
+
+          return {
+            success: true,
+            trackingUuid,
+            deduplicated: true,
+            isNewOrder: false,
+          };
         } else {
           return {
             success: true,
