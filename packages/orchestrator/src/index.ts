@@ -195,14 +195,14 @@ export class TrackingOrchestrator {
         if (event.carrierName) {
           updatePayload.carrier_name = event.carrierName;
         }
-        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') {
+        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') {
           // Carrier API snapshots refresh authoritative provider metadata and recipient fields.
           // refresh the snapshot from the authenticated API instead of retaining stale values.
           if (event.carrierTrackingNumber) updatePayload.carrier_tracking_number = event.carrierTrackingNumber;
           if (event.carrierOrderId) updatePayload.carrier_order_id = event.carrierOrderId;
           if (event.carrierExternalOrderId) updatePayload.external_order_id = event.carrierExternalOrderId;
           if (event.carrierMetadata) {
-            if (event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2') {
+            if (event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') {
               const incoming = Object.fromEntries(Object.entries(event.carrierMetadata).filter(([, value]) => value !== null && value !== undefined && value !== ''));
               updatePayload.carrier_metadata = { ...((existingOrder.carrier_metadata as Record<string, unknown> | null) || {}), ...incoming } as any;
             } else {
@@ -428,7 +428,7 @@ export class TrackingOrchestrator {
             carrier_last_event_at: event.sourceOccurredAt || null,
             carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,
-            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' ? {
+            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex' ? {
               carrier_order_id: event.carrierOrderId || null,
               carrier_metadata: event.carrierMetadata || null,
             } : {}),
