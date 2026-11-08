@@ -184,6 +184,31 @@ export async function POST(req: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Verified webhook could not be queued.' }, { status: 500 });
   }
 
+  // A carrier/dashboard replay can recover an event previously moved to the
+  // local dead-letter state. Never reset completed, pending, retrying, or
+  // currently leased work; the ordered-history ledger makes processing safe.
+  const eventIds = Array.from(new Set(rows.map((row) => row.event_id)));
+  const replayedAt = new Date().toISOString();
+  const { error: requeueError } = await (supabase as any)
+    .from('yalidine_webhook_events')
+    .update({
+      status: 'pending',
+      attempt_count: 0,
+      available_at: replayedAt,
+      last_error: null,
+      locked_by: null,
+      locked_at: null,
+      lease_expires_at: null,
+      updated_at: replayedAt,
+    })
+    .eq('merchant_id', integration.merchant_id)
+    .eq('status', 'dead_letter')
+    .in('event_id', eventIds);
+  if (requeueError) {
+    console.error('[YalidineWebhook]: Could not requeue replayed dead-letter events:', requeueError.message);
+    return NextResponse.json({ error: 'Webhook was received but retry state could not be updated.' }, { status: 500 });
+  }
+
   const { error: updateError } = await (supabase as any)
     .from('merchant_carrier_integrations')
     .update({
