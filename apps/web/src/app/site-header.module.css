@@ -257,6 +257,7 @@
   .mobileMenu {
     position: fixed;
     inset: auto 0 0;
+    z-index: 1399;
     width: auto;
     max-height: calc(100vh - 74px);
     max-height: calc(100dvh - 74px);
