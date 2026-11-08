@@ -101,6 +101,12 @@ async function bootstrap(): Promise<void> {
     console.log('[Bootstrap]: ELOGISTIA_SYNC_ENABLED=false; Elogistia status polling is disabled.');
   }
 
+  if (ecomV2Sync) {
+    ecomV2SyncLoop = ecomV2Sync.start();
+  } else {
+    console.log('[Bootstrap]: ECOM_V2_SYNC_ENABLED=false; E-com Delivery v2 status polling is disabled.');
+  }
+
   const shutdown = (signal: string): Promise<void> => {
     if (shutdownPromise) return shutdownPromise;
     console.log(`\n[Bootstrap]: Caught signal ${signal}. Shutting down background workers...`);
@@ -108,7 +114,8 @@ async function bootstrap(): Promise<void> {
     shutdownPromise = (async () => {
       ecoTrackSync?.stop();
       zimouSync?.stop();
-      elogistiaSync?.stop();\n      ecomV2Sync?.stop();
+      elogistiaSync?.stop();
+      ecomV2Sync?.stop();
       await zrExpressWebhookWorker?.stop();
       await pushWorker?.stop();
       const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop, elogistiaSyncLoop, ecomV2SyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
