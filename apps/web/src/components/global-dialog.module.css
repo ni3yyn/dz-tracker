@@ -1,216 +1,63 @@
 @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
 
-/* TajerTrack global dialog: self-contained because the provider is rendered
-   outside page-level font scopes. */
 .backdrop {
   position: fixed;
   inset: 0;
   z-index: 100000;
+  box-sizing: border-box;
   display: grid;
   place-items: center;
-  padding: 22px;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(41, 75, 55, .12), transparent 44%),
-    rgba(19, 35, 25, .58);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  animation: dialogFadeIn 170ms ease-out;
+  width: 100%;
+  max-width: 100vw;
+  padding: 20px;
+  overflow-x: clip;
+  background: rgba(19, 35, 25, .52);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  animation: dialogFadeIn 140ms ease-out;
 }
 
 .dialog {
-  position: relative;
-  isolation: isolate;
-  width: min(100%, 500px);
-  max-height: min(88dvh, 760px);
-  overflow: auto;
-  padding: 28px 30px 26px;
+  box-sizing: border-box;
+  width: min(100%, 460px);
+  max-width: 100%;
+  max-height: min(88dvh, 700px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 26px 26px 22px;
   border: 1px solid #dfe5da;
-  border-radius: 25px;
+  border-radius: 18px;
   background: #fffefa;
   color: #202a23;
-  box-shadow: 0 32px 90px rgba(10, 27, 16, .25), 0 5px 18px rgba(26, 48, 32, .08);
+  box-shadow: 0 22px 64px rgba(10, 27, 16, .2);
   text-align: right;
   font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  animation: dialogRiseIn 210ms cubic-bezier(.2,.8,.2,1);
+  animation: dialogFadeIn 160ms ease-out;
 }
 
-.dialog::before {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: -1;
-  height: 4px;
-  background: linear-gradient(90deg, #d57955 0 22%, #294b37 22% 100%);
-  content: '';
-}
-
-.dialog::after {
-  position: absolute;
-  top: -88px;
-  left: -76px;
-  z-index: -1;
-  width: 230px;
-  height: 230px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(214, 226, 208, .55), rgba(214, 226, 208, 0) 70%);
-  content: '';
-  pointer-events: none;
-}
-
-.brandRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding-bottom: 19px;
-  border-bottom: 1px solid #e8ebe3;
-}
-
-.brandLockup {
-  display: inline-flex;
-  align-items: center;
-  gap: 11px;
-  min-width: 0;
-}
-
-.brandMark {
-  display: block;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  border-radius: 11px;
-  object-fit: contain;
-  box-shadow: 0 4px 10px rgba(35, 63, 45, .12);
-}
-
-.brandCopy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.brandCopy strong {
-  color: #202a23;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.45;
-  letter-spacing: -.035em;
-}
-
-.brandCopy > span {
-  color: #738174;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.toneTag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex: 0 0 auto;
-  min-height: 35px;
-  padding: 6px 11px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
-.toneTag i {
-  display: block;
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.toneTagInfo {
-  border-color: #dbe7d8;
-  background: #edf3e9;
-  color: #34583d;
-}
-
-.toneTagWarning {
-  border-color: #eeddb9;
-  background: #fbf3e3;
-  color: #8b6424;
-}
-
-.toneTagDanger {
-  border-color: #f0d0c9;
-  background: #fbefec;
-  color: #a9473d;
-}
-
-.content {
-  display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  align-items: start;
-  gap: 16px;
-  margin-top: 25px;
-}
-
-.icon {
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  border: 1px solid transparent;
-  border-radius: 17px;
-}
-
-.icon svg {
-  display: block;
-  width: 28px;
-  height: 28px;
-}
-
-.iconDanger {
-  border-color: #f0d0c9;
-  background: #fbefec;
-  color: #a9473d;
-}
-
-.iconWarning {
-  border-color: #eeddb9;
-  background: #fbf3e3;
-  color: #946b2a;
-}
-
-.iconInfo {
-  border-color: #dbe7d8;
-  background: #edf3e9;
-  color: #34583d;
-}
-
-.copy {
-  min-width: 0;
-  padding-top: 1px;
+.dialog,
+.dialog * {
+  box-sizing: border-box;
 }
 
 .title {
   margin: 0;
   color: #202a23;
-  font-size: 23px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.55;
-  letter-spacing: -.045em;
   overflow-wrap: anywhere;
 }
 
 .message {
-  margin: 9px 0 0;
+  margin: 10px 0 0;
   color: #5e6d61;
   font-size: 16px;
   font-weight: 400;
-  line-height: 2;
+  line-height: 1.9;
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
@@ -218,8 +65,8 @@
 .actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 11px;
-  margin-top: 27px;
+  gap: 10px;
+  margin-top: 24px;
 }
 
 .actions:has(> :only-child) {
@@ -232,15 +79,17 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
-  min-height: 52px;
-  padding: 12px 18px;
-  border-radius: 13px;
+  min-height: 50px;
+  padding: 11px 16px;
+  border-radius: 12px;
   font-family: inherit;
   font-size: 15.5px;
   font-weight: 700;
   line-height: 1.5;
+  text-align: center;
+  overflow-wrap: anywhere;
   cursor: pointer;
-  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  transition: background 140ms ease, border-color 140ms ease;
 }
 
 .cancelButton {
@@ -258,37 +107,17 @@
   border: 1px solid #294b37;
   background: #294b37;
   color: #fffefa;
-  box-shadow: 0 5px 13px rgba(41, 75, 55, .16);
 }
 
 .confirmButton:hover {
-  transform: translateY(-1px);
   border-color: #1d3427;
   background: #1d3427;
-  box-shadow: 0 8px 18px rgba(41, 75, 55, .2);
-}
-
-.confirmDanger {
-  border-color: #a9473d;
-  background: #a9473d;
-  box-shadow: 0 5px 13px rgba(169, 71, 61, .14);
-}
-
-.confirmDanger:hover {
-  border-color: #923a31;
-  background: #923a31;
-  box-shadow: 0 8px 18px rgba(169, 71, 61, .19);
 }
 
 .cancelButton:focus-visible,
 .confirmButton:focus-visible {
   outline: 3px solid rgba(77, 113, 81, .32);
-  outline-offset: 3px;
-}
-
-.cancelButton:active,
-.confirmButton:active {
-  transform: translateY(0);
+  outline-offset: 2px;
 }
 
 @keyframes dialogFadeIn {
@@ -296,52 +125,40 @@
   to { opacity: 1; }
 }
 
-@keyframes dialogRiseIn {
-  from { opacity: 0; transform: translateY(10px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
 @media (max-width: 520px) {
-  .backdrop { padding: 14px; }
-  .dialog {
-    width: min(100%, 480px);
-    max-height: min(90dvh, 760px);
-    padding: 24px 21px 21px;
-    border-radius: 22px;
+  .backdrop {
+    padding: 14px;
   }
-  .brandRow { gap: 10px; padding-bottom: 16px; }
-  .brandMark {
-    width: 39px;
-    height: 39px;
-    flex-basis: 39px;
-    border-radius: 10px;
-  }
-  .brandCopy strong { font-size: 13.5px; }
-  .brandCopy > span { font-size: 13px; }
-  .toneTag { min-height: 34px; padding: 5px 9px; font-size: 13px; }
-  .content {
-    grid-template-columns: 52px minmax(0, 1fr);
-    gap: 13px;
-    margin-top: 22px;
-  }
-  .icon { width: 52px; height: 52px; border-radius: 15px; }
-  .icon svg { width: 26px; height: 26px; }
-  .title { font-size: 21px; }
-  .message { font-size: 15.5px; line-height: 1.95; }
-  .actions { grid-template-columns: 1fr; gap: 9px; margin-top: 23px; }
-  .cancelButton, .confirmButton { min-height: 51px; font-size: 15.5px; }
-}
 
-@media (max-width: 360px) {
-  .dialog { padding-inline: 17px; }
-  .content { grid-template-columns: 46px minmax(0, 1fr); gap: 11px; }
-  .icon { width: 46px; height: 46px; border-radius: 13px; }
-  .title { font-size: 20px; }
-  .message { font-size: 15px; }
-  .toneTag { font-size: 13px; padding-inline: 8px; }
+  .dialog {
+    width: 100%;
+    padding: 23px 20px 19px;
+    border-radius: 16px;
+  }
+
+  .title {
+    font-size: 21px;
+  }
+
+  .message {
+    font-size: 16px;
+  }
+
+  .actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+    margin-top: 21px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .backdrop, .dialog { animation: none; }
-  .cancelButton, .confirmButton { transition: none; }
+  .backdrop,
+  .dialog {
+    animation: none;
+  }
+
+  .cancelButton,
+  .confirmButton {
+    transition: none;
+  }
 }
