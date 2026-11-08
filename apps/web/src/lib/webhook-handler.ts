@@ -25,7 +25,7 @@ export interface WebhookContext {
 }
 
 export interface WebhookHandlerOptions {
-  source: 'yalidine' | 'ecotrack' | 'shopify' | 'direct' | 'zrexpress' | 'procolis' | 'odoo' | 'maystro';
+  source: 'yalidine' | 'ecotrack' | 'shopify' | 'direct' | 'zrexpress' | 'procolis' | 'odoo' | 'maystro' | 'zimou';
   transformEvent: (ctx: WebhookContext) => TrackingEvent | Promise<TrackingEvent>;
 }
 

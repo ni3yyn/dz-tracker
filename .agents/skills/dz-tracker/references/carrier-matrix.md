@@ -176,3 +176,18 @@ This is an internal code mapping. It is **not** evidence that every carrier curr
 All carrier webhook routes use the shared `createWebhookHandler` in `apps/web/src/lib/webhook-handler.ts`. It resolves the merchant from the API key and passes a normalized `TrackingEvent` into the orchestrator. The shared handler accepts API key headers and legacy query parameters such as `?key=`; a query-bearing webhook URL is a secret and may be logged by intermediaries.
 
 Use a redacted payload captured from the exact provider integration when testing. Do not assume the adapter's candidate field names are a guarantee of provider behavior.
+
+
+## 1C. Zimou Express direct API (read-only polling)
+
+| Purpose | Implementation |
+|---|---|
+| Merchant connection UI | `apps/web/src/app/(dashboard)/merchant/ZimouConnectionPanel.tsx` |
+| Authenticated token validation/save/test/disconnect | `apps/web/src/app/(dashboard)/merchant/zimou-actions.ts` |
+| AES-256-GCM credentials | `apps/web/src/lib/zimou-credentials.ts` |
+| Background read-only polling | `apps/push-worker/src/zimou-sync.ts` |
+| Internal ingestion route | `POST /api/webhooks/zimou/sync` (merchant API key; batch of up to 50) |
+| Status normalization | `packages/orchestrator/src/carriers/zimou.adapter.ts` |
+| SQL | `apps/web/src/app/migrations/20261108_zimou_readonly_sync.sql` |
+
+Zimou token validation uses `GET https://zimou.express/api/v3/user`. Status polling uses `GET /v3/packages/status` with repeated `packages[]` tracking query parameters. The status response is a map keyed by Zimou tracking code; `status_id` is preferred over a translated label. The adapter retains Zimou package ID, Zimou tracking code, partner carrier, partner tracking code, address, delivery price, COD amount, delivery type, and raw status. The worker checks only existing TajerTrack orders whose `carrier_name` is `Zimou Express` and `carrier_tracking_number` is populated, in batches of 50 every five minutes by default. It is strictly read-only: no parcel creation, cancellation, dispatch, or discovery of untracked shipments. This is polling, not a native Zimou webhook integration. The Feeef Zimou webhook-management endpoints are Feeef-hosted proxy operations that require Feeef's own token/store ID; they are not used by this direct merchant-token integration. Enable `ZIMOU_SYNC_ENABLED=true` and keep `CARRIER_CREDENTIALS_ENCRYPTION_KEY` identical in Vercel and Railway. Apply the migration before connecting.

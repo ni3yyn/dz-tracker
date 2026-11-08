@@ -5,10 +5,11 @@ import { PushWorkerHealthMonitor } from './health.js';
 import { WebPushWorker } from './worker.js';
 import { EcoTrackSyncWorker } from './ecotrack-sync.js';
 import { ZRExpressWebhookWorker } from './zrexpress-webhook-worker.js';
+import { ZimouSyncWorker } from './zimou-sync.js';
 
 async function bootstrap(): Promise<void> {
   console.log('====================================================');
-  console.log(' TajerTrack Background Workers (Web Push + EcoTrack + ZR Express)');
+  console.log(' TajerTrack Background Workers (Web Push + EcoTrack + ZR Express + Zimou)');
   console.log('====================================================');
 
   let config;
@@ -18,8 +19,12 @@ async function bootstrap(): Promise<void> {
     console.log(`[Bootstrap]: Web Push enabled: ${config.isEnabled}`);
     console.log(`[Bootstrap]: EcoTrack read-only sync enabled: ${config.ecoTrackSyncEnabled}`);
     console.log(`[Bootstrap]: ZR Express webhook worker enabled: ${config.zrExpressWebhookWorkerEnabled}`);
+    console.log(`[Bootstrap]: Zimou read-only status sync enabled: ${config.zimouSyncEnabled}`);
     if (process.env.ZREXPRESS_WEBHOOK_WORKER_ENABLED === 'true' && !config.zrExpressWebhookWorkerEnabled) {
       console.warn('[Bootstrap]: ZR Express webhook processing was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
+    }
+    if (process.env.ZIMOU_SYNC_ENABLED === 'true' && !config.zimouSyncEnabled) {
+      console.warn('[Bootstrap]: Zimou sync was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
     }
     if (process.env.CARRIER_SYNC_ENABLED === 'true' && !config.ecoTrackSyncEnabled) {
       console.warn('[Bootstrap]: EcoTrack sync was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
@@ -34,11 +39,13 @@ async function bootstrap(): Promise<void> {
   const health = new PushWorkerHealthMonitor(config.workerId);
   const ecoTrackSync = config.ecoTrackSyncEnabled ? new EcoTrackSyncWorker(config) : null;
   const zrExpressWebhookWorker = config.zrExpressWebhookWorkerEnabled ? new ZRExpressWebhookWorker(config) : null;
+  const zimouSync = config.zimouSyncEnabled ? new ZimouSyncWorker(config) : null;
 
   let pushWorker: WebPushWorker | null = null;
   let pushLoop: Promise<void> | null = null;
   let ecoTrackLoop: Promise<void> | null = null;
   let zrExpressWebhookLoop: Promise<void> | null = null;
+  let zimouSyncLoop: Promise<void> | null = null;
   let shutdownPromise: Promise<void> | null = null;
 
   if (config.isEnabled) {
@@ -68,15 +75,22 @@ async function bootstrap(): Promise<void> {
     console.log('[Bootstrap]: ZREXPRESS_WEBHOOK_WORKER_ENABLED=false; ZR Express webhook processing is disabled.');
   }
 
+  if (zimouSync) {
+    zimouSyncLoop = zimouSync.start();
+  } else {
+    console.log('[Bootstrap]: ZIMOU_SYNC_ENABLED=false; Zimou read-only polling is disabled.');
+  }
+
   const shutdown = (signal: string): Promise<void> => {
     if (shutdownPromise) return shutdownPromise;
     console.log(`\n[Bootstrap]: Caught signal ${signal}. Shutting down background workers...`);
 
     shutdownPromise = (async () => {
       ecoTrackSync?.stop();
+      zimouSync?.stop();
       await zrExpressWebhookWorker?.stop();
       await pushWorker?.stop();
-      const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop].filter((loop): loop is Promise<void> => Boolean(loop));
+      const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
       await Promise.allSettled(loops);
       console.log('[Bootstrap]: Graceful shutdown complete.');
       process.exit(0);
@@ -90,11 +104,11 @@ async function bootstrap(): Promise<void> {
   const heartbeat = setInterval(() => {
     const status = health.getStatus();
     console.log(
-      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'}`
+      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'} | Zimou sync: ${zimouSync ? 'enabled' : 'disabled'}`
     );
   }, 30000);
 
-  const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop].filter((loop): loop is Promise<void> => Boolean(loop));
+  const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
   if (loops.length === 0) {
     console.log('[Bootstrap]: No background consumers are enabled. Remaining in standby mode.');
     return; // Keep the heartbeat interval alive; SIGTERM/SIGINT handlers still shut down cleanly.

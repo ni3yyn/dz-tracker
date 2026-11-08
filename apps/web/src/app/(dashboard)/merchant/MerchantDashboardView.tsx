@@ -9,6 +9,7 @@ import { ImageUploadField } from './ImageUploadField';
 import { EcoTrackConnectionPanel } from './EcoTrackConnectionPanel';
 import { ZRExpressConnectionPanel } from './ZRExpressConnectionPanel';
 import { MaystroConnectionPanel } from './MaystroConnectionPanel';
+import { ZimouConnectionPanel } from './ZimouConnectionPanel';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
@@ -737,7 +738,7 @@ export function MerchantDashboardView({
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
   const [integrationPlatform, setIntegrationPlatform] = useState<'shopify' | 'website' | 'manual' | null>(null);
   const [trackingSource, setTrackingSource] = useState<'carrier' | 'manual' | 'unsure' | null>(null);
-  const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'other' | null>(null);
+  const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'zimou' | 'other' | null>(null);
   const [integrationStep, setIntegrationStep] = useState<1 | 2 | 3>(1);
   const [integrationChoicesHydratedFor, setIntegrationChoicesHydratedFor] = useState<string | null>(null);
   // Persist integration choices locally per merchant, without sending preferences to the server.
@@ -759,7 +760,7 @@ export function MerchantDashboardView({
 
         const validPlatforms = ['shopify', 'website', 'manual'];
         const validSources = ['carrier', 'manual', 'unsure'];
-        const validCarriers = ['yalidine', 'ecotrack', 'zrexpress', 'procolis', 'maystro', 'other'];
+        const validCarriers = ['yalidine', 'ecotrack', 'zrexpress', 'procolis', 'maystro', 'zimou', 'other'];
         const restoredPlatform = validPlatforms.includes(saved.platform || '')
           ? saved.platform as 'shopify' | 'website' | 'manual'
           : null;
@@ -767,7 +768,7 @@ export function MerchantDashboardView({
           ? saved.trackingSource as 'carrier' | 'manual' | 'unsure'
           : null;
         const restoredCarrier = validCarriers.includes(saved.carrier || '')
-          ? saved.carrier as 'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'other'
+          ? saved.carrier as 'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'zimou' | 'other'
           : null;
 
         setIntegrationPlatform(restoredPlatform);
@@ -823,7 +824,7 @@ export function MerchantDashboardView({
     activeTab === 'integrations' &&
     integrationChoicesHydratedFor === merchantId &&
     (integrationPlatform === 'website' || integrationPlatform === 'shopify' ||
-      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress'));
+      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'zimou'));
 
   useEffect(() => {
     let cancelled = false;
@@ -1429,6 +1430,16 @@ export function MerchantDashboardView({
       hint: 'أدخل Store API Token من حساب Maystro، ثم انسخ رابط الاستقبال الذي ينشئه تاجر تراك وأضفه في إعدادات Webhooks لدى Maystro.',
       caveat: 'اختر OrderFieldUpdated وOrderDelivered. يقرأ تاجر تراك بيانات الطلب وسجل حالاته من API بعد وصول الإشعار.',
       supportQuestion: 'مرحباً، أحتاج إلى Store API Token لحساب Maystro Delivery لتفعيل قراءة الطلبات وسجل التوصيل عبر API.'
+    },
+    {
+      id: 'zimou' as const,
+      name: 'Zimou Express',
+      symbol: 'Z',
+      url: '',
+      method: 'API Token + مزامنة دورية',
+      hint: 'اربط حساب Zimou عبر API Token. تُقرأ حالات أرقام التتبع المسجلة في طلبات متجرك دورياً من API مباشرة.',
+      caveat: 'لا نفترض وجود Webhooks أصلية غير موثقة. لا يستورد هذا المسار طروداً جديدة تلقائياً؛ يجب أن يكون رقم تتبع Zimou موجوداً في طلب تاجر تراك.',
+      supportQuestion: 'أحتاج إلى API Token لحساب Zimou Express لاستخدام واجهة API للقراءة وتتبع الطرود.'
     },
   ];
 
@@ -5636,7 +5647,11 @@ export async function registerSavedOrder(savedOrder) {
                         <MaystroConnectionPanel />
                       )}
 
-                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'maystro' && activeCarrierConnection && (
+                      {trackingSource === 'carrier' && selectedCarrier === 'zimou' && (
+                        <ZimouConnectionPanel />
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'maystro' && selectedCarrier !== 'zimou' && activeCarrierConnection && (
                         <article className="dz-int-guided-panel">
                           <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
                           <div className="dz-int-guided-copy">
@@ -5656,7 +5671,7 @@ export async function registerSavedOrder(savedOrder) {
 
                       {integrationPlatform === 'website' && (
                         <article className="dz-int-guided-panel">
-                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{trackingSource === 'carrier' && (selectedCarrier === 'zrexpress' || selectedCarrier === 'maystro') ? '02' : '01'}</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{trackingSource === 'carrier' && (selectedCarrier === 'zrexpress' || selectedCarrier === 'maystro' || selectedCarrier === 'zimou') ? '02' : '01'}</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
                           <div className="dz-int-guided-credentials">
                             <div className="dz-int-guided-credential">
                               <div className="dz-int-guided-credential-head"><small>مفتاح API</small><button type="button" onClick={() => setApiKeyRevealed((value) => !value)}>{apiKeyRevealed ? <Icons.EyeOff /> : <Icons.Eye />}{apiKeyRevealed ? 'إخفاء' : 'إظهار'}</button></div>
@@ -6250,6 +6265,20 @@ export async function registerSavedOrder(savedOrder) {
 
                     </>
                   )}
+                  {selectedOrder.carrier_name === 'Zimou Express' && selectedOrder.carrier_metadata && (
+                    <>
+                      <div className="dz-order-detail-field"><span>معرّف الطرد لدى Zimou</span><strong dir="ltr">{selectedOrder.carrier_order_id || selectedOrder.carrier_metadata.zimouPackageId || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.wilaya || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.commune || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.address || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>شركة التوصيل الشريكة</span><strong>{selectedOrder.carrier_metadata.partnerCompany || 'لم يتم تعيينها بعد'}</strong></div>
+                      <div className="dz-order-detail-field"><span>رقم تتبع الشركة الشريكة</span><strong dir="ltr">{selectedOrder.carrier_metadata.partnerTrackingCode || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>الحالة الأصلية لدى Zimou</span><strong>{selectedOrder.carrier_metadata.statusName || selectedOrder.carrier_metadata.statusId || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>نوع التوصيل</span><strong>{selectedOrder.carrier_metadata.deliveryType || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>سعر التوصيل</span><strong>{selectedOrder.carrier_metadata.deliveryPrice != null ? `${selectedOrder.carrier_metadata.deliveryPrice} دج` : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.codAmount != null ? `${selectedOrder.carrier_metadata.codAmount} دج` : 'غير متوفر'}</strong></div>
+                    </>
+                  )}
                   <div className="dz-order-detail-field"><span>تاريخ تسجيل الطلب</span><strong>{new Date(selectedOrder.created_at).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
                   <div className="dz-order-detail-field"><span>معرّف الطلب الداخلي</span><strong>{selectedOrder.id}</strong></div>
                 </div>
@@ -6449,6 +6478,7 @@ export async function registerSavedOrder(savedOrder) {
                             <option value="ZR Express">ZR Express</option>
                             <option value="Maystro Delivery">Maystro Delivery</option>
                             <option value="EcoTrack">EcoTrack</option>
+                            <option value="Zimou Express">Zimou Express</option>
                             <option value="توصيل خاص">توصيل خاص (متجرنا)</option>
                           </select>
                         </div>

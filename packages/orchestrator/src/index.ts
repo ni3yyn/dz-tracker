@@ -10,6 +10,7 @@ export { EcoTrackAdapter } from './carriers/ecotrack.adapter';
 export { ZRExpressAdapter, ProcolisAdapter } from './carriers/zrexpress.adapter';
 export { ZRExpressWebhookAdapter, ZR_EXPRESS_WEBHOOK_EVENT_TYPES, verifyZRExpressWebhook, isZRExpressWebhookEvent } from './carriers/zrexpress-webhook.adapter';
 export type { ZRExpressWebhookEvent, ZRExpressWebhookEventType } from './carriers/zrexpress-webhook.adapter';
+export { ZimouAdapter, mapZimouStatus } from './carriers/zimou.adapter';
 export {
   MaystroAdapter,
   ALGERIA_WILAYAS_58,
@@ -44,7 +45,7 @@ export interface TrackingEvent {
   /** Selected provider order fields retained for merchant-side auditing/display. */
   carrierMetadata?: Record<string, unknown>;
   /** Distinguishes provider-specific event ledgers when a webhook has no signature ID. */
-  sourceProvider?: 'zrexpress' | 'maystro';
+  sourceProvider?: 'zrexpress' | 'maystro' | 'zimou';
   /** Import a historical provider event without firing customer notifications. */
   suppressTriggers?: boolean;
   /** Provider event time used to reject out-of-order courier status events. */
@@ -192,13 +193,20 @@ export class TrackingOrchestrator {
         if (event.carrierName) {
           updatePayload.carrier_name = event.carrierName;
         }
-        if (event.sourceProvider === 'maystro') {
-          // Maystro OrderFieldUpdated events can change customer/product details;
+        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou') {
+          // Carrier API snapshots refresh authoritative provider metadata and recipient fields.
           // refresh the snapshot from the authenticated API instead of retaining stale values.
           if (event.carrierTrackingNumber) updatePayload.carrier_tracking_number = event.carrierTrackingNumber;
           if (event.carrierOrderId) updatePayload.carrier_order_id = event.carrierOrderId;
           if (event.carrierExternalOrderId) updatePayload.external_order_id = event.carrierExternalOrderId;
-          if (event.carrierMetadata) updatePayload.carrier_metadata = event.carrierMetadata as any;
+          if (event.carrierMetadata) {
+            if (event.sourceProvider === 'zimou') {
+              const incoming = Object.fromEntries(Object.entries(event.carrierMetadata).filter(([, value]) => value !== null && value !== undefined && value !== ''));
+              updatePayload.carrier_metadata = { ...((existingOrder.carrier_metadata as Record<string, unknown> | null) || {}), ...incoming } as any;
+            } else {
+              updatePayload.carrier_metadata = event.carrierMetadata as any;
+            }
+          }
           if (event.productImage) updatePayload.product_image = event.productImage;
           if (event.customerPhone) updatePayload.customer_phone = event.customerPhone;
           if (event.customerName) updatePayload.customer_name = event.customerName;
@@ -418,7 +426,7 @@ export class TrackingOrchestrator {
             carrier_last_event_at: event.sourceOccurredAt || null,
             carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,
-            ...(event.sourceProvider === 'maystro' ? {
+            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' ? {
               carrier_order_id: event.carrierOrderId || null,
               carrier_metadata: event.carrierMetadata || null,
             } : {}),
@@ -627,7 +635,7 @@ export class TrackingOrchestrator {
     if (event.carrierOrderId && event.carrierName) {
       const { data } = await this.supabase
         .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name')
+        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
         .eq('merchant_id', event.merchantId)
         .eq('carrier_name', event.carrierName)
         .eq('carrier_order_id', event.carrierOrderId)
@@ -639,7 +647,7 @@ export class TrackingOrchestrator {
     if (event.externalOrderId && event.externalOrderId !== 'UNKNOWN_ORDER') {
       const { data } = await this.supabase
         .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name')
+        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
         .eq('merchant_id', event.merchantId)
         .eq('external_order_id', event.externalOrderId)
         .maybeSingle();
@@ -650,7 +658,7 @@ export class TrackingOrchestrator {
     if (event.carrierTrackingNumber) {
       const { data } = await this.supabase
         .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name')
+        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
         .eq('merchant_id', event.merchantId)
         .eq('carrier_tracking_number', event.carrierTrackingNumber)
         .maybeSingle();
