@@ -197,6 +197,24 @@ export async function getElogistiaDispatchOptions(wilayaId?: string) {
   }
 }
 
+export async function getElogistiaDispatchStatus(orderId: string) {
+  try {
+    const id = await merchantId();
+    if (!orderId || typeof orderId !== 'string') throw new Error('الطلب المحدد غير صالح.');
+    const db = getSupabaseAdminClient();
+    const { data: order, error: orderError } = await (db as any).from('orders')
+      .select('id').eq('id', orderId).eq('merchant_id', id).maybeSingle();
+    if (orderError || !order) throw new Error('لم نعثر على الطلب داخل متجرك.');
+    const { data, error } = await (db as any).from('merchant_carrier_dispatch_attempts')
+      .select('attempt_state,tracking_number,error_message,updated_at')
+      .eq('merchant_id', id).eq('order_id', orderId).eq('provider', 'elogistia').maybeSingle();
+    if (error) throw new Error('تعذر قراءة حالة محاولة الشحن.');
+    return { success: true, attempt: data || null };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'تعذر قراءة حالة محاولة الشحن.' };
+  }
+}
+
 export async function createElogistiaShipment(orderId: string, input: {
   firstName: string;
   lastName: string;
@@ -310,6 +328,27 @@ export async function createElogistiaShipment(orderId: string, input: {
       dispatchAttemptId = newAttempt.id;
     }
 
+    const pendingMetadata = order.carrier_metadata && typeof order.carrier_metadata === 'object' ? order.carrier_metadata : {};
+    const { error: pendingMetadataError } = await (db as any).from('orders').update({
+      carrier_metadata: {
+        ...pendingMetadata,
+        elogistia: {
+          ...(pendingMetadata.elogistia && typeof pendingMetadata.elogistia === 'object' ? pendingMetadata.elogistia : {}),
+          creationStatus: 'pending',
+          requestReference: String(order.external_order_id),
+          attemptStartedAt: new Date().toISOString(),
+        },
+      },
+      updated_at: new Date().toISOString(),
+    }).eq('id', orderId).eq('merchant_id', id);
+    if (pendingMetadataError) {
+      await (db as any).from('merchant_carrier_dispatch_attempts')
+        .update({ attempt_state: 'failed', error_message: 'Could not mark order before dispatch.', updated_at: new Date().toISOString() })
+        .eq('id', dispatchAttemptId).eq('attempt_state', 'pending');
+      dispatchAttemptId = '';
+      throw new Error('تعذر حفظ علامة أمان قبل إنشاء الشحنة. لم نرسل الطلب إلى Elogistia.');
+    }
+
     const body = await apiRequest('insertCommande/', 'apiKey', apiKey, params, 'POST');
     const payload = body?.body ?? body?.data ?? body;
     const parcel = Array.isArray(payload) ? payload[0] : payload;
@@ -327,6 +366,18 @@ export async function createElogistiaShipment(orderId: string, input: {
       .eq('id', dispatchAttemptId);
     if (attemptCreatedError) {
       console.error('[ElogistiaIntegration] Shipment created; dispatch attempt state could not be updated:', attemptCreatedError.message);
+      await (db as any).from('orders').update({
+        carrier_metadata: {
+          ...((order.carrier_metadata && typeof order.carrier_metadata === 'object') ? order.carrier_metadata : {}),
+          elogistia: {
+            ...((order.carrier_metadata?.elogistia && typeof order.carrier_metadata.elogistia === 'object') ? order.carrier_metadata.elogistia : {}),
+            creationStatus: 'uncertain',
+            trackingNumber: tracking,
+            creationError: 'Elogistia created the parcel, but the dispatch ledger could not be updated.',
+          },
+        },
+        updated_at: new Date().toISOString(),
+      }).eq('id', orderId).eq('merchant_id', id);
       return {
         success: false,
         trackingNumber: tracking,
@@ -373,9 +424,25 @@ export async function createElogistiaShipment(orderId: string, input: {
     if (dispatchAttemptId && !createdTracking) {
       const attemptState = error?.providerRejected ? 'failed' : 'uncertain';
       const safeMessage = String(error?.message || 'تعذر حسم نتيجة إنشاء الشحنة.').slice(0, 500);
+      const now = new Date().toISOString();
       await (getSupabaseAdminClient() as any).from('merchant_carrier_dispatch_attempts')
-        .update({ attempt_state: attemptState, error_message: safeMessage, updated_at: new Date().toISOString() })
+        .update({ attempt_state: attemptState, error_message: safeMessage, updated_at: now })
         .eq('id', dispatchAttemptId).eq('attempt_state', 'pending');
+      const { data: failedOrder } = await (getSupabaseAdminClient() as any).from('orders')
+        .select('carrier_metadata').eq('id', orderId).maybeSingle();
+      const failedMetadata = failedOrder?.carrier_metadata && typeof failedOrder.carrier_metadata === 'object' ? failedOrder.carrier_metadata : {};
+      await (getSupabaseAdminClient() as any).from('orders').update({
+        carrier_metadata: {
+          ...failedMetadata,
+          elogistia: {
+            ...(failedMetadata.elogistia && typeof failedMetadata.elogistia === 'object' ? failedMetadata.elogistia : {}),
+            creationStatus: attemptState,
+            creationError: safeMessage,
+            lastAttemptAt: now,
+          },
+        },
+        updated_at: now,
+      }).eq('id', orderId).eq('merchant_id', await merchantId());
     }
     return { success: false, trackingNumber: createdTracking || undefined, error: error?.message || 'تعذر إنشاء شحنة Elogistia.' };
   }
