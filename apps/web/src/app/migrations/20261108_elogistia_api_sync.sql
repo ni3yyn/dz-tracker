@@ -39,3 +39,25 @@ CREATE INDEX IF NOT EXISTS idx_elogistia_orders_to_poll
 CREATE INDEX IF NOT EXISTS idx_elogistia_integrations_sync
   ON public.merchant_carrier_integrations (provider, sync_enabled, updated_at)
   WHERE provider = 'elogistia';
+
+-- Durable one-shipment-per-order guard. Ambiguous API outcomes must be reviewed before retrying.
+CREATE TABLE IF NOT EXISTS public.merchant_carrier_dispatch_attempts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+  order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL,
+  attempt_state TEXT NOT NULL CHECK (attempt_state IN ('pending', 'failed', 'uncertain', 'created')),
+  request_reference TEXT,
+  tracking_number TEXT,
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT merchant_carrier_dispatch_attempts_unique UNIQUE (merchant_id, order_id, provider)
+);
+
+ALTER TABLE public.merchant_carrier_dispatch_attempts ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.merchant_carrier_dispatch_attempts FROM anon, authenticated;
+GRANT ALL ON public.merchant_carrier_dispatch_attempts TO service_role;
+
+CREATE INDEX IF NOT EXISTS idx_carrier_dispatch_attempts_merchant_provider
+  ON public.merchant_carrier_dispatch_attempts (merchant_id, provider, updated_at DESC);
