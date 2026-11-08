@@ -5076,6 +5076,26 @@ export async function registerSavedOrder(savedOrder) {
           .dz-admin-root .dz-mapping-display strong { font-size:12px; }
           .dz-admin-root .dz-mapping-source code { font-size:11px; }
         }
+
+        /* The dashboard menu is built by SiteHeader's CSS module, not the legacy toggle class. */
+        .dz-admin-root .dz-sidebar {
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+        .dz-admin-root .dz-sidebar .dz-nav-item,
+        .dz-admin-root .dz-sidebar .dz-sidebar-footer button {
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+        .dz-admin-root .dz-sidebar .dz-nav-item.active {
+          border-inline-start: 2px solid var(--green);
+          background: #e6ece3;
+          color: var(--green-deep);
+        }
+        .dz-admin-root .dz-sidebar .dz-nav-item:hover {
+          border-radius: 0 !important;
+          transform: none;
+        }
       `}} />
 
       <div className="dz-admin-root">
