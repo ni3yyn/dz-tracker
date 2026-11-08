@@ -25,6 +25,7 @@ interface Props {
   externalOrderId: string;
   customerName: string | null;
   productName: string | null;
+  productImage?: string | null;
   carrierName?: string | null;
   carrierTrackingNumber?: string | null;
   initialConfirmationStatus?: 'pending' | 'confirmed' | 'cancelled' | null;
@@ -143,6 +144,7 @@ export function TrackingLiveView({
   externalOrderId,
   customerName,
   productName,
+  productImage,
   carrierName,
   carrierTrackingNumber,
   initialConfirmationStatus,
@@ -448,21 +450,36 @@ export function TrackingLiveView({
           </header>
 
           <section className={styles.trackingSection} aria-label="تفاصيل تتبع الشحنة">
-            {(customerName || (settings.showProductSection && productName)) && (
-              <section className={`${styles.orderIdentity} ${customerName && settings.showProductSection && productName ? styles.orderIdentitySplit : styles.orderIdentitySolo}`} aria-label="هوية الطلب">
+            {(customerName || (settings.showProductSection && (productName || productImage))) && (
+              <section className={`${styles.orderIdentity} ${customerName && settings.showProductSection && (productName || productImage) ? styles.orderIdentitySplit : styles.orderIdentitySolo}`} aria-label="هوية الطلب">
                 {customerName && (
                   <div className={styles.orderCustomerBlock}>
                     <span className={styles.orderIdentityLabel}>صاحب الطلب</span>
                     <h2 className={styles.orderCustomerName}>{cleanName(customerName)}</h2>
                   </div>
                 )}
-                {settings.showProductSection && productName && (
+                {settings.showProductSection && (productName || productImage) && (
                   <div className={styles.orderProductBlock}>
-                    <span className={styles.orderIdentityLabel}>محتويات الشحنة</span>
-                    <div className={styles.orderProductNames}>
-                      {productName.split('•').map((item, index) => (
-                        <span key={`${item.trim()}-${index}`} className={styles.orderProductName}>{item.trim()}</span>
-                      ))}
+                    {productImage && (
+                      <div className={styles.orderProductMedia}>
+                        <img
+                          src={toCachedImageUrl(productImage)}
+                          alt={productName || 'صورة المنتج'}
+                          loading="eager"
+                          decoding="async"
+                          onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                        />
+                      </div>
+                    )}
+                    <div className={styles.orderProductDetails}>
+                      <span className={styles.orderIdentityLabel}>محتويات الشحنة</span>
+                      {productName && (
+                        <div className={styles.orderProductNames}>
+                          {productName.split('•').map((item, index) => (
+                            <span key={`${item.trim()}-${index}`} className={styles.orderProductName}>{item.trim()}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
