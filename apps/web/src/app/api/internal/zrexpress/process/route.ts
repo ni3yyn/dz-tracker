@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@saas/database';
-import { TrackingOrchestrator, ZRExpressWebhookAdapter, type ZRExpressWebhookEvent } from '@saas/orchestrator';
+import { TrackingOrchestrator, ZRExpressWebhookAdapter, isZRExpressWebhookEvent } from '@saas/orchestrator';
 import { enqueueOrderConfirmationForNewOrder } from '../../../../../lib/order-confirmation';
 
 export const runtime = 'nodejs';
@@ -86,9 +86,9 @@ export async function POST(req: Request) {
   }
 
   try {
-    const payload = job.payload as ZRExpressWebhookEvent;
+    const payload: unknown = job.payload;
     if (
-      !payload ||
+      !isZRExpressWebhookEvent(payload) ||
       payload.eventType !== job.event_type ||
       Date.parse(payload.occurredAt) !== Date.parse(job.occurred_at)
     ) {
@@ -102,12 +102,18 @@ export async function POST(req: Request) {
     });
 
     if (!result.success) {
+      const errorCode = typeof result.error === 'string' ? result.error : '';
+      const permanent = [
+        'merchant_not_found',
+        'account_suspended',
+        'subscription_expired',
+        'subscription_limit_reached',
+      ].includes(errorCode);
       return NextResponse.json({
         success: false,
-        error: typeof result.error === 'string'
-          ? result.error
-          : result.message || 'TajerTrack could not process the ZR Express event.',
-      }, { status: 500 });
+        retryable: !permanent,
+        error: errorCode || result.message || 'TajerTrack could not process the ZR Express event.',
+      }, { status: permanent ? 422 : 500 });
     }
 
     if (result.isNewOrder && result.orderId) {
