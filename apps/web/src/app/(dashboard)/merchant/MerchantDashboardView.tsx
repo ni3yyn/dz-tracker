@@ -2032,6 +2032,139 @@ export async function registerSavedOrder(savedOrder) {
         .dz-filter-btn:hover { background: var(--bg-base); color: var(--ink-main); }
         .dz-filter-btn.active { background: var(--ink-main); color: #fff; border-color: var(--ink-main); }
 
+        /* Orders tab: restrained filters and a clearly legible status control */
+        .dz-shipment-filters {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: start;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .dz-shipment-status-tabs {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 7px;
+          min-width: 0;
+        }
+        .dz-shipment-status-tabs .dz-filter-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 38px;
+          padding: 8px 13px;
+          white-space: nowrap;
+          box-shadow: none;
+        }
+        .dz-shipment-filter-controls {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          flex-wrap: wrap;
+          gap: 8px;
+          min-width: 0;
+        }
+        .dz-shipment-select-wrap {
+          position: relative;
+          display: block;
+          min-width: 174px;
+          max-width: 100%;
+        }
+        .dz-shipment-select {
+          appearance: none;
+          -webkit-appearance: none;
+          display: block;
+          width: 100%;
+          min-height: 42px;
+          padding: 9px 13px 9px 38px;
+          border: 1px solid var(--border-soft);
+          border-radius: 11px;
+          background: var(--surface);
+          color: var(--ink-main);
+          font: inherit;
+          font-size: 12px;
+          font-weight: 650;
+          line-height: 1.4;
+          cursor: pointer;
+          outline: none;
+          box-shadow: 0 1px 3px rgba(20, 32, 24, .035);
+          transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+        }
+        .dz-shipment-select:hover { border-color: var(--border-strong); background: #fff; }
+        .dz-shipment-select:focus-visible {
+          border-color: #718b78;
+          box-shadow: 0 0 0 3px rgba(65, 107, 82, .12);
+        }
+        .dz-shipment-select-icon {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--ink-muted);
+          pointer-events: none;
+        }
+        .dz-filter-reset {
+          min-height: 40px;
+          padding-inline: 13px;
+          box-shadow: none;
+        }
+        .dz-status-selector {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          width: max-content;
+          max-width: 100%;
+          min-width: 0;
+          transition: opacity .18s ease;
+        }
+        .dz-status-select {
+          appearance: none;
+          -webkit-appearance: none;
+          display: block;
+          width: 100%;
+          min-width: 188px;
+          min-height: 42px;
+          padding: 9px 13px 9px 38px;
+          border: 1px solid #dce5dc;
+          border-radius: 11px;
+          background: #f8faf7;
+          color: #263b30;
+          font: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.45;
+          cursor: pointer;
+          outline: none;
+          transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+        }
+        .dz-status-select:hover:not(:disabled) { background: #fff; border-color: #a8b9aa; }
+        .dz-status-select:focus-visible {
+          border-color: #718b78;
+          box-shadow: 0 0 0 3px rgba(65, 107, 82, .12);
+        }
+        .dz-status-select:disabled { cursor: wait; }
+        .dz-status-select-icon {
+          position: absolute;
+          left: 13px;
+          top: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transform: translateY(-50%);
+          color: #718174;
+          pointer-events: none;
+        }
+        .dz-status-select-spinner { animation: statusSelectorSpin .9s linear infinite; }
+        .dz-status-select-error {
+          display: block;
+          max-width: 240px;
+          margin-top: 6px;
+          color: #a43f35;
+          font-size: 10px;
+          line-height: 1.55;
+        }
+        @keyframes statusSelectorSpin { to { transform: rotate(360deg); } }
+
         /* BRANDING STUDIO — focused categories + persistent save */
         .dz-branding-workspace { padding-bottom: 120px; transform: none !important; animation: none !important; }
         .dz-branding-panel-head { margin: 0 0 18px; }
@@ -3014,24 +3147,58 @@ export async function registerSavedOrder(savedOrder) {
           .dz-analytics-kpis .dz-overview-kpi:nth-child(2) { border-inline-start: 0; }
           .dz-analytics-kpis .dz-overview-kpi:last-child { grid-column: span 2; border-inline-start: 0; border-top: 1px solid var(--border-soft); }
           .dz-admin-root .dz-orders-desktop { display: none; }
-          .dz-orders-mobile { display: grid; gap: 10px; }
-          .dz-order-mobile-card { min-width: 0; padding: 14px; border-block: 1px solid var(--border-soft); background: rgba(255,254,250,.72); }
-          .dz-order-mobile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-          .dz-order-mobile-number { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-          .dz-order-mobile-number strong { font-size: 12px; line-height: 1.5; color: var(--ink-main); overflow-wrap: anywhere; }
-          .dz-order-mobile-number small { font-size: 9px; color: var(--ink-muted); }
-          .dz-order-mobile-customer { margin-top: 12px; font-size: 13px; font-weight: 750; color: var(--ink-main); line-height: 1.65; overflow-wrap: anywhere; }
-          .dz-order-mobile-phone { display: flex; align-items: center; gap: 6px; margin-top: 2px; color: var(--ink-muted); font-size: 11px; overflow-wrap: anywhere; }
-          .dz-order-mobile-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 12px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-soft); font-size: 10px; color: var(--ink-muted); }
+          .dz-orders-mobile { display: grid; gap: 12px; }
+          .dz-order-mobile-card {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            padding: 15px;
+            border: 1px solid var(--border-soft);
+            border-radius: 15px;
+            background: var(--surface);
+            box-shadow: 0 3px 14px rgba(28, 43, 32, .045);
+          }
+          .dz-order-mobile-select {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            align-self: flex-start;
+            margin: 0 0 10px;
+            color: var(--ink-muted);
+            font-size: 11px;
+            font-weight: 650;
+            cursor: pointer;
+          }
+          .dz-order-mobile-select input { width: 16px; height: 16px; margin: 0; accent-color: #294535; }
+          .dz-order-mobile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+          .dz-order-mobile-number { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 120px; }
+          .dz-order-mobile-number strong { font-size: 13px; line-height: 1.5; color: var(--ink-main); overflow-wrap: anywhere; }
+          .dz-order-mobile-number small { font-size: 10px; color: var(--ink-muted); }
+          .dz-order-mobile-badges { display: flex; align-items: center; justify-content: flex-start; gap: 6px; flex-wrap: wrap; max-width: 100%; }
+          .dz-order-mobile-badges .dz-pill { white-space: normal; line-height: 1.45; }
+          .dz-order-mobile-customer { margin-top: 12px; font-size: 14px; font-weight: 750; color: var(--ink-main); line-height: 1.65; overflow-wrap: anywhere; }
+          .dz-order-mobile-phone { display: flex; align-items: center; gap: 7px; margin-top: 3px; color: var(--ink-muted); font-size: 12px; overflow-wrap: anywhere; }
+          .dz-order-mobile-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 8px 12px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border-soft); font-size: 11px; color: var(--ink-muted); }
+          .dz-order-mobile-meta > span { min-width: 0; overflow-wrap: anywhere; line-height: 1.55; }
+          .dz-order-mobile-status { display: flex; width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft); }
+          .dz-order-mobile-status .dz-status-selector { width: 100%; }
+          .dz-order-mobile-status .dz-status-select { min-width: 0; min-height: 46px; font-size: 13px; }
+          .dz-order-mobile-card .dz-order-action-grid { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 42px; gap: 8px; margin-top: 13px; }
+          .dz-order-mobile-card .dz-order-action-btn { height: 42px; border-radius: 11px; }
           .dz-order-mobile-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
           .dz-order-mobile-actions .dz-btn { flex: 1 1 auto; min-height: 38px; }
           .dz-admin-root .dz-main { padding-bottom: 32px; }
           .dz-admin-root .dz-filter-row { gap: 8px; }
           .dz-admin-root .dz-filter-row > div { min-width: 0; }
-          .dz-admin-root .dz-shipment-filters { flex-direction: column; align-items: stretch; }
-          .dz-admin-root .dz-shipment-filters > div { width: 100%; }
-          .dz-admin-root .dz-shipment-filters select { flex: 1 1 auto; min-width: 0; }
-          .dz-admin-root .dz-filter-btn { min-height: 36px; }
+          .dz-admin-root .dz-shipment-filters { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 11px; }
+          .dz-admin-root .dz-shipment-status-tabs { width: 100%; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding: 2px 1px 6px; margin-inline: -1px; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-inline: contain; scroll-snap-type: inline proximity; }
+          .dz-admin-root .dz-shipment-status-tabs::-webkit-scrollbar { display: none; }
+          .dz-admin-root .dz-shipment-status-tabs .dz-filter-btn { flex: 0 0 auto; min-height: 40px; scroll-snap-align: start; }
+          .dz-admin-root .dz-shipment-filter-controls { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+          .dz-admin-root .dz-shipment-select-wrap { width: 100%; min-width: 0; }
+          .dz-admin-root .dz-shipment-select { min-height: 44px; font-size: 12px; }
+          .dz-admin-root .dz-filter-reset { grid-column: 1 / -1; justify-self: start; }
+          .dz-admin-root .dz-filter-btn { min-height: 40px; }
         }
         @media (max-width: 520px) {
           .dz-analytics-kpis { grid-template-columns: minmax(0, 1fr); }
