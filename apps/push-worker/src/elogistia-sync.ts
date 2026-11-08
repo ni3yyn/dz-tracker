@@ -138,7 +138,7 @@ export class ElogistiaSyncWorker {
           url.searchParams.set('tracking', order.carrier_tracking_number);
           let response: Response;
           try {
-            response = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(TIMEOUT_MS) });
+            response = await fetch(url, { headers: { Accept: 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(TIMEOUT_MS) });
           } catch (error: any) {
             if (error?.name === 'TimeoutError' || error?.name === 'AbortError') throw new Error('Elogistia tracking request timed out.');
             throw new Error('Elogistia tracking request could not reach the API.');
