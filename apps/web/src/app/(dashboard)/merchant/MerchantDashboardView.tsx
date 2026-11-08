@@ -5035,7 +5035,10 @@ export async function registerSavedOrder(savedOrder) {
           border-radius:4px;
           background:var(--green);
           color:#fffefa;
-          font:700 12px/1.4 inherit;
+          font-family:inherit;
+          font-size:12px;
+          font-weight:700;
+          line-height:1.4;
           cursor:pointer;
           white-space:nowrap;
           transition:background .16s ease,border-color .16s ease;
