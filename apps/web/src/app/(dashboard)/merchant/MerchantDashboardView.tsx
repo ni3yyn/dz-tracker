@@ -740,7 +740,7 @@ export function MerchantDashboardView({
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
   const [integrationPlatform, setIntegrationPlatform] = useState<'shopify' | 'website' | 'manual' | null>(null);
   const [trackingSource, setTrackingSource] = useState<'carrier' | 'manual' | 'unsure' | null>(null);
-  const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'zimou' | 'other' | null>(null);
+  const [selectedCarrier, setSelectedCarrier] = useState<'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'zimou' | 'elogistia' | 'other' | null>(null);
   const [integrationStep, setIntegrationStep] = useState<1 | 2 | 3>(1);
   const [integrationChoicesHydratedFor, setIntegrationChoicesHydratedFor] = useState<string | null>(null);
   // Persist integration choices locally per merchant, without sending preferences to the server.
@@ -762,7 +762,7 @@ export function MerchantDashboardView({
 
         const validPlatforms = ['shopify', 'website', 'manual'];
         const validSources = ['carrier', 'manual', 'unsure'];
-        const validCarriers = ['yalidine', 'ecotrack', 'zrexpress', 'procolis', 'maystro', 'zimou', 'other'];
+        const validCarriers = ['yalidine', 'ecotrack', 'zrexpress', 'procolis', 'maystro', 'zimou', 'elogistia', 'other'];
         const restoredPlatform = validPlatforms.includes(saved.platform || '')
           ? saved.platform as 'shopify' | 'website' | 'manual'
           : null;
@@ -770,7 +770,7 @@ export function MerchantDashboardView({
           ? saved.trackingSource as 'carrier' | 'manual' | 'unsure'
           : null;
         const restoredCarrier = validCarriers.includes(saved.carrier || '')
-          ? saved.carrier as 'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'zimou' | 'other'
+          ? saved.carrier as 'yalidine' | 'ecotrack' | 'zrexpress' | 'procolis' | 'maystro' | 'zimou' | 'elogistia' | 'other'
           : null;
 
         setIntegrationPlatform(restoredPlatform);
@@ -826,7 +826,7 @@ export function MerchantDashboardView({
     activeTab === 'integrations' &&
     integrationChoicesHydratedFor === merchantId &&
     (integrationPlatform === 'website' || integrationPlatform === 'shopify' ||
-      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'zimou'));
+      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia'));
 
   useEffect(() => {
     let cancelled = false;
@@ -5687,7 +5687,7 @@ export async function registerSavedOrder(savedOrder) {
 
                       {integrationPlatform === 'website' && (
                         <article className="dz-int-guided-panel">
-                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{trackingSource === 'carrier' && (selectedCarrier === 'zrexpress' || selectedCarrier === 'maystro' || selectedCarrier === 'zimou') ? '02' : '01'}</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{trackingSource === 'carrier' && (selectedCarrier === 'zrexpress' || selectedCarrier === 'maystro' || selectedCarrier === 'zimou' || selectedCarrier === 'elogistia') ? '02' : '01'}</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
                           <div className="dz-int-guided-credentials">
                             <div className="dz-int-guided-credential">
                               <div className="dz-int-guided-credential-head"><small>مفتاح API</small><button type="button" onClick={() => setApiKeyRevealed((value) => !value)}>{apiKeyRevealed ? <Icons.EyeOff /> : <Icons.Eye />}{apiKeyRevealed ? 'إخفاء' : 'إظهار'}</button></div>
