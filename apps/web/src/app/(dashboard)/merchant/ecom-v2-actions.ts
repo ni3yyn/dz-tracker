@@ -15,6 +15,18 @@ function rows(body: any): Row[] {
   if (Array.isArray(body?.data)) return body.data.filter((x: any) => x && typeof x === 'object');
   return [];
 }
+function toLocalAlgerianPhone(value: string): string {
+  const digits = value.trim().replace(/[\\s\\-.()/]/g, '');
+  let national: string;
+  if (digits.startsWith('+213')) national = digits.slice(4);
+  else if (digits.startsWith('00213')) national = digits.slice(5);
+  else if (digits.startsWith('213') && digits.length >= 11) national = digits.slice(3);
+  else if (digits.startsWith('0')) national = digits.slice(1);
+  else national = digits;
+  national = national.replace(/^0+/, '');
+  if (!/^\\d{8,9}$/.test(national)) throw new Error('أدخل رقم هاتف جزائري صحيحاً بصيغة محلية أو دولية.');
+  return '0' + national;
+}
 function safeMessage(body: any): string {
   return String(body?.error?.message || body?.detail?.error?.message || body?.message || body?.erreur || '').trim();
 }
@@ -217,7 +229,7 @@ export async function createEcomV2Shipment(orderId: string, input: {
     if (!authRow?.sync_enabled || !authRow.credentials_encrypted) throw new Error('اربط حساب E-com Delivery أولاً.');
     const auth = credentials(id, String(authRow.credentials_encrypted));
     const recipientName = String(input?.recipientName || '').trim();
-    const phone = String(input?.phone || '').trim();
+    const phone = toLocalAlgerianPhone(String(input?.phone || ''));
     const address = String(input?.address || '').trim();
     const wilayaId = String(input?.wilayaId || '').trim();
     const commune = String(input?.commune || '').trim();
