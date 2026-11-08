@@ -58,8 +58,9 @@ html body :is(
   button[class*="passwordtoggle" i],
   button[class*="close" i],
   button[class*="menu" i],
-  button[class*="action" i],
-  button[class*="reorder" i]
+  button[class*="reorder" i],
+  button[class*="order-action-btn" i],
+  button[class*="upsell-action-btn" i]
 ):not(#app-button-radius-reset) {
   border-radius: 0 !important;
   padding: 0 !important;
