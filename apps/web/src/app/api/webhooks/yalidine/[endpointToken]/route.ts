@@ -113,7 +113,7 @@ export async function POST(req: Request, context: RouteContext) {
 
   if (!verifyYalidineWebhookSignature(rawBody, req.headers.get('x-yalidine-signature'), webhookSecret)) {
     console.warn('[YalidineWebhook]: Rejected unverified event delivery.');
-    return NextResponse.json({ error: 'Invalid Yalidine webhook signature.' }, { status: 401 });
+    return NextResponse.json({ error: 'Invalid Yalidine webhook signature.' }, { status: 400 });
   }
 
   let body: any;
