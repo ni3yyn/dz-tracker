@@ -326,7 +326,7 @@
   .copyBtn { margin-right: 48px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .shimmer::after { animation: none; }
+  .shimmer::after { display: none; animation: none; }
   .floatingWhatsApp, .copyBtn { transition: none; }
 }
 
