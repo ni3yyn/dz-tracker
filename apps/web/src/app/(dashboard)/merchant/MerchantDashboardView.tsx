@@ -6302,9 +6302,10 @@ export async function registerSavedOrder(savedOrder) {
                       <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.elogistia.commune || 'غير متوفر'}</strong></div>
                       <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.address || 'غير متوفر'}</strong></div>
                       <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.codAmount != null ? Number(selectedOrder.carrier_metadata.elogistia.codAmount).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>سعر التوصيل لدى Elogistia</span><strong>{selectedOrder.carrier_metadata.elogistia.shippingFee != null ? Number(selectedOrder.carrier_metadata.elogistia.shippingFee).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
                       <div className="dz-order-detail-field"><span>طريقة التوصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.deliveryType === 'stopdesk' ? 'مكتب Elogistia' : 'توصيل إلى المنزل'}</strong></div>
                       <div className="dz-order-detail-field"><span>نوع العملية</span><strong>{selectedOrder.carrier_metadata.elogistia.deliveryMode === 'exchange' ? 'تبادل' : 'إرسال عادي'}</strong></div>
-                      <div className="dz-order-detail-field"><span>آخر حالة أصلية</span><strong>{selectedOrder.carrier_metadata.elogistia.rawStatus || 'بانتظار أول تحديث'}</strong></div>
+                      <div className="dz-order-detail-field"><span>آخر حالة أصلية</span><strong>{selectedOrder.carrier_metadata.rawStatus || 'بانتظار أول تحديث'}</strong></div>
                     </>
                   )}
                   <div className="dz-order-detail-field"><span>تاريخ تسجيل الطلب</span><strong>{new Date(selectedOrder.created_at).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
