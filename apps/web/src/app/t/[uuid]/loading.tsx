@@ -3,7 +3,8 @@ import styles from './t.module.css';
 
 export default function TrackingLoading() {
   return (
-    <main className={`${styles.pageContainer} ${styles.bgAurora}`} aria-label="جاري تحميل تفاصيل الشحنة" aria-busy="true" role="status" aria-live="polite">
+    <main className={`${styles.pageContainer} ${styles.bgAurora}`} aria-label="جاري تحميل تفاصيل الشحنة" aria-busy="true">
+      <span className={styles.loadingStatusText} role="status">جاري تحميل تفاصيل الشحنة...</span>
       <div className={`${styles.card} ${styles.cardSolid} ${styles.radiusModern} ${styles.widthStandard}`}>
         <div className={`${styles.brandAccentBar} ${styles.shimmer}`} />
         <header className={styles.header}>
