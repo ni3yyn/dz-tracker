@@ -248,9 +248,6 @@ export async function createEcomV2Shipment(orderId: string, input: {
     else payload.code_stopdesk = input.stopDeskId;
     if (address) payload.adresse = address;
     if (note) payload.note_fournisseur = note;
-    const { data: attempt, error: insertError } = await (db as any).from('merchant_carrier_dispatch_attempts')
-      .insert({ merchant_id: id, order_id: orderId, provider: 'ecom_v2', attempt_state: 'pending', request_reference: reference })
-      .select('id').single();
     if (previous) {
       const { data: retry, error } = await (db as any).from('merchant_carrier_dispatch_attempts')
         .update({ attempt_state: 'pending', tracking_number: null, error_message: null, updated_at: new Date().toISOString() })
@@ -258,6 +255,9 @@ export async function createEcomV2Shipment(orderId: string, input: {
       if (error || !retry) throw new Error('تغيرت حالة محاولة الشحن. حدّث الصفحة قبل المتابعة.');
       attemptId = retry.id;
     } else {
+      const { data: attempt, error: insertError } = await (db as any).from('merchant_carrier_dispatch_attempts')
+        .insert({ merchant_id: id, order_id: orderId, provider: 'ecom_v2', attempt_state: 'pending', request_reference: reference })
+        .select('id').single();
       if (insertError || !attempt) {
         if (insertError?.code === '23505') throw new Error('بدأت محاولة شحن أخرى لهذا الطلب. حدّث الصفحة وتحقق من الحالة.');
         throw new Error('تعذر حجز محاولة شحن آمنة.');
