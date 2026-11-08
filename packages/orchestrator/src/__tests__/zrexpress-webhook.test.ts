@@ -5,7 +5,7 @@ import {
   ZRExpressWebhookAdapter,
   verifyZRExpressWebhook,
   type ZRExpressWebhookEvent,
-} from '../carriers/zrexpress-webhook.adapter';
+} from '../carriers/zrexpress-webhook.adapter.js';
 
 const secret = `whsec_${Buffer.from('tajertrack-zr-express-signing-secret-fixture').toString('base64')}`;
 
