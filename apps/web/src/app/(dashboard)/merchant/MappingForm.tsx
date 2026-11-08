@@ -49,7 +49,7 @@ export function MappingForm({ merchantId }: { merchantId: string }) {
           />
         </div>
 
-        <div className={styles.inputGroup}>
+        <div className={`${styles.inputGroup} dz-custom-mapping-group`}>
           <label className={styles.label}>ما يظهر للعميل في الرابط:</label>
           <input
             type="text"
@@ -57,7 +57,7 @@ export function MappingForm({ merchantId }: { merchantId: string }) {
             value={displayStatus}
             onChange={(e) => setDisplayStatus(e.target.value)}
             required
-            className={styles.input}
+            className={`${styles.input} dz-custom-mapping-input`}
           />
         </div>
       </div>
