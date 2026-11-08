@@ -55,7 +55,7 @@ html body :is(
 /* Fixed-size icon-only controls keep their geometry and do not acquire text padding. */
 html body :is(
   button[class*="icon" i],
-  button[class*="toggle" i],
+  button[class*="passwordtoggle" i],
   button[class*="close" i],
   button[class*="menu" i],
   button[class*="action" i],
