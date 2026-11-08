@@ -86,7 +86,7 @@ export class EcomV2SyncWorker {
           // invent a current timestamp when history is empty; that would create a new event on
           // every polling cycle and could spam the customer's timeline.
           const history=historyFrom(body).sort((a,b)=>dateValue(a.date)-dateValue(b.date));
-          const useful=history.filter(x=>!NOTE.has(normalizeSituation(x.situation)));
+          const useful=history.filter(x=>!NOTE.has(normalizeSituation(x.situation)) && dateValue(x.date) > 0);
           if (!useful.length) { checked++; continue; }
           const events=useful.map((event,index)=>({
             ...event,tracking:order.carrier_tracking_number,id_externe:order.external_order_id,
