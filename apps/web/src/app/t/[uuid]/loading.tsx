@@ -3,7 +3,7 @@ import styles from './t.module.css';
 
 export default function TrackingLoading() {
   return (
-    <main className={`${styles.pageContainer} ${styles.bgAurora}`} aria-label="جاري تحميل تفاصيل الشحنة">
+    <main className={`${styles.pageContainer} ${styles.bgAurora}`} aria-label="جاري تحميل تفاصيل الشحنة" aria-busy="true" role="status" aria-live="polite">
       <div className={`${styles.card} ${styles.cardSolid} ${styles.radiusModern} ${styles.widthStandard}`}>
         <div className={`${styles.brandAccentBar} ${styles.shimmer}`} />
         <header className={styles.header}>
@@ -35,7 +35,7 @@ export default function TrackingLoading() {
               </div>
             </div>
           </div>
-          <div className={`${styles.skeletonLine} ${styles.shimmer}`} style={{ width: '100%', height: '58px', marginTop: '20px', borderRadius: '12px' }} />
+          <div className={`${styles.skeletonLine} ${styles.shimmer}`} style={{ width: '100%', height: '58px', marginTop: '20px' }} />
           <div className={styles.timelineHeading}>
             <div className={`${styles.skeletonLine} ${styles.shimmer}`} style={{ width: '155px', height: '23px' }} />
           </div>
