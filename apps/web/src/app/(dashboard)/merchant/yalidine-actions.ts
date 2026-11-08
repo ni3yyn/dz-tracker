@@ -128,6 +128,7 @@ export async function getYalidineWebhookStatus(): Promise<{
         connectedAt: null,
         lastWebhookReceivedAt: null,
         lastWebhookProcessedAt: null,
+        testMode: false,
         lastError: null,
       },
       error: error?.message || 'تعذر تحميل حالة ربط Yalidine.',
@@ -229,7 +230,7 @@ export async function saveYalidineWebhookSecret(secretInput: string): Promise<{
       })
       .eq('merchant_id', merchantId)
       .eq('provider', 'yalidine')
-      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, last_error')
+      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error')
       .single();
 
     if (error || !data) throw new Error('تعذر حفظ مفتاح Webhook. تحقق من تحديث قاعدة البيانات ثم حاول مجدداً.');
