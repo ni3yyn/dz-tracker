@@ -184,12 +184,6 @@ importers:
 
   apps/push-worker:
     dependencies:
-      '@saas/orchestrator':
-        specifier: workspace:*
-        version: link:../../packages/orchestrator
-      '@saas/database':
-        specifier: workspace:*
-        version: link:../../packages/database
       '@supabase/supabase-js':
         specifier: ^2.117.3
         version: 2.117.3
@@ -288,6 +282,10 @@ importers:
       zod:
         specifier: ^4.6.5
         version: 4.6.5
+    devDependencies:
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   packages/sdk:
     dependencies:
