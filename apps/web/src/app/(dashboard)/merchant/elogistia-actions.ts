@@ -75,7 +75,11 @@ async function apiRequest(path: string, authName: 'key' | 'apiKey', apiKey: stri
   if (response.status === 429) throw new Error('وصل حساب Elogistia إلى حد الطلبات. انتظر قليلاً ثم أعد المحاولة.');
   if (!response.ok || body?.success === false || body?.error) {
     const message = providerError(body);
-    throw new Error(message || 'فشل طلب Elogistia (HTTP ' + response.status + ').');
+    const error: any = new Error(message || 'فشل طلب Elogistia (HTTP ' + response.status + ').');
+    error.statusCode = response.status;
+    error.providerRejected = (response.status >= 400 && response.status < 500 && response.status !== 408) ||
+      body?.success === false || Boolean(body?.error);
+    throw error;
   }
   return body;
 }
@@ -209,6 +213,7 @@ export async function createElogistiaShipment(orderId: string, input: {
   weight?: number | null;
 }) {
   let createdTracking = '';
+  let dispatchAttemptId = '';
   try {
     const id = await merchantId();
     if (!orderId || typeof orderId !== 'string') throw new Error('الطلب المحدد غير صالح.');
@@ -219,6 +224,17 @@ export async function createElogistiaShipment(orderId: string, input: {
     if (orderError || !order) throw new Error('لم نعثر على الطلب داخل متجرك.');
     if (order.carrier_tracking_number) {
       throw new Error('هذا الطلب مرتبط بالفعل برقم تتبع (' + order.carrier_tracking_number + '). لا ننشئ شحنة ثانية تلقائياً.');
+    }
+    const existingAttemptResult = await (db as any).from('merchant_carrier_dispatch_attempts')
+      .select('id,attempt_state,tracking_number')
+      .eq('merchant_id', id).eq('order_id', orderId).eq('provider', 'elogistia').maybeSingle();
+    if (existingAttemptResult.error) throw new Error('تعذر التحقق من محاولات الشحن السابقة. تأكد من تطبيق تحديث قاعدة البيانات.');
+    const previousAttempt = existingAttemptResult.data;
+    if (previousAttempt && previousAttempt.attempt_state !== 'failed') {
+      if (previousAttempt.attempt_state === 'created' && previousAttempt.tracking_number) {
+        throw new Error('تم إنشاء شحنة Elogistia لهذا الطلب برقم ' + previousAttempt.tracking_number + '، لكن لم يكتمل ربطها. لا تعاود الإنشاء؛ استخدم رقم التتبع الموجود أو تواصل مع الدعم.');
+      }
+      throw new Error('توجد محاولة إنشاء سابقة لم يُحسم وضعها لدى Elogistia. افحص لوحة Elogistia باستخدام مرجع الطلب ' + order.external_order_id + ' قبل إعادة المحاولة لتجنب شحنة مكررة.');
     }
     const row = await loadIntegration(id);
     if (!row?.sync_enabled || !row?.credentials_encrypted) throw new Error('اربط حساب Elogistia أولاً من قسم التكاملات.');
@@ -247,6 +263,15 @@ export async function createElogistiaShipment(orderId: string, input: {
     if (weight !== null && (!Number.isFinite(weight) || weight <= 0 || weight > 1000)) throw new Error('وزن الطرد غير صالح.');
 
     // Elogistia's Postman-based adapter sends these exact fields as query parameters on POST.
+    const feeBody = await apiRequest('getShippingCost/', 'key', apiKey);
+    const feeRows = rowsFrom(feeBody);
+    const feeRow = feeRows.find((item) => String(item.wilaya_id ?? item.wilayaID ?? item.id ?? '') === wilayaId);
+    const feeValue = feeRow
+      ? Number(input.deliveryType === 'stopdesk'
+          ? (feeRow.stopdesk ?? feeRow.stop_desk ?? feeRow.bureau)
+          : (feeRow.home ?? feeRow.domicile ?? feeRow.tarif))
+      : Number.NaN;
+
     const params: Record<string, string> = {
       name: lastName,
       firstname: firstName,
@@ -260,9 +285,30 @@ export async function createElogistiaShipment(orderId: string, input: {
       product,
       IdCommande: String(order.external_order_id),
     };
+    if (Number.isFinite(feeValue) && feeValue >= 0) params.fraisDeLivraison = String(Math.round(feeValue));
     if (email) params.mail = email;
     if (note) params.remarque = note;
     if (weight !== null) params.poids = String(weight);
+
+    // Acquire a durable per-order dispatch lock before calling the provider. Only a confirmed
+    // provider rejection is retryable; network/5xx/ambiguous outcomes remain locked for review.
+    if (previousAttempt) {
+      const { data: retryAttempt, error: retryError } = await (db as any).from('merchant_carrier_dispatch_attempts')
+        .update({ attempt_state: 'pending', tracking_number: null, error_message: null, updated_at: new Date().toISOString() })
+        .eq('id', previousAttempt.id).eq('attempt_state', 'failed')
+        .select('id').maybeSingle();
+      if (retryError || !retryAttempt) throw new Error('بدأت محاولة شحن أخرى لهذا الطلب أو تغيرت حالتها. حدّث الصفحة قبل إعادة المحاولة.');
+      dispatchAttemptId = retryAttempt.id;
+    } else {
+      const { data: newAttempt, error: insertAttemptError } = await (db as any).from('merchant_carrier_dispatch_attempts')
+        .insert({ merchant_id: id, order_id: orderId, provider: 'elogistia', attempt_state: 'pending', request_reference: String(order.external_order_id) })
+        .select('id').single();
+      if (insertAttemptError || !newAttempt) {
+        if (insertAttemptError?.code === '23505') throw new Error('بدأت محاولة شحن لهذا الطلب في نافذة أخرى. حدّث الصفحة وتحقق من حالة Elogistia قبل إعادة المحاولة.');
+        throw new Error('تعذر حجز محاولة شحن آمنة لهذا الطلب. تأكد من تطبيق تحديث قاعدة البيانات.');
+      }
+      dispatchAttemptId = newAttempt.id;
+    }
 
     const body = await apiRequest('insertCommande/', 'apiKey', apiKey, params, 'POST');
     const payload = body?.body ?? body?.data ?? body;
@@ -270,9 +316,23 @@ export async function createElogistiaShipment(orderId: string, input: {
     const tracking = String(parcel?.tracking ?? parcel?.Tracking ?? (typeof parcel?.success === 'string' ? parcel.success : '')).trim();
     if (!tracking) {
       const message = providerError(body);
-      throw new Error(message || 'قبلت Elogistia الطلب دون إرجاع رقم تتبع. لم يتم ربطه في تاجر تراك؛ تحقق من لوحة Elogistia قبل إعادة المحاولة.');
+      const error: any = new Error(message || 'لم تُرجع Elogistia رقم تتبع بعد طلب الإنشاء. تحقق من لوحة Elogistia باستخدام مرجع الطلب قبل أي إعادة محاولة.');
+      error.providerOutcomeUncertain = true;
+      throw error;
     }
     createdTracking = tracking;
+
+    const { error: attemptCreatedError } = await (db as any).from('merchant_carrier_dispatch_attempts')
+      .update({ attempt_state: 'created', tracking_number: tracking, error_message: null, updated_at: new Date().toISOString() })
+      .eq('id', dispatchAttemptId);
+    if (attemptCreatedError) {
+      console.error('[ElogistiaIntegration] Shipment created; dispatch attempt state could not be updated:', attemptCreatedError.message);
+      return {
+        success: false,
+        trackingNumber: tracking,
+        error: 'أنشأت Elogistia الشحنة برقم ' + tracking + '، لكن تعذر حفظ تأكيد الإنشاء محلياً. لا تعاود إنشاء الشحنة؛ تواصل مع الدعم.',
+      };
+    }
 
     const existingMetadata = order.carrier_metadata && typeof order.carrier_metadata === 'object' ? order.carrier_metadata : {};
     const metadata = {
@@ -288,6 +348,7 @@ export async function createElogistiaShipment(orderId: string, input: {
         email: email || null,
         shippingFeeHome: null,
         shippingFeeStopDesk: null,
+        creationStatus: 'created',
         createdAt: new Date().toISOString(),
       },
     };
@@ -309,6 +370,13 @@ export async function createElogistiaShipment(orderId: string, input: {
     revalidatePath('/merchant');
     return { success: true, trackingNumber: tracking };
   } catch (error: any) {
+    if (dispatchAttemptId && !createdTracking) {
+      const attemptState = error?.providerRejected ? 'failed' : 'uncertain';
+      const safeMessage = String(error?.message || 'تعذر حسم نتيجة إنشاء الشحنة.').slice(0, 500);
+      await (getSupabaseAdminClient() as any).from('merchant_carrier_dispatch_attempts')
+        .update({ attempt_state: attemptState, error_message: safeMessage, updated_at: new Date().toISOString() })
+        .eq('id', dispatchAttemptId).eq('attempt_state', 'pending');
+    }
     return { success: false, trackingNumber: createdTracking || undefined, error: error?.message || 'تعذر إنشاء شحنة Elogistia.' };
   }
 }
