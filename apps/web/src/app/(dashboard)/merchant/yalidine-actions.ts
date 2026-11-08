@@ -194,7 +194,7 @@ export async function saveYalidineWebhookSecret(secretInput: string): Promise<{
   try {
     const merchantId = await authenticatedMerchantId();
     const secret = String(secretInput || '').trim();
-    if (secret.length < 16 || secret.length > 512) {
+    if (!secret || secret.length > 512) {
       throw new Error('مفتاح Webhook غير صالح. انسخ المفتاح الكامل من بطاقة Webhook في حسابك.');
     }
 
