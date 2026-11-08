@@ -5827,6 +5827,260 @@ export async function registerSavedOrder(savedOrder) {
             animation-duration: .01ms !important;
           }
         }
+
+        /* TajerTrack merchant rail: warm paper, botanical green, and crisp navigation. */
+        .dz-admin-root .dz-sidebar {
+          box-sizing: border-box !important;
+          padding: 25px 17px 18px !important;
+          background: #f7f6f0 !important;
+          border-left: 1px solid #e1e5dc !important;
+          color: #263b30 !important;
+          box-shadow: none !important;
+        }
+
+        .dz-admin-root .dz-product-brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-height: 46px;
+          margin: 0 2px 18px;
+          padding: 0 0 17px;
+          border-bottom: 1px solid #e1e5dc;
+        }
+        .dz-admin-root .dz-product-brand > img {
+          display: block;
+          flex: 0 0 38px;
+          width: 38px;
+          height: 38px;
+          object-fit: contain;
+        }
+        .dz-admin-root .dz-product-brand-copy {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .dz-admin-root .dz-product-brand-copy strong {
+          color: #263b30;
+          font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+          font-size: 15px;
+          font-weight: 800;
+          line-height: 1.35;
+          letter-spacing: -.035em;
+        }
+        .dz-admin-root .dz-product-brand-copy span {
+          color: #7b877d;
+          font-size: 9px;
+          font-weight: 500;
+          line-height: 1.5;
+        }
+
+        .dz-admin-root .dz-sidebar .dz-brand {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          min-width: 0;
+          margin: 0 0 19px !important;
+          padding: 11px;
+          border: 1px solid #e1e5dc;
+          background: #fffefa;
+        }
+        .dz-admin-root .dz-sidebar .dz-avatar-box {
+          flex: 0 0 42px;
+          width: 42px;
+          height: 42px;
+          border: 0;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          font-size: 16px;
+        }
+        .dz-admin-root .dz-sidebar .dz-brand-text {
+          min-width: 0;
+          gap: 3px;
+        }
+        .dz-admin-root .dz-sidebar .dz-brand-title {
+          max-width: 164px;
+          color: #263b30;
+          font-size: 12px;
+          font-weight: 750;
+          line-height: 1.5;
+          letter-spacing: -.015em;
+        }
+        .dz-admin-root .dz-sidebar .dz-brand-badge {
+          margin: 0;
+          color: #849087;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0;
+          text-transform: none;
+        }
+
+        .dz-admin-root .dz-sidebar .dz-nav {
+          display: flex;
+          flex: 1 1 auto;
+          flex-direction: column;
+          gap: 3px;
+          min-height: 0;
+        }
+        .dz-admin-root .dz-nav-caption {
+          margin: 2px 9px 5px;
+          color: #89948b;
+          font-size: 9px;
+          font-weight: 750;
+          line-height: 1.6;
+          letter-spacing: .025em;
+        }
+        .dz-admin-root .dz-nav-caption-secondary {
+          margin-top: 17px;
+        }
+        html body .dz-admin-root .dz-sidebar .dz-nav-item:not(#app-button-radius-reset) {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          box-sizing: border-box !important;
+          width: 100% !important;
+          min-height: 43px !important;
+          margin: 0 !important;
+          padding: 9px 11px !important;
+          border: 1px solid transparent !important;
+          border-inline-start: 3px solid transparent !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          color: #657268 !important;
+          font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif !important;
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          line-height: 1.55 !important;
+          text-align: right !important;
+          transition: background-color .18s ease, color .18s ease, border-color .18s ease !important;
+        }
+        html body .dz-admin-root .dz-sidebar .dz-nav-item:not(#app-button-radius-reset):hover {
+          background: #eef1e9 !important;
+          color: #294b37 !important;
+          transform: none !important;
+        }
+        html body .dz-admin-root .dz-sidebar .dz-nav-item.active:not(#app-button-radius-reset) {
+          border-inline-start-color: #2d5640 !important;
+          background: #e8eee6 !important;
+          color: #263b30 !important;
+          font-weight: 750 !important;
+        }
+        .dz-admin-root .dz-sidebar .dz-nav-item > span:first-child {
+          display: inline-flex;
+          align-items: center;
+          min-width: 0;
+          gap: 0;
+        }
+        .dz-admin-root .dz-sidebar .dz-nav-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          margin-left: 10px;
+          color: #7d897f;
+          opacity: 1;
+        }
+        .dz-admin-root .dz-sidebar .dz-nav-icon svg {
+          display: block;
+          width: 17px;
+          height: 17px;
+          stroke-width: 1.8;
+        }
+        .dz-admin-root .dz-sidebar .dz-nav-item.active .dz-nav-icon {
+          color: #2d5640;
+        }
+        .dz-admin-root .dz-sidebar .dz-alert-badge {
+          display: inline-grid;
+          place-items: center;
+          min-width: 21px;
+          height: 21px;
+          padding: 0 5px;
+          border: 1px solid #efd5cf;
+          border-radius: 0;
+          background: #fbefec;
+          color: #a54f40;
+          box-shadow: none;
+          font-size: 10px;
+          font-weight: 750;
+          line-height: 1;
+        }
+        .dz-admin-root .dz-sidebar .dz-nav-item.active .dz-alert-badge {
+          border-color: #d7e3d5;
+          background: #fffefa;
+          color: #2d5640;
+        }
+
+        .dz-admin-root .dz-sidebar .dz-sidebar-footer {
+          margin-top: auto !important;
+          padding-top: 15px !important;
+          border-top: 1px solid #e1e5dc;
+        }
+        .dz-admin-root .dz-sidebar .dz-sidebar-footer form {
+          width: 100%;
+        }
+        html body .dz-admin-root .dz-sidebar .dz-sidebar-footer button:not(#app-button-radius-reset) {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
+          gap: 10px !important;
+          min-height: 42px !important;
+          padding: 9px 11px !important;
+          border: 1px solid #e1e5dc !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          color: #68766c !important;
+          font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif !important;
+          font-size: 11px !important;
+          font-weight: 650 !important;
+          box-shadow: none !important;
+          transition: background-color .18s ease, color .18s ease, border-color .18s ease !important;
+        }
+        html body .dz-admin-root .dz-sidebar .dz-sidebar-footer button:not(#app-button-radius-reset):hover {
+          border-color: #cbd7ca !important;
+          background: #edf2ea !important;
+          color: #294b37 !important;
+        }
+        .dz-admin-root .dz-sidebar .dz-sidebar-footer button svg {
+          width: 16px;
+          height: 16px;
+          stroke-width: 1.8;
+        }
+
+        @media (max-width: 760px) {
+          .dz-admin-root .dz-product-brand {
+            min-height: 40px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+          }
+          .dz-admin-root .dz-product-brand > img {
+            width: 34px;
+            height: 34px;
+            flex-basis: 34px;
+          }
+          .dz-admin-root .dz-sidebar .dz-brand {
+            margin-bottom: 13px !important;
+            padding: 9px 10px;
+          }
+          .dz-admin-root .dz-nav-caption-secondary {
+            margin-top: 12px;
+          }
+          .dz-admin-root .dz-sidebar .dz-nav-item:not(#app-button-radius-reset) {
+            min-height: 42px !important;
+          }
+          .dz-admin-root .dz-sidebar .dz-sidebar-footer {
+            margin-top: 12px !important;
+            padding-top: 12px !important;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .dz-admin-root .dz-sidebar .dz-nav-item,
+          .dz-admin-root .dz-sidebar .dz-sidebar-footer button {
+            transition-duration: .01ms !important;
+          }
+        }
       `}} />
 
       <div className="dz-admin-root">
@@ -5840,6 +6094,14 @@ export async function registerSavedOrder(savedOrder) {
 
         {/* SIDEBAR */}
         <aside id="dz-merchant-sidebar" className={`dz-sidebar ${mobileMenuOpen ? 'dz-mobile-nav-open' : ''}`}>
+          <div className="dz-product-brand">
+            <img src="/tajertrack-animated.svg" alt="" width="38" height="38" />
+            <div className="dz-product-brand-copy">
+              <strong>تاجر تراك</strong>
+              <span>إدارة الشحنات بوضوح</span>
+            </div>
+          </div>
+
           <div className="dz-brand">
             <div className="dz-avatar-box" style={{ background: brandConfig.brandColor, color: getReadableOnBrand(brandConfig.brandColor), overflow: 'hidden', padding: brandConfig.logoUrl ? '0' : undefined }}>
               {brandConfig.logoUrl ? (
@@ -5858,11 +6120,12 @@ export async function registerSavedOrder(savedOrder) {
             </div>
             <div className="dz-brand-text">
               <span className="dz-brand-title">{displayStoreName}</span>
-              <span className="dz-brand-badge">Merchant Portal</span>
+              <span className="dz-brand-badge">المتجر الحالي</span>
             </div>
           </div>
 
-          <nav className="dz-nav">
+          <nav className="dz-nav" aria-label="أقسام لوحة التاجر">
+            <div className="dz-nav-caption">المتابعة</div>
             <button className={`dz-nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => { setActiveTab('overview'); setMobileMenuOpen(false); }}>
               <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Dashboard /></span> نظرة عامة</span>
             </button>
@@ -5876,6 +6139,7 @@ export async function registerSavedOrder(savedOrder) {
               <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.AlertTriangle /></span> تنبيهات COD</span>
               {alertCount > 0 && <span className="dz-alert-badge">{alertCount}</span>}
             </button>
+            <div className="dz-nav-caption dz-nav-caption-secondary">إدارة المتجر</div>
             <button className={`dz-nav-item ${activeTab === 'branding' ? 'active' : ''}`} onClick={() => { setActiveTab('branding'); setMobileMenuOpen(false); }}>
               <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Palette /></span> تصميم صفحة التتبع</span>
             </button>
