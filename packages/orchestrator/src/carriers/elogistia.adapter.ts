@@ -37,9 +37,6 @@ export function mapElogistiaStatus(status: unknown, log?: unknown): { statusRaw:
   if (/ramassee|receptionnee|picked up/.test(normalized)) {
     return { statusRaw: 'dispatched', statusTitle: 'تم استلام الشحنة', description: 'سجلت Elogistia استلام الشحنة.' };
   }
-  if (/a expedie/.test(normalized)) {
-    return { statusRaw: 'processing', statusTitle: 'الشحنة تنتظر الإرسال', description: 'سجلت Elogistia الطلب بانتظار مرحلة الإرسال.' };
-  }
   if (/transit|hub|expedi|dispatch|vers wilaya|en cours/.test(normalized)) {
     return { statusRaw: 'in_transit', statusTitle: 'الشحنة قيد النقل', description: 'تواصل الشحنة مسارها عبر شبكة Elogistia.' };
   }
