@@ -85,7 +85,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
     setSubmitting(true); setError('');
     try {
       const result = await createElogistiaShipment(order.id, {
-        firstName, lastName, email, phone, address, wilayaId, commune, product,
+        firstName, lastName, email, phone, address, wilayaId, wilayaName: wilayas.find(row => row.id === wilayaId)?.name || '', commune, product,
         codAmount: Number(codAmount), deliveryType, deliveryMode,
         weight: weight ? Number(weight) : null, note,
       });
