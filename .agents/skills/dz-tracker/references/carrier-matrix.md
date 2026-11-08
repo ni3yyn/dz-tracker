@@ -108,7 +108,7 @@ Source: `packages/orchestrator/src/carriers/ecotrack.adapter.ts`
 - Customer fields include `client_name` / `customer_name` / `name` / `nom_client` / `destinataire` / `client` and `client_phone` / `customer_phone` / `phone` / `telephone` / `tel` / `mobile` / `contact_phone`.
 - Status candidates: `status`, `current_status`, `statut`, `etat`; reason candidates include `reason`, `motif`, `sub_status`, `comment`, `remarque`, `observation`.
 
-### ZR Express / Procolis adapter
+### Legacy Procolis-shaped ZR adapter (compatibility only)
 
 Source: `packages/orchestrator/src/carriers/zrexpress.adapter.ts`
 
