@@ -161,6 +161,7 @@ export function TrackingLiveView({
     'pending' | 'confirmed' | 'cancelled' | null
   >(initialConfirmationStatus ?? null);
   const [copied, setCopied] = useState(false);
+  const [introPhase, setIntroPhase] = useState<'show' | 'wipe' | 'done'>('show');
 
   const storedSettings = brandSettings as TrackingBrandSettings | undefined;
   const settings: TrackingBrandSettings = {
@@ -241,6 +242,20 @@ export function TrackingLiveView({
       // Non-blocking for seamless shopper navigation
     }
   };
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setIntroPhase('done');
+      return;
+    }
+
+    const wipeTimer = window.setTimeout(() => setIntroPhase('wipe'), 1050);
+    const finishTimer = window.setTimeout(() => setIntroPhase('done'), 1580);
+    return () => {
+      window.clearTimeout(wipeTimer);
+      window.clearTimeout(finishTimer);
+    };
+  }, []);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -377,7 +392,40 @@ export function TrackingLiveView({
     <main
       className={`${styles.pageContainer} ${backgroundClass} ${darkMode ? styles.themeDark : ''} ${fontClass} ${animationClass} ${waSupportUrl ? styles.hasFloatingSupport : ''} ${blobAnimationClass} ${backgroundBlurClass}`}
       style={dynamicStyle}
+      aria-busy={introPhase !== 'done'}
     >
+      {introPhase !== 'done' && (
+        <div
+          className={`${styles.entranceIntro} ${introPhase === 'wipe' ? styles.entranceWipe : ''}`}
+          style={{
+            '--intro-brand': settings.brandColor,
+            '--intro-ink': getReadableBrandForeground(settings.brandColor),
+          } as React.CSSProperties}
+          role="status"
+          aria-label={`مرحباً بك في متجر ${storeName}`}
+        >
+          <div className={styles.entranceGlow} aria-hidden="true" />
+          <div className={styles.entranceContent}>
+            <div className={styles.entranceLogo}>
+              {logoUrl ? (
+                <img
+                  src={toCachedImageUrl(logoUrl)}
+                  alt=""
+                  onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <span>{cleanName(storeName).charAt(0) || 'م'}</span>
+              )}
+            </div>
+            <p className={styles.entranceStoreName}>{storeName}</p>
+            <div className={styles.entranceDivider} aria-hidden="true" />
+            <h1 className={styles.entranceGreeting}>
+              {customerName ? <>مرحباً، <span>{cleanName(customerName)}</span></> : 'مرحباً بك'}
+            </h1>
+            <p className={styles.entranceCaption}>نحن هنا لمساعدتك في متابعة طلبك</p>
+          </div>
+        </div>
+      )}
       <div className={styles.backgroundBlurLayer} aria-hidden="true" />
       <div className={styles.cardShell}>
         <div className={`${styles.card} ${surfaceClass} ${radiusClass}`}>
