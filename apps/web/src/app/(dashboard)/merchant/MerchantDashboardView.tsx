@@ -1397,6 +1397,16 @@ export function MerchantDashboardView({
       supportQuestion: 'مرحباً، أود ربط حسابي لديكم مع تاجر تراك عبر Webhooks لتحديث مسار التوصيل للزبائن تلقائياً. هل يمكنكم تفعيل إرسال Webhook خارجي عند تغيير حالة الشحنات؟'
     },
     {
+      id: 'zrexpress' as const,
+      name: 'ZR Express',
+      symbol: 'ZR',
+      url: '',
+      method: 'API + Svix Webhooks (تلقائي)',
+      hint: 'اربط حساب ZR Express مباشرة عبر API Key وTenant ID. ينشئ تاجر تراك Webhook تلقائياً ويتحقق من توقيع Svix دون إعداد رابط يدوي.',
+      caveave: 'هذا اتصال ZR Express API المباشر؛ لا تستخدم رابط Procolis القديم لهذا المسار.',
+      supportQuestion: 'أستخدم واجهة ZR Express API المباشرة وأحتاج إلى تفعيل صلاحيات Webhooks (Svix) لحسابي.'
+    },
+    {
       id: 'procolis' as const,
       name: 'Procolis',
       symbol: 'P',
@@ -5702,7 +5712,7 @@ export async function registerSavedOrder(savedOrder) {
                         <ZRExpressConnectionPanel />
                       )}
 
-                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && activeCarrierConnection && (
+                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && activeCarrierConnection && (
                         <article className="dz-int-guided-panel">
                           <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
                           <div className="dz-int-guided-copy">
