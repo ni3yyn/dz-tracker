@@ -646,7 +646,11 @@ export class TrackingOrchestrator {
     }
 
     // أ) محاولة المطابقة برقم الطلب الخارجي (مثال: #1042)
-    if (event.externalOrderId && event.externalOrderId !== 'UNKNOWN_ORDER') {
+    if (
+      event.externalOrderId &&
+      event.externalOrderId !== 'UNKNOWN_ORDER' &&
+      event.externalOrderId !== event.carrierTrackingNumber
+    ) {
       const { data } = await this.supabase
         .from('orders')
         .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
