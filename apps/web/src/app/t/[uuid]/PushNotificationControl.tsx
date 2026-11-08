@@ -339,6 +339,9 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
 
       {permissionDenied && (
         <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '8px',
           marginTop: '10px',
           padding: '8px 12px',
           borderRadius: '8px',
@@ -347,9 +350,6 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
           color: '#991b1b',
           fontSize: '11px',
           lineHeight: 1.5,
-        display: 'flex',
-          alignItems: 'flex-start',
-          gap: '8px',
         }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: '0 0 16px', marginTop: 1 }}>
             <path d="M12 3 21 20H3L12 3Z" />
