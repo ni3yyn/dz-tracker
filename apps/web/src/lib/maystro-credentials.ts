@@ -1,0 +1,67 @@
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+
+export interface MaystroCredentials {
+  apiToken: string;
+}
+
+function deriveKey(secret: string): Buffer {
+  if (!secret || secret.length < 32) {
+    throw new Error('CARRIER_CREDENTIALS_ENCRYPTION_KEY must be at least 32 characters.');
+  }
+  return createHash('sha256').update(secret, 'utf8').digest();
+}
+
+function aad(merchantId: string): Buffer {
+  return Buffer.from(`${merchantId}:maystro:v1`, 'utf8');
+}
+
+export function encryptMaystroCredentials(
+  credentials: MaystroCredentials,
+  merchantId: string,
+  secret: string
+): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', deriveKey(secret), iv);
+  cipher.setAAD(aad(merchantId));
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify(credentials), 'utf8'),
+    cipher.final(),
+  ]);
+
+  return [
+    'v1',
+    iv.toString('base64'),
+    cipher.getAuthTag().toString('base64'),
+    ciphertext.toString('base64'),
+  ].join('.');
+}
+
+export function decryptMaystroCredentials(
+  encrypted: string,
+  merchantId: string,
+  secret: string
+): MaystroCredentials {
+  const [version, ivText, tagText, ciphertextText] = String(encrypted || '').split('.');
+  if (version !== 'v1' || !ivText || !tagText || !ciphertextText) {
+    throw new Error('Stored Maystro credentials have an unsupported encryption format.');
+  }
+
+  const decipher = createDecipheriv(
+    'aes-256-gcm',
+    deriveKey(secret),
+    Buffer.from(ivText, 'base64')
+  );
+  decipher.setAAD(aad(merchantId));
+  decipher.setAuthTag(Buffer.from(tagText, 'base64'));
+
+  const clear = Buffer.concat([
+    decipher.update(Buffer.from(ciphertextText, 'base64')),
+    decipher.final(),
+  ]).toString('utf8');
+
+  const parsed = JSON.parse(clear) as Partial<MaystroCredentials>;
+  if (typeof parsed.apiToken !== 'string' || parsed.apiToken.length < 8) {
+    throw new Error('Stored Maystro credentials are incomplete.');
+  }
+  return { apiToken: parsed.apiToken };
+}

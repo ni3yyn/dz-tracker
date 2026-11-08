@@ -8,6 +8,7 @@ import { MappingForm } from './MappingForm';
 import { ImageUploadField } from './ImageUploadField';
 import { EcoTrackConnectionPanel } from './EcoTrackConnectionPanel';
 import { ZRExpressConnectionPanel } from './ZRExpressConnectionPanel';
+import { MaystroConnectionPanel } from './MaystroConnectionPanel';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
@@ -49,6 +50,9 @@ interface OrderItem {
   external_order_id: string;
   customer_name: string | null;
   customer_phone: string | null;
+  product_name: string | null;
+  carrier_order_id?: string | null;
+  carrier_metadata?: any | null;
   current_status: string;
   carrier_name: string | null;
   carrier_tracking_number: string | null;
@@ -1372,7 +1376,6 @@ export function MerchantDashboardView({
   const ecotrackUrl = `${siteUrl}/api/webhooks/ecotrack?key=${integrationApiKey}`;
   const procolisUrl = `${siteUrl}/api/webhooks/procolis?key=${integrationApiKey}`;
   const odooUrl = `${siteUrl}/api/webhooks/odoo?key=${integrationApiKey}`;
-  const maystroUrl = `${siteUrl}/api/webhooks/maystro?key=${integrationApiKey}`;
 
   const carrierConnections = [
     {
@@ -1421,11 +1424,11 @@ export function MerchantDashboardView({
       id: 'maystro' as const,
       name: 'Maystro Delivery',
       symbol: 'M',
-      url: maystroUrl,
-      method: 'POST (JSON)',
-      hint: 'من إعدادات Maystro Delivery، أضف رابط تاجر تراك في قسم Webhooks لتحديث حالات التوصيل عبر 58 ولاية.',
-      caveat: 'يدعم مزامنة حالات ramasse, in_transit, at_local_hub, out_for_delivery, delivered, returned.',
-      supportQuestion: 'مرحباً، أستخدم تاجر تراك وأريد تفعيل Webhook لتتبع الشحنات مع Maystro Delivery. هل يمكن تفعيل الرابط الخارجي لحسابي؟'
+      url: '',
+      method: 'Store API Token + Webhooks',
+      hint: 'أدخل Store API Token من حساب Maystro، ثم انسخ رابط الاستقبال الذي ينشئه تاجر تراك وأضفه في إعدادات Webhooks لدى Maystro.',
+      caveat: 'اختر OrderFieldUpdated وOrderDelivered. يقرأ تاجر تراك بيانات الطلب وسجل حالاته من API بعد وصول الإشعار.',
+      supportQuestion: 'مرحباً، أحتاج إلى Store API Token لحساب Maystro Delivery لتفعيل قراءة الطلبات وسجل التوصيل عبر API.'
     },
   ];
 
@@ -5629,7 +5632,11 @@ export async function registerSavedOrder(savedOrder) {
                         <ZRExpressConnectionPanel />
                       )}
 
-                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && activeCarrierConnection && (
+                      {trackingSource === 'carrier' && selectedCarrier === 'maystro' && (
+                        <MaystroConnectionPanel />
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'maystro' && activeCarrierConnection && (
                         <article className="dz-int-guided-panel">
                           <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
                           <div className="dz-int-guided-copy">
@@ -5649,7 +5656,7 @@ export async function registerSavedOrder(savedOrder) {
 
                       {integrationPlatform === 'website' && (
                         <article className="dz-int-guided-panel">
-                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{trackingSource === 'carrier' && selectedCarrier === 'zrexpress' ? '02' : '01'}</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
+                          <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">{trackingSource === 'carrier' && (selectedCarrier === 'zrexpress' || selectedCarrier === 'maystro') ? '02' : '01'}</span><div><h4>بيانات الربط الخاصة بمتجرك</h4><p>تظهر هذه البيانات لأنك اخترت موقعاً مبرمجاً خاصاً.</p></div></div>
                           <div className="dz-int-guided-credentials">
                             <div className="dz-int-guided-credential">
                               <div className="dz-int-guided-credential-head"><small>مفتاح API</small><button type="button" onClick={() => setApiKeyRevealed((value) => !value)}>{apiKeyRevealed ? <Icons.EyeOff /> : <Icons.Eye />}{apiKeyRevealed ? 'إخفاء' : 'إظهار'}</button></div>
@@ -6210,8 +6217,39 @@ export async function registerSavedOrder(savedOrder) {
                 <div className="dz-order-detail-fields">
                   <div className="dz-order-detail-field"><span>اسم العميل</span><strong>{selectedOrder.customer_name || 'غير متوفر'}</strong></div>
                   <div className="dz-order-detail-field"><span>رقم الهاتف</span><strong dir="ltr">{selectedOrder.customer_phone || 'غير متوفر'}</strong></div>
+                  <div className="dz-order-detail-field"><span>اسم الطرد / المنتجات</span><strong>{selectedOrder.product_name || 'غير متوفر'}</strong></div>
                   <div className="dz-order-detail-field"><span>شركة الشحن</span><strong>{selectedOrder.carrier_name || 'غير محددة'}</strong></div>
                   <div className="dz-order-detail-field"><span>رقم التتبع</span><strong>{selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
+                  {selectedOrder.carrier_name === 'Maystro Delivery' && selectedOrder.carrier_order_id && (
+                    <div className="dz-order-detail-field"><span>معرّف الطلب لدى Maystro</span><strong dir="ltr">{selectedOrder.carrier_order_id}</strong></div>
+                  )}
+                  {selectedOrder.carrier_name === 'Maystro Delivery' && selectedOrder.carrier_metadata && (
+                    <>
+                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.wilaya || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.communeName || selectedOrder.carrier_metadata.commune || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>العنوان</span><strong>{selectedOrder.carrier_metadata.destinationText || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>نوع التوصيل</span><strong>{Number(selectedOrder.carrier_metadata.deliveryType) === 1 ? 'توصيل إلى المنزل' : Number(selectedOrder.carrier_metadata.deliveryType) === 2 ? 'مكتب / Stopdesk' : Number(selectedOrder.carrier_metadata.deliveryType) === 3 ? 'نقطة استلام' : 'غير محدد'}</strong></div>
+                      <div className="dz-order-detail-field"><span>المبلغ الإجمالي لدى Maystro</span><strong>{selectedOrder.carrier_metadata.totalPrice != null ? `${selectedOrder.carrier_metadata.totalPrice} دج` : 'غير متوفر'}</strong></div>
+                      {selectedOrder.carrier_metadata.customerPhone2 && (
+                        <div className="dz-order-detail-field"><span>رقم الهاتف الإضافي</span><strong dir="ltr">{selectedOrder.carrier_metadata.customerPhone2}</strong></div>
+                      )}
+                      {Array.isArray(selectedOrder.carrier_metadata.products) && selectedOrder.carrier_metadata.products.length > 0 && (
+                        <div className="dz-order-detail-field" style={{ gridColumn: '1 / -1' }}>
+                          <span>تفاصيل محتويات الطرد</span>
+                          <strong style={{ display: 'grid', gap: '6px', fontWeight: 650 }}>
+                            {selectedOrder.carrier_metadata.products.map((item: any, index: number) => (
+                              <span key={index}>
+                                {item.description || item.product || 'منتج'}
+                                {item.quantity ? ` × ${item.quantity}` : ''}
+                                {item.unitPrice != null ? ` · ${item.unitPrice} دج` : ''}
+                              </span>
+                            ))}
+                          </strong>
+                        </div>
+                      )}
+
+                    </>
+                  )}
                   <div className="dz-order-detail-field"><span>تاريخ تسجيل الطلب</span><strong>{new Date(selectedOrder.created_at).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
                   <div className="dz-order-detail-field"><span>معرّف الطلب الداخلي</span><strong>{selectedOrder.id}</strong></div>
                 </div>

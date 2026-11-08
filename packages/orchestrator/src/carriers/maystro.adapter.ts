@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { TrackingEvent } from '../index';
 import {
   safeString,
@@ -101,326 +102,487 @@ export function resolveCourierWilayaCode(code: number): { courierCode: number; d
   return { courierCode: code, displayName: ALGERIA_WILAYAS_58[code] || `ولاية ${code}` };
 }
 
+
+export type MaystroWebhookEnvelope = {
+  eventType: string;
+  payload: Record<string, any>;
+  orderId: string | null;
+  isTest: boolean;
+};
+
+function record(value: unknown): Record<string, any> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, any>
+    : {};
+}
+
+function firstText(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === 'string' || typeof value === 'number') {
+      const text = String(value).trim();
+      if (text) return text;
+    }
+  }
+  return undefined;
+}
+
+function decodeMaystroData(value: unknown): Record<string, any> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return record(value);
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error('Maystro webhook did not contain an event dictionary.');
+  }
+
+  let text = value.trim();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (typeof parsed === 'string') {
+        text = parsed.trim();
+        continue;
+      }
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return record(parsed);
+      }
+    } catch {
+      // Maystro documents Base64 data; try decoding the current layer.
+    }
+
+    const decoded = Buffer.from(text, 'base64').toString('utf8').trim();
+    if (!decoded || decoded === text) break;
+    text = decoded;
+  }
+
+  throw new Error('Maystro webhook data could not be decoded as JSON (Base64 layers exhausted).');
+}
+
 /**
- * محول شركة Maystro Delivery (maystro-delivery.com)
- * يدعم بنية Django REST Framework / backend.maystro-delivery.com/api/
+ * Maystro currently documents a Base64 event inside message.data. Some examples
+ * decode once and the prose describes two layers, so accept either form while
+ * still requiring the decoded value to be a JSON object.
  */
+export function parseMaystroWebhookEnvelope(rawBody: string): MaystroWebhookEnvelope {
+  let outer: Record<string, any>;
+  try {
+    outer = record(JSON.parse(rawBody));
+  } catch {
+    throw new Error('Maystro webhook body is not valid JSON.');
+  }
+
+  const message = record(outer.message);
+  const candidate =
+    message.data ??
+    outer.data ??
+    outer.payload ??
+    outer.eventData ??
+    outer;
+
+  const decoded = decodeMaystroData(candidate);
+  const eventType = firstText(
+    decoded.event,
+    decoded.event_type,
+    decoded.eventType,
+    decoded.type,
+    decoded.name,
+    record(outer.message).event,
+    record(outer.message).event_type,
+    record(outer.message).eventType,
+    record(outer.message).event_name,
+    record(outer.message).type,
+    outer.event_name,
+    outer.event,
+    outer.event_type,
+    outer.eventType,
+    outer.type
+  ) || '';
+
+  const payload = record(
+    decoded.payload ??
+    decoded.order ??
+    decoded.data ??
+    (Object.keys(decoded).length ? decoded : outer.payload)
+  );
+
+  const nestedOrder = record(payload.order);
+  const nestedData = record(payload.data);
+  const orderId = firstText(
+    payload.id,
+    payload.order_id,
+    payload.orderId,
+    payload.uuid,
+    nestedOrder.id,
+    nestedOrder.order_id,
+    nestedData.id,
+    nestedData.order_id
+  ) || null;
+
+  return {
+    eventType,
+    payload,
+    orderId,
+    isTest: eventType.toLowerCase() === 'test' || /test/i.test(eventType),
+  };
+}
+
+const MAYSTRO_STATUS_CODES: Record<string, { status: string; title: string; description: string }> = {
+  '4': { status: 'processing', title: 'تم تسجيل الطلب لدى Maystro', description: 'تم تسجيل الطرد في نظام Maystro Delivery.' },
+  '11': { status: 'processing', title: 'الطلب قيد الانتظار', description: 'الطلب مسجل لدى Maystro وينتظر بدء التجهيز.' },
+  '12': { status: 'processing', title: 'المنتج غير متوفر مؤقتاً', description: 'أبلغت Maystro عن عدم توفر المنتج مؤقتاً.' },
+  '5': { status: 'dispatched', title: 'تم طلب استلام الشحنة', description: 'تم إرسال طلب استلام الطرد من المتجر.' },
+  '6': { status: 'processing', title: 'الشحنة قيد المعالجة', description: 'تقوم Maystro بتجهيز الشحنة ومعالجتها.' },
+  '8': { status: 'in_transit', title: 'الشحنة بانتظار النقل', description: 'وصلت الشحنة إلى مركز Maystro وتنتظر النقل.' },
+  '9': { status: 'in_transit', title: 'الشحنة في مرحلة النقل', description: 'تم تجهيز الشحنة لإرسالها إلى وجهتها.' },
+  '15': { status: 'in_transit', title: 'تم تجهيز الشحنة للإرسال', description: 'أصبحت الشحنة جاهزة للخروج مع شبكة التوصيل.' },
+  '22': { status: 'in_transit', title: 'تم تعيين مندوب للشحنة', description: 'تم تعيين مندوب لمتابعة توصيل الشحنة.' },
+  '31': { status: 'in_transit', title: 'تم شحن الطرد', description: 'غادرت الشحنة مرحلة التجهيز وهي في طريقها إلى وجهتها.' },
+  '32': { status: 'attempt_failed', title: 'يوجد تنبيه على الشحنة', description: 'سجلت Maystro تنبيهاً أو مشكلة تتعلق بمحاولة التوصيل.' },
+  '42': { status: 'postponed', title: 'تم تأجيل التسليم', description: 'تم تأجيل موعد تسليم الشحنة.' },
+  '41': { status: 'delivered', title: 'تم تسليم الطلب بنجاح', description: 'أكدت Maystro تسليم الشحنة.' },
+  '50': { status: 'cancelled', title: 'تم إلغاء الطلب', description: 'تم إلغاء الطلب لدى Maystro.' },
+  '10': { status: 'returned', title: 'بدأت عملية إرجاع الشحنة', description: 'الشحنة في طريق العودة إلى المتجر.' },
+  '51': { status: 'returned', title: 'الشحنة جاهزة للإرجاع', description: 'أصبحت الشحنة جاهزة لإعادتها إلى المتجر.' },
+  '52': { status: 'returned', title: 'استلم المتجر الشحنة المرتجعة', description: 'تم تسليم الشحنة المرتجعة إلى المتجر.' },
+  '53': { status: 'returned', title: 'تم تسجيل عدم استلام المرتجع', description: 'سجلت Maystro أن المتجر لم يستلم الشحنة المرتجعة.' },
+};
+
+const MAYSTRO_STATUS_NAMES: Record<string, string> = {
+  CREATED: '4',
+  PENDING: '11',
+  OUT_OF_STOCK: '12',
+  PICK_UP_REQUESTED: '5',
+  IN_PROCESS: '6',
+  WAITING_TRANSIT: '8',
+  IN_TRANSIT_TO_BE_SHIPPED: '9',
+  READY_TO_SHIP: '15',
+  ASSIGNED: '22',
+  SHIPPED: '31',
+  ALERTED: '32',
+  POSTPONED: '42',
+  DELIVERED: '41',
+  ABORTED: '50',
+  CANCELLED: '50',
+  CANCELED: '50',
+  IN_TRANSIT_TO_BE_RETURNED: '10',
+  READY_TO_RETURN: '51',
+  READY_TO_BE_RETURNED: '51',
+  TAKEN_BY_STORE: '52',
+  NOT_RECEIVED: '53',
+};
+
+export function mapMaystroStatus(value: unknown): { statusRaw: string; statusTitle: string; description: string } {
+  const original = firstText(value) || '';
+  const normalized = normalizeDiacritics(safeLower(original)).replace(/[\s-]+/g, '_');
+  const code = /^\d+$/.test(original)
+    ? original
+    : MAYSTRO_STATUS_NAMES[normalized.toUpperCase()] || MAYSTRO_STATUS_NAMES[normalized.replace(/_/g, ' ').toUpperCase()];
+
+  if (code && MAYSTRO_STATUS_CODES[code]) {
+    return { ...MAYSTRO_STATUS_CODES[code] };
+  }
+
+  // Legacy webhook compatibility: earlier Maystro integrations sent French or
+  // human-readable status strings instead of the documented numeric API codes.
+  const status = normalized;
+  const legacy: { statusRaw: string; statusTitle: string; description: string } | null =
+    /^(ramasse|picked|picked_up|pickup|collecte|recu|hub_depart)/.test(status)
+      ? { statusRaw: 'dispatched', statusTitle: 'تم استلام الشحنة من المتجر', description: 'استلم مندوب Maystro Delivery الطرد.' }
+      : /(point_de_retrait|retrait|bureau|stopdesk|agence|ready_for_pickup|pickup_point)/.test(status)
+        ? { statusRaw: 'ready_for_pickup', statusTitle: 'الشحنة جاهزة للاستلام', description: 'أصبح الطرد متاحاً للاستلام من نقطة Maystro.' }
+        : /(out_for_delivery|en_livraison|livreur|distrib|dispatch|sortie)/.test(status)
+          ? { statusRaw: 'out_for_delivery', statusTitle: 'خرجت الشحنة للتوصيل', description: 'الشحنة مع مندوب التوصيل.' }
+          : /(hub|centre|arrive|reception)/.test(status)
+            ? { statusRaw: 'at_local_hub', statusTitle: 'وصلت الشحنة إلى مركز التوزيع', description: 'وصل الطرد إلى مركز Maystro المحلي.' }
+            : /(transit|transfer|vers|ligne|shipped)/.test(status)
+              ? { statusRaw: 'in_transit', statusTitle: 'الشحنة في الطريق', description: 'تتحرك الشحنة عبر شبكة Maystro.' }
+              : /(livre|delivered|completed|encaisse|paye)/.test(status)
+                ? { statusRaw: 'delivered', statusTitle: 'تم تسليم الطلب بنجاح', description: 'أكدت Maystro تسليم الشحنة.' }
+                : /(repond|injoignable|absent|unreachable|no_answer|failed|echec)/.test(status)
+                  ? { statusRaw: 'attempt_failed', statusTitle: 'تعذرت محاولة التوصيل', description: 'سجلت Maystro محاولة توصيل غير مكتملة.' }
+                  : /(report|postpone|retarde|demain)/.test(status)
+                    ? { statusRaw: 'postponed', statusTitle: 'تم تأجيل التسليم', description: 'تم تأجيل موعد تسليم الشحنة.' }
+                    : /(cancel|annul|aborted)/.test(status)
+                      ? { statusRaw: 'cancelled', statusTitle: 'تم إلغاء الطلب', description: 'تم إلغاء الطلب لدى Maystro.' }
+                      : /(retour|returned|refus)/.test(status)
+                        ? { statusRaw: 'returned', statusTitle: 'الشحنة في مسار الإرجاع', description: 'تم تحويل الشحنة إلى مسار الإرجاع.' }
+                        : null;
+
+  if (legacy) return legacy;
+
+  return {
+    statusRaw: 'unknown',
+    statusTitle: original ? `تحديث جديد من Maystro (\u200f${original})` : 'تحديث جديد من Maystro',
+    description: original
+      ? `وصل رمز حالة غير معروف من Maystro: ${original}. لم يتم تخمين معناه.`
+      : 'وصل تحديث حالة من Maystro دون رمز معروف.',
+  };
+}
+
+function isoTimestamp(value: unknown, fallback: string): string {
+  const candidate = firstText(value);
+  if (candidate) {
+    const timestamp = Date.parse(candidate);
+    if (Number.isFinite(timestamp)) return new Date(timestamp).toISOString();
+  }
+  return fallback;
+}
+
+function productDescription(order: Record<string, any>): string | undefined {
+  const details = Array.isArray(order.details) ? order.details : [];
+  const items = details.map((item: unknown) => {
+    if (typeof item === 'string') return item.trim();
+    const row = record(item);
+    const product = record(row.product);
+    const name = firstText(
+      row.description, row.product_name, row.name, row.title,
+      typeof row.product === 'string' || typeof row.product === 'number' ? row.product : undefined,
+      product.name, product.description, product.title
+    );
+    if (!name) return '';
+    const quantity = Number(row.quantity);
+    return Number.isFinite(quantity) && quantity > 1 ? `${name} × ${quantity}` : name;
+  }).filter(Boolean);
+
+  return items.length
+    ? items.join('، ')
+    : firstText(order.logistical_description, order.product_name, order.product, order.description);
+}
+
+function productImage(order: Record<string, any>): string | undefined {
+  const direct = firstText(order.product_image, order.image_url, order.image);
+  if (direct) return direct;
+  const details = Array.isArray(order.details) ? order.details : [];
+  for (const item of details) {
+    const row = record(item);
+    const image = firstText(row.image_url, row.product_image, row.image);
+    if (image) return image;
+  }
+  return undefined;
+}
+
+function historyEventKey(orderId: string, row: Record<string, any>, fallbackStatus: string): string {
+  const override = firstText(row.__stableEventKey);
+  const rowId = firstText(row.id, row.pk, row.history_id);
+  const values = override
+    ? [orderId, override]
+    : rowId
+      ? [orderId, rowId]
+      : [
+          orderId,
+          firstText(row.status) || fallbackStatus,
+          firstText(row.created_at, row.updated_at) || '',
+          firstText(row.comment) || '',
+          firstText(row.agent) || '',
+        ];
+  return createHash('sha256').update(values.join('|'), 'utf8').digest('hex');
+}
+
 export class MaystroAdapter {
-  /**
-   * تحويل Payload الخاص بـ Maystro Delivery إلى صيغة TrackingEvent المعيارية
-   */
-  static normalize(merchantId: string, rawPayload: any): TrackingEvent {
-    let payload = rawPayload && typeof rawPayload === 'object' ? rawPayload : {};
+  /** Backward-compatible normalizer for the original query-key webhook route. */
+  static normalize(merchantId: string, rawPayload: unknown): TrackingEvent {
+    let payload: Record<string, any>;
+    if (Array.isArray(rawPayload)) {
+      payload = record(rawPayload[0]);
+    } else {
+      payload = record(rawPayload);
+    }
 
-    // دعم الطرود الملتفة داخل { order: {...} } أو { data: {...} } أو مصفوفات
     if (payload.order && typeof payload.order === 'object') {
-      payload = payload.order;
+      payload = record(payload.order);
     } else if (payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
-      payload = payload.data;
-    } else if (Array.isArray(payload) && payload.length > 0) {
-      payload = payload[0];
+      payload = record(payload.data);
+    } else if (payload.payload && typeof payload.payload === 'object') {
+      payload = record(payload.payload);
     }
 
-    // 1. استخراج رقم التتبع (Tracking Barcode / Code)
+    const orderId = firstText(payload.id, payload.order_id, payload.uuid);
     const trackingNumber = extractFirst(payload, [
-      'tracking_id',
-      'tracking_number',
-      'tracking',
-      'barcode',
-      'code_suivi',
-      'id',
-      'order_id',
+      'display_id', 'tracking_id', 'tracking_number', 'tracking', 'barcode', 'code_suivi', 'id', 'order_id',
     ]);
+    const carrierExternalOrderId = extractFirst(payload, [
+      'external_order_id', 'external_id', 'order_number', 'reference',
+    ]);
+    const externalOrderId = carrierExternalOrderId || trackingNumber || `MAYSTRO-${orderId || 'UNKNOWN'}`;
 
-    // 2. استخراج رقم الطلب الخارجي (external_order_id في Maystro)
-    const externalOrderId = extractFirst(
-      payload,
-      [
-        'external_order_id',
-        'external_id',
-        'order_number',
-        'order_id',
-        'reference',
-        'id',
-      ],
-      trackingNumber || 'MAYSTRO_ORDER'
-    )!;
-
-    // 3. استخراج بيانات العميل
     const customerName = extractFirst(payload, [
-      'customer_name',
-      'client_name',
-      'client',
-      'name',
-      'destinataire',
-      'nom',
+      'customer_name', 'client_name', 'client', 'name', 'destinataire', 'nom',
     ]);
-
-    // استخراج الهاتف وتطبيع الصيغة الجزائرية (+213)
-    const rawPhone = extractFirst(payload, [
-      'customer_phone',
-      'phone',
-      'telephone',
-      'mobile',
-      'tel',
-      'client_phone',
+    const customerPhone = normalizeAlgerianPhone(extractFirst(payload, [
+      'customer_phone', 'phone', 'telephone', 'mobile', 'tel', 'client_phone',
+    ]));
+    let name = productDescription(payload) || extractFirst(payload, [
+      'product_name', 'product', 'produit', 'logistical_description',
     ]);
-    const customerPhone = normalizeAlgerianPhone(rawPhone);
-
-    // 4. استخراج اسم المنتج وقيمته
-    let productName = extractFirst(payload, [
-      'product_name',
-      'product',
-      'produit',
-      'logistical_description',
-    ]);
-
-    // Maystro تمرر قائمة المنتجات أحياناً كمصفوفة products: [...]
-    if (!productName && Array.isArray(payload.products) && payload.products.length > 0) {
-      const firstProduct = payload.products[0];
-      if (typeof firstProduct === 'string') {
-        productName = firstProduct;
-      } else if (firstProduct && typeof firstProduct === 'object') {
-        productName = firstProduct.name || firstProduct.description || firstProduct.title;
-      }
+    if (!name && Array.isArray(payload.products) && payload.products.length) {
+      name = payload.products.map((item: unknown) => {
+        if (typeof item === 'string') return item;
+        const row = record(item);
+        const label = firstText(row.name, row.description, row.title);
+        const quantity = Number(row.quantity);
+        return label && Number.isFinite(quantity) && quantity > 1 ? `${label} × ${quantity}` : label;
+      }).filter(Boolean).join('، ');
     }
 
-    // 5. نوع التوصيل (delivery_type: 0 = Domicile, 1 = Point de retrait / Stopdesk)
-    const rawDeliveryType = extractFirst(payload, ['delivery_type', 'type_livraison', 'type']);
-    const isStopdesk =
-      rawDeliveryType === '1' ||
-      safeLower(rawDeliveryType).includes('point') ||
-      safeLower(rawDeliveryType).includes('retrait') ||
-      safeLower(rawDeliveryType).includes('stopdesk');
-
-    // 6. استخراج الولاية والبلدية
-    const rawWilaya = payload.wilaya;
-    let wilayaName = '';
-    if (typeof rawWilaya === 'number' && ALGERIA_WILAYAS_58[rawWilaya]) {
-      wilayaName = ALGERIA_WILAYAS_58[rawWilaya];
-    } else if (typeof rawWilaya === 'string') {
-      const num = parseInt(rawWilaya, 10);
-      if (!isNaN(num) && ALGERIA_WILAYAS_58[num]) {
-        wilayaName = ALGERIA_WILAYAS_58[num];
-      } else {
-        wilayaName = rawWilaya;
-      }
+    const rawStatus = extractFirst(payload, [
+      'status', 'current_status', 'statut', 'etat', 'state', 'order_status',
+    ], '4') || '4';
+    const rawReason = extractFirst(payload, [
+      'reason', 'motif', 'motif_retour', 'sub_status', 'note_to_driver', 'note', 'comment', 'commentaire',
+    ]);
+    let mapped = mapMaystroStatus(rawStatus);
+    const reason = normalizeDiacritics(safeLower(rawReason));
+    if (/(injoignable|absent|unreachable|no_answer|no response|ne repond|ne répond)/.test(reason)) {
+      mapped = {
+        statusRaw: 'attempt_failed',
+        statusTitle: 'تعذرت محاولة التوصيل',
+        description: 'تعذر الوصول إلى العميل أثناء محاولة التوصيل.',
+      };
     }
 
-    const rawCommune = extractFirst(payload, ['commune_name', 'commune', 'destination_text', 'address']);
-
-    // 7. استخراج الحالة (status) والملاحظات (note_to_driver / reason)
-    const rawStatus = extractFirst(
-      payload,
-      ['status', 'current_status', 'statut', 'etat', 'state', 'order_status'],
-      'created'
-    );
-
-    const rawReason = extractFirst(
-      payload,
-      [
-        'reason',
-        'motif',
-        'motif_retour',
-        'sub_status',
-        'note_to_driver',
-        'note',
-        'comment',
-        'commentaire',
-      ],
-      ''
-    );
-
-    // تحليل دقيق لحالات Maystro Delivery
-    const parsed = this.parseMaystroStatus(rawStatus!, rawReason!, wilayaName, rawCommune || '', isStopdesk);
+    const metadata: Record<string, unknown> = {
+      provider: 'maystro',
+      maystroOrderId: orderId || null,
+      externalOrderId,
+      displayId: trackingNumber || null,
+      wilaya: payload.wilaya ?? null,
+      commune: payload.commune ?? null,
+      communeName: firstText(payload.commune_name) || null,
+      destinationText: firstText(payload.destination_text, payload.address) || null,
+      deliveryType: payload.delivery_type ?? null,
+      totalPrice: payload.total_price ?? payload.price ?? null,
+    };
 
     return {
       merchantId: safeString(merchantId),
       externalOrderId: safeString(externalOrderId),
       customerName: customerName ? safeString(customerName).trim() : undefined,
       customerPhone: customerPhone || undefined,
-      productName: productName ? safeString(productName).trim() : undefined,
-      statusRaw: parsed.statusRaw,
-      description: parsed.description,
+      productName: name ? safeString(name).trim() : undefined,
+      productImage: productImage(payload),
+      statusRaw: mapped.statusRaw,
+      statusTitle: mapped.statusTitle,
+      description: rawReason ? `${mapped.description} — ${rawReason}` : mapped.description,
       carrierName: 'Maystro Delivery',
       carrierTrackingNumber: trackingNumber || undefined,
+      carrierOrderId: orderId || undefined,
+      carrierExternalOrderId: carrierExternalOrderId || undefined,
+      carrierMetadata: metadata,
     };
   }
 
   /**
-   * القاموس المتخصص لمطابقة حالات Maystro Delivery
+   * Convert a fetched Maystro order plus its full history into ordered
+   * TrackingEvents. Maystro status webhooks are treated as wake-up signals;
+   * order fields and status history are re-read from the authenticated API.
    */
-  private static parseMaystroStatus(
-    statusRaw: string,
-    reasonRaw: string,
-    wilayaName: string,
-    commune: string,
-    isStopdesk: boolean
-  ): { statusRaw: string; description: string } {
-    const status = normalizeDiacritics(safeLower(statusRaw));
-    const reason = normalizeDiacritics(safeLower(reasonRaw));
+  static normalizeOrderHistory(
+    merchantId: string,
+    rawOrder: unknown,
+    rawHistory: unknown,
+    webhookEventType = 'OrderFieldUpdated'
+  ): TrackingEvent[] {
+    const order = record(rawOrder);
+    const orderId = firstText(order.id, order.order_id, order.uuid);
+    if (!orderId) throw new Error('Maystro order response did not include its internal order UUID.');
 
-    const locationText = wilayaName ? ` ${wilayaName}` : '';
-
-    // 1. الإنشاء والتسجيل في النظام (Created / Starter / Draft)
-    if (
-      status.includes('cree') ||
-      status.includes('created') ||
-      status.includes('draft') ||
-      status.includes('starter') ||
-      status.includes('preparation') ||
-      status.includes('pending')
-    ) {
-      return {
-        statusRaw: 'processing',
-        description: 'تم تسجيل الطلب في نظام Maystro Delivery وجاري تحضيره للتسليم للناقل 📦',
-      };
-    }
-
-    // 2. الاستلام من المتجر (Picked up / Ramassé / Reçu)
-    if (
-      status.includes('ramasse') ||
-      status.includes('picked') ||
-      status.includes('pickup') ||
-      status.includes('collecte') ||
-      status.includes('recu') ||
-      status.includes('hub_depart')
-    ) {
-      return {
-        statusRaw: 'dispatched',
-        description: 'استلم مندوب Maystro Delivery الطرد وهو في طريقه إلى مركز الفرز 🚚',
-      };
-    }
-
-    // 3. النقل والعبور بين الولايات (In Transit / En transit / Transfert)
-    if (
-      status.includes('transit') ||
-      status.includes('transfer') ||
-      status.includes('vers') ||
-      status.includes('ligne') ||
-      status.includes('shipped')
-    ) {
-      return {
-        statusRaw: 'in_transit',
-        description: locationText
-          ? `طردك في شاحنة النقل السريع متوجهاً نحو مركز ولاية${locationText} 🚛`
-          : 'الشحنة في طريقها بين الولايات عبر شبكة النقل السريع 🚛',
-      };
-    }
-
-    // 4. نقطة الاستلام / Stopdesk (Point de retrait / Au bureau)
-    if (
-      status.includes('point_de_retrait') ||
-      status.includes('retrait') ||
-      status.includes('bureau') ||
-      status.includes('stopdesk') ||
-      status.includes('agence') ||
-      (isStopdesk && (status.includes('hub') || status.includes('disponible') || status.includes('arrive')))
-    ) {
-      return {
-        statusRaw: 'ready_for_pickup',
-        description: `طردك متوفر وجاهز للاستلام الآن من نقطة استلام Maystro Delivery${locationText} 🏢`,
-      };
-    }
-
-    // 5. مركز التوزيع المحلي (Hub / Centre de tri)
-    if (
-      status.includes('hub') ||
-      status.includes('centre') ||
-      status.includes('arrive') ||
-      status.includes('reception')
-    ) {
-      return {
-        statusRaw: 'at_local_hub',
-        description: `وصل الطرد إلى مركز التوزيع المحلي لـ Maystro Delivery${locationText} وجاري الفرز 🏢`,
-      };
-    }
-
-    // 6. خروج المندوب للتوصيل (Out for delivery / En cours de livraison / Dispatch)
-    if (
-      status.includes('cours') ||
-      status.includes('delivery') ||
-      status.includes('distrib') ||
-      status.includes('livreur') ||
-      status.includes('dispatch') ||
-      status.includes('sortie')
-    ) {
-      return {
-        statusRaw: 'out_for_delivery',
-        description: 'المندوب في طريقه إليك لتسليم الطرد اليوم، يرجى إبقاء هاتفك مفتوحاً 🛵',
-      };
-    }
-
-    // 7. تم التوصيل بنجاح (Delivered / Livré)
-    if (
-      status.includes('livre') ||
-      status.includes('delivered') ||
-      status.includes('completed') ||
-      status.includes('paye') ||
-      status.includes('encaisse')
-    ) {
-      return {
-        statusRaw: 'delivered',
-        description: 'تم تسليم الطرد بنجاح وتحصيل المبلغ، شكراً لثقتكم بنا! 🎉',
-      };
-    }
-
-    // 8. فشل محاولة التوصيل بسبب عدم الرد أو الغياب (COD Return Risk Trigger)
-    if (
-      status.includes('repond') ||
-      status.includes('injoignable') ||
-      status.includes('absent') ||
-      status.includes('unreachable') ||
-      status.includes('no_answer') ||
-      status.includes('failed') ||
-      status.includes('echec') ||
-      reason.includes('repond') ||
-      reason.includes('injoignable') ||
-      reason.includes('absent') ||
-      reason.includes('eteint') ||
-      reason.includes('occupe') ||
-      reason.includes('faux numero')
-    ) {
-      return {
-        statusRaw: 'attempt_failed_no_answer',
-        description: 'تعذر التوصيل: الزبون لا يرد على الهاتف أو الرقم مغلق، يرجى التواصل لتأكيد الموعد ⚠️',
-      };
-    }
-
-    // 9. تأجيل الموعد بطلب الزبون (Postponed / Reporté)
-    if (
-      status.includes('report') ||
-      status.includes('postpone') ||
-      status.includes('retarde') ||
-      reason.includes('report') ||
-      reason.includes('demain')
-    ) {
-      return {
-        statusRaw: 'postponed',
-        description: 'تم تأجيل موعد التسليم بطلب من الزبون إلى وقت لاحق ⏳',
-      };
-    }
-
-    // 10. إرجاع الطرد (Returned / Retour / Annulé)
-    if (
-      status.includes('retour') ||
-      status.includes('returned') ||
-      status.includes('annul') ||
-      status.includes('cancel') ||
-      status.includes('refus') ||
-      reason.includes('refus') ||
-      reason.includes('annul')
-    ) {
-      return {
-        statusRaw: 'returned',
-        description: 'تم إلغاء الطلب وهو في طريق الإرجاع إلى مستودع المتجر ↩️',
-      };
-    }
-
-    // الحالة الافتراضية
-    return {
-      statusRaw: safeLower(statusRaw) || 'in_transit',
-      description: `حالة الشحنة الحالية لدى Maystro Delivery: ${statusRaw}`,
+    const trackingNumber = firstText(order.display_id, order.tracking, order.tracking_number);
+    const carrierExternalOrderId = firstText(order.external_order_id, order.external_id);
+    const externalOrderId = carrierExternalOrderId || trackingNumber || `MAYSTRO-${orderId}`;
+    const productName = productDescription(order);
+    const customerPhone = normalizeAlgerianPhone(firstText(order.customer_phone, order.customer_phone2, order.phone));
+    const fallbackTime = isoTimestamp(order.ordered_at || order.created_at || order.updated_at, new Date().toISOString());
+    const metadata: Record<string, unknown> = {
+      provider: 'maystro',
+      maystroOrderId: orderId,
+      externalOrderId,
+      displayId: trackingNumber || null,
+      wilaya: firstText(order.wilaya) || null,
+      commune: order.commune ?? null,
+      communeName: firstText(order.commune_name) || null,
+      destinationText: firstText(order.destination_text) || null,
+      deliveryType: order.delivery_type ?? null,
+      totalPrice: order.total_price ?? order.price ?? null,
+      productPrice: order.product_price ?? null,
+      customerPhone2: firstText(order.customer_phone2) || null,
+      orderedAt: firstText(order.ordered_at) || null,
+      shippedAt: firstText(order.shipped_at) || null,
+      deliveredAt: firstText(order.delivered_at) || null,
+      abortReason: order.abort_reason ?? null,
+      products: Array.isArray(order.details) ? order.details.map((item: unknown) => {
+        const row = record(item);
+        return {
+          description: firstText(
+            row.description, row.product_name, row.name,
+            record(row.product).name, record(row.product).description
+          ) || null,
+          quantity: row.quantity ?? null,
+          product: row.product ?? null,
+          unitPrice: row.unit_price ?? row.price ?? record(row.product).unit_price ?? null,
+          image: firstText(row.image_url, row.product_image, row.image, record(row.product).image_url) || null,
+        };
+      }) : [],
     };
+
+    let history: Record<string, any>[] = Array.isArray(rawHistory)
+      ? rawHistory.map(record)
+      : Array.isArray(record(rawHistory).results)
+        ? record(rawHistory).results.map(record)
+        : [];
+
+    history = history.filter((row) => row.status !== undefined && row.status !== null);
+    history.sort((a, b) => {
+      const aTime = Date.parse(firstText(a.created_at, a.updated_at) || '') || 0;
+      const bTime = Date.parse(firstText(b.created_at, b.updated_at) || '') || 0;
+      return aTime - bTime;
+    });
+
+    const currentStatus = order.status ?? order.current_status;
+    const lastHistoryStatus = history.length ? history[history.length - 1].status : undefined;
+    if (!history.length) {
+      history = [{
+      status: currentStatus ?? '4',
+      created_at: order.updated_at || order.ordered_at || order.created_at,
+      __stableEventKey: `snapshot:${orderId}:${String(currentStatus ?? '4')}`,
+    }];
+    } else if (
+      currentStatus !== undefined &&
+      currentStatus !== null &&
+      String(currentStatus) !== String(lastHistoryStatus)
+    ) {
+      history.push({
+        status: currentStatus,
+        created_at: order.updated_at || order.last_status_updated_at || order.ordered_at,
+        __stableEventKey: `snapshot:${orderId}:${String(currentStatus)}`,
+      });
+    }
+
+    return history.map((row) => {
+      const statusValue = row.status;
+      const mapped = mapMaystroStatus(statusValue);
+      const comment = firstText(row.comment);
+      const occurredAt = isoTimestamp(row.created_at || row.updated_at, fallbackTime);
+      const eventId = historyEventKey(orderId, row, String(statusValue ?? ''));
+
+      return {
+        merchantId: safeString(merchantId),
+        externalOrderId,
+        customerName: firstText(order.customer_name, order.client_name, order.name),
+        customerPhone: customerPhone || undefined,
+        productName,
+        productImage: productImage(order),
+        statusRaw: mapped.statusRaw,
+        statusTitle: mapped.statusTitle,
+        description: comment
+          ? `${mapped.description} ملاحظة شركة التوصيل: ${comment}`
+          : mapped.description,
+        carrierName: 'Maystro Delivery',
+        carrierTrackingNumber: trackingNumber,
+        carrierOrderId: orderId,
+        carrierExternalOrderId,
+        carrierMetadata: metadata,
+        sourceOccurredAt: occurredAt,
+        sourceEventType: webhookEventType,
+        sourceEventId: eventId,
+        sourceProvider: 'maystro',
+      };
+    });
   }
 }

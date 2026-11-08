@@ -16,7 +16,8 @@ Snapshot checked: 2026-11-08.
 | `POST /api/internal/zrexpress/process` | Signed Railway-worker-only processor; not a provider webhook URL | `apps/web/src/app/api/internal/zrexpress/process/route.ts` → `TrackingOrchestrator` → existing order/notification pipeline |
 | `POST /api/webhooks/zrexpress` | Legacy Procolis-shaped payload only; do not use for modern ZR Supplier API | `apps/web/src/app/api/webhooks/zrexpress/route.ts` → `ZRExpressAdapter.normalize()` |
 | `POST /api/webhooks/procolis` | `ProcolisAdapter.normalize()` | `apps/web/src/app/api/webhooks/procolis/route.ts` → same ZR Express source |
-| `POST /api/webhooks/maystro` | `MaystroAdapter.normalize()` | `apps/web/src/app/api/webhooks/maystro/route.ts` → `packages/orchestrator/src/carriers/maystro.adapter.ts` |
+| `POST /api/webhooks/maystro/{endpointToken}` | Managed Maystro API + Webhook receiver; URL-token lookup, decodes `message.data`, reads full order and order history using the merchant API Token | `apps/web/src/app/api/webhooks/maystro/[endpointToken]/route.ts` → `MaystroAdapter.normalizeOrderHistory()` |
+| `POST /api/webhooks/maystro` | Legacy/query-key compatibility receiver only; retain for existing integrations, do not use for new managed Maystro connections | `apps/web/src/app/api/webhooks/maystro/route.ts` → `MaystroAdapter.normalize()` |
 | `POST /api/webhooks/odoo` | Chooses ZR, EcoTrack, or Yalidine adapter from carrier text | `apps/web/src/app/api/webhooks/odoo/route.ts` |
 | `POST /api/webhooks/shopify` | `ShopifyAdapter.normalize()` | `apps/web/src/app/api/webhooks/shopify/route.ts` → `packages/orchestrator/src/sources/shopify.adapter.ts` |
 
@@ -123,14 +124,27 @@ Source: `packages/orchestrator/src/carriers/zrexpress.adapter.ts`
 
 ### Maystro
 
-Source: `packages/orchestrator/src/carriers/maystro.adapter.ts`
+New managed integration source:
+- Merchant UI: `apps/web/src/app/(dashboard)/merchant/MaystroConnectionPanel.tsx`
+- Server actions: `apps/web/src/app/(dashboard)/merchant/maystro-actions.ts`
+- Credential encryption: `apps/web/src/lib/maystro-credentials.ts`
+- Managed receiver: `apps/web/src/app/api/webhooks/maystro/[endpointToken]/route.ts`
+- Provider normalization: `packages/orchestrator/src/carriers/maystro.adapter.ts`
+- Migration: `apps/web/src/app/migrations/20261108_maystro_api_webhooks.sql`
 
-- The normalizer unwraps `order`, `data`, or the first element of a top-level array.
-- Tracking candidates include `tracking_id`, `tracking_number`, `tracking`, `barcode`, `code_suivi`, `id`, `order_id`.
-- External order candidates include `external_order_id`, `external_id`, `order_number`, `order_id`, `reference`, `id`.
-- Customer, phone, and product aliases are read from the source. A `products` array may supply the first product name when a direct product field is absent.
-- Delivery type recognizes `delivery_type`, `type_livraison`, or `type` and treats a numeric/string `1` or stopdesk/retrait wording as pickup.
-- Status candidates include `status`, `current_status`, `statut`, `etat`, `state`, `order_status`; reason candidates include `reason`, `motif`, `motif_retour`, `sub_status`, `note_to_driver`, `note`, `comment`, `commentaire`.
+Connection contract:
+- Merchant obtains the Store API Token from Maystro `Paramètres → Info personnelles`; the server validates it with the read-only wilayas endpoint and AES-256-GCM encrypts it using `CARRIER_CREDENTIALS_ENCRYPTION_KEY`.
+- TajerTrack creates a random 256-bit callback URL token per merchant. Maystro's merchant dashboard is configured manually under `Paramètres → Webhooks`; no unverified webhook-endpoint CRUD API is assumed.
+- Select `DeliveryInfoUpdated`, `OrderFieldUpdated`, and `OrderDelivered`; use `test` for connection testing. `DeliveryInfoUpdated` refreshes address, wilaya/commune, delivery mode and pricing metadata; it does not create a new shipment-status stage unless the fetched order history contains one. Do not select `all` as the normal production configuration.
+- Maystro webhook notifications are not treated as authenticated status truth. The receiver decodes `message.data` from Base64 (one or two layers), uses the order UUID as a lookup key, then fetches the authoritative order and full history.
+- Order read: `GET https://backend.maystro-delivery.com/api/stores/orders/{uuid}/`; display/tracking lookup: `GET .../api/stores/orders/?display_id={tracking}`.
+- History read: `GET https://b.maystro-delivery.com/api/stores/history_order/{uuid}`.
+- Auth header: `Authorization: Token {apiToken}`.
+- The normalized order preserves `external_order_id`, customer name/phone, products from `details[].description` and quantity, display/tracking number, wilaya, commune, destination, delivery type, totals, internal Maystro UUID, and chronological history comments/timestamps.
+- Numeric Maystro status codes are mapped explicitly. Unknown codes stay `unknown`; never infer them. Duplicate timeline entries are stopped by a stable event hash. Older late-arriving history rows may be inserted but must not roll the current status backwards.
+- The first import writes every historical timeline event but suppresses notification fan-out for old steps; only the latest status emits current customer notifications. A new order may still enqueue its one-time order-confirmation job.
+- The legacy `POST /api/webhooks/maystro?key=...` remains for compatibility only. New merchants use `/api/webhooks/maystro/{endpointToken}`; never expose the API Token in that URL.
+- Apply the Maystro SQL migration before connecting. The webhook is un-signed by Maystro according to the available provider material, so the unpredictable URL token is the receiver's shared secret. A real redacted Maystro test payload is still required to validate the exact envelope before claiming production verification.
 
 ## 3. Status normalization and event behavior
 

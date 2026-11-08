@@ -76,11 +76,26 @@ export default async function MerchantDashboardPage() {
   }
 
   // جلب جميع الطلبات
-  const { data: orders } = await supabaseAdmin
+  const extendedOrdersQuery = await supabaseAdmin
     .from('orders')
-    .select('id, external_order_id, customer_name, customer_phone, current_status, carrier_name, carrier_tracking_number, tracking_uuid, created_at, confirmation_status')
+    .select('id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, carrier_order_id, carrier_metadata, tracking_uuid, created_at, confirmation_status')
     .eq('merchant_id', merchant.id)
     .order('created_at', { ascending: false });
+
+  // Keep the existing merchant dashboard usable during the short deploy/migration
+  // window. Maystro-specific columns become available after its SQL is applied.
+  let orders: any = extendedOrdersQuery.data;
+  if (
+    extendedOrdersQuery.error &&
+    /carrier_order_id|carrier_metadata/i.test(extendedOrdersQuery.error.message || '')
+  ) {
+    const fallbackOrdersQuery = await supabaseAdmin
+      .from('orders')
+      .select('id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, tracking_uuid, created_at, confirmation_status')
+      .eq('merchant_id', merchant.id)
+      .order('created_at', { ascending: false });
+    orders = fallbackOrdersQuery.data;
+  }
 
   // التحقق من صلاحية الاشتراك وتحديثه إذا انتهت المدة
   const now = new Date();

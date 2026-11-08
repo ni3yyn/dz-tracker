@@ -1,3 +1,5 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // تعريف هيكل قاعدة البيانات بالكامل لضمان Type Safety في جميع الحزم والتطبيقات
@@ -59,6 +61,9 @@ export type PushDatabase = {
           current_status: string;
           carrier_name: string | null;
           carrier_tracking_number: string | null;
+          carrier_order_id: string | null;
+          carrier_metadata: Json | null;
+          carrier_last_event_at?: string | null;
           created_at: string;
           updated_at: string;
           telegram_consent_at?: string | null;
@@ -77,6 +82,9 @@ export type PushDatabase = {
           current_status?: string;
           carrier_name?: string | null;
           carrier_tracking_number?: string | null;
+          carrier_order_id?: string | null;
+          carrier_metadata?: Json | null;
+          carrier_last_event_at?: string | null;
           created_at?: string;
           updated_at?: string;
           telegram_consent_at?: string | null;
@@ -95,6 +103,9 @@ export type PushDatabase = {
           current_status?: string;
           carrier_name?: string | null;
           carrier_tracking_number?: string | null;
+          carrier_order_id?: string | null;
+          carrier_metadata?: Json | null;
+          carrier_last_event_at?: string | null;
           created_at?: string;
           updated_at?: string;
           telegram_consent_at?: string | null;

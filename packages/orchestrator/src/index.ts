@@ -15,7 +15,10 @@ export {
   ALGERIA_WILAYAS_58,
   ALGERIA_NEW_WILAYAS_2026,
   resolveCourierWilayaCode,
+  parseMaystroWebhookEnvelope,
+  mapMaystroStatus,
 } from './carriers/maystro.adapter';
+export type { MaystroWebhookEnvelope } from './carriers/maystro.adapter';
 export { TriggerEngine } from './triggers/trigger-engine';
 export { WhatsAppAlertTrigger } from './triggers/whatsapp.trigger';
 export { OutboundWebhookTrigger } from './triggers/webhook.trigger';
@@ -34,10 +37,20 @@ export interface TrackingEvent {
   description?: string;
   carrierName?: string;
   carrierTrackingNumber?: string;
-  /** Provider event time used to reject out-of-order ZR Express webhook deliveries. */
+  /** Provider-side order UUID, distinct from its customer-facing tracking number. */
+  carrierOrderId?: string;
+  /** Actual carrier-provided external/store order reference when present. */
+  carrierExternalOrderId?: string;
+  /** Selected provider order fields retained for merchant-side auditing/display. */
+  carrierMetadata?: Record<string, unknown>;
+  /** Distinguishes provider-specific event ledgers when a webhook has no signature ID. */
+  sourceProvider?: 'zrexpress' | 'maystro';
+  /** Import a historical provider event without firing customer notifications. */
+  suppressTriggers?: boolean;
+  /** Provider event time used to reject out-of-order courier status events. */
   sourceOccurredAt?: string;
   sourceEventType?: string;
-  /** Svix delivery id, persisted with the processed event for durable replay safety. */
+  /** Stable provider event key persisted for replay/idempotency protection. */
   sourceEventId?: string;
   customerTelegramConsent?: boolean;
   telegramConsentSource?: string;
@@ -58,6 +71,36 @@ export interface ProcessEventResult {
   triggers?: TriggerResult[];
   error?: any;
   message?: string;
+}
+
+
+async function recordOrderedCarrierStatus(
+  supabase: any,
+  event: TrackingEvent,
+  orderId: string,
+  displayStatus: string
+) {
+  if (event.sourceProvider === 'maystro') {
+    return supabase.rpc('record_carrier_order_status_change', {
+      p_order_id: orderId,
+      p_merchant_id: event.merchantId,
+      p_provider: 'maystro',
+      p_event_id: event.sourceEventId,
+      p_status_raw: event.statusRaw,
+      p_status_title: displayStatus,
+      p_description: event.description || null,
+      p_occurred_at: event.sourceOccurredAt,
+    });
+  }
+
+  return supabase.rpc('record_order_status_change_ordered', {
+    p_order_id: orderId,
+    p_status_raw: event.statusRaw,
+    p_status_title: displayStatus,
+    p_description: event.description || null,
+    p_occurred_at: event.sourceOccurredAt,
+    p_source_event_id: event.sourceEventId || null,
+  });
 }
 
 export class TrackingOrchestrator {
@@ -149,17 +192,30 @@ export class TrackingOrchestrator {
         if (event.carrierName) {
           updatePayload.carrier_name = event.carrierName;
         }
-        if (event.carrierTrackingNumber && !existingOrder.carrier_tracking_number) {
-          updatePayload.carrier_tracking_number = event.carrierTrackingNumber;
-        }
-        if (event.customerPhone && !existingOrder.customer_phone) {
-          updatePayload.customer_phone = event.customerPhone;
-        }
-        if (event.customerName && !existingOrder.customer_name) {
-          updatePayload.customer_name = event.customerName;
-        }
-        if (event.productName && !existingOrder.product_name) {
-          updatePayload.product_name = event.productName;
+        if (event.sourceProvider === 'maystro') {
+          // Maystro OrderFieldUpdated events can change customer/product details;
+          // refresh the snapshot from the authenticated API instead of retaining stale values.
+          if (event.carrierTrackingNumber) updatePayload.carrier_tracking_number = event.carrierTrackingNumber;
+          if (event.carrierOrderId) updatePayload.carrier_order_id = event.carrierOrderId;
+          if (event.carrierExternalOrderId) updatePayload.external_order_id = event.carrierExternalOrderId;
+          if (event.carrierMetadata) updatePayload.carrier_metadata = event.carrierMetadata as any;
+          if (event.productImage) updatePayload.product_image = event.productImage;
+          if (event.customerPhone) updatePayload.customer_phone = event.customerPhone;
+          if (event.customerName) updatePayload.customer_name = event.customerName;
+          if (event.productName) updatePayload.product_name = event.productName;
+        } else {
+          if (event.carrierTrackingNumber && !existingOrder.carrier_tracking_number) {
+            updatePayload.carrier_tracking_number = event.carrierTrackingNumber;
+          }
+          if (event.customerPhone && !existingOrder.customer_phone) {
+            updatePayload.customer_phone = event.customerPhone;
+          }
+          if (event.customerName && !existingOrder.customer_name) {
+            updatePayload.customer_name = event.customerName;
+          }
+          if (event.productName && !existingOrder.product_name) {
+            updatePayload.product_name = event.productName;
+          }
         }
 
         await this.supabase
@@ -171,23 +227,18 @@ export class TrackingOrchestrator {
         // order, rejects stale provider timestamps, and records every verified
         // state/situation/return event (including same-category situations).
         if (event.sourceOccurredAt) {
-          const { data: orderedResult, error: orderedError } = await (this.supabase as any).rpc(
-            'record_order_status_change_ordered',
-            {
-              p_order_id: orderId,
-              p_status_raw: event.statusRaw,
-              p_status_title: displayStatus,
-              p_description: event.description || null,
-              p_occurred_at: event.sourceOccurredAt,
-              p_source_event_id: event.sourceEventId || null,
-            }
+          const { data: orderedResult, error: orderedError } = await recordOrderedCarrierStatus(
+            this.supabase,
+            event,
+            orderId,
+            displayStatus
           );
           if (orderedError) throw orderedError;
           const actuallyChanged = orderedResult?.[0]?.changed === true;
           if (!actuallyChanged) {
             return { success: true, trackingUuid, deduplicated: true, isNewOrder: false };
           }
-          const triggers = await this.dispatchTriggers({
+          const triggers = event.suppressTriggers ? [] : await this.dispatchTriggers({
             event,
             orderId,
             trackingUuid,
@@ -367,6 +418,10 @@ export class TrackingOrchestrator {
             carrier_last_event_at: event.sourceOccurredAt || null,
             carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,
+            ...(event.sourceProvider === 'maystro' ? {
+              carrier_order_id: event.carrierOrderId || null,
+              carrier_metadata: event.carrierMetadata || null,
+            } : {}),
             telegram_consent_at: event.customerTelegramConsent ? new Date().toISOString() : null,
             telegram_consent_source: event.customerTelegramConsent ? (event.telegramConsentSource || 'checkout') : null,
             telegram_consent_version: event.customerTelegramConsent ? (event.telegramConsentVersion || 'v1') : null,
@@ -384,20 +439,15 @@ export class TrackingOrchestrator {
             let triggers: TriggerResult[] | undefined = undefined;
 
             if (event.sourceOccurredAt) {
-              const { data: orderedResult, error: orderedError } = await (this.supabase as any).rpc(
-                'record_order_status_change_ordered',
-                {
-                  p_order_id: orderId,
-                  p_status_raw: event.statusRaw,
-                  p_status_title: displayStatus,
-                  p_description: event.description || null,
-                  p_occurred_at: event.sourceOccurredAt,
-                  p_source_event_id: event.sourceEventId || null,
-                }
+              const { data: orderedResult, error: orderedError } = await recordOrderedCarrierStatus(
+                this.supabase,
+                event,
+                orderId,
+                displayStatus
               );
               if (orderedError) throw orderedError;
               const actuallyChanged = orderedResult?.[0]?.changed === true;
-              if (actuallyChanged) {
+              if (actuallyChanged && !event.suppressTriggers) {
                 triggers = await this.dispatchTriggers({
                   event,
                   orderId,
@@ -460,18 +510,27 @@ export class TrackingOrchestrator {
         // Explicitly classify initial history as order_created (bypasses push notification fanout)
         await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description, 'order_created', event.sourceOccurredAt, Boolean(event.sourceEventId));
         if (event.sourceEventId && event.sourceOccurredAt) {
+          const isMaystro = event.sourceProvider === 'maystro';
           const { error: appliedEventError } = await (this.supabase as any)
-            .from('zrexpress_webhook_applied_events')
-            .insert({
-              merchant_id: event.merchantId,
-              svix_id: event.sourceEventId,
-              order_id: orderId,
-              occurred_at: event.sourceOccurredAt,
-            });
+            .from(isMaystro ? 'carrier_order_applied_events' : 'zrexpress_webhook_applied_events')
+            .insert(isMaystro
+              ? {
+                  merchant_id: event.merchantId,
+                  provider: 'maystro',
+                  event_id: event.sourceEventId,
+                  order_id: orderId,
+                  occurred_at: event.sourceOccurredAt,
+                }
+              : {
+                  merchant_id: event.merchantId,
+                  svix_id: event.sourceEventId,
+                  order_id: orderId,
+                  occurred_at: event.sourceOccurredAt,
+                });
           if (appliedEventError && appliedEventError.code !== '23505') throw appliedEventError;
         }
 
-        const triggers = await this.dispatchTriggers({
+        const triggers = event.suppressTriggers ? [] : await this.dispatchTriggers({
           event,
           orderId,
           trackingUuid,
@@ -564,6 +623,18 @@ export class TrackingOrchestrator {
    * 3. رقم هاتف الزبون للشحنات المفتوحة حديثاً في حال نسي التاجر كتابة رقم الطلب
    */
   private async findExistingOrder(event: TrackingEvent) {
+    // Provider internal IDs are more stable than display/tracking numbers.
+    if (event.carrierOrderId && event.carrierName) {
+      const { data } = await this.supabase
+        .from('orders')
+        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name')
+        .eq('merchant_id', event.merchantId)
+        .eq('carrier_name', event.carrierName)
+        .eq('carrier_order_id', event.carrierOrderId)
+        .maybeSingle();
+      if (data) return data;
+    }
+
     // أ) محاولة المطابقة برقم الطلب الخارجي (مثال: #1042)
     if (event.externalOrderId && event.externalOrderId !== 'UNKNOWN_ORDER') {
       const { data } = await this.supabase
