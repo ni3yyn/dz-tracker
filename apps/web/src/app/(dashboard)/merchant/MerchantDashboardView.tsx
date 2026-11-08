@@ -189,11 +189,10 @@ const SAMPLE_PREVIEW_EVENTS: TimelineEvent[] = [
 ];
 
 const BRANDING_CATEGORIES = [
-  { id: 'identity', number: '01', label: 'هوية المتجر', description: 'اللون والوصف' },
-  { id: 'appearance', number: '02', label: 'المظهر', description: 'الخلفية والخطوط والبطاقات' },
-  { id: 'layout', number: '03', label: 'التخطيط', description: 'السجل والعرض والمسافات' },
-  { id: 'motion', number: '04', label: 'الحركة', description: 'مستوى التأثيرات' },
-  { id: 'customer', number: '05', label: 'تجربة الزبون', description: 'الدعم والمعلومات الظاهرة' },
+  { id: 'identity', number: '01', label: 'الهوية', description: 'العلامة والألوان' },
+  { id: 'appearance', number: '02', label: 'المظهر', description: 'الخلفية والخطوط والحركة' },
+  { id: 'layout', number: '03', label: 'تخطيط الصفحة', description: 'الترتيب والمسافات' },
+  { id: 'customer', number: '04', label: 'معلومات الزبون', description: 'الدعم والمحتوى الظاهر' },
 ] as const;
 type BrandingCategory = typeof BRANDING_CATEGORIES[number]['id'];
 
@@ -600,9 +599,8 @@ const BRAND_PRESETS: BrandPreset[] = [
 
 const BRAND_CATEGORY_DEFAULT_KEYS: Record<BrandingCategory, (keyof EditableBrandSettings)[]> = {
   identity: ['brandColor', 'brandSubtitle'],
-  appearance: ['bgStyle', 'themeMode', 'backgroundBlur', 'cardSurface', 'cardRadius', 'fontFamily'],
+  appearance: ['bgStyle', 'themeMode', 'backgroundBlur', 'cardSurface', 'cardRadius', 'fontFamily', 'animationLevel', 'animateBackgroundBlobs'],
   layout: ['timelineDesign', 'timelineLineStyle', 'cardWidth', 'headerDensity', 'accentBarStyle'],
-  motion: ['animationLevel', 'animateBackgroundBlobs'],
   customer: ['showWhatsAppButton', 'supportPhone', 'announcementText', 'showCarrierBadge', 'showProductSection', 'showLiveBadge', 'showOrderNumberBadge'],
 };
 
@@ -2562,6 +2560,124 @@ export async function registerSavedOrder(savedOrder) {
           .dz-branding-preview-status { max-width: 100%; }
         }
 
+
+        /* Brand Studio layout refinement: full workspace, clearer hierarchy and balanced live preview. */
+        .dz-admin-root .dz-main-branding {
+          min-width: 0;
+          padding-inline: clamp(14px, 1.35vw, 28px) !important;
+          padding-bottom: 34px !important;
+        }
+        .dz-branding-workspace { width: 100%; max-width: none; padding-bottom: 116px; }
+        .dz-branding-panel-head { margin-bottom: 22px; }
+        .dz-branding-panel-head h2 { font-size: clamp(24px, 2vw, 29px); line-height: 1.35; letter-spacing: -.045em; }
+        .dz-branding-panel-head p { max-width: 760px; font-size: 13px; line-height: 1.8; }
+        .dz-branding-kicker { font-size: 10px; margin-bottom: 9px; }
+        .dz-customizer-grid {
+          width: 100%;
+          grid-template-columns: minmax(0, 1.08fr) minmax(390px, .92fr);
+          gap: clamp(24px, 2.15vw, 40px);
+          align-items: start;
+        }
+        #merchant-branding-form { min-width: 0; width: 100%; }
+        .dz-brand-presets {
+          margin-bottom: 20px;
+          padding: 18px;
+          border-radius: 17px;
+          background: rgba(255,254,250,.76);
+        }
+        .dz-brand-presets-heading { align-items: center; margin-bottom: 15px; }
+        .dz-brand-presets-heading h3 { font-size: 17px; }
+        .dz-brand-presets-heading p { font-size: 12px; }
+        .dz-brand-presets-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+        .dz-brand-preset { padding: 9px; border-radius: 12px; gap: 8px; min-height: 100px; }
+        .dz-brand-preset-art { height: 44px; border-radius: 9px; }
+        .dz-brand-preset-copy strong { font-size: 12px; }
+        .dz-brand-preset-copy small { font-size: 10px; line-height: 1.55; min-height: 0; }
+        .dz-branding-categories {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px;
+          margin: 0 0 20px;
+        }
+        .dz-brand-category { min-height: 76px; padding: 13px 14px; gap: 11px; border-radius: 13px; }
+        .dz-brand-category-number { width: 34px; height: 34px; border-radius: 10px; font-size: 11px; }
+        .dz-brand-category-copy { gap: 4px; }
+        .dz-brand-category-copy strong { font-size: 13px; line-height: 1.45; }
+        .dz-brand-category-copy small { font-size: 10px; line-height: 1.5; }
+        .dz-brand-category-mark { font-size: 16px; }
+        .dz-brand-edit-actions { gap: 12px; margin: 0 0 20px; padding: 12px 0 15px; }
+        .dz-brand-edit-state { font-size: 12px; }
+        .dz-brand-tool-button { min-height: 36px; padding: 7px 12px; border-radius: 9px; font-size: 11px; }
+        .dz-branding-workspace .dz-card-box {
+          margin-bottom: 18px !important;
+          padding: clamp(20px, 1.7vw, 28px) !important;
+          border-radius: 16px !important;
+        }
+        .dz-branding-workspace .dz-card-box h3 { font-size: 17px !important; line-height: 1.5; margin-bottom: 16px !important; }
+        .dz-branding-workspace .formLabel { font-size: 13px !important; line-height: 1.6; margin-bottom: 8px; }
+        .dz-branding-workspace .input { min-height: 46px; padding: 12px 15px; font-size: 14px; }
+        .dz-branding-workspace .dz-choice-grid { gap: 11px; }
+        .dz-branding-workspace .dz-choice-card { min-height: 112px; padding: 15px; border-radius: 13px; gap: 8px; }
+        .dz-branding-workspace .dz-choice-title { font-size: 13px; line-height: 1.55; }
+        .dz-branding-workspace .dz-choice-desc { font-size: 11px; line-height: 1.65; }
+        .dz-brand-contrast-note { padding: 12px 14px; font-size: 12px; line-height: 1.7; }
+        .dz-branding-preview-sticky {
+          position: sticky;
+          top: 14px;
+          min-width: 0;
+          min-height: calc(100svh - 150px);
+          align-self: start;
+          justify-content: flex-start;
+          padding: 16px 18px 20px;
+          border: 1px solid rgba(53,88,70,.11);
+          border-radius: 20px;
+          background: linear-gradient(180deg, rgba(255,254,250,.86), rgba(245,247,241,.72));
+          box-shadow: 0 18px 48px -40px rgba(26,48,33,.28);
+        }
+        .dz-branding-preview-status { max-width: 420px; padding: 2px 3px 10px; font-size: 12px; }
+        .dz-phone-chassis {
+          width: min(100%, 420px);
+          height: min(78svh, 820px);
+          min-height: 560px;
+          border-radius: 37px;
+        }
+        .dz-brand-savebar {
+          left: 24px;
+          right: calc(280px + 24px);
+          bottom: 16px;
+          padding: 13px 18px;
+          border-radius: 15px;
+        }
+        .dz-brand-savebar-copy strong { font-size: 13px; }
+        .dz-brand-savebar-copy span:not(.dz-brand-save-indicator) { font-size: 11px; }
+        .dz-brand-save-button { min-height: 44px; min-width: 160px; font-size: 13px !important; }
+        @media (max-width: 1100px) {
+          .dz-admin-root .dz-main-branding { padding-inline: 18px !important; }
+          .dz-brand-savebar { left: 18px; right: 18px; }
+          .dz-branding-preview-sticky { min-height: 0; }
+          .dz-phone-chassis { width: min(100%, 420px); height: min(72svh, 720px); min-height: 520px; }
+        }
+        @media (max-width: 820px) {
+          .dz-customizer-grid { grid-template-columns: minmax(0,1fr); gap: 22px; }
+          .dz-branding-preview-sticky { position: relative; top: auto; min-height: 0; order: 2; }
+          #merchant-branding-form { order: 1; }
+          .dz-phone-chassis { height: min(700px, calc(100svh - 145px)); min-height: 500px; }
+        }
+        @media (max-width: 620px) {
+          .dz-branding-workspace { padding-bottom: 106px; }
+          .dz-branding-panel-head h2 { font-size: 22px; }
+          .dz-branding-panel-head p { font-size: 12px; }
+          .dz-brand-presets { padding: 13px; }
+          .dz-brand-presets-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+          .dz-brand-preset { min-height: 0; }
+          .dz-branding-categories { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+          .dz-brand-category { min-height: 68px; padding: 10px; }
+          .dz-brand-category-copy strong { font-size: 12px; }
+          .dz-brand-category-copy small { font-size: 9px; }
+          .dz-branding-workspace .dz-card-box { padding: 17px !important; }
+          .dz-branding-workspace .dz-choice-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+          .dz-brand-savebar { left: 10px; right: 10px; bottom: 9px; }
+        }
+
         /* Operational dashboard: open layout, strong hierarchy, responsive shipment records. */
         .dz-overview-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--border-soft); margin: 2px 0 30px; background: rgba(255,254,250,.52); }
         .dz-overview-kpi { min-width: 0; text-align: right; padding: 22px 24px; border: 0; border-inline-start: 1px solid var(--border-soft); background: transparent; color: var(--ink-main); cursor: pointer; transition: background .16s ease; }
@@ -3871,7 +3987,7 @@ export async function registerSavedOrder(savedOrder) {
         )}
 
         {/* MAIN */}
-        <main className="dz-main dz-scrollable">
+        <main className={`dz-main dz-scrollable ${activeTab === 'branding' ? 'dz-main-branding' : ''}`}>
           
 
           <SiteHeader
@@ -4959,7 +5075,7 @@ export async function registerSavedOrder(savedOrder) {
 
                 )}
 
-                {brandingCategory === 'motion' && (
+                {brandingCategory === 'appearance' && (
                 /* 7. ANIMATION LEVEL */
                 <div className="dz-card-box" style={{ marginBottom: '24px' }}>
                   <h3 style={{ margin: '0 0 14px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
