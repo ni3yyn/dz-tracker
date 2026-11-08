@@ -153,74 +153,12 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
             aria-describedby={`global-dialog-message-${activeDialog.id}`}
             dir="rtl"
           >
-            <div className={styles.brandRow}>
-              <div className={styles.brandLockup}>
-                <img
-                  className={styles.brandMark}
-                  src="/icons/tajertrack-icon.svg"
-                  alt=""
-                  width="42"
-                  height="42"
-                  aria-hidden="true"
-                />
-                <span className={styles.brandCopy}>
-                  <strong>تاجر تراك</strong>
-                  <span>نظام متابعة الطلبات</span>
-                </span>
-              </div>
-              <span className={`${styles.toneTag} ${
-                activeDialog.tone === 'danger'
-                  ? styles.toneTagDanger
-                  : activeDialog.tone === 'warning'
-                    ? styles.toneTagWarning
-                    : styles.toneTagInfo
-              }`}>
-                <i aria-hidden="true" />
-                {activeDialog.tone === 'danger' ? 'تنبيه مهم' : activeDialog.tone === 'warning' ? 'يرجى الانتباه' : 'إشعار'}
-              </span>
-            </div>
-
-            <div className={styles.content}>
-              <div
-                className={`${styles.icon} ${
-                  activeDialog.tone === 'danger'
-                    ? styles.iconDanger
-                    : activeDialog.tone === 'warning'
-                      ? styles.iconWarning
-                      : styles.iconInfo
-                }`}
-                aria-hidden="true"
-              >
-                {activeDialog.tone === 'danger' ? (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 9v4" />
-                    <path d="M12 17h.01" />
-                    <path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-                  </svg>
-                ) : activeDialog.tone === 'warning' ? (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 8v4" />
-                    <path d="M12 16h.01" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 11v5" />
-                    <path d="M12 8h.01" />
-                  </svg>
-                )}
-              </div>
-
-              <div className={styles.copy}>
-                <h2 id={`global-dialog-title-${activeDialog.id}`} className={styles.title}>
-                  {activeDialog.title || (activeDialog.type === 'confirm' ? 'تأكيد الإجراء' : 'تنبيه')}
-                </h2>
-                <p id={`global-dialog-message-${activeDialog.id}`} className={styles.message}>
-                  {activeDialog.message}
-                </p>
-              </div>
-            </div>
+            <h2 id={`global-dialog-title-${activeDialog.id}`} className={styles.title}>
+              {activeDialog.title || (activeDialog.type === 'confirm' ? 'تأكيد الإجراء' : 'تنبيه')}
+            </h2>
+            <p id={`global-dialog-message-${activeDialog.id}`} className={styles.message}>
+              {activeDialog.message}
+            </p>
 
             <div className={styles.actions}>
               {activeDialog.type === 'confirm' && (
@@ -235,9 +173,7 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
               <button
                 ref={confirmButtonRef}
                 type="button"
-                className={`${styles.confirmButton} ${
-                  activeDialog.tone === 'danger' ? styles.confirmDanger : ''
-                }`}
+                className={styles.confirmButton}
                 onClick={() => finishDialog(true)}
               >
                 {activeDialog.confirmLabel || (activeDialog.type === 'confirm' ? 'تأكيد' : 'حسناً')}
