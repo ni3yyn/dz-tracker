@@ -1,5 +1,5 @@
 import { createHmac, randomUUID } from 'node:crypto';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { PushWorkerConfig } from './config.js';
 
 type ZRWebhookJob = {
@@ -27,7 +27,7 @@ function deriveWorkerSigningKey(rootKey: string): Buffer {
 }
 
 export class ZRExpressWebhookWorker {
-  private readonly supabase;
+  private readonly supabase: SupabaseClient;
   private readonly workerId = `zr-webhook-${randomUUID()}`;
   private readonly pollIntervalMs: number;
   private running = false;
@@ -81,7 +81,7 @@ export class ZRExpressWebhookWorker {
   private async claimNext(): Promise<ZRWebhookJob | null> {
     const { data, error } = await this.supabase.rpc('claim_next_zrexpress_webhook_event', {
       p_worker_id: this.workerId,
-      p_lease_seconds: 90,
+      p_lease_seconds: 180,
     });
     if (error) {
       console.error('[ZRExpressWebhookWorker]: Could not claim queued event:', error.message);
