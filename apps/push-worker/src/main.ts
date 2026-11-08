@@ -18,6 +18,9 @@ async function bootstrap(): Promise<void> {
     console.log(`[Bootstrap]: Web Push enabled: ${config.isEnabled}`);
     console.log(`[Bootstrap]: EcoTrack read-only sync enabled: ${config.ecoTrackSyncEnabled}`);
     console.log(`[Bootstrap]: ZR Express webhook worker enabled: ${config.zrExpressWebhookWorkerEnabled}`);
+    if (process.env.ZREXPRESS_WEBHOOK_WORKER_ENABLED === 'true' && !config.zrExpressWebhookWorkerEnabled) {
+      console.warn('[Bootstrap]: ZR Express webhook processing was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
+    }
     if (process.env.CARRIER_SYNC_ENABLED === 'true' && !config.ecoTrackSyncEnabled) {
       console.warn('[Bootstrap]: EcoTrack sync was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
     }
