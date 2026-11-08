@@ -23,7 +23,7 @@ function dateValue(v:unknown):number {
   const n=new Date(raw).getTime();return Number.isFinite(n)?n:0;
 }
 const NOTE=new Set(['','encours','biz','suivi par e-com','information','type de colis','type de livraison']);
-function normalizeSituation(value:unknown):string{return textValue(value).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();}
+function normalizeSituation(value:unknown):string{return textValue(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 export class EcomV2SyncWorker {
   private readonly supabase:SupabaseClient;
   private readonly instanceId=randomUUID();
