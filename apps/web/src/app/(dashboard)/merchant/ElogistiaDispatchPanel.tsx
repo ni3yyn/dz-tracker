@@ -25,7 +25,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
   const prefix = useId();
   const nameParts = (order.customer_name || '').trim().split(/\s+/).filter(Boolean);
   const [firstName, setFirstName] = useState(nameParts[0] || '');
-  const [lastName, setLastName] = useState(nameParts.slice(1).join(' ') || nameParts[0] || '');
+  const [lastName, setLastName] = useState(nameParts.slice(1).join(' '));
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState(order.customer_phone || '');
   const [address, setAddress] = useState('');
@@ -155,7 +155,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
           <label htmlFor={prefix+'-phone'} style={{ display: 'grid', gap: 6 }}>هاتف العميل *
             <input id={prefix+'-phone'} className="dz-input-field" dir="ltr" value={phone} onChange={e=>setPhone(e.target.value)} required maxLength={20}/>
           </label>
-          <label htmlFor={prefix+'-email'} style={{ display: 'grid', gap: 6 }}>البريد الإلكتروني *
+          <label htmlFor={prefix+'-email'} style={{ display: 'grid', gap: 6 }}>البريد الإلكتروني * <span style={{ fontSize: 12, color: '#64748b' }}>تطلب Elogistia هذا الحقل عند إنشاء الشحنة.</span>
             <input id={prefix+'-email'} className="dz-input-field" dir="ltr" type="email" value={email} onChange={e=>setEmail(e.target.value)} required maxLength={254} placeholder="البريد الإلكتروني للعميل"/>
           </label>
         </div>
