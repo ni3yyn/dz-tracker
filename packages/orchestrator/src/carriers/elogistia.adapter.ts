@@ -94,6 +94,7 @@ export class ElogistiaAdapter {
       sourceOccurredAt: occurredAt,
       sourceEventId: eventId || undefined,
       sourceEventType: 'tracking_history',
+      suppressTriggers: data.suppressTriggers === true,
       carrierMetadata: {
         elogistiaTrackingNumber: tracking || null,
         rawStatus: status || null,
