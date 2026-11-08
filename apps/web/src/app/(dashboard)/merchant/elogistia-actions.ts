@@ -314,12 +314,16 @@ export async function createElogistiaShipment(orderId: string, input: {
     const wilayaRows = rowsFrom(wilayaBody);
     const selectedWilaya = wilayaRows.find((item) => String(item.id ?? item.code ?? '') === wilayaId);
     if (!selectedWilaya) throw new Error('الولاية المختارة غير موجودة في قائمة Elogistia الحالية. أعد تحميل الخيارات.');
-    const communeRows = rowsFrom(communeBody);
-    const normalizePlace = (value: unknown) => String(value ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim().toLowerCase();
-    const selectedCommune = communeRows.find((item) =>
-      normalizePlace(item.name ?? item.nom ?? item.commune) === normalizePlace(commune));
-    if (!selectedCommune) throw new Error('البلدية المختارة لا تطابق قائمة Elogistia لهذه الولاية. أعد اختيار البلدية.');
     const wilayaName = String(selectedWilaya.name ?? selectedWilaya.nom ?? selectedWilaya.wilaya ?? input.wilayaName ?? '').trim();
+    const communeRows = rowsFrom(communeBody);
+    const normalizePlace = (value: unknown) => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    const selectedCommune = communeRows.find((item) => {
+      const nameMatches = normalizePlace(item.name ?? item.nom ?? item.commune) === normalizePlace(commune);
+      const rowWilaya = String(item.wilaya_id ?? item.wilaya ?? '').trim();
+      const wilayaMatches = !rowWilaya || rowWilaya === wilayaId || normalizePlace(rowWilaya) === normalizePlace(wilayaName);
+      return nameMatches && wilayaMatches;
+    });
+    if (!selectedCommune) throw new Error('البلدية المختارة لا تطابق قائمة Elogistia لهذه الولاية. أعد اختيار البلدية.');
     const feeRows = rowsFrom(feeBody);
     const feeRow = feeRows.find((item) => String(item.wilaya_id ?? item.wilayaID ?? item.id ?? '') === wilayaId);
     const feeValue = feeRow
