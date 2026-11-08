@@ -22,6 +22,8 @@ export interface PushWorkerConfig {
   zimouSyncIntervalMs: number;
   elogistiaSyncEnabled: boolean;
   elogistiaSyncIntervalMs: number;
+  ecomV2SyncEnabled: boolean;
+  ecomV2SyncIntervalMs: number;
 }
 
 export function loadConfig(): PushWorkerConfig {
@@ -68,6 +70,8 @@ export function loadConfig(): PushWorkerConfig {
     zimouSyncIntervalMs: Math.max(60_000, parseInt(process.env.ZIMOU_SYNC_INTERVAL_MS || '300000', 10)),
     elogistiaSyncEnabled: process.env.ELOGISTIA_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
     elogistiaSyncIntervalMs: Math.max(60_000, parseInt(process.env.ELOGISTIA_SYNC_INTERVAL_MS || '300000', 10)),
+    ecomV2SyncEnabled: process.env.ECOM_V2_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
+    ecomV2SyncIntervalMs: Math.max(60_000, parseInt(process.env.ECOM_V2_SYNC_INTERVAL_MS || '300000', 10)),
   };
 }
 
