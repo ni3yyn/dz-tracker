@@ -5151,7 +5151,7 @@ export async function registerSavedOrder(savedOrder) {
           gap: 16px;
           margin: 0 0 20px;
         }
-        .dz-custom-mapping-form .inputGroup {
+        .dz-custom-mapping-form .dz-custom-mapping-group {
           display: flex;
           flex-direction: column;
           gap: 8px;
@@ -5162,7 +5162,7 @@ export async function registerSavedOrder(savedOrder) {
           font-size: 12px;
           font-weight: 700;
         }
-        .dz-custom-mapping-input {
+        .dz-mapping-modal-panel .dz-custom-mapping-input {
           box-sizing: border-box;
           width: 100%;
           min-height: 46px;
@@ -5174,12 +5174,12 @@ export async function registerSavedOrder(savedOrder) {
           font-size: 13px;
           box-shadow: none !important;
         }
-        .dz-custom-mapping-input:focus {
+        .dz-mapping-modal-panel .dz-custom-mapping-input:focus {
           border-color: #294b37 !important;
           outline: 2px solid rgba(41,75,55,.13);
           outline-offset: 1px;
         }
-        .dz-custom-mapping-input::placeholder { color: #879187; }
+        .dz-mapping-modal-panel .dz-custom-mapping-input::placeholder { color: #879187; }
         .dz-custom-mapping-actions {
           display: flex;
           align-items: center;
@@ -5188,7 +5188,7 @@ export async function registerSavedOrder(savedOrder) {
           padding-top: 17px;
           border-top: 1px solid #dfe3d9;
         }
-        .dz-custom-mapping-submit {
+        .dz-mapping-modal-panel .dz-custom-mapping-submit {
           min-height: 44px;
           padding: 0 18px;
           border: 1px solid #294b37;
@@ -5199,11 +5199,11 @@ export async function registerSavedOrder(savedOrder) {
           font-weight: 750;
           cursor: pointer;
         }
-        .dz-custom-mapping-submit:hover:not(:disabled) {
+        .dz-mapping-modal-panel .dz-custom-mapping-submit:hover:not(:disabled) {
           border-color: #1d3427;
           background: #1d3427;
         }
-        .dz-custom-mapping-submit:disabled { opacity: .55; cursor: wait; }
+        .dz-mapping-modal-panel .dz-custom-mapping-submit:disabled { opacity: .55; cursor: wait; }
         @media (max-width: 600px) {
           .dz-mapping-modal-backdrop { padding: 12px; }
           .dz-mapping-modal-panel { padding: 20px 16px; max-height: 92dvh; }
