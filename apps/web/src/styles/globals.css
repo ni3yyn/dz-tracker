@@ -24,3 +24,66 @@ select:focus,
   outline: none !important;
   box-shadow: none !important;
 }
+
+
+/* App-wide button contract:
+   square corners everywhere, with compact text padding and undisturbed icon controls. */
+:where(
+  button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  [role="button"],
+  a[class*="btn" i],
+  a[class*="button" i],
+  a[class*="primary" i],
+  a[class*="cta" i],
+  a.mobilePrimary,
+  a.navPrimary,
+  a.primaryButton,
+  a.finalCtaButton,
+  a.floatingWhatsApp,
+  a.retryBtn,
+  a.homeLink,
+  a.upsellCta,
+  a.dz-upsell-hero-badge
+) {
+  border-radius: 0 !important;
+}
+
+:where(
+  button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  [role="button"],
+  a[class*="btn" i],
+  a[class*="button" i],
+  a[class*="primary" i],
+  a[class*="cta" i],
+  a.mobilePrimary,
+  a.navPrimary,
+  a.primaryButton,
+  a.finalCtaButton,
+  a.floatingWhatsApp,
+  a.retryBtn,
+  a.homeLink,
+  a.upsellCta,
+  a.dz-upsell-hero-badge
+) {
+  padding: 6px 10px !important;
+}
+
+/* Keep fixed-size icon, close, toggle and menu controls from being squeezed. */
+:where(
+  button[class*="icon" i],
+  button[class*="toggle" i],
+  button[class*="close" i],
+  button[class*="menu" i],
+  button[class*="action" i],
+  button[class*="reorder" i],
+  button[aria-label]:has(> svg:only-child),
+  [role="button"][aria-label]:has(> svg:only-child)
+) {
+  padding: 0 !important;
+}
