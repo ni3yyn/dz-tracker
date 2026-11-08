@@ -71,8 +71,18 @@ async function apiRequest(path: string, authName: 'key' | 'apiKey', apiKey: stri
   let body: any;
   try { body = await response.json(); }
   catch { throw new Error('أعادت Elogistia استجابة غير مفهومة (HTTP ' + response.status + ').'); }
-  if (response.status === 401 || response.status === 403) throw new Error('رفضت Elogistia API Key. تحقق من المفتاح وصلاحيات الحساب.');
-  if (response.status === 429) throw new Error('وصل حساب Elogistia إلى حد الطلبات. انتظر قليلاً ثم أعد المحاولة.');
+  if (response.status === 401 || response.status === 403) {
+    const error: any = new Error('رفضت Elogistia API Key. تحقق من المفتاح وصلاحيات الحساب.');
+    error.statusCode = response.status;
+    error.providerRejected = true;
+    throw error;
+  }
+  if (response.status === 429) {
+    const error: any = new Error('وصل حساب Elogistia إلى حد الطلبات. انتظر قليلاً ثم أعد المحاولة.');
+    error.statusCode = response.status;
+    error.providerRejected = true;
+    throw error;
+  }
   if (!response.ok || body?.success === false || body?.error) {
     const message = providerError(body);
     const error: any = new Error(message || 'فشل طلب Elogistia (HTTP ' + response.status + ').');
