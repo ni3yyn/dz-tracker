@@ -7,10 +7,11 @@ import { EcoTrackSyncWorker } from './ecotrack-sync.js';
 import { ZRExpressWebhookWorker } from './zrexpress-webhook-worker.js';
 import { ZimouSyncWorker } from './zimou-sync.js';
 import { ElogistiaSyncWorker } from './elogistia-sync.js';
+import { EcomV2SyncWorker } from './ecom-v2-sync.js';
 
 async function bootstrap(): Promise<void> {
   console.log('====================================================');
-  console.log(' TajerTrack Background Workers (Web Push + EcoTrack + ZR Express + Zimou + Elogistia)');
+  console.log(' TajerTrack Background Workers (Web Push + EcoTrack + ZR Express + Zimou + Elogistia + E-com v2)');
   console.log('====================================================');
 
   let config;
@@ -22,8 +23,12 @@ async function bootstrap(): Promise<void> {
     console.log(`[Bootstrap]: ZR Express webhook worker enabled: ${config.zrExpressWebhookWorkerEnabled}`);
     console.log(`[Bootstrap]: Zimou read-only status sync enabled: ${config.zimouSyncEnabled}`);
     console.log(`[Bootstrap]: Elogistia status polling enabled: ${config.elogistiaSyncEnabled}`);
+    console.log(`[Bootstrap]: E-com Delivery v2 status polling enabled: ${config.ecomV2SyncEnabled}`);
     if (process.env.ZREXPRESS_WEBHOOK_WORKER_ENABLED === 'true' && !config.zrExpressWebhookWorkerEnabled) {
       console.warn('[Bootstrap]: ZR Express webhook processing was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
+    }
+    if (process.env.ECOM_V2_SYNC_ENABLED === 'true' && !config.ecomV2SyncEnabled) {
+      console.warn('[Bootstrap]: E-com Delivery v2 sync was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
     }
     if (process.env.ELOGISTIA_SYNC_ENABLED === 'true' && !config.elogistiaSyncEnabled) {
       console.warn('[Bootstrap]: Elogistia sync was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
@@ -46,6 +51,7 @@ async function bootstrap(): Promise<void> {
   const zrExpressWebhookWorker = config.zrExpressWebhookWorkerEnabled ? new ZRExpressWebhookWorker(config) : null;
   const zimouSync = config.zimouSyncEnabled ? new ZimouSyncWorker(config) : null;
   const elogistiaSync = config.elogistiaSyncEnabled ? new ElogistiaSyncWorker(config) : null;
+  const ecomV2Sync = config.ecomV2SyncEnabled ? new EcomV2SyncWorker(config) : null;
 
   let pushWorker: WebPushWorker | null = null;
   let pushLoop: Promise<void> | null = null;
@@ -53,6 +59,7 @@ async function bootstrap(): Promise<void> {
   let zrExpressWebhookLoop: Promise<void> | null = null;
   let zimouSyncLoop: Promise<void> | null = null;
   let elogistiaSyncLoop: Promise<void> | null = null;
+  let ecomV2SyncLoop: Promise<void> | null = null;
   let shutdownPromise: Promise<void> | null = null;
 
   if (config.isEnabled) {
@@ -101,10 +108,10 @@ async function bootstrap(): Promise<void> {
     shutdownPromise = (async () => {
       ecoTrackSync?.stop();
       zimouSync?.stop();
-      elogistiaSync?.stop();
+      elogistiaSync?.stop();\n      ecomV2Sync?.stop();
       await zrExpressWebhookWorker?.stop();
       await pushWorker?.stop();
-      const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop, elogistiaSyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
+      const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop, elogistiaSyncLoop, ecomV2SyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
       await Promise.allSettled(loops);
       console.log('[Bootstrap]: Graceful shutdown complete.');
       process.exit(0);
@@ -118,7 +125,7 @@ async function bootstrap(): Promise<void> {
   const heartbeat = setInterval(() => {
     const status = health.getStatus();
     console.log(
-      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'} | Zimou sync: ${zimouSync ? 'enabled' : 'disabled'} | Elogistia sync: ${elogistiaSync ? 'enabled' : 'disabled'}`
+      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'} | Zimou sync: ${zimouSync ? 'enabled' : 'disabled'} | Elogistia sync: ${elogistiaSync ? 'enabled' : 'disabled'} | E-com v2 sync: ${ecomV2Sync ? 'enabled' : 'disabled'}`
     );
   }, 30000);
 
