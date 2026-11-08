@@ -424,7 +424,7 @@ export function TrackingLiveView({
             <h1 className={styles.entranceGreeting}>
               {customerName ? <>مرحباً، <span>{cleanName(customerName)}</span></> : 'مرحباً بك'}
             </h1>
-            <p className={styles.entranceCaption}>نحن هنا لمساعدتك في متابعة طلبك</p>
+            <p className={styles.entranceCaption}>صلّ على رسول الله</p>
           </div>
         </div>
       )}
