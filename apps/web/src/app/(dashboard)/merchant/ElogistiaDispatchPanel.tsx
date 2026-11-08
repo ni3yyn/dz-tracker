@@ -2,7 +2,7 @@
 
 import React, { useEffect, useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createElogistiaShipment, getElogistiaDispatchOptions } from './elogistia-actions';
+import { createElogistiaShipment, getElogistiaDispatchOptions, getElogistiaDispatchStatus } from './elogistia-actions';
 
 type Props = {
   order: {
@@ -45,18 +45,25 @@ export function ElogistiaDispatchPanel({ order }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successTracking, setSuccessTracking] = useState(order.carrier_tracking_number || '');
+  const [attemptState, setAttemptState] = useState<'pending' | 'failed' | 'uncertain' | 'created' | null>(null);
+  const [attemptError, setAttemptError] = useState('');
 
   useEffect(() => {
     let active = true;
-    getElogistiaDispatchOptions().then(result => {
+    Promise.all([getElogistiaDispatchOptions(), getElogistiaDispatchStatus(order.id)]).then(([options, dispatch]) => {
       if (!active) return;
-      if (!result.success) throw new Error(result.error || 'تعذر تحميل ولايات Elogistia.');
-      setWilayas(result.wilayas || []);
+      if (!options.success) throw new Error(options.error || 'تعذر تحميل ولايات Elogistia.');
+      setWilayas(options.wilayas || []);
+      if (dispatch.success && dispatch.attempt) {
+        setAttemptState(dispatch.attempt.attempt_state);
+        setAttemptError(dispatch.attempt.error_message || '');
+        if (dispatch.attempt.tracking_number) setSuccessTracking(dispatch.attempt.tracking_number);
+      }
     }).catch((reason: any) => {
       if (active) setError(reason?.message || 'تعذر تحميل بيانات Elogistia.');
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [order.id]);
 
   async function selectWilaya(value: string) {
     setWilayaId(value); setCommune(''); setCommunes([]); setRates(null);
@@ -87,6 +94,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
         throw new Error(result.error || 'تعذر إنشاء الشحنة لدى Elogistia.');
       }
       setSuccessTracking(result.trackingNumber);
+      setAttemptState('created');
       router.refresh();
     } catch (reason: any) {
       setError(reason?.message || 'تعذر إنشاء الشحنة لدى Elogistia.');
@@ -95,6 +103,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
 
   const assigned = Boolean(order.carrier_tracking_number);
   const alreadyElogistia = order.carrier_name === 'Elogistia' && assigned;
+  const unresolvedAttempt = attemptState === 'pending' || attemptState === 'uncertain';
   return <section className="dz-int-guided-panel" style={{ marginTop: 14 }}>
     <div className="dz-int-guided-panel-title">
       <span className="dz-int-guided-number">E</span>
@@ -107,8 +116,13 @@ export function ElogistiaDispatchPanel({ order }: Props) {
       </div>
     ) : assigned ? (
       <p className="dz-int-guided-note" role="status">هذا الطلب مرتبط بالفعل بشركة {order.carrier_name || 'توصيل'} وبرقم تتبع {order.carrier_tracking_number}. لن ننشئ بوليصة ثانية لتفادي الشحن المكرر.</p>
+    ) : unresolvedAttempt ? (
+      <div role="alert" className="dz-int-guided-note" style={{ color: '#92400e', background: '#fff7e6', padding: 14, borderRadius: 9, lineHeight: 1.8 }}>
+        <strong>{attemptState === 'pending' ? 'توجد محاولة إنشاء قيد المعالجة.' : 'لم نستطع تأكيد نتيجة محاولة Elogistia السابقة.'}</strong>
+        <p style={{ margin: '6px 0' }}>لا تضغط إنشاء مرة أخرى الآن. افحص لوحة Elogistia وابحث عن الطلب بالمرجع <b dir="ltr">{order.external_order_id}</b>. إذا ظهرت الشحنة، احتفظ برقم تتبعها وتواصل مع الدعم. {attemptError}</p>
+      </div>
     ) : loading ? <p className="dz-int-guided-note">جارٍ تحميل ولايات Elogistia...</p> : wilayas.length === 0 ? (
-      <p className="dz-int-guided-note">اربط حساب Elogistia أولاً من قسم التكاملات، ثم أعد فتح تفاصيل الطلب.</p>
+      <p className="dz-int-guided-note" role={error ? 'alert' : 'status'}>{error || 'اربط حساب Elogistia أولاً من قسم التكاملات، ثم أعد فتح تفاصيل الطلب.'}</p>
     ) : (
       <form onSubmit={submit} style={{ display: 'grid', gap: 12, marginTop: 10 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
