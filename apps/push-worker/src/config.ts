@@ -20,6 +20,8 @@ export interface PushWorkerConfig {
   zrExpressWebhookPollIntervalMs: number;
   zimouSyncEnabled: boolean;
   zimouSyncIntervalMs: number;
+  elogistiaSyncEnabled: boolean;
+  elogistiaSyncIntervalMs: number;
 }
 
 export function loadConfig(): PushWorkerConfig {
@@ -64,6 +66,8 @@ export function loadConfig(): PushWorkerConfig {
     zrExpressWebhookPollIntervalMs: Math.max(1000, parseInt(process.env.ZREXPRESS_WEBHOOK_POLL_INTERVAL_MS || '2000', 10)),
     zimouSyncEnabled: process.env.ZIMOU_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
     zimouSyncIntervalMs: Math.max(60_000, parseInt(process.env.ZIMOU_SYNC_INTERVAL_MS || '300000', 10)),
+    elogistiaSyncEnabled: process.env.ELOGISTIA_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
+    elogistiaSyncIntervalMs: Math.max(60_000, parseInt(process.env.ELOGISTIA_SYNC_INTERVAL_MS || '300000', 10)),
   };
 }
 
