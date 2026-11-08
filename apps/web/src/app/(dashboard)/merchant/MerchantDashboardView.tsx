@@ -2493,8 +2493,11 @@ export async function registerSavedOrder(savedOrder) {
           .dz-nav-item { white-space: nowrap; }
           .dz-sidebar-footer { display: none; }
           .dz-main { padding: 24px; max-width: 100%; }
-          .dz-stats-bar { flex-direction: column; }
-          .dz-stat-item:not(:last-child)::after { left: 32px; right: 32px; bottom: 0; top: auto; height: 1px; width: auto; }
+          .dz-stats-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .dz-stat-item { min-width: 0; padding: 14px 16px; border-bottom: 1px solid var(--border-soft); }
+          .dz-stat-item:not(:last-child)::after { display: none; }
+          .dz-stat-item:nth-child(odd) { border-inline-end: 1px solid var(--border-soft); }
+          .dz-stat-item:nth-last-child(-n+2) { border-bottom: 0; }
           .dz-header { flex-direction: column; align-items: flex-start; gap: 16px; }
         }
 
