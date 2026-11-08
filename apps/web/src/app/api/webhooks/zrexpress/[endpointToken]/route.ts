@@ -30,7 +30,7 @@ export async function POST(req: Request, context: RouteContext) {
   } catch {
     return NextResponse.json({ error: 'Could not read webhook body.' }, { status: 400 });
   }
-  if (!rawBody || rawBody.length > 1_000_000) {
+  if (!rawBody || Buffer.byteLength(rawBody, 'utf8') > 1_000_000) {
     return NextResponse.json({ error: 'Webhook body is empty or too large.' }, { status: 400 });
   }
 
@@ -51,7 +51,7 @@ export async function POST(req: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Unknown or disconnected webhook endpoint.' }, { status: 404 });
   }
 
-  let verified: ReturnType<typeof verifyZRExpressWebhook>;
+  let signingSecret = '';
   try {
     const encryptionKey = process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '';
     const credentials = decryptZRExpressCredentials(
@@ -59,13 +59,22 @@ export async function POST(req: Request, context: RouteContext) {
       integration.merchant_id,
       encryptionKey
     );
-    verified = verifyZRExpressWebhook(credentials.signingSecret, rawBody, {
+    signingSecret = credentials.signingSecret;
+  } catch (error: any) {
+    // Encryption/configuration failures are transient server errors: let Svix retry.
+    console.error('[ZRExpressWebhook]: Could not load signing credentials:', error?.message || 'credential decryption failed');
+    return NextResponse.json({ error: 'Webhook receiver could not load its signing configuration.' }, { status: 500 });
+  }
+
+  let verified: ReturnType<typeof verifyZRExpressWebhook>;
+  try {
+    verified = verifyZRExpressWebhook(signingSecret, rawBody, {
       'svix-id': req.headers.get('svix-id') || undefined,
       'svix-timestamp': req.headers.get('svix-timestamp') || undefined,
       'svix-signature': req.headers.get('svix-signature') || undefined,
     });
   } catch (error: any) {
-    // A bad signature/timestamp is a permanent 4xx; secrets and payload are
+    // A bad signature/timestamp is a permanent 4xx; payloads and secrets are
     // deliberately excluded from logs and the response.
     console.warn('[ZRExpressWebhook]: Rejected unverified delivery:', error?.message || 'verification failed');
     return NextResponse.json({ error: 'Invalid ZR Express webhook signature or payload.' }, { status: 401 });
