@@ -289,6 +289,8 @@
     visibility: visible;
     pointer-events: auto;
     transform: translate3d(0, 0, 0);
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .mobileMenuInner,
@@ -306,6 +308,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .header *, .header *::before, .header *::after,
+  .mobileMenu, .mobileMenu *, .mobileMenu *::before, .mobileMenu *::after,
   .dashboardHeader *, .dashboardHeader *::before, .dashboardHeader *::after {
     transition-duration: .01ms !important;
     animation-duration: .01ms !important;
