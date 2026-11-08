@@ -5012,6 +5012,70 @@ export async function registerSavedOrder(savedOrder) {
           background: var(--green-deep);
           color: #fffefa;
         }
+
+        /* STATUS LABELS — quiet, open layout with no nested card treatment */
+        .dz-admin-root .dz-mappings-tab { width: 100%; max-width: 1120px; margin: 0 auto; color: var(--ink-main); }
+        .dz-admin-root .dz-mappings-intro { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; padding: 4px 0 25px; border-bottom:1px solid #e5e9e2; }
+        .dz-admin-root .dz-mappings-eyebrow { display:block; margin-bottom:7px; color:#728276; font-size:11px; font-weight:800; }
+        .dz-admin-root .dz-mappings-intro h2 { margin:0; font-size:clamp(21px,2.4vw,28px); line-height:1.35; font-weight:850; letter-spacing:-.04em; }
+        .dz-admin-root .dz-mappings-intro p,.dz-admin-root .dz-mappings-section-head p { margin:6px 0 0; color:#778278; font-size:13px; line-height:1.75; }
+        .dz-admin-root .dz-mappings-count { flex:0 0 auto; color:#728276; font-size:12px; }
+        .dz-admin-root .dz-mappings-count strong { color:var(--green); font-size:22px; margin-inline-end:5px; }
+        .dz-admin-root .dz-mappings-presets,.dz-admin-root .dz-mappings-create,.dz-admin-root .dz-mappings-list { padding:24px 0; border-bottom:1px solid #e5e9e2; }
+        .dz-admin-root .dz-mappings-section-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; }
+        .dz-admin-root .dz-mappings-section-head h3 { margin:0; color:#26372c; font-size:16px; font-weight:800; }
+        .dz-admin-root .dz-mappings-preset-actions { display:flex; flex-wrap:wrap; gap:9px; }
+        .dz-admin-root .dz-mappings-preset-actions form { margin:0; }
+        .dz-admin-root .dz-mapping-preset { display:inline-flex; align-items:center; justify-content:space-between; gap:18px; min-height:42px; padding:0 13px; border:0; border-radius:4px; background:#e9eee7; color:#344b39; font:700 12px inherit; cursor:pointer; transition:background .16s ease,color .16s ease; }
+        .dz-admin-root .dz-mapping-preset span { color:#718174; font-size:10px; font-weight:700; }
+        .dz-admin-root .dz-mapping-preset:hover { background:#dce7d9; color:var(--green-deep); }
+        .dz-admin-root .dz-mappings-tab .formContainer { margin:0; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+        .dz-admin-root .dz-mappings-tab .formGrid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:14px; }
+        .dz-admin-root .dz-mappings-tab .inputGroup { gap:8px; }
+        .dz-admin-root .dz-mappings-tab .label { color:#526356; font-size:12px; font-weight:750; }
+        .dz-admin-root .dz-mappings-tab .input { min-height:46px; padding:11px 13px; border:1px solid #e1e7df; border-radius:4px; background:#f7f9f5; color:#263b30; font-size:13px; }
+        .dz-admin-root .dz-mappings-tab .input:focus { border-color:#91a895; background:#fff; box-shadow:0 0 0 3px rgba(65,107,82,.09); }
+        .dz-admin-root .dz-mappings-tab .submitBtn { min-height:42px; padding:0 18px; border:1px solid var(--green); border-radius:4px; background:var(--green); color:#fffefa; font:750 12px inherit; box-shadow:none; }
+        .dz-admin-root .dz-mappings-tab .submitBtn:hover:not(:disabled) { background:var(--green-deep); border-color:var(--green-deep); }
+        .dz-admin-root .dz-mappings-tab .submitBtn:disabled { opacity:.55; cursor:wait; }
+        .dz-admin-root .dz-mappings-tab .feedbackSuccess,.dz-admin-root .dz-mappings-tab .feedbackError { font-size:12px; font-weight:650; }
+        .dz-admin-root .dz-mappings-list-head { margin-bottom:12px; }
+        .dz-admin-root .dz-mappings-list-count { display:grid; place-items:center; min-width:30px; height:30px; padding:0 8px; background:#e8eee6; color:#45634b; font-size:12px; font-weight:800; }
+        .dz-admin-root .dz-mappings-rows { border-top:1px solid #e7ebe5; }
+        .dz-admin-root .dz-mapping-row { display:grid; grid-template-columns:minmax(0,1fr) 28px minmax(0,1.15fr) auto; align-items:center; gap:14px; padding:14px 2px; border-bottom:1px solid #e7ebe5; }
+        .dz-admin-root .dz-mapping-source,.dz-admin-root .dz-mapping-display { display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-width:0; }
+        .dz-admin-root .dz-mapping-source>span,.dz-admin-root .dz-mapping-display>span { color:#879188; font-size:10px; font-weight:750; }
+        .dz-admin-root .dz-mapping-source code { max-width:100%; overflow-wrap:anywhere; color:#526356; font-size:12px; }
+        .dz-admin-root .dz-mapping-display strong { color:#2d4533; font-size:13px; font-weight:750; overflow-wrap:anywhere; }
+        .dz-admin-root .dz-mapping-arrow { color:#9aa69a; text-align:center; font-size:17px; }
+        .dz-admin-root .dz-mapping-actions { display:flex; align-items:center; justify-content:flex-end; gap:6px; }
+        .dz-admin-root .dz-mapping-actions form { margin:0; }
+        .dz-admin-root .dz-mapping-action { min-height:34px; padding:0 11px; border:0; border-radius:4px; background:#e9eee7; color:#45634b; font:700 11px inherit; cursor:pointer; }
+        .dz-admin-root .dz-mapping-action:hover:not(:disabled) { background:#dce7d9; color:var(--green-deep); }
+        .dz-admin-root .dz-mapping-action-primary { background:var(--green); color:#fffefa; }
+        .dz-admin-root .dz-mapping-action-primary:hover:not(:disabled) { background:var(--green-deep); color:#fffefa; }
+        .dz-admin-root .dz-mapping-action-delete { background:#f5e9e6; color:#a44739; }
+        .dz-admin-root .dz-mapping-action-delete:hover:not(:disabled) { background:#a44739; color:#fffefa; }
+        .dz-admin-root .dz-mapping-row .input { min-height:38px; padding:7px 10px; }
+        .dz-admin-root .dz-mappings-empty { padding:28px 0; color:#526356; }
+        .dz-admin-root .dz-mappings-empty strong { font-size:14px; }
+        .dz-admin-root .dz-mappings-empty p { margin:5px 0 0; color:#879188; font-size:12px; }
+        @media(max-width:700px) {
+          .dz-admin-root .dz-mappings-intro { align-items:flex-start; flex-direction:column; gap:10px; padding-bottom:18px; }
+          .dz-admin-root .dz-mappings-intro p,.dz-admin-root .dz-mappings-section-head p { font-size:12px; }
+          .dz-admin-root .dz-mappings-presets,.dz-admin-root .dz-mappings-create,.dz-admin-root .dz-mappings-list { padding:19px 0; }
+          .dz-admin-root .dz-mappings-preset-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+          .dz-admin-root .dz-mappings-preset-actions form,.dz-admin-root .dz-mapping-preset { width:100%; }
+          .dz-admin-root .dz-mappings-tab .formGrid { grid-template-columns:minmax(0,1fr); gap:13px; }
+          .dz-admin-root .dz-mappings-tab .formActions { align-items:stretch; flex-direction:column; gap:9px; }
+          .dz-admin-root .dz-mappings-tab .submitBtn { width:100%; }
+          .dz-admin-root .dz-mapping-row { grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr); gap:7px; padding:13px 0; }
+          .dz-admin-root .dz-mapping-arrow { font-size:14px; }
+          .dz-admin-root .dz-mapping-actions { grid-column:1/-1; justify-content:flex-start; padding-top:4px; }
+          .dz-admin-root .dz-mapping-action { min-height:38px; padding:0 14px; }
+          .dz-admin-root .dz-mapping-display strong { font-size:12px; }
+          .dz-admin-root .dz-mapping-source code { font-size:11px; }
+        }
       `}} />
 
       <div className="dz-admin-root">
@@ -6965,90 +7029,111 @@ export async function registerSavedOrder(savedOrder) {
             </div>
           )}
 
-          {/* TAB: MAPPINGS */}
+          {/* TAB: STATUS LABELS */}
           {activeTab === 'mappings' && (
-            <div>
-              <div className="dz-card-box" style={{ marginBottom: '32px' }}>
-                <h3 style={{ margin: '0 0 12px', fontSize: '16px' }}>تطبيق قوالب معربة جاهزة بضغطة زر</h3>
-                <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginBottom: '20px' }}>بدلاً من كتابة الحالات يدوياً، حمّل الحزمة الموصى بها لشركتك:</p>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <section className="dz-mappings-tab" aria-labelledby="dz-mappings-title">
+              <header className="dz-mappings-intro">
+                <div>
+                  <span className="dz-mappings-eyebrow">تجربة التتبع</span>
+                  <h2 id="dz-mappings-title">مسميات الحالات</h2>
+                  <p>حوّل أكواد شركات التوصيل أو متجرك إلى عبارات واضحة يفهمها العميل.</p>
+                </div>
+                <span className="dz-mappings-count"><strong>{mappings.length}</strong> مطابقة مفعّلة</span>
+              </header>
+
+              <section className="dz-mappings-presets" aria-labelledby="dz-presets-title">
+                <div className="dz-mappings-section-head">
+                  <div>
+                    <h3 id="dz-presets-title">ابدأ بحزمة جاهزة</h3>
+                    <p>طبّق المسميات المناسبة لمصدر طلباتك، ويمكنك تعديلها لاحقاً.</p>
+                  </div>
+                </div>
+                <div className="dz-mappings-preset-actions">
                   <form action={async (fd) => { await applyPresetMappings(fd); showToast('تم تطبيق الحزمة بنجاح'); }}>
                     <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="yalidine" />
-                    <button type="submit" className="dz-btn dz-btn-outline">حزمة ياليدين</button>
+                    <button type="submit" className="dz-mapping-preset">ياليدين <span>تطبيق</span></button>
                   </form>
                   <form action={async (fd) => { await applyPresetMappings(fd); showToast('تم تطبيق الحزمة بنجاح'); }}>
                     <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="ecotrack" />
-                    <button type="submit" className="dz-btn dz-btn-outline">حزمة إيكوتراك</button>
+                    <button type="submit" className="dz-mapping-preset">إيكوتراك <span>تطبيق</span></button>
                   </form>
                   <form action={async (fd) => { await applyPresetMappings(fd); showToast('تم تطبيق الحزمة بنجاح'); }}>
                     <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="zrexpress" />
-                    <button type="submit" className="dz-btn dz-btn-outline">حزمة ZR Express</button>
+                    <button type="submit" className="dz-mapping-preset">ZR Express <span>تطبيق</span></button>
                   </form>
                   <form action={async (fd) => { await applyPresetMappings(fd); showToast('تم تطبيق الحزمة بنجاح'); }}>
                     <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="shopify" />
-                    <button type="submit" className="dz-btn dz-btn-outline">حزمة شوبيفاي</button>
+                    <button type="submit" className="dz-mapping-preset">شوبيفاي <span>تطبيق</span></button>
                   </form>
                 </div>
-              </div>
+              </section>
 
-              <div style={{ marginBottom: '32px' }}>
+              <section className="dz-mappings-create" aria-labelledby="dz-create-mapping-title">
+                <div className="dz-mappings-section-head">
+                  <div>
+                    <h3 id="dz-create-mapping-title">إضافة مسمى مخصص</h3>
+                    <p>اربط الحالة الأصلية بالعبارة التي ستظهر في صفحة التتبع.</p>
+                  </div>
+                </div>
                 <MappingForm merchantId={merchantId} />
-              </div>
+              </section>
 
-              <div className="dz-table-wrap">
-                <div className="dz-table-header">
-                  <h3>المطابقات المفعلة ({mappings.length})</h3>
+              <section className="dz-mappings-list" aria-labelledby="dz-active-mappings-title">
+                <div className="dz-mappings-section-head dz-mappings-list-head">
+                  <div>
+                    <h3 id="dz-active-mappings-title">المسميات المفعّلة</h3>
+                    <p>يمكنك تعديل أي مسمى أو حذفه دون التأثير على بقية المطابقات.</p>
+                  </div>
+                  <span className="dz-mappings-list-count">{mappings.length}</span>
                 </div>
-                <div className="dz-table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>الكود الأصلي (Source)</th>
-                        <th>ما يظهر للزبون (Display)</th>
-                        <th style={{ textAlign: 'center' }}>إجراء</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mappings.length === 0 ? (
-                        <tr><td colSpan={3} style={{ textAlign: 'center', padding: '40px', color: 'var(--ink-muted)' }}>لا توجد مطابقات مخصصة. استخدم الحزم الجاهزة أعلاه.</td></tr>
-                      ) : (
-                        mappings.map((m) => {
-                          const isEditing = editingMappingId === m.id;
-                          return (
-                            <tr key={m.id}>
-                              <td><span className="dz-mono">{m.source_status}</span></td>
-                              <td>
-                                {isEditing ? (
-                                  <input type="text" value={editDisplayStatus} onChange={(e) => setEditDisplayStatus(e.target.value)} className="input" style={{ padding: '8px 12px' }} autoFocus />
-                                ) : (
-                                  <span className="dz-pill">{m.display_status}</span>
-                                )}
-                              </td>
-                              <td style={{ textAlign: 'center' }}>
-                                {isEditing ? (
-                                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                    <button onClick={() => handleSaveInlineEdit(m.source_status)} disabled={isSavingEdit} className="dz-btn" style={{ padding: '6px 12px', fontSize: '11px' }}>حفظ</button>
-                                    <button onClick={() => setEditingMappingId(null)} className="dz-btn dz-btn-outline" style={{ padding: '6px 12px', fontSize: '11px' }}>إلغاء</button>
-                                  </div>
-                                ) : (
-                                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                    <button onClick={() => { setEditingMappingId(m.id); setEditDisplayStatus(m.display_status); }} className="dz-btn dz-btn-outline" style={{ padding: '6px 12px', fontSize: '11px' }}>تعديل</button>
-                                    <form action={async (fd) => { await deleteStatusMapping(fd); showToast('تم حذف المطابقة بنجاح'); }}>
-                                      <input type="hidden" name="id" value={m.id} />
-                                      <button type="submit" className="dz-btn dz-btn-outline" style={{ padding: '6px 12px', fontSize: '11px', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}>حذف</button>
-                                    </form>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+
+                {mappings.length === 0 ? (
+                  <div className="dz-mappings-empty">
+                    <strong>لا توجد مسميات مخصصة بعد</strong>
+                    <p>ابدأ بحزمة جاهزة أو أضف أول مطابقة يدوياً.</p>
+                  </div>
+                ) : (
+                  <div className="dz-mappings-rows">
+                    {mappings.map((m) => {
+                      const isEditing = editingMappingId === m.id;
+                      return (
+                        <article className="dz-mapping-row" key={m.id}>
+                          <div className="dz-mapping-source">
+                            <span>الحالة الأصلية</span>
+                            <code className="dz-mono">{m.source_status}</code>
+                          </div>
+                          <div className="dz-mapping-arrow" aria-hidden="true">←</div>
+                          <div className="dz-mapping-display">
+                            <span>ما يراه العميل</span>
+                            {isEditing ? (
+                              <input type="text" value={editDisplayStatus} onChange={(e) => setEditDisplayStatus(e.target.value)} className="input" autoFocus aria-label="المسمى الظاهر للعميل" />
+                            ) : (
+                              <strong>{m.display_status}</strong>
+                            )}
+                          </div>
+                          <div className="dz-mapping-actions">
+                            {isEditing ? (
+                              <>
+                                <button onClick={() => handleSaveInlineEdit(m.source_status)} disabled={isSavingEdit} className="dz-mapping-action dz-mapping-action-primary">{isSavingEdit ? 'جارٍ الحفظ...' : 'حفظ'}</button>
+                                <button onClick={() => setEditingMappingId(null)} className="dz-mapping-action">إلغاء</button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={() => { setEditingMappingId(m.id); setEditDisplayStatus(m.display_status); }} className="dz-mapping-action">تعديل</button>
+                                <form action={async (fd) => { await deleteStatusMapping(fd); showToast('تم حذف المطابقة بنجاح'); }}>
+                                  <input type="hidden" name="id" value={m.id} />
+                                  <button type="submit" className="dz-mapping-action dz-mapping-action-delete">حذف</button>
+                                </form>
+                              </>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </section>
           )}
 
           {/* TAB: BILLING */}
