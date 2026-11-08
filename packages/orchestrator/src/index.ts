@@ -225,11 +225,29 @@ export class TrackingOrchestrator {
 
             if (historyInsertError) throw historyInsertError;
 
+            // Do not notify customers just because an old generic title was
+            // upgraded to its Arabic EcoTrack-specific equivalent. Subsequent
+            // real EcoTrack sub-state changes still pass through normal triggers.
+            const isInitialTitleBackfill = !latestHistory ||
+              latestHistory.status_title === this.formatFallbackStatus(event.statusRaw);
+            const triggers = isInitialTitleBackfill
+              ? []
+              : await this.dispatchTriggers({
+                  event,
+                  orderId,
+                  trackingUuid,
+                  isNewOrder: false,
+                  statusChanged: true,
+                  displayStatus,
+                  options,
+                });
+
             return {
               success: true,
               trackingUuid,
               deduplicated: false,
               isNewOrder: false,
+              triggers,
             };
           }
 
