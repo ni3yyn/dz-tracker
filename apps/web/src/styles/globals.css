@@ -26,9 +26,9 @@ select:focus,
 }
 
 
-/* App-wide button contract:
-   square corners everywhere, with compact text padding and undisturbed icon controls. */
-:where(
+/* App-wide button contract. The ID guard raises specificity above local !important
+   overrides, so dashboard, landing, auth and portal styles cannot re-round controls. */
+html body :is(
   button,
   input[type="button"],
   input[type="submit"],
@@ -47,43 +47,20 @@ select:focus,
   a.homeLink,
   a.upsellCta,
   a.dz-upsell-hero-badge
-) {
+):not(#app-button-radius-reset) {
   border-radius: 0 !important;
-}
-
-:where(
-  button,
-  input[type="button"],
-  input[type="submit"],
-  input[type="reset"],
-  [role="button"],
-  a[class*="btn" i],
-  a[class*="button" i],
-  a[class*="primary" i],
-  a[class*="cta" i],
-  a.mobilePrimary,
-  a.navPrimary,
-  a.primaryButton,
-  a.finalCtaButton,
-  a.floatingWhatsApp,
-  a.retryBtn,
-  a.homeLink,
-  a.upsellCta,
-  a.dz-upsell-hero-badge
-) {
   padding: 6px 10px !important;
 }
 
-/* Keep fixed-size icon, close, toggle and menu controls from being squeezed. */
-:where(
+/* Fixed-size icon-only controls keep their geometry and do not acquire text padding. */
+html body :is(
   button[class*="icon" i],
   button[class*="toggle" i],
   button[class*="close" i],
   button[class*="menu" i],
   button[class*="action" i],
-  button[class*="reorder" i],
-  button[aria-label]:has(> svg:only-child),
-  [role="button"][aria-label]:has(> svg:only-child)
-) {
+  button[class*="reorder" i]
+):not(#app-button-radius-reset) {
+  border-radius: 0 !important;
   padding: 0 !important;
 }
