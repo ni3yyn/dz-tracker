@@ -399,7 +399,7 @@ export async function createElogistiaShipment(orderId: string, input: {
     const body = await apiRequest('insertCommande/', 'apiKey', apiKey, params, 'POST');
     const payload = body?.body ?? body?.data ?? body;
     const parcel = Array.isArray(payload) ? payload[0] : payload;
-    const tracking = String(parcel?.tracking ?? parcel?.Tracking ?? (typeof parcel?.success === 'string' ? parcel.success : '')).trim();
+    const tracking = String(parcel?.tracking ?? parcel?.Tracking ?? parcel?.tracking_number ?? parcel?.trackingNumber ?? (typeof parcel?.success === 'string' ? parcel.success : '')).trim();
     if (!tracking) {
       const message = providerError(body);
       const error: any = new Error(message || 'لم تُرجع Elogistia رقم تتبع بعد طلب الإنشاء. تحقق من لوحة Elogistia باستخدام مرجع الطلب قبل أي إعادة محاولة.');
