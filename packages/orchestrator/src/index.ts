@@ -195,7 +195,7 @@ export class TrackingOrchestrator {
         if (event.carrierName) {
           updatePayload.carrier_name = event.carrierName;
         }
-        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'ecom_v2') {
+        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2') {
           // Carrier API snapshots refresh authoritative provider metadata and recipient fields.
           // refresh the snapshot from the authenticated API instead of retaining stale values.
           if (event.carrierTrackingNumber) updatePayload.carrier_tracking_number = event.carrierTrackingNumber;
