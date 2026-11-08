@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import {
   TrackingOrchestrator,
   ZRExpressWebhookAdapter,
-  type ZRExpressWebhookEvent,
 } from '@saas/orchestrator';
 import type { PushWorkerConfig } from './config.js';
 
@@ -27,7 +26,6 @@ export class ZRExpressWebhookWorker {
   private readonly workerId = `zr-webhook-${randomUUID()}`;
   private readonly pollIntervalMs: number;
   private running = false;
-  private currentJob: ZRWebhookJob | null = null;
   private readonly orchestrator = new TrackingOrchestrator();
 
   constructor(private readonly config: PushWorkerConfig) {
@@ -59,9 +57,7 @@ export class ZRExpressWebhookWorker {
           await this.sleep(this.pollIntervalMs);
           continue;
         }
-        this.currentJob = job;
         await this.process(job);
-        this.currentJob = null;
       } catch (error: any) {
         console.error('[ZRExpressWebhookWorker]: Main loop error:', error?.message || error);
         if (this.running) await this.sleep(this.pollIntervalMs);
