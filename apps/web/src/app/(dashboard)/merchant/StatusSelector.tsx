@@ -2,6 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { updateOrderStatus } from './actions';
+import { BrandedSelect, BrandedSelectOption } from './BrandedSelect';
+
+const BASE_STATUS_OPTIONS: BrandedSelectOption[] = [
+  { value: 'order_placed', label: 'تم استلام الطلب' },
+  { value: 'processing', label: 'قيد التجهيز في المستودع' },
+  { value: 'shipped', label: 'خرج للشحن والتوصيل' },
+  { value: 'in_transit', label: 'في الطريق بين الولايات' },
+  { value: 'out_for_delivery', label: 'مع المندوب للتسليم اليوم' },
+  { value: 'ready_for_pickup', label: 'جاهز للاستلام (Stopdesk)' },
+  { value: 'attempt_failed_no_answer', label: 'تنبيه: تعذر الاتصال / مغلق' },
+  { value: 'delivered', label: 'تم التسليم بنجاح' },
+  { value: 'returned', label: 'مرتجع إلى المتجر' },
+  { value: 'cancelled', label: 'ملغي' },
+];
 
 interface Props {
   orderId: string;
@@ -17,8 +31,9 @@ export function StatusSelector({ orderId, currentStatus }: Props) {
     setStatus(currentStatus);
   }, [currentStatus]);
 
-  async function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const newStatus = e.target.value;
+  async function handleChange(newStatus: string) {
+    if (newStatus === status || loading) return;
+
     setLoading(true);
     setErrorMessage(null);
 
@@ -42,73 +57,20 @@ export function StatusSelector({ orderId, currentStatus }: Props) {
     }
   }
 
+  const statusOptions = BASE_STATUS_OPTIONS.some((option) => option.value === status)
+    ? BASE_STATUS_OPTIONS
+    : [...BASE_STATUS_OPTIONS, { value: status, label: status }];
+
   return (
-    <div className="dz-status-selector" aria-busy={loading} style={{ opacity: loading ? 0.68 : 1 }}>
-
-
-      <select
-        className="dz-status-select"
-        aria-label="تغيير حالة الشحنة"
+    <div className="dz-status-selector" aria-busy={loading} style={{ opacity: loading ? 0.72 : 1 }}>
+      <BrandedSelect
+        ariaLabel="تغيير حالة الشحنة"
         value={status}
         onChange={handleChange}
-        disabled={loading}
-      >
-        <option value="order_placed">تم استلام الطلب</option>
-        <option value="processing">قيد التجهيز في المستودع</option>
-        <option value="in_transit">في الطريق بين الولايات</option>
-        <option value="out_for_delivery">مع المندوب للتسليم اليوم</option>
-        <option value="ready_for_pickup">جاهز للاستلام (Stopdesk)</option>
-        <option value="attempt_failed_no_answer">تنبيه: تعذر الاتصال / مغلق</option>
-        <option value="delivered">تم التسليم بنجاح</option>
-        <option value="returned">مرتجع إلى المتجر</option>
-        <option value="cancelled">ملغي</option>
-
-        {![
-          'order_placed',
-          'processing',
-          'shipped',
-          'in_transit',
-          'out_for_delivery',
-          'ready_for_pickup',
-          'attempt_failed_no_answer',
-          'delivered',
-          'returned',
-          'cancelled',
-        ].includes(status) && (
-          <option value={status}>{status}</option>
-        )}
-      </select>
-
-      <span className="dz-status-select-icon" aria-hidden="true">
-        {loading ? (
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="dz-status-select-spinner"
-          >
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-          </svg>
-        ) : (
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        )}
-      </span>
+        options={statusOptions}
+        variant="status"
+        loading={loading}
+      />
       {errorMessage && <span className="dz-status-select-error" role="alert">{errorMessage}</span>}
     </div>
   );
