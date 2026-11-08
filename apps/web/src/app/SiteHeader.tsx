@@ -165,28 +165,28 @@ export default function SiteHeader({
 
 
     </header>
-    {menuPortalTarget
-      ? createPortal(
-          <div id={menuId} className={`${styles.mobileMenu} ${siteMenuOpen ? styles.mobileMenuOpen : ''}`} aria-hidden={!siteMenuOpen}>
-          <div className={styles.mobileMenuInner}>
-          <nav aria-label="التنقل على الهاتف">
-          <a href="/#how-it-works" onClick={closeSiteMenu}>كيف يعمل</a>
-          <a href="/#features" onClick={closeSiteMenu}>المزايا</a>
-          <a href="/#pricing" onClick={closeSiteMenu}>الأسعار</a>
-          <a href="/#faq" onClick={closeSiteMenu}>الأسئلة الشائعة</a>
-          </nav>
-          <div className={styles.mobileActions}>
-          {!isAuthenticated && <a href={accountHref} onClick={closeSiteMenu}>تسجيل الدخول</a>}
-          <a className={styles.mobilePrimary} href={primaryHref} onClick={closeSiteMenu}>
-          {isAuthenticated ? 'لوحة التاجر' : 'إنشاء حساب'}
-          <span aria-hidden="true">↗</span>
-          </a>
-          </div>
-          </div>
-          </div>,
-          menuPortalTarget
-        )
-      : null}
+      {menuPortalTarget
+        ? createPortal(
+            <div id={menuId} className={`${styles.mobileMenu} ${siteMenuOpen ? styles.mobileMenuOpen : ''}`} aria-hidden={!siteMenuOpen}>
+              <div className={styles.mobileMenuInner}>
+                <nav aria-label="التنقل على الهاتف">
+                  <a href="/#how-it-works" onClick={closeSiteMenu}>كيف يعمل</a>
+                  <a href="/#features" onClick={closeSiteMenu}>المزايا</a>
+                  <a href="/#pricing" onClick={closeSiteMenu}>الأسعار</a>
+                  <a href="/#faq" onClick={closeSiteMenu}>الأسئلة الشائعة</a>
+                </nav>
+                <div className={styles.mobileActions}>
+                  {!isAuthenticated && <a href={accountHref} onClick={closeSiteMenu}>تسجيل الدخول</a>}
+                  <a className={styles.mobilePrimary} href={primaryHref} onClick={closeSiteMenu}>
+                    {isAuthenticated ? 'لوحة التاجر' : 'إنشاء حساب'}
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+              </div>
+            </div>,
+            menuPortalTarget
+          )
+        : null}
     </>
   );
 }
