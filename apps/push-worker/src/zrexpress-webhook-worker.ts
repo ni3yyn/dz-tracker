@@ -137,7 +137,8 @@ export class ZRExpressWebhookWorker {
       }
       if (!response.ok || result?.success !== true) {
         const detail = typeof result?.error === 'string' ? result.error : `Internal processor returned HTTP ${response.status}.`;
-        throw new Error(detail);
+        await this.failOrRetry(job, new Error(detail), result?.retryable === false);
+        return;
       }
 
       const now = new Date().toISOString();
@@ -185,10 +186,10 @@ export class ZRExpressWebhookWorker {
     }
   }
 
-  private async failOrRetry(job: ZRWebhookJob, error: unknown): Promise<void> {
+  private async failOrRetry(job: ZRWebhookJob, error: unknown, forceDeadLetter = false): Promise<void> {
     const rawMessage = String((error as any)?.message || 'Unknown ZR Express processing error');
     const message = rawMessage.slice(0, 500);
-    const permanent = job.attempt_count >= job.max_attempts;
+    const permanent = forceDeadLetter || job.attempt_count >= job.max_attempts;
     const delaySeconds = RETRY_DELAYS_SECONDS[
       Math.min(Math.max(job.attempt_count - 1, 0), RETRY_DELAYS_SECONDS.length - 1)
     ];
