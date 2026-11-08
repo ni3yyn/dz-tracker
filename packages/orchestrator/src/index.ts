@@ -11,6 +11,7 @@ export { ZRExpressAdapter, ProcolisAdapter } from './carriers/zrexpress.adapter'
 export { ZRExpressWebhookAdapter, ZR_EXPRESS_WEBHOOK_EVENT_TYPES, verifyZRExpressWebhook, isZRExpressWebhookEvent } from './carriers/zrexpress-webhook.adapter';
 export type { ZRExpressWebhookEvent, ZRExpressWebhookEventType } from './carriers/zrexpress-webhook.adapter';
 export { ZimouAdapter, mapZimouStatus } from './carriers/zimou.adapter';
+export { ElogistiaAdapter, mapElogistiaStatus, parseElogistiaDate } from './carriers/elogistia.adapter';
 export {
   MaystroAdapter,
   ALGERIA_WILAYAS_58,
@@ -45,7 +46,7 @@ export interface TrackingEvent {
   /** Selected provider order fields retained for merchant-side auditing/display. */
   carrierMetadata?: Record<string, unknown>;
   /** Distinguishes provider-specific event ledgers when a webhook has no signature ID. */
-  sourceProvider?: 'zrexpress' | 'maystro' | 'zimou';
+  sourceProvider?: 'zrexpress' | 'maystro' | 'zimou' | 'elogistia';
   /** Import a historical provider event without firing customer notifications. */
   suppressTriggers?: boolean;
   /** Provider event time used to reject out-of-order courier status events. */
@@ -193,14 +194,14 @@ export class TrackingOrchestrator {
         if (event.carrierName) {
           updatePayload.carrier_name = event.carrierName;
         }
-        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou') {
+        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia') {
           // Carrier API snapshots refresh authoritative provider metadata and recipient fields.
           // refresh the snapshot from the authenticated API instead of retaining stale values.
           if (event.carrierTrackingNumber) updatePayload.carrier_tracking_number = event.carrierTrackingNumber;
           if (event.carrierOrderId) updatePayload.carrier_order_id = event.carrierOrderId;
           if (event.carrierExternalOrderId) updatePayload.external_order_id = event.carrierExternalOrderId;
           if (event.carrierMetadata) {
-            if (event.sourceProvider === 'zimou') {
+            if (event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia') {
               const incoming = Object.fromEntries(Object.entries(event.carrierMetadata).filter(([, value]) => value !== null && value !== undefined && value !== ''));
               updatePayload.carrier_metadata = { ...((existingOrder.carrier_metadata as Record<string, unknown> | null) || {}), ...incoming } as any;
             } else {
@@ -426,7 +427,7 @@ export class TrackingOrchestrator {
             carrier_last_event_at: event.sourceOccurredAt || null,
             carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,
-            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' ? {
+            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' ? {
               carrier_order_id: event.carrierOrderId || null,
               carrier_metadata: event.carrierMetadata || null,
             } : {}),
