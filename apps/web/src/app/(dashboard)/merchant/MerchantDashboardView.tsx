@@ -5032,7 +5032,7 @@ export async function registerSavedOrder(savedOrder) {
           min-height:42px;
           padding:0 15px;
           border:1px solid var(--green);
-          border-radius:4px;
+          border-radius:0 !important;
           background:var(--green);
           color:#fffefa;
           font-family:inherit;
