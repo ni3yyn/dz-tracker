@@ -306,7 +306,7 @@ export async function createElogistiaShipment(orderId: string, input: {
     if (input.deliveryType !== 'home' && input.deliveryType !== 'stopdesk') throw new Error('نوع التوصيل غير صالح.');
     if (input.deliveryMode !== 'standard' && input.deliveryMode !== 'exchange') throw new Error('نوع العملية غير صالح.');
     if (input.deliveryMode === 'exchange' && !exchangeProduct) throw new Error('أدخل اسم المنتج الذي سيُستبدل به الطرد.');
-    if (email && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) throw new Error('البريد الإلكتروني غير صالح.');
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('أدخل بريداً إلكترونياً صحيحاً؛ حقل mail مطلوب في طلب إنشاء شحنة Elogistia.');
     if (weight !== null && (!Number.isFinite(weight) || weight <= 0 || weight > 1000)) throw new Error('وزن الطرد غير صالح.');
 
     // Validate selected destination against Elogistia's live catalogues. Do not hard-code
