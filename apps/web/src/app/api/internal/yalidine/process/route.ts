@@ -123,6 +123,37 @@ export async function POST(req: Request) {
       }, { status: 422 });
     }
 
+    // Status webhooks carry only the carrier tracking reference. If a status
+    // arrives before its parcel_created event has been processed (possible
+    // with concurrent queue workers), do not let the orchestrator create a
+    // phantom order whose external_order_id is the tracking number. Retry
+    // until the create event has safely registered the parcel.
+    if (job.event_type === 'parcel_status_updated') {
+      const { data: knownOrder, error: lookupError } = await (supabase as any)
+        .from('orders')
+        .select('id')
+        .eq('merchant_id', job.merchant_id)
+        .eq('carrier_tracking_number', event.carrierTrackingNumber)
+        .limit(1)
+        .maybeSingle();
+
+      if (lookupError) {
+        console.error('[YalidineProcessor]: Could not resolve status event tracking number:', lookupError.message);
+        return NextResponse.json({
+          success: false,
+          retryable: true,
+          error: 'Could not resolve the existing TajerTrack parcel before applying its status.',
+        }, { status: 500 });
+      }
+      if (!knownOrder) {
+        return NextResponse.json({
+          success: false,
+          retryable: true,
+          error: 'Parcel has not been registered yet; retrying after its parcel_created event.',
+        }, { status: 503 });
+      }
+    }
+
     const orchestrator = new TrackingOrchestrator();
     const result = await orchestrator.processEvent(event, {
       siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://tajertrack.vercel.app',
