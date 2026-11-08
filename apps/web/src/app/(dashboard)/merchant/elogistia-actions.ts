@@ -198,8 +198,8 @@ export async function getElogistiaDispatchOptions(wilayaId?: string) {
     const feeRows = wilayaId ? rowsFrom(results[2]) : [];
     const fee = feeRows.find((item) => String(item.wilaya_id ?? item.wilayaID ?? item.id ?? '') === String(wilayaId));
     const rates = fee ? {
-      home: Number(fee.home ?? fee.domicile ?? fee.tarif ?? 0),
-      stopDesk: Number(fee.stopdesk ?? fee.stop_desk ?? fee.bureau ?? 0),
+      home: Number(fee.domicile ?? fee.home ?? fee.tarif ?? 0),
+      stopDesk: Number(fee.stop_desk ?? fee.stopdesk ?? fee.bureau ?? 0),
     } : null;
     return { success: true, wilayas, communes, rates };
   } catch (error: any) {
@@ -324,8 +324,8 @@ export async function createElogistiaShipment(orderId: string, input: {
     const feeRow = feeRows.find((item) => String(item.wilaya_id ?? item.wilayaID ?? item.id ?? '') === wilayaId);
     const feeValue = feeRow
       ? Number(input.deliveryType === 'stopdesk'
-          ? (feeRow.stopdesk ?? feeRow.stop_desk ?? feeRow.bureau)
-          : (feeRow.home ?? feeRow.domicile ?? feeRow.tarif))
+          ? (feeRow.stop_desk ?? feeRow.stopdesk ?? feeRow.bureau)
+          : (feeRow.domicile ?? feeRow.home ?? feeRow.tarif))
       : Number.NaN;
 
     const params: Record<string, string> = {
