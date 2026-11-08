@@ -88,6 +88,12 @@ async function bootstrap(): Promise<void> {
     console.log('[Bootstrap]: ZIMOU_SYNC_ENABLED=false; Zimou read-only polling is disabled.');
   }
 
+  if (elogistiaSync) {
+    elogistiaSyncLoop = elogistiaSync.start();
+  } else {
+    console.log('[Bootstrap]: ELOGISTIA_SYNC_ENABLED=false; Elogistia status polling is disabled.');
+  }
+
   const shutdown = (signal: string): Promise<void> => {
     if (shutdownPromise) return shutdownPromise;
     console.log(`\n[Bootstrap]: Caught signal ${signal}. Shutting down background workers...`);
@@ -116,7 +122,7 @@ async function bootstrap(): Promise<void> {
     );
   }, 30000);
 
-  const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
+  const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop, elogistiaSyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
   if (loops.length === 0) {
     console.log('[Bootstrap]: No background consumers are enabled. Remaining in standby mode.');
     return; // Keep the heartbeat interval alive; SIGTERM/SIGINT handlers still shut down cleanly.
