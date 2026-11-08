@@ -52,13 +52,17 @@ export function mapElogistiaStatus(status: unknown, log?: unknown): { statusRaw:
 export function parseElogistiaDate(value: unknown): string | undefined {
   const raw = first(value);
   if (!raw) return undefined;
-  const parsed = new Date(raw);
-  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  // Elogistia is an Algerian courier; slash-formatted timestamps use Algeria local wall time (UTC+1).
+  // Parse day/month explicitly before Date handles ambiguous slash dates as MM/DD.
   const match = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
-  if (!match) return undefined;
-  const [, day, month, year, hour = '00', minute = '00', second = '00'] = match;
-  const date = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  if (match) {
+    const [, day, month, year, hour = '00', minute = '00', second = '00'] = match;
+    const iso = year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T' + hour.padStart(2, '0') + ':' + minute + ':' + second + '+01:00';
+    const date = new Date(iso);
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  }
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
 
 export class ElogistiaAdapter {
