@@ -141,7 +141,7 @@ export class ZRExpressWebhookWorker {
       }
 
       const now = new Date().toISOString();
-      const { error: completeError } = await this.supabase
+      const { data: completedJob, error: completeError } = await this.supabase
         .from('zrexpress_webhook_events')
         .update({
           status: 'completed',
@@ -152,9 +152,17 @@ export class ZRExpressWebhookWorker {
           lease_expires_at: null,
           updated_at: now,
         })
-        .eq('id', job.id);
+        .eq('id', job.id)
+        .eq('status', 'processing')
+        .eq('locked_by', this.workerId)
+        .select('id')
+        .maybeSingle();
 
       if (completeError) throw completeError;
+      if (!completedJob) {
+        console.warn(`[ZRExpressWebhookWorker]: Lease for event ${job.svix_id.slice(0, 10)} was lost before completion; leaving the new owner's state untouched.`);
+        return;
+      }
 
       await this.supabase
         .from('merchant_carrier_integrations')
@@ -185,7 +193,7 @@ export class ZRExpressWebhookWorker {
       Math.min(Math.max(job.attempt_count - 1, 0), RETRY_DELAYS_SECONDS.length - 1)
     ];
     const now = new Date();
-    const { error: updateError } = await this.supabase
+    const { data: updatedJob, error: updateError } = await this.supabase
       .from('zrexpress_webhook_events')
       .update({
         status: permanent ? 'dead_letter' : 'retry',
@@ -196,7 +204,20 @@ export class ZRExpressWebhookWorker {
         lease_expires_at: null,
         updated_at: now.toISOString(),
       })
-      .eq('id', job.id);
+      .eq('id', job.id)
+      .eq('status', 'processing')
+      .eq('locked_by', this.workerId)
+      .select('id')
+      .maybeSingle();
+
+    if (updateError) {
+      console.error('[ZRExpressWebhookWorker]: Could not persist failure state:', updateError.message);
+      return;
+    }
+    if (!updatedJob) {
+      console.warn(`[ZRExpressWebhookWorker]: Lease for event ${job.svix_id.slice(0, 10)} was lost; skipping stale retry update.`);
+      return;
+    }
 
     await this.supabase
       .from('merchant_carrier_integrations')
@@ -209,9 +230,6 @@ export class ZRExpressWebhookWorker {
       .eq('merchant_id', job.merchant_id)
       .eq('provider', 'zrexpress');
 
-    if (updateError) {
-      console.error('[ZRExpressWebhookWorker]: Could not persist failure state:', updateError.message);
-    }
     console.error(
       `[ZRExpressWebhookWorker]: ${permanent ? 'Dead-lettered' : 'Scheduled retry for'} event ${job.svix_id.slice(0, 10)} (attempt ${job.attempt_count}/${job.max_attempts}): ${message}`
     );
