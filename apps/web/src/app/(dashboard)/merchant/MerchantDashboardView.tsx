@@ -14,6 +14,7 @@ import { ElogistiaConnectionPanel } from './ElogistiaConnectionPanel';
 import { ElogistiaDispatchPanel } from './ElogistiaDispatchPanel';
 import { EcomV2ConnectionPanel } from './EcomV2ConnectionPanel';
 import { EcomV2DispatchPanel } from './EcomV2DispatchPanel';
+import { YalidineConnectionPanel } from './YalidineConnectionPanel';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
@@ -828,7 +829,7 @@ export function MerchantDashboardView({
     activeTab === 'integrations' &&
     integrationChoicesHydratedFor === merchantId &&
     (integrationPlatform === 'website' || integrationPlatform === 'shopify' ||
-      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia' && selectedCarrier !== 'ecom_v2'));
+      (trackingSource === 'carrier' && Boolean(selectedCarrier) && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia' && selectedCarrier !== 'ecom_v2' && selectedCarrier !== 'yalidine'));
 
   useEffect(() => {
     let cancelled = false;
@@ -1377,7 +1378,6 @@ export function MerchantDashboardView({
 
   const directWebhookUrl = `${siteUrl}/api/webhooks`;
   const shopifyUrl = `${siteUrl}/api/webhooks/shopify?key=${integrationApiKey}`;
-  const yalidineUrl = `${siteUrl}/api/webhooks/yalidine?key=${integrationApiKey}`;
   const ecotrackUrl = `${siteUrl}/api/webhooks/ecotrack?key=${integrationApiKey}`;
   const procolisUrl = `${siteUrl}/api/webhooks/procolis?key=${integrationApiKey}`;
   const odooUrl = `${siteUrl}/api/webhooks/odoo?key=${integrationApiKey}`;
@@ -1387,11 +1387,11 @@ export function MerchantDashboardView({
       id: 'yalidine' as const,
       name: 'Yalidine Express',
       symbol: 'Y',
-      url: yalidineUrl,
-      method: 'POST (JSON)',
-      hint: 'أضف هذا الرابط في لوحة ياليدين (Settings > Webhooks) أو اطلب من الدعم تفعيل Webhook لتغيير حالات الطرود تلقائياً.',
-      caveat: 'تحقق من تفعيل Webhook الخارجي في حسابك لدى ياليدين لضمان وصول الأحداث الحية.',
-      supportQuestion: 'مرحباً، أستخدم منصة تاجر تراك (Tajer Track) وأريد مزامنة حالات الشحن تلقائياً. هل يدعم حسابي في Yalidine Express إرسال Webhooks خارجية عند تغيّر حالة الطرد؟ إذا نعم، أين أضيف رابط الاستقبال الخاص بي؟'
+      url: '',
+      method: 'Webhook موقّع + تحديثات تلقائية',
+      hint: 'أنشئ Webhook من لوحة Yalidine / Guepex، ثم أضف رابط الاستقبال ومفتاح التوقيع هنا. يتحقق تاجر تراك من التوقيع ويعالج الأحداث في الخلفية.',
+      caveat: 'اختر parcel_created وparcel_status_updated. يجب حفظ مفتاح التوقيع وتشغيل الاختبار ثم تفعيل Webhook من لوحة الشركة.',
+      supportQuestion: 'أحتاج إلى تفعيل Webhooks الخارجية في حساب Yalidine مع صلاحية إنشاء Webhook ومشاهدة مفتاح التوقيع.'
     },
     {
       id: 'ecotrack' as const,
@@ -5683,7 +5683,11 @@ export async function registerSavedOrder(savedOrder) {
                         <EcomV2ConnectionPanel />
                       )}
 
-                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'maystro' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia' && selectedCarrier !== 'ecom_v2' && activeCarrierConnection && (
+                      {trackingSource === 'carrier' && selectedCarrier === 'yalidine' && (
+                        <YalidineConnectionPanel />
+                      )}
+
+                      {trackingSource === 'carrier' && selectedCarrier !== 'other' && selectedCarrier !== 'ecotrack' && selectedCarrier !== 'zrexpress' && selectedCarrier !== 'maystro' && selectedCarrier !== 'zimou' && selectedCarrier !== 'elogistia' && selectedCarrier !== 'ecom_v2' && selectedCarrier !== 'yalidine' && activeCarrierConnection && (
                         <article className="dz-int-guided-panel">
                           <div className="dz-int-guided-panel-title"><span className="dz-int-guided-number">02</span><div><h4>إعداد تحديثات {activeCarrierConnection.name}</h4><p>{activeCarrierConnection.hint}</p></div></div>
                           <div className="dz-int-guided-copy">
