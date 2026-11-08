@@ -5023,6 +5023,27 @@ export async function registerSavedOrder(savedOrder) {
         .dz-admin-root .dz-mappings-intro p,.dz-admin-root .dz-mappings-section-head p { margin:6px 0 0; color:#778278; font-size:13px; line-height:1.75; }
         .dz-admin-root .dz-mappings-count { flex:0 0 auto; color:#728276; font-size:12px; }
         .dz-admin-root .dz-mappings-count strong { color:var(--green); font-size:22px; margin-inline-end:5px; }
+        .dz-admin-root .dz-mappings-intro-actions { display:flex; align-items:center; justify-content:flex-end; gap:16px; flex:0 0 auto; }
+        .dz-admin-root .dz-mappings-add-button {
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:8px;
+          min-height:42px;
+          padding:0 15px;
+          border:1px solid var(--green);
+          border-radius:4px;
+          background:var(--green);
+          color:#fffefa;
+          font:700 12px/1.4 inherit;
+          cursor:pointer;
+          white-space:nowrap;
+          transition:background .16s ease,border-color .16s ease;
+        }
+        .dz-admin-root .dz-mappings-add-button:hover { border-color:var(--green-deep); background:var(--green-deep); }
+        .dz-admin-root .dz-mappings-add-button:focus-visible { outline:2px solid rgba(41,75,55,.34); outline-offset:3px; }
+        .dz-admin-root .dz-mappings-add-button svg { width:15px; height:15px; }
+
         .dz-admin-root .dz-mappings-presets,.dz-admin-root .dz-mappings-create,.dz-admin-root .dz-mappings-list { padding:24px 0; border-bottom:1px solid #e5e9e2; }
         .dz-admin-root .dz-mappings-section-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; }
         .dz-admin-root .dz-mappings-section-head h3 { margin:0; color:#26372c; font-size:16px; font-weight:800; }
@@ -5064,6 +5085,9 @@ export async function registerSavedOrder(savedOrder) {
         .dz-admin-root .dz-mappings-empty p { margin:5px 0 0; color:#879188; font-size:12px; }
         @media(max-width:700px) {
           .dz-admin-root .dz-mappings-intro { align-items:flex-start; flex-direction:column; gap:10px; padding-bottom:18px; }
+          .dz-admin-root .dz-mappings-intro-actions { width:100%; justify-content:space-between; gap:10px; }
+          .dz-admin-root .dz-mappings-add-button { min-height:40px; padding:0 12px; }
+
           .dz-admin-root .dz-mappings-intro p,.dz-admin-root .dz-mappings-section-head p { font-size:12px; }
           .dz-admin-root .dz-mappings-presets,.dz-admin-root .dz-mappings-create,.dz-admin-root .dz-mappings-list { padding:19px 0; }
           .dz-admin-root .dz-mappings-preset-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -7456,7 +7480,21 @@ export async function registerSavedOrder(savedOrder) {
                   <h2 id="dz-mappings-title">مسميات الحالات</h2>
                   <p>حوّل أكواد شركات التوصيل أو متجرك إلى عبارات واضحة يفهمها العميل.</p>
                 </div>
-                <span className="dz-mappings-count"><strong>{mappings.length}</strong> مطابقة مفعّلة</span>
+                <div className="dz-mappings-intro-actions">
+                  <span className="dz-mappings-count"><strong>{mappings.length}</strong> مطابقة مفعّلة</span>
+                  <button
+                    type="button"
+                    className="dz-mappings-add-button"
+                    onClick={() => {
+                      const createSection = document.getElementById('dz-mappings-create');
+                      createSection?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
+                      createSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    <Icons.Plus />
+                    إضافة مسمى مخصص
+                  </button>
+                </div>
               </header>
 
               <section className="dz-mappings-presets" aria-labelledby="dz-presets-title">
@@ -7486,7 +7524,7 @@ export async function registerSavedOrder(savedOrder) {
                 </div>
               </section>
 
-              <section className="dz-mappings-create" aria-labelledby="dz-create-mapping-title">
+              <section id="dz-mappings-create" className="dz-mappings-create" aria-labelledby="dz-create-mapping-title">
                 <div className="dz-mappings-section-head">
                   <div>
                     <h3 id="dz-create-mapping-title">إضافة مسمى مخصص</h3>
