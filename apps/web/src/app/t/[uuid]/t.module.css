@@ -785,17 +785,20 @@
   position: fixed;
   inset: 0;
   z-index: 10000;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   overflow: hidden;
   isolation: isolate;
-  padding: 28px 22px;
+  padding: max(28px, env(safe-area-inset-top)) 22px max(28px, env(safe-area-inset-bottom));
   color: var(--intro-ink, #fff);
   background:
-    radial-gradient(ellipse at 50% 16%, color-mix(in srgb, var(--intro-ink) 13%, transparent), transparent 48%),
     linear-gradient(145deg,
-      color-mix(in srgb, var(--intro-brand) 94%, var(--intro-ink)),
-      color-mix(in srgb, var(--intro-brand) 78%, var(--intro-ink)));
+      color-mix(in srgb, var(--intro-brand) 94%, #fff 6%),
+      color-mix(in srgb, var(--intro-brand) 84%, #000 16%));
   transform: translate3d(0, 0, 0);
   transition: transform .54s cubic-bezier(.76, 0, .24, 1);
   will-change: transform;
@@ -807,13 +810,11 @@
 .entranceGlow {
   position: absolute;
   z-index: -1;
-  width: min(76vw, 620px);
-  aspect-ratio: 1;
-  border: 1px solid color-mix(in srgb, var(--intro-ink) 12%, transparent);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 42px color-mix(in srgb, var(--intro-ink) 3%, transparent),
-    0 0 0 86px color-mix(in srgb, var(--intro-ink) 2%, transparent);
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 38%, color-mix(in srgb, var(--intro-ink) 10%, transparent), transparent 58%),
+    radial-gradient(ellipse at 50% 100%, color-mix(in srgb, #000 9%, transparent), transparent 62%);
   opacity: .72;
   animation: entranceHalo 1.8s ease-out both;
 }
@@ -831,17 +832,15 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--intro-ink) 23%, transparent);
-  border-radius: 28px;
-  background: color-mix(in srgb, var(--intro-ink) 12%, transparent);
-  box-shadow: 0 20px 52px color-mix(in srgb, #000 17%, transparent), inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  box-shadow: none;
 }
 .entranceLogo img {
   display: block;
-  width: 74%;
-  height: 74%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 .entranceLogo span {
