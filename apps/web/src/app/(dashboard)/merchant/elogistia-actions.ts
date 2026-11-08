@@ -197,10 +197,13 @@ export async function getElogistiaDispatchOptions(wilayaId?: string) {
     })).filter((item) => item.name) : [];
     const feeRows = wilayaId ? rowsFrom(results[2]) : [];
     const fee = feeRows.find((item) => String(item.wilaya_id ?? item.wilayaID ?? item.id ?? '') === String(wilayaId));
-    const rates = fee ? {
-      home: Number(fee.domicile ?? fee.home ?? fee.tarif ?? 0),
-      stopDesk: Number(fee.stop_desk ?? fee.stopdesk ?? fee.bureau ?? 0),
-    } : null;
+    const homeRate = fee?.domicile ?? fee?.home ?? fee?.tarif;
+    const stopDeskRate = fee?.stop_desk ?? fee?.stopdesk ?? fee?.bureau;
+    const home = homeRate == null ? Number.NaN : Number(homeRate);
+    const stopDesk = stopDeskRate == null ? Number.NaN : Number(stopDeskRate);
+    const rates = Number.isFinite(home) && home >= 0 && Number.isFinite(stopDesk) && stopDesk >= 0
+      ? { home, stopDesk }
+      : null;
     return { success: true, wilayas, communes, rates };
   } catch (error: any) {
     return { success: false, error: error?.message || 'تعذر تحميل ولايات وبلديات Elogistia.' };
