@@ -232,6 +232,7 @@ export async function createElogistiaShipment(orderId: string, input: {
   phone: string;
   address: string;
   wilayaId: string;
+  wilayaName?: string;
   commune: string;
   product: string;
   codAmount: number;
@@ -283,15 +284,29 @@ export async function createElogistiaShipment(orderId: string, input: {
     if (!firstName || !lastName || firstName.length > 100 || lastName.length > 100) throw new Error('أدخل الاسم الأول واسم العائلة بشكل صحيح.');
     if (!phone || !/^\+?[0-9\s()-]{8,20}$/.test(phone)) throw new Error('أدخل رقم هاتف صحيحاً للعميل.');
     if (!address || !commune || !wilayaId || !product) throw new Error('أكمل عنوان التوصيل والولاية والبلدية واسم المنتج.');
-    if (!Number.isInteger(Number(wilayaId)) || Number(wilayaId) < 1 || Number(wilayaId) > 58) throw new Error('رمز الولاية الذي أعادته Elogistia غير صالح.');
+    if (!/^\\d{1,3}$/.test(wilayaId) || Number(wilayaId) < 1 || Number(wilayaId) > 999) throw new Error('رمز الولاية الذي اخترته غير صالح.');
     if (!Number.isFinite(codAmount) || codAmount < 0 || codAmount > 100000000) throw new Error('أدخل مبلغ التحصيل عند التسليم بصورة صحيحة.');
     if (input.deliveryType !== 'home' && input.deliveryType !== 'stopdesk') throw new Error('نوع التوصيل غير صالح.');
     if (input.deliveryMode !== 'standard' && input.deliveryMode !== 'exchange') throw new Error('نوع العملية غير صالح.');
     if (email && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) throw new Error('البريد الإلكتروني غير صالح.');
     if (weight !== null && (!Number.isFinite(weight) || weight <= 0 || weight > 1000)) throw new Error('وزن الطرد غير صالح.');
 
-    // Elogistia's Postman-based adapter sends these exact fields as query parameters on POST.
-    const feeBody = await apiRequest('getShippingCost/', 'key', apiKey);
+    // Validate selected destination against Elogistia's live catalogues. Do not hard-code
+    // the current Algerian wilaya count or trust browser-supplied IDs/commune names.
+    const [wilayaBody, communeBody, feeBody] = await Promise.all([
+      apiRequest('getWilayas/', 'key', apiKey),
+      apiRequest('getMunicipalities/', 'key', apiKey, { wilaya: wilayaId }),
+      apiRequest('getShippingCost/', 'key', apiKey),
+    ]);
+    const wilayaRows = rowsFrom(wilayaBody);
+    const selectedWilaya = wilayaRows.find((item) => String(item.id ?? item.code ?? '') === wilayaId);
+    if (!selectedWilaya) throw new Error('الولاية المختارة غير موجودة في قائمة Elogistia الحالية. أعد تحميل الخيارات.');
+    const communeRows = rowsFrom(communeBody);
+    const normalizePlace = (value: unknown) => String(value ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim().toLowerCase();
+    const selectedCommune = communeRows.find((item) =>
+      normalizePlace(item.name ?? item.nom ?? item.commune) === normalizePlace(commune));
+    if (!selectedCommune) throw new Error('البلدية المختارة لا تطابق قائمة Elogistia لهذه الولاية. أعد اختيار البلدية.');
+    const wilayaName = String(selectedWilaya.name ?? selectedWilaya.nom ?? selectedWilaya.wilaya ?? input.wilayaName ?? '').trim();
     const feeRows = rowsFrom(feeBody);
     const feeRow = feeRows.find((item) => String(item.wilaya_id ?? item.wilayaID ?? item.id ?? '') === wilayaId);
     const feeValue = feeRow
@@ -401,14 +416,14 @@ export async function createElogistiaShipment(orderId: string, input: {
       elogistia: {
         trackingNumber: tracking,
         wilayaId,
+        wilayaName,
         commune,
         address,
         codAmount: Math.round(codAmount),
         deliveryType: input.deliveryType,
         deliveryMode: input.deliveryMode,
         email: email || null,
-        shippingFeeHome: null,
-        shippingFeeStopDesk: null,
+        shippingFee: Number.isFinite(feeValue) && feeValue >= 0 ? Math.round(feeValue) : null,
         creationStatus: 'created',
         createdAt: new Date().toISOString(),
       },
