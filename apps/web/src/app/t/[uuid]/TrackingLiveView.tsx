@@ -544,8 +544,38 @@ export function TrackingLiveView({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                  <span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1.3 }}>
-                    {confirmationStatus === 'pending' ? '⏳' : confirmationStatus === 'confirmed' ? '✅' : '⚠️'}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 24,
+                      height: 24,
+                      flex: '0 0 24px',
+                      color: confirmationStatus === 'pending'
+                        ? '#A16207'
+                        : confirmationStatus === 'confirmed'
+                          ? '#15803D'
+                          : '#B45309',
+                    }}
+                  >
+                    {confirmationStatus === 'pending' ? (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 7v5l3 2" />
+                      </svg>
+                    ) : confirmationStatus === 'confirmed' ? (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="m8 12 2.5 2.5L16 9" />
+                      </svg>
+                    ) : (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 3 21 20H3L12 3Z" />
+                        <path d="M12 9v4m0 3h.01" />
+                      </svg>
+                    )}
                   </span>
                   <div>
                     <strong style={{ display: 'block', fontSize: 15, marginBottom: 5 }}>
