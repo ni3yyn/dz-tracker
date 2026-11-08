@@ -34,9 +34,9 @@ export function MappingForm({ merchantId }: { merchantId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={styles.formContainer}>
-      <div className={styles.formGrid}>
-        <div className={styles.inputGroup}>
+    <form onSubmit={handleSubmit} className={`${styles.formContainer} dz-custom-mapping-form`}>
+      <div className={`${styles.formGrid} dz-custom-mapping-grid`}>
+        <div className={`${styles.inputGroup} dz-custom-mapping-group`}>
           <label className={styles.label}>الحالة في متجرك (الكود الخام):</label>
           <input
             type="text"
@@ -44,7 +44,8 @@ export function MappingForm({ merchantId }: { merchantId: string }) {
             value={sourceStatus}
             onChange={(e) => setSourceStatus(e.target.value)}
             required
-            className={styles.input}
+            className={`${styles.input} dz-custom-mapping-input`}
+            autoFocus
           />
         </div>
 
@@ -61,8 +62,8 @@ export function MappingForm({ merchantId }: { merchantId: string }) {
         </div>
       </div>
 
-      <div className={styles.formActions}>
-        <button type="submit" disabled={loading} className={styles.submitBtn}>
+      <div className={`${styles.formActions} dz-custom-mapping-actions`}>
+        <button type="submit" disabled={loading} className={`${styles.submitBtn} dz-custom-mapping-submit`}>
           {loading ? 'جاري الحفظ...' : 'حفظ المطابقة'}
         </button>
 
