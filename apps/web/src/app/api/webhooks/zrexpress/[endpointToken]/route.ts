@@ -92,12 +92,54 @@ export async function POST(req: Request, context: RouteContext) {
       available_at: new Date().toISOString(),
     });
 
-  if (enqueueError && enqueueError.code !== '23505') {
+  let deduplicated = false;
+  let requeuedDeadLetter = false;
+  if (enqueueError?.code === '23505') {
+    deduplicated = true;
+    // A provider replay keeps its original svix-id. Re-open only a dead-lettered
+    // queue item; completed, pending, retrying and currently-processing rows
+    // remain untouched. The applied-event ledger prevents duplicate timelines.
+    const { data: existing, error: lookupError } = await (supabase as any)
+      .from('zrexpress_webhook_events')
+      .select('id, status')
+      .eq('merchant_id', integration.merchant_id)
+      .eq('svix_id', verified.id)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('[ZRExpressWebhook]: Could not inspect duplicate delivery:', lookupError.message);
+      return NextResponse.json({ error: 'Could not inspect existing webhook delivery.' }, { status: 500 });
+    }
+
+    if (existing?.status === 'dead_letter') {
+      const now = new Date().toISOString();
+      const { error: requeueError } = await (supabase as any)
+        .from('zrexpress_webhook_events')
+        .update({
+          status: 'pending',
+          attempt_count: 0,
+          available_at: now,
+          last_error: null,
+          locked_by: null,
+          locked_at: null,
+          lease_expires_at: null,
+          updated_at: now,
+        })
+        .eq('id', existing.id)
+        .eq('status', 'dead_letter');
+
+      if (requeueError) {
+        console.error('[ZRExpressWebhook]: Could not requeue dead-lettered delivery:', requeueError.message);
+        return NextResponse.json({ error: 'Could not requeue existing webhook delivery.' }, { status: 500 });
+      }
+      requeuedDeadLetter = true;
+    }
+  } else if (enqueueError) {
     console.error('[ZRExpressWebhook]: Verified event could not be queued:', enqueueError.message);
     return NextResponse.json({ error: 'Verified event could not be queued.' }, { status: 500 });
   }
 
-  if (!enqueueError) {
+  if (!enqueueError || requeuedDeadLetter) {
     const now = new Date().toISOString();
     await (supabase as any)
       .from('merchant_carrier_integrations')
@@ -114,8 +156,9 @@ export async function POST(req: Request, context: RouteContext) {
   // timeline writes and notification dispatch from the durable queue.
   return NextResponse.json({
     success: true,
-    queued: !enqueueError,
-    deduplicated: Boolean(enqueueError),
+    queued: !enqueueError || requeuedDeadLetter,
+    deduplicated,
+    requeued: requeuedDeadLetter,
     event: verified.event.eventType,
   });
 }
