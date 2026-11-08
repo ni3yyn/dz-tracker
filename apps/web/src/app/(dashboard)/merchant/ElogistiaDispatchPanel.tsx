@@ -98,12 +98,18 @@ export function ElogistiaDispatchPanel({ order }: Props) {
       router.refresh();
     } catch (reason: any) {
       setError(reason?.message || 'تعذر إنشاء الشحنة لدى Elogistia.');
+      const latest = await getElogistiaDispatchStatus(order.id);
+      if (latest.success && latest.attempt) {
+        setAttemptState(latest.attempt.attempt_state);
+        setAttemptError(latest.attempt.error_message || '');
+        if (latest.attempt.tracking_number) setSuccessTracking(latest.attempt.tracking_number);
+      }
     } finally { setSubmitting(false); }
   }
 
   const assigned = Boolean(order.carrier_tracking_number);
   const alreadyElogistia = order.carrier_name === 'Elogistia' && assigned;
-  const unresolvedAttempt = attemptState === 'pending' || attemptState === 'uncertain';
+  const unresolvedAttempt = attemptState === 'pending' || attemptState === 'uncertain' || (attemptState === 'created' && !successTracking);
   return <section className="dz-int-guided-panel" style={{ marginTop: 14 }}>
     <div className="dz-int-guided-panel-title">
       <span className="dz-int-guided-number">E</span>
