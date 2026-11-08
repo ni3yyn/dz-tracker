@@ -155,8 +155,8 @@ export function ElogistiaDispatchPanel({ order }: Props) {
           <label htmlFor={prefix+'-phone'} style={{ display: 'grid', gap: 6 }}>هاتف العميل *
             <input id={prefix+'-phone'} className="dz-input-field" dir="ltr" value={phone} onChange={e=>setPhone(e.target.value)} required maxLength={20}/>
           </label>
-          <label htmlFor={prefix+'-email'} style={{ display: 'grid', gap: 6 }}>البريد الإلكتروني
-            <input id={prefix+'-email'} className="dz-input-field" dir="ltr" type="email" value={email} onChange={e=>setEmail(e.target.value)} maxLength={254} placeholder="اختياري"/>
+          <label htmlFor={prefix+'-email'} style={{ display: 'grid', gap: 6 }}>البريد الإلكتروني *
+            <input id={prefix+'-email'} className="dz-input-field" dir="ltr" type="email" value={email} onChange={e=>setEmail(e.target.value)} required maxLength={254} placeholder="البريد الإلكتروني للعميل"/>
           </label>
         </div>
         <label htmlFor={prefix+'-address'} style={{ display: 'grid', gap: 6 }}>عنوان التوصيل بالتفصيل *
@@ -208,7 +208,7 @@ export function ElogistiaDispatchPanel({ order }: Props) {
         </label>
         <p className="dz-int-guided-note" style={{ fontSize: 13 }}>مرجع الطلب المرسل إلى Elogistia: <b dir="ltr">{order.external_order_id}</b>. سيتم إرسال بيانات الشحنة عند الضغط على زر الإنشاء، لذلك راجع العنوان ومبلغ التحصيل قبل المتابعة.</p>
         {error && <p role="alert" className="dz-int-guided-note" style={{ color: '#b42318', background: '#fff4f2', padding: 12, borderRadius: 9 }}>{error}</p>}
-        <button type="submit" className="dz-btn" disabled={submitting||loadingCommunes||!wilayaId||!commune||!phone.trim()||!address.trim()||!product.trim()||!firstName.trim()||!lastName.trim()||codAmount.trim()===''||(deliveryMode==='exchange'&&!exchangeProduct.trim())}>{submitting?'جارٍ إنشاء الشحنة لدى Elogistia...':'إنشاء شحنة Elogistia وربط رقم التتبع'}</button>
+        <button type="submit" className="dz-btn" disabled={submitting||loadingCommunes||!wilayaId||!commune||!phone.trim()||!address.trim()||!product.trim()||!firstName.trim()||!lastName.trim()||!email.trim()||codAmount.trim()===''||(deliveryMode==='exchange'&&!exchangeProduct.trim())}>{submitting?'جارٍ إنشاء الشحنة لدى Elogistia...':'إنشاء شحنة Elogistia وربط رقم التتبع'}</button>
       </form>
     )}
   </section>;
