@@ -4834,6 +4834,184 @@ export async function registerSavedOrder(savedOrder) {
           .dz-admin-root .dz-analytics-action-row { align-items: stretch; flex-direction: column; }
           .dz-admin-root .dz-analytics-action-row .dz-btn { width: 100%; }
         }
+
+        /* Explicit action controls missed by the first visual pass. */
+        .dz-admin-root .dz-add-order-btn,
+        .dz-admin-root .dz-header-actions .dz-add-order-btn {
+          min-height: 42px;
+          padding: 0 17px;
+          border-radius: 5px !important;
+          border: 1px solid var(--green) !important;
+          background: var(--green) !important;
+          color: #fffefa !important;
+          box-shadow: none !important;
+          font-weight: 750;
+        }
+        .dz-admin-root .dz-add-order-btn:hover:not(:disabled) {
+          background: var(--green-deep) !important;
+          border-color: var(--green-deep) !important;
+          color: #fffefa !important;
+          transform: translateY(-1px);
+        }
+        .dz-admin-root .dz-add-order-btn:focus-visible {
+          outline: 2px solid color-mix(in srgb, var(--green) 38%, transparent);
+          outline-offset: 3px;
+        }
+
+        /* Status filter chips: rectangular, readable and clearly selected. */
+        .dz-admin-root .dz-shipment-status-tabs .dz-filter-btn,
+        .dz-admin-root .dz-filter-row .dz-filter-btn {
+          min-height: 38px;
+          padding: 8px 13px;
+          border: 0;
+          border-radius: 4px !important;
+          background: #e8ede5;
+          color: #526356;
+          box-shadow: none;
+          font-size: 12px;
+          font-weight: 700;
+          transition: background .16s ease, color .16s ease;
+        }
+        .dz-admin-root .dz-shipment-status-tabs .dz-filter-btn:hover,
+        .dz-admin-root .dz-filter-row .dz-filter-btn:hover {
+          background: #dce6d9;
+          color: var(--green-deep);
+          transform: none;
+        }
+        .dz-admin-root .dz-shipment-status-tabs .dz-filter-btn.active,
+        .dz-admin-root .dz-filter-row .dz-filter-btn.active {
+          background: var(--green);
+          color: #fffefa;
+          border-color: var(--green);
+        }
+        .dz-admin-root .dz-pill {
+          min-height: 23px;
+          padding: 3px 8px;
+          border: 0;
+          border-radius: 3px !important;
+          font-size: 10px;
+          font-weight: 750;
+          line-height: 1.4;
+          letter-spacing: -.01em;
+        }
+        .dz-admin-root .dz-pill-info { background: #e9ede7; color: #526356; }
+        .dz-admin-root .dz-pill-success { background: #e2eee3; color: #285b37; }
+        .dz-admin-root .dz-pill-warning { background: #f4eddd; color: #82602e; }
+        .dz-admin-root .dz-pill-danger,
+        .dz-admin-root .dz-pill-alert { background: #f5e5e1; color: #a44739; animation: none; }
+
+        /* Order row actions: visible tactile controls without heavy outlines. */
+        .dz-admin-root .dz-order-action-btn {
+          min-height: 40px;
+          border: 0 !important;
+          border-radius: 4px !important;
+          background: #e8ede5 !important;
+          color: var(--green) !important;
+          box-shadow: none !important;
+          transition: background .16s ease, color .16s ease, transform .16s ease;
+        }
+        .dz-admin-root .dz-order-action-btn:hover:not(:disabled):not(.is-disabled) {
+          background: #dce7d9 !important;
+          color: var(--green-deep) !important;
+          box-shadow: none !important;
+          transform: translateY(-1px);
+        }
+        .dz-admin-root .dz-order-action-btn.dz-order-action-whatsapp {
+          background: #e2eee3 !important;
+          color: #28613c !important;
+        }
+        .dz-admin-root .dz-order-action-btn.dz-order-action-whatsapp.is-urgent {
+          background: #f5e5e1 !important;
+          color: #a44739 !important;
+        }
+        .dz-admin-root .dz-order-action-btn.dz-order-action-delete {
+          background: #f5e8e5 !important;
+          color: #a44739 !important;
+        }
+        .dz-admin-root .dz-order-action-btn.dz-order-action-delete:hover:not(:disabled) {
+          background: #a44739 !important;
+          color: #fffefa !important;
+        }
+        .dz-admin-root .dz-order-action-btn.is-disabled {
+          background: #edf0eb !important;
+          color: #9aa49a !important;
+          border: 0 !important;
+          opacity: .68;
+        }
+        .dz-admin-root .dz-order-mobile-card .dz-order-action-btn { border-radius: 4px !important; }
+
+        /* Mobile menu: a visible square-cornered dashboard control. */
+        .dz-admin-root .dz-mobile-menu-toggle {
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
+          border: 1px solid var(--green) !important;
+          border-radius: 5px !important;
+          background: var(--green) !important;
+          color: #fffefa !important;
+          box-shadow: none !important;
+        }
+        .dz-admin-root .dz-mobile-menu-toggle:hover {
+          background: var(--green-deep) !important;
+          border-color: var(--green-deep) !important;
+        }
+        .dz-admin-root .dz-mobile-menu-toggle span {
+          width: 18px;
+          height: 2px;
+          border-radius: 0;
+          background: #fffefa;
+        }
+
+        /* Save actions must use the dashboard brand, not the merchant's preview color. */
+        .dz-admin-root form button[type="submit"].dz-btn:not(.dz-btn-outline),
+        .dz-admin-root .dz-brand-savebar .dz-brand-save-button {
+          min-height: 42px;
+          border: 1px solid var(--green) !important;
+          border-radius: 5px !important;
+          background: var(--green) !important;
+          color: #fffefa !important;
+          box-shadow: none !important;
+          font-weight: 750;
+        }
+        .dz-admin-root form button[type="submit"].dz-btn:not(.dz-btn-outline):hover:not(:disabled),
+        .dz-admin-root .dz-brand-savebar .dz-brand-save-button:hover:not(:disabled) {
+          background: var(--green-deep) !important;
+          border-color: var(--green-deep) !important;
+          color: #fffefa !important;
+          transform: translateY(-1px);
+          filter: none;
+        }
+        .dz-admin-root form button[type="submit"].dz-btn:disabled,
+        .dz-admin-root .dz-brand-savebar .dz-brand-save-button:disabled {
+          opacity: .42 !important;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .dz-admin-root .dz-brand-savebar .dz-brand-save-button {
+          min-width: 145px;
+          padding: 11px 18px;
+        }
+
+        /* Keep utility controls square too, without turning switches into action buttons. */
+        .dz-admin-root .dz-orders-load-more button,
+        .dz-admin-root .dz-upsell-action-btn,
+        .dz-admin-root .dz-upsell-toggle-btn,
+        .dz-admin-root .dz-brand-tool-button {
+          border-radius: 4px !important;
+        }
+        .dz-admin-root .dz-orders-load-more button {
+          min-height: 40px;
+          padding: 9px 16px;
+          border: 1px solid var(--green);
+          background: var(--green);
+          color: #fffefa;
+          font-weight: 700;
+        }
+        .dz-admin-root .dz-orders-load-more button:hover {
+          border-color: var(--green-deep);
+          background: var(--green-deep);
+          color: #fffefa;
+        }
       `}} />
 
       <div className="dz-admin-root">
