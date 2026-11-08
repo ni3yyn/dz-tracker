@@ -173,8 +173,12 @@ export async function getEcomV2DispatchOptions(wilayaId?: string) {
       tasks.push(request('/tarifs', auth));
     }
     const result = await Promise.all(tasks);
-    const wilayas = rows(result[0]).map((x) => ({ id: String(x.id ?? ''), name: String(x.libelle ?? '').trim(), home: x.domicile !== false, stopdesk: x.stopdesk !== false }))
-      .filter((x) => x.id && x.name && (x.home || x.stopdesk));
+    const wilayas = rows(result[0]).map((x) => {
+      const rawId = String(x.id ?? '');
+      const numericId = Number(rawId);
+      const id = Number.isInteger(numericId) && numericId >= 1 && numericId <= 58 ? String(numericId) : rawId;
+      return { id, name: String(x.libelle ?? '').trim(), home: x.domicile !== false, stopdesk: x.stopdesk !== false };
+    }).filter((x) => /^\\d{1,2}$/.test(x.id) && x.name && (x.home || x.stopdesk));
     const communes = wilayaId ? rows(result[1]).map((x) => ({ id: String(x.id ?? ''), name: String(x.commune ?? '').trim(), deliverable: x.livrable !== false }))
       .filter((x) => x.id && x.name && x.deliverable) : [];
     const desks = wilayaId ? rows(result[2]).map((x) => ({ id: String(x.code_stopdesk ?? '').trim(), name: String(x.nom_bureau ?? x.code_stopdesk ?? '').trim(), commune: String(x.commune ?? '').trim(), address: String(x.adresse ?? '').trim() }))
@@ -242,7 +246,8 @@ export async function createEcomV2Shipment(orderId: string, input: {
     const commune = String(input?.commune || '').trim();
     const product = String(input?.product || '').trim();
     const note = String(input?.note || '').trim().slice(0, 500);
-    const amount = Number(input?.codAmount);
+    if (input?.codAmount === null || input?.codAmount === undefined || String(input.codAmount).trim() === '') throw new Error('أدخل مبلغ التحصيل عند التسليم.');
+    const amount = Number(input.codAmount);
     const quantity = input?.quantity == null ? 1 : Number(input.quantity);
     if (!recipientName || recipientName.length > 60) throw new Error('اسم المستلم مطلوب ولا يتجاوز 60 حرفاً حسب قيود E-com Delivery.');
     if (!phone || !/^[+0-9][0-9\s()-]{7,19}$/.test(phone)) throw new Error('أدخل رقم هاتف صحيحاً للعميل.');
@@ -302,7 +307,7 @@ export async function createEcomV2Shipment(orderId: string, input: {
       throw e;
     }
     if (line.ok !== true) {
-      const e: any = new Error(String(line.erreur || safeMessage(body) || 'رفضت E-com Delivery إنشاء الشحنة.'));
+      const e: any = new Error(String(line.erreur || safeMessage(body) || 'رفضت E-com Delivery إنشاء الشحنة.').replaceAll(auth.apiKey, '[redacted]').replaceAll(auth.apiToken, '[redacted]'));
       e.providerRejected = true;
       throw e;
     }
