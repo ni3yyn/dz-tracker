@@ -202,7 +202,7 @@ export class TrackingOrchestrator {
           if (event.carrierOrderId) updatePayload.carrier_order_id = event.carrierOrderId;
           if (event.carrierExternalOrderId) updatePayload.external_order_id = event.carrierExternalOrderId;
           if (event.carrierMetadata) {
-            if (event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia') {
+            if (event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2') {
               const incoming = Object.fromEntries(Object.entries(event.carrierMetadata).filter(([, value]) => value !== null && value !== undefined && value !== ''));
               updatePayload.carrier_metadata = { ...((existingOrder.carrier_metadata as Record<string, unknown> | null) || {}), ...incoming } as any;
             } else {
@@ -428,7 +428,7 @@ export class TrackingOrchestrator {
             carrier_last_event_at: event.sourceOccurredAt || null,
             carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,
-            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' ? {
+            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' ? {
               carrier_order_id: event.carrierOrderId || null,
               carrier_metadata: event.carrierMetadata || null,
             } : {}),
