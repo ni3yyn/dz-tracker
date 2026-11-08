@@ -95,7 +95,6 @@ export class ElogistiaAdapter {
       description: [mapped.description, log && log !== status ? log : ''].filter(Boolean).join(' — '),
       carrierName: 'Elogistia',
       carrierTrackingNumber: tracking || undefined,
-      carrierOrderId: tracking || undefined,
       sourceProvider: 'elogistia',
       sourceOccurredAt: occurredAt,
       sourceEventId: eventId || undefined,
