@@ -12,6 +12,7 @@ export { ZRExpressWebhookAdapter, ZR_EXPRESS_WEBHOOK_EVENT_TYPES, verifyZRExpres
 export type { ZRExpressWebhookEvent, ZRExpressWebhookEventType } from './carriers/zrexpress-webhook.adapter';
 export { ZimouAdapter, mapZimouStatus } from './carriers/zimou.adapter';
 export { ElogistiaAdapter, mapElogistiaStatus, parseElogistiaDate } from './carriers/elogistia.adapter';
+export { EcomV2Adapter, mapEcomV2Status, parseEcomV2Date, ecomV2EventId } from './carriers/ecom-v2.adapter';
 export {
   MaystroAdapter,
   ALGERIA_WILAYAS_58,
@@ -46,7 +47,7 @@ export interface TrackingEvent {
   /** Selected provider order fields retained for merchant-side auditing/display. */
   carrierMetadata?: Record<string, unknown>;
   /** Distinguishes provider-specific event ledgers when a webhook has no signature ID. */
-  sourceProvider?: 'zrexpress' | 'maystro' | 'zimou' | 'elogistia';
+  sourceProvider?: 'zrexpress' | 'maystro' | 'zimou' | 'elogistia' | 'ecom_v2';
   /** Import a historical provider event without firing customer notifications. */
   suppressTriggers?: boolean;
   /** Provider event time used to reject out-of-order courier status events. */
@@ -194,7 +195,7 @@ export class TrackingOrchestrator {
         if (event.carrierName) {
           updatePayload.carrier_name = event.carrierName;
         }
-        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia') {
+        if (event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'ecom_v2') {
           // Carrier API snapshots refresh authoritative provider metadata and recipient fields.
           // refresh the snapshot from the authenticated API instead of retaining stale values.
           if (event.carrierTrackingNumber) updatePayload.carrier_tracking_number = event.carrierTrackingNumber;
