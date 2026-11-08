@@ -13,6 +13,7 @@ Snapshot checked: 2026-11-08.
 | `POST /api/webhooks/ecotrack` | `EcoTrackAdapter.normalize()` | `apps/web/src/app/api/webhooks/ecotrack/route.ts` → `packages/orchestrator/src/carriers/ecotrack.adapter.ts` |
 | `POST /api/webhooks/ecotrack/sync` | Internal batch ingestion for the read-only polling worker (1–100 events) | `apps/web/src/app/api/webhooks/ecotrack/sync/route.ts` → same shared handler |
 | `POST /api/webhooks/zrexpress/[endpointToken]` | Modern ZR Express Svix receiver; verifies raw-body signature and queues signed events | `apps/web/src/app/api/webhooks/zrexpress/[endpointToken]/route.ts` → `ZRExpressWebhookAdapter` → `zrexpress_webhook_events` |
+| `POST /api/internal/zrexpress/process` | Signed Railway-worker-only processor; not a provider webhook URL | `apps/web/src/app/api/internal/zrexpress/process/route.ts` → `TrackingOrchestrator` → existing order/notification pipeline |
 | `POST /api/webhooks/zrexpress` | Legacy Procolis-shaped payload only; do not use for modern ZR Supplier API | `apps/web/src/app/api/webhooks/zrexpress/route.ts` → `ZRExpressAdapter.normalize()` |
 | `POST /api/webhooks/procolis` | `ProcolisAdapter.normalize()` | `apps/web/src/app/api/webhooks/procolis/route.ts` → same ZR Express source |
 | `POST /api/webhooks/maystro` | `MaystroAdapter.normalize()` | `apps/web/src/app/api/webhooks/maystro/route.ts` → `packages/orchestrator/src/carriers/maystro.adapter.ts` |
@@ -74,11 +75,11 @@ The modern ZR Express integration is separate from the older Procolis-shaped ada
 | Public, tenant-tokenized receiver with Svix verification | `POST /api/webhooks/zrexpress/[endpointToken]` |
 | Durable idempotent event queue and ordering RPCs | `apps/web/src/app/migrations/20261108_zrexpress_webhooks.sql` |
 | Modern event normalizer | `packages/orchestrator/src/carriers/zrexpress-webhook.adapter.ts` |
-| Railway event consumer | `apps/push-worker/src/zrexpress-webhook-worker.ts` |
+| Railway queue consumer | `apps/push-worker/src/zrexpress-webhook-worker.ts` (sends a signed event-ID request to the internal processor; retries queue rows) |
 
 The managed connection uses `https://api.zrexpress.app/api/v1` with `X-Api-Key` and `X-Tenant`. It registers the three supported events explicitly: `parcel.state.updated`, `parcel.state.situation.created`, and `parcel.isReturn.updated`. Do not omit `eventTypes`: the provider SDK's live-verified reference notes that creating an endpoint without a non-empty list has returned HTTP 500.
 
-ZR credentials are stored with AES-256-GCM and the same `CARRIER_CREDENTIALS_ENCRYPTION_KEY` used by EcoTrack. The webhook receiver verifies Svix using the raw request bytes before storing the event. Event IDs are unique per merchant; the worker processes through the shared orchestrator, and database RPCs reject stale provider timestamps and repeated Svix IDs. Customer confirmation enqueueing is preserved for new orders.
+ZR credentials are stored with AES-256-GCM and the same `CARRIER_CREDENTIALS_ENCRYPTION_KEY` used by EcoTrack. The webhook receiver verifies Svix using the raw request bytes before storing the event. Event IDs are unique per merchant. The Railway worker calls `/api/internal/zrexpress/process` using an HMAC request signature derived from the existing encryption key; the internal Next.js route checks the queue lease, runs the shared orchestrator and preserves confirmation enqueueing. The worker stays independent of the orchestrator workspace package, so its isolated Docker build remains self-contained. Database RPCs reject stale provider timestamps and repeated Svix IDs.
 
 Apply `20261108_zrexpress_webhooks.sql` before enabling the integration. Set `ZREXPRESS_WEBHOOK_WORKER_ENABLED=true` and optionally `ZREXPRESS_WEBHOOK_POLL_INTERVAL_MS=2000` in the Railway push-worker environment. The public receiver must run on the HTTPS URL configured in Vercel.
 
