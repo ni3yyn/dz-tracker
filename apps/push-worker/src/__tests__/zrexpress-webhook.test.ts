@@ -106,6 +106,20 @@ test('normalizes the modern parcel.state.updated payload and PhoneDto number1', 
   assert.equal(event.sourceEventId, 'msg_state_01');
 });
 
+test('normalizes the alternate countryCode/number phone shape', () => {
+  const payload = stateEvent();
+  payload.data.customer.phone = { countryCode: '+213', number: '0555123456' };
+  const event = ZRExpressWebhookAdapter.normalize('merchant-1', payload, 'msg_phone_01');
+  assert.equal(event.customerPhone, '213555123456');
+});
+
+test('uses the parcel UUID instead of a shared placeholder when externalId is absent', () => {
+  const payload = stateEvent();
+  delete payload.data.externalId;
+  const event = ZRExpressWebhookAdapter.normalize('merchant-1', payload, 'msg_no_external_id');
+  assert.equal(event.externalOrderId, 'ZR-d290f1ee-6c54-4b01-90e6-d701748f0851');
+});
+
 test('records situation events as distinct provider timeline entries', () => {
   const payload: ZRExpressWebhookEvent = {
     eventType: 'parcel.state.situation.created',
