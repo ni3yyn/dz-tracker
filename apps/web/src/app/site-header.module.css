@@ -114,12 +114,12 @@
   flex: 0 0 42px;
   padding: 0;
   border: 1px solid var(--border-soft, #dfe3d9);
-  border-radius: 11px;
+  border-radius: 0;
   background: var(--surface, #fffefa);
   color: var(--ink-main, #202a23);
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
+  box-shadow: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .dashboardMenuToggle:hover {
