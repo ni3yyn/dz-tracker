@@ -115,8 +115,8 @@ ALTER TABLE public.zrexpress_webhook_applied_events ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.zrexpress_webhook_applied_events FROM anon, authenticated;
 GRANT ALL ON public.zrexpress_webhook_applied_events TO service_role;
 
--- Atomically apply an event only when it is not older than the latest known
--- order timeline entry. This protects against Svix retries/reordering and
+-- Atomically apply an event only when it is not older than the latest applied
+-- ZR provider event. This protects against Svix retries/reordering and
 -- concurrent Railway worker replicas. Each distinct signed provider event
 -- still gets its own timeline row, including same-category situation events.
 CREATE OR REPLACE FUNCTION public.record_order_status_change_ordered(
@@ -161,7 +161,23 @@ BEGIN
 
 
 
-  IF p_occurred_at <= COALESCE(v_carrier_event_at, '-infinity'::TIMESTAMPTZ) THEN
+  -- If a new-order attempt inserted its order_created row but failed before
+  -- recording the Svix id, allow the retry to seal the id without duplicating
+  -- that original history entry.
+  IF EXISTS (
+    SELECT 1
+    FROM public.order_history
+    WHERE order_id = p_order_id
+      AND created_at = p_occurred_at
+      AND status_raw = p_status_raw
+      AND status_title = p_status_title
+      AND event_type = 'order_created'
+  ) THEN
+    RETURN QUERY SELECT FALSE, NULL::UUID;
+    RETURN;
+  END IF;
+
+  IF p_occurred_at < COALESCE(v_carrier_event_at, '-infinity'::TIMESTAMPTZ) THEN
     RETURN QUERY SELECT FALSE, NULL::UUID;
     RETURN;
   END IF;
