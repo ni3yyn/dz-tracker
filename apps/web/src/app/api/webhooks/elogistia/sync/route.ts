@@ -21,9 +21,13 @@ export async function POST(req: Request) {
 
   const results = [];
   for (const event of parsed.events) {
+    const forwardedHeaders = new Headers(req.headers);
+    forwardedHeaders.delete('content-length');
+    forwardedHeaders.delete('content-encoding');
+    forwardedHeaders.set('content-type', 'application/json');
     const response = await ingestOne(new Request(req.url, {
       method: 'POST',
-      headers: req.headers,
+      headers: forwardedHeaders,
       body: JSON.stringify(event),
     }));
     let body: any = null;
