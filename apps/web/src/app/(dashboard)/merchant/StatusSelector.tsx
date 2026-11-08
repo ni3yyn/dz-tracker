@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { updateOrderStatus } from './actions';
-import { BrandedSelect, BrandedSelectOption } from './BrandedSelect';
+import { BrandedSelect } from './BrandedSelect';
+import type { BrandedSelectOption } from './BrandedSelect';
 
 const BASE_STATUS_OPTIONS: BrandedSelectOption[] = [
   { value: 'order_placed', label: 'تم استلام الطلب' },
