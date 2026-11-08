@@ -252,6 +252,13 @@
 }
 
 
+/* The mobile portal is never displayed alongside desktop navigation. */
+@media (min-width: 981px) {
+  .mobileMenu {
+    display: none !important;
+  }
+}
+
 /* On mobile, the public navigation is a full-width bottom sheet that rises into view. */
 @media (max-width: 980px) {
   .mobileMenu {
