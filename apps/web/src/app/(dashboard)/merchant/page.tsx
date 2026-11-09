@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { createClient } from '../../../lib/supabase-server';
 import { getSupabaseAdminClient } from '@saas/database';
 import { MerchantDashboardView } from './MerchantDashboardView';
+import MerchantDashboardSkeleton from './MerchantDashboardSkeleton';
 import { logout } from './actions';
 import styles from './merchant.module.css';
 
-export default async function MerchantDashboardPage() {
+async function MerchantDashboardContent() {
   const supabaseAuth = await createClient();
   const {
     data: { user },
@@ -227,5 +228,13 @@ export default async function MerchantDashboardPage() {
       confirmationTelegramEnabled={(merchant as any).confirmation_telegram_enabled ?? false}
       initialUpsells={(upsells || []) as any}
     />
+  );
+}
+
+export default function MerchantDashboardPage() {
+  return (
+    <Suspense fallback={<MerchantDashboardSkeleton />}>
+      <MerchantDashboardContent />
+    </Suspense>
   );
 }
