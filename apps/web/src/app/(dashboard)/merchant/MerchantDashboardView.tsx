@@ -3920,7 +3920,10 @@ export async function registerSavedOrder(savedOrder) {
           .dz-header-titles {
             grid-column: 2 !important;
             grid-row: 1 !important;
+            display: flex !important;
+            align-items: center !important;
             min-width: 0 !important;
+            min-height: 42px !important;
             align-self: center !important;
           }
           .dz-header-titles h1 {
@@ -3970,6 +3973,9 @@ export async function registerSavedOrder(savedOrder) {
             right: 10px !important;
             width: calc(100vw - 20px) !important;
             max-height: calc(100dvh - 82px) !important;
+          }
+          .dz-header-titles {
+            min-height: 38px !important;
           }
           .dz-header-titles h1 {
             font-size: 17px !important;
