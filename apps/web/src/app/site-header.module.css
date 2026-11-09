@@ -44,6 +44,25 @@
   border: 1px solid #dfe3d9; border-radius: 4px; background: rgba(255, 254, 250, .92);
   color: #294b37; cursor: pointer; box-shadow: none;
 }
+.menuToggle {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #294b37;
+  box-shadow: none;
+  transition: color .2s ease;
+}
+.menuToggle:hover,
+.menuToggle:active {
+  border: 0;
+  background: transparent;
+  color: #1d3427;
+  box-shadow: none;
+}
+.menuToggle:focus-visible {
+  outline: 2px solid #294b37;
+  outline-offset: 4px;
+}
 .menuToggle span, .dashboardMenuToggle span { display: block; width: 18px; height: 1.7px; border-radius: 3px; background: currentColor; transition: transform .32s cubic-bezier(.2,.65,.25,1), opacity .25s ease; }
 .menuToggleOpen span:first-child { transform: translateY(6.7px) rotate(45deg); }
 .menuToggleOpen span:nth-child(2) { opacity: 0; }
