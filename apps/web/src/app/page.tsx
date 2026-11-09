@@ -24,7 +24,7 @@ const steps = [
   {
     number: '04',
     title: 'دع التتبّع يسير',
-    description: 'شارك رابط الزبون واترك التحديثات تظهر في مكان واحد. وإذا لم يردّ الزبون على المندوب، يصلك تذكير مع زر WhatsApp للتواصل بشأن التأجيل أو الإلغاء.',
+    description: 'يصل رابط التتبّع للزبون عبر Telegram عند استيفاء شروط الإرسال، ويمكنه تفعيل تنبيهات المتصفح لمتابعة تغيّر حالة الشحنة. وإذا احتجت تدخّلك، يصلك تذكير مع زر WhatsApp للتواصل بشأن التأجيل أو الإلغاء.',
   },
 ];
 
@@ -45,27 +45,34 @@ const features = [
   },
   {
     number: '03',
-    label: 'رابط الزبون',
-    title: 'رابط التتبّع يصل عبر Telegram',
-    description: 'يصل للزبون رابط مباشر لصفحة التتبّع عبر Telegram، ويمكنه الرجوع إلى آخر حالة متاحة دون الحاجة إلى السؤال عن كل تحديث.',
+    label: 'رابط الزبون · TELEGRAM',
+    title: 'رابط التتبّع يصل تلقائياً عبر Telegram',
+    description: 'مع كل طلب جديد مستوفٍ للشروط، يرسل تاجر تراك رابط صفحة التتبّع مباشرة إلى Telegram الخاص بالزبون. يتطلب ذلك تفعيل الخدمة، وموافقة الزبون، ورقم هاتف مرتبطاً بحساب Telegram.',
     symbol: 'telegram',
   },
   {
     number: '04',
+    label: 'تنبيهات المتصفح · WEB PUSH',
+    title: 'إشعار عند كل تغيير في حالة الشحنة',
+    description: 'من صفحة التتبّع، يفعّل الزبون إشعارات المتصفح بإذنه. بعدها تصله تنبيهات عند كل تحديث جديد لحالة شحنته، حتى إذا أغلق الصفحة، ما دام المتصفح والجهاز يسمحان بالإشعارات.',
+    symbol: 'browserNotifications',
+  },
+  {
+    number: '05',
     label: 'شبكة التوصيل',
     title: 'منظومة تضم أكثر من 80 شركة توصيل جزائرية',
     description: 'تتوفر ربطات مع أكثر من 80 شركة توصيل جزائرية، منها Yalidine وZR Express. تظهر حالة الشحنة وفق الأحداث التي توفرها الشركة المتصلة.',
     symbol: 'network',
   },
   {
-    number: '05',
+    number: '06',
     label: 'متابعة الزبون',
     title: 'تذكير بالطلبات التي تحتاج تدخّلك',
     description: 'إذا لم يردّ الزبون على مندوب التوصيل، ينبهك تاجر تراك لتتواصل معه مباشرة عبر زر WhatsApp سريع، وتتأكد إن كان التسليم سيؤجّل أم يُلغى.',
     symbol: 'whatsappReminder',
   },
   {
-    number: '06',
+    number: '07',
     label: 'تحديث الحالات',
     title: 'تحديث يدوي أو مزامنة تلقائية',
     description: 'غيّر حالة الطلب من لوحة التاجر متى احتجت، أو دع شركة التوصيل المتصلة تحدّثها تلقائياً عند وصول أحداث جديدة.',
@@ -80,7 +87,11 @@ const faqs = [
   },
   {
     question: 'كيف يصل رابط التتبّع إلى الزبون؟',
-    answer: 'يرسل تاجر تراك رابط التتبّع عبر Telegram. وإذا لم يردّ الزبون على مندوب التوصيل، يظهر للتاجر زر WhatsApp سريع للتواصل معه مباشرة بشأن التأجيل أو الإلغاء.',
+    answer: 'عند تفعيل خدمة Telegram وتسجيل موافقة الزبون، يرسل تاجر تراك رابط التتبّع تلقائياً مع الطلب الجديد إلى رقم الزبون المرتبط بحساب Telegram. إذا لم يكن الرقم مرتبطاً بتيليجرام أو لم تتوفر الموافقة، فلن يُرسل تلقائياً عبر هذه القناة.' ,
+  },
+  {
+    question: 'هل يتلقى الزبون إشعارات عند تغيّر حالة الطلب؟',
+    answer: 'نعم. من صفحة التتبّع، يختار الزبون تفعيل إشعارات المتصفح ويمنح الإذن. بعدها تصله تنبيهات عند تسجيل تحديث جديد لحالة الشحنة، حتى عند إغلاق صفحة التتبّع، بحسب دعم المتصفح وإعدادات الجهاز.',
   },
   {
     question: 'من يحدّث حالة الشحنة؟',
@@ -269,6 +280,32 @@ function FeatureSymbol({ type }: { type: string }) {
       <circle className={styles.illustrationSpark} cx="38" cy="20" r="3" fill="#d57955" />
     </svg>
   );
+  if (type === 'browserNotifications') return (
+    <svg className={styles.illustrationSvg} viewBox="0 0 180 138" fill="none" aria-hidden="true">
+      <ellipse className={styles.illustrationBlobWarm} cx="89" cy="73" rx="72" ry="53" fill="#f0e4d9" />
+      <circle className={styles.illustrationOrbit} cx="91" cy="69" r="53" stroke="#d9c5b7" strokeWidth="1" strokeDasharray="2 7" />
+      <g className={styles.browserNotificationWindow}>
+        <rect x="19" y="28" width="111" height="82" rx="8" fill="#fffefa" stroke="#d8ded3" />
+        <path d="M19 47h111" stroke="#e2e6dd" />
+        <circle cx="30" cy="37.5" r="2.3" fill="#d57955" />
+        <circle cx="38" cy="37.5" r="2.3" fill="#cbd6c7" />
+        <circle cx="46" cy="37.5" r="2.3" fill="#cbd6c7" />
+        <rect x="30" y="57" width="31" height="34" rx="5" fill="#e6eee3" />
+        <path d="m37 66 8-4 8 4v11l-8 5-8-5V66Z" fill="#fffefa" stroke="#718b70" strokeWidth="1.2" strokeLinejoin="round" />
+        <path d="M69 62h43M69 69h31M69 83h37M69 90h24" stroke="#c1cdc0" strokeWidth="2" strokeLinecap="round" />
+      </g>
+      <path className={styles.illustrationFlow} d="M112 65c12 0 8-15 18-15" stroke="#7d9879" strokeWidth="1.6" strokeDasharray="3 5" strokeLinecap="round" />
+      <g className={styles.browserNotificationToast}>
+        <rect x="98" y="53" width="65" height="47" rx="7" fill="#294b37" />
+        <circle cx="111" cy="67" r="7" fill="#e7eee3" />
+        <path d="M108 67a3 3 0 0 1 6 0c0 3 1.5 4 1.5 4h-9S108 70 108 67Z" stroke="#294b37" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M110 73h2" stroke="#294b37" strokeWidth="1" strokeLinecap="round" />
+        <circle className={styles.browserNotificationDot} cx="157" cy="57" r="4" fill="#d57955" />
+        <path d="M123 65h28M123 72h22M108 86h43" stroke="#e7eee3" strokeWidth="2" strokeLinecap="round" opacity=".8" />
+      </g>
+      <circle className={styles.illustrationSpark} cx="37" cy="20" r="3" fill="#d57955" />
+    </svg>
+  );
   if (type === 'network') return (
     <svg className={styles.illustrationSvg} viewBox="0 0 180 138" fill="none" aria-hidden="true">
       <ellipse className={styles.illustrationBlob} cx="90" cy="73" rx="72" ry="53" fill="#e6ece2" />
@@ -334,14 +371,14 @@ export default async function HomePage() {
         <div className={styles.heroCopy} data-dz-reveal>
           <div className={styles.eyebrow}><span className={styles.eyebrowIcon} aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><path d="M2 5.5h6.5c4.5 0 4.5 6 0 6H6c-4 0-4 5.5 0 5.5h11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="2" cy="5.5" r="1.4" fill="#D57955"/><circle cx="17" cy="17" r="1.4" fill="currentColor"/></svg></span> ربطات الشحن وتجربة التتبّع</div>
           <h1 id="hero-title">قلّل رسائل<br /><em>«وين راه طلبي؟»</em></h1>
-          <p className={styles.heroDescription}>عندما تكبر الطلبات، تتكرر أسئلة العملاء عن حالة الشحن. تاجر تراك يرسل لكل زبون رابط تتبّع يحمل هوية متجرك، ويعرض آخر حالة للطلب — بتحديث يدوي أو تلقائي من شركة توصيل مربوطة.</p>
+          <p className={styles.heroDescription}>عندما تكبر الطلبات، تتكرر أسئلة العملاء عن حالة الشحن. يرسل تاجر تراك رابط التتبّع عبر Telegram للطلبات المستوفية لشروط الإرسال، ويتيح للزبون تفعيل تنبيهات المتصفح عند تغيّر حالة الشحنة.</p>
           <div className={styles.heroActions}>
             <a className={styles.primaryButton} href={isAuthenticated ? "/merchant" : "/register"}>{isAuthenticated ? "افتح لوحة التاجر" : "اربط متجرك الآن"} <span aria-hidden="true">↗</span></a>
             <a className={styles.secondaryButton} href="#how-it-works">شاهد طريقة الربط <span aria-hidden="true">↓</span></a>
           </div>
           <div className={styles.heroProof}>
             <span className={styles.heroProofMark}><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.2 4.2L19 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-            <span>SDK أو Webhook</span><i /> <span>رابط عبر Telegram</span><i /> <span>+80 شركة توصيل جزائرية</span>
+            <span>SDK أو Webhook</span><i /> <span>رابط عبر Telegram</span><i /> <span>تنبيهات المتصفح</span><i /> <span>+80 شركة توصيل جزائرية</span>
           </div>
         </div>
         <TrackingPreview />
