@@ -527,10 +527,38 @@ export default async function HomePage() {
       </section>
 
       <footer className={styles.footer}>
-        <a href="/" className={styles.footerBrand}><BrandMark light /> <strong>تاجر تراك </strong></a>
-        <span>منصة متابعة الطلبات وتجربة ما بعد الشراء</span>
-        <div className={styles.footerLinks}><a href="#how-it-works">كيف يعمل</a><a href="/login">تسجيل الدخول</a><a href="/register">إنشاء حساب</a></div>
-        <a href="#pricing" className={styles.footerPricing}>الأسعار</a><span className={styles.footerCopyright}>© تاجر تراك </span>
+        <div className={styles.footerTop}>
+          <div className={styles.footerIdentity}>
+            <a href="/" className={styles.footerBrand} aria-label="تاجر تراك - الصفحة الرئيسية">
+              <BrandMark light />
+              <span className={styles.footerWordmark}><strong>تاجر تراك</strong><small>TAJERTRACK</small></span>
+            </a>
+            <p>منصة تربط طلبات متجرك بتجربة تتبّع واضحة، وتجمع تحديثات الشحن في مكان واحد.</p>
+            <span className={styles.footerSignature}><i aria-hidden="true" /> ربط الطلبات · تتبّع الشحنات · متابعة الزبائن</span>
+          </div>
+          <nav className={styles.footerNav} aria-label="روابط المنصة">
+            <h2>المنصة</h2>
+            <a href="#how-it-works">كيف يعمل</a>
+            <a href="#features">المزايا</a>
+            <a href="#pricing">الخطط والأسعار</a>
+            <a href="#faq">الأسئلة الشائعة</a>
+          </nav>
+          <nav className={styles.footerNav} aria-label="روابط حساب التاجر">
+            <h2>حساب التاجر</h2>
+            <a href={isAuthenticated ? "/merchant" : "/login"}>{isAuthenticated ? "لوحة التاجر" : "تسجيل الدخول"}</a>
+            <a href="/register">إنشاء حساب</a>
+          </nav>
+          <div className={styles.footerStart}>
+            <span className={styles.footerOverline}>جاهز للانطلاق؟</span>
+            <p>ابدأ بربط متجرك، ودع زبائنك يتابعون طلباتهم بسهولة.</p>
+            <a href="/register" className={styles.footerStartButton}>ابدأ الآن <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+        <div className={styles.footerBottom}>
+          <span className={styles.footerCopyright}>© {new Date().getFullYear()} تاجر تراك. جميع الحقوق محفوظة.</span>
+          <span className={styles.footerBottomNote}>من الطلب إلى التوصيل، في مسار أوضح.</span>
+          <a className={styles.footerTopLink} href="/" aria-label="العودة إلى أعلى الصفحة">العودة للأعلى <span aria-hidden="true">↑</span></a>
+        </div>
       </footer>
     </main>
   );
