@@ -5,7 +5,7 @@ import { renderTrackingMessage } from '../message-template.js';
 import { classifyTelegramError } from '../error-classifier.js';
 import { OutboxJob, ResolvedTelegramRecipient } from '../delivery-state.js';
 
-test('End-to-End Simulation: Order Consent & Outbox Lifecycle', async () => {
+test('End-to-End Simulation: Phone-based Telegram tracking delivery & Outbox Lifecycle', async () => {
   // 1. Validate Input Data
   const rawCustomerPhone = '0555123456';
   const cleanPhone = normalizePhoneForTelegram(rawCustomerPhone);
@@ -19,7 +19,6 @@ test('End-to-End Simulation: Order Consent & Outbox Lifecycle', async () => {
     customer_phone: cleanPhone,
     customer_name: 'كريم بلحاج',
     tracking_uuid: 'e2e-uuid-7788-9900',
-    telegram_consent_at: new Date().toISOString(),
   };
 
   const mockOutboxJob: OutboxJob = {
