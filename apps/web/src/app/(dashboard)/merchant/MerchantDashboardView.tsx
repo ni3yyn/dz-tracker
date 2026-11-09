@@ -6081,6 +6081,453 @@ export async function registerSavedOrder(savedOrder) {
             transition-duration: .01ms !important;
           }
         }
+
+        /* Merchant settings: one orderly column on narrow screens, with contained data and controls. */
+        .dz-admin-root .dz-settings-page {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          overflow-x: clip;
+        }
+        .dz-admin-root .dz-settings-page > * { min-width: 0; max-width: 100%; }
+        .dz-admin-root .dz-settings-section {
+          margin: 0 !important;
+          padding: 20px 22px !important;
+          border: 1px solid #e1e5dc !important;
+          border-radius: 0 !important;
+          background: #fffefa !important;
+          box-shadow: none !important;
+          min-width: 0;
+        }
+        .dz-admin-root .dz-settings-section > div:first-child {
+          align-items: flex-start !important;
+          margin-bottom: 15px !important;
+        }
+        .dz-admin-root .dz-settings-section > div:first-child > svg {
+          flex: 0 0 auto;
+          width: 19px;
+          height: 19px;
+          margin-top: 7px;
+          color: #52735a;
+          stroke-width: 1.8;
+        }
+        .dz-admin-root .dz-settings-profile-grid,
+        .dz-admin-root .dz-settings-telegram-grid,
+        .dz-admin-root .dz-settings-payment-layout,
+        .dz-admin-root .dz-settings-payment-form,
+        .dz-admin-root .dz-settings-payment-history {
+          min-width: 0;
+          max-width: 100%;
+        }
+        .dz-admin-root .dz-settings-profile-grid > div,
+        .dz-admin-root .dz-settings-telegram-option { min-width: 0; }
+        .dz-admin-root .dz-settings-profile-grid .formLabel,
+        .dz-admin-root .dz-settings-page .formLabel {
+          display: block;
+          margin-bottom: 7px;
+          color: #34483b;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.5;
+        }
+        .dz-admin-root .dz-settings-page input.input {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          min-height: 44px;
+          box-sizing: border-box;
+          border-radius: 0 !important;
+        }
+        .dz-admin-root .dz-settings-profile-actions {
+          align-items: center !important;
+        }
+        .dz-admin-root .dz-settings-profile-actions > span {
+          flex: 1 1 220px;
+          min-width: 0;
+          line-height: 1.7;
+        }
+        .dz-admin-root .dz-settings-profile-actions > button {
+          min-height: 42px;
+          border-radius: 0 !important;
+          white-space: nowrap;
+        }
+        .dz-admin-root .dz-settings-telegram-option {
+          padding: 13px 14px !important;
+        }
+        .dz-admin-root .dz-settings-telegram-option p {
+          min-height: 0 !important;
+          max-width: 52ch;
+        }
+        .dz-admin-root .dz-settings-telegram-option button[role="switch"] {
+          flex: 0 0 48px;
+          min-width: 48px;
+          min-height: 27px;
+          padding: 3px !important;
+        }
+        .dz-admin-root .dz-settings-billing {
+          display: flex;
+          flex-direction: column;
+          gap: 13px;
+          width: 100%;
+          min-width: 0;
+        }
+        .dz-admin-root .dz-settings-billing-heading {
+          margin: 7px 0 2px !important;
+          padding: 0 0 13px;
+          border-bottom: 1px solid #e1e5dc;
+        }
+        .dz-admin-root .dz-settings-billing-heading h2 {
+          font-size: 20px !important;
+          line-height: 1.45;
+        }
+        .dz-admin-root .dz-settings-subscription-stats {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          width: 100%;
+          min-width: 0;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+        .dz-admin-root .dz-settings-subscription-stats .dz-stat-item {
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+        .dz-admin-root .dz-settings-subscription-stats .dz-stat-value {
+          font-size: clamp(21px, 2.2vw, 29px);
+          line-height: 1.25;
+          overflow-wrap: anywhere;
+        }
+        .dz-admin-root .dz-settings-payment-title {
+          margin: 15px 0 4px !important;
+          font-size: 17px !important;
+          line-height: 1.55;
+        }
+        .dz-admin-root .dz-settings-payment-layout {
+          display: grid !important;
+          grid-template-columns: minmax(0, .88fr) minmax(0, 1.12fr);
+          align-items: start;
+          gap: 20px !important;
+        }
+        .dz-admin-root .dz-settings-payment-form {
+          width: 100%;
+          padding: 20px !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+        .dz-admin-root .dz-settings-payment-history {
+          width: 100%;
+        }
+        .dz-admin-root .dz-settings-rip-card {
+          max-width: 100%;
+          border-radius: 0 !important;
+          border-color: #e1e5dc !important;
+          background: #f6f7f2 !important;
+        }
+        .dz-admin-root .dz-settings-rip-card .dz-mono {
+          max-width: 100%;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          font-size: clamp(12px, 1.25vw, 16px) !important;
+          letter-spacing: .015em;
+        }
+        .dz-admin-root .dz-settings-payment-table {
+          width: 100%;
+          min-width: 0;
+        }
+        .dz-admin-root .dz-settings-payment-table td {
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+        .dz-admin-root .dz-settings-payment-plan-cell {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+          min-width: 0;
+        }
+        .dz-admin-root .dz-settings-payment-plan-cell .dz-mono,
+        .dz-admin-root .dz-settings-payment-table td .dz-mono {
+          max-width: 100%;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+        .dz-admin-root .dz-settings-payment-history .dz-table-wrap {
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          min-width: 0;
+        }
+        .dz-admin-root .dz-settings-payment-history .dz-table-header {
+          padding: 15px 16px;
+        }
+        .dz-admin-root .dz-settings-payment-history .dz-table-scroll {
+          max-width: 100%;
+          max-height: 420px;
+        }
+        @media (max-width: 1100px) {
+          .dz-admin-root .dz-settings-profile-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+          .dz-admin-root .dz-settings-payment-layout {
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .dz-admin-root .dz-settings-payment-form,
+          .dz-admin-root .dz-settings-payment-history { min-width: 0; }
+        }
+        @media (max-width: 900px) {
+          .dz-admin-root .dz-settings-telegram-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+          .dz-admin-root .dz-settings-telegram-option-secondary {
+            border-inline-start: 0 !important;
+            border-top: 1px solid var(--border-soft) !important;
+          }
+          .dz-admin-root .dz-settings-telegram-option p { max-width: none; }
+        }
+        @media (max-width: 760px) {
+          .dz-admin-root .dz-settings-page { gap: 12px; }
+          .dz-admin-root .dz-settings-section {
+            padding: 15px 14px !important;
+          }
+          .dz-admin-root .dz-settings-section > div:first-child {
+            gap: 9px !important;
+            margin-bottom: 12px !important;
+          }
+          .dz-admin-root .dz-settings-section > div:first-child > div { min-width: 0; }
+          .dz-admin-root .dz-settings-section > div:first-child span {
+            font-size: 9px !important;
+            letter-spacing: .045em !important;
+          }
+          .dz-admin-root .dz-settings-section > div:first-child h2 {
+            font-size: 16px !important;
+          }
+          .dz-admin-root .dz-settings-profile-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 14px !important;
+          }
+          .dz-admin-root .dz-settings-profile-actions {
+            display: flex !important;
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 10px !important;
+            margin-top: 15px !important;
+            padding-top: 13px !important;
+          }
+          .dz-admin-root .dz-settings-profile-actions > span { flex: none; }
+          .dz-admin-root .dz-settings-profile-actions > button {
+            width: 100%;
+            min-width: 0 !important;
+            min-height: 44px;
+            white-space: normal;
+          }
+          .dz-admin-root .dz-settings-telegram-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+          .dz-admin-root .dz-settings-telegram-option {
+            padding: 13px 0 !important;
+          }
+          .dz-admin-root .dz-settings-telegram-option-secondary {
+            border-inline-start: 0 !important;
+            border-top: 1px solid var(--border-soft) !important;
+          }
+          .dz-admin-root .dz-settings-telegram-option > div:first-child {
+            align-items: flex-start !important;
+            flex-wrap: wrap;
+          }
+          .dz-admin-root .dz-settings-telegram-option p {
+            margin-bottom: 9px !important;
+            font-size: 12px !important;
+            line-height: 1.75 !important;
+          }
+          .dz-admin-root .dz-settings-billing { gap: 11px; }
+          .dz-admin-root .dz-settings-billing-heading { padding-bottom: 11px; }
+          .dz-admin-root .dz-settings-billing-heading h2 { font-size: 18px !important; }
+          .dz-admin-root .dz-settings-subscription-stats {
+            grid-template-columns: minmax(0, 1fr) !important;
+            margin-bottom: 8px !important;
+          }
+          .dz-admin-root .dz-settings-subscription-stats .dz-stat-item {
+            padding: 14px 15px !important;
+            border-bottom: 1px solid var(--border-soft) !important;
+            border-inline: 0 !important;
+          }
+          .dz-admin-root .dz-settings-subscription-stats .dz-stat-item:last-child { border-bottom: 0 !important; }
+          .dz-admin-root .dz-settings-subscription-stats .dz-stat-title {
+            font-size: 11px;
+            margin-bottom: 6px;
+          }
+          .dz-admin-root .dz-settings-subscription-stats .dz-stat-value {
+            margin-bottom: 7px !important;
+            font-size: 24px !important;
+            line-height: 1.2;
+          }
+          .dz-admin-root .dz-billing-usage-note {
+            margin: 0 0 8px !important;
+            padding: 0 2px;
+            font-size: 11px;
+            line-height: 1.8;
+          }
+          .dz-admin-root .dz-unlimited-card,
+          .dz-admin-root .dz-active-plan-card {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 15px !important;
+            margin: 0 0 8px !important;
+            border-radius: 0 !important;
+          }
+          .dz-admin-root .dz-unlimited-aside {
+            align-self: flex-start;
+            min-width: 0;
+            padding: 8px 12px;
+            border-radius: 0;
+          }
+          .dz-admin-root .dz-billing-pricing { margin-bottom: 7px; }
+          .dz-admin-root .dz-billing-pricing-head { margin-bottom: 10px; }
+          .dz-admin-root .dz-billing-pricing-head h3 { font-size: 17px; line-height: 1.45; }
+          .dz-admin-root .dz-billing-pricing-head p { line-height: 1.7; }
+          .dz-admin-root .dz-billing-plan-list {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 0;
+          }
+          .dz-admin-root .dz-billing-plan {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px 12px;
+            padding: 14px 10px;
+          }
+          .dz-admin-root .dz-billing-plan > div { min-width: 0; }
+          .dz-admin-root .dz-billing-plan b {
+            max-width: 100%;
+            font-size: 16px;
+            white-space: nowrap;
+          }
+          .dz-admin-root .dz-billing-plan button {
+            grid-column: 1 / -1;
+            justify-self: stretch;
+            width: 100%;
+            min-height: 40px;
+            padding: 8px 10px !important;
+            border-radius: 0 !important;
+          }
+          .dz-admin-root .dz-billing-selected-summary {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            margin-top: 12px;
+            padding: 13px;
+            border-radius: 0;
+          }
+          .dz-admin-root .dz-billing-selected-summary strong {
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+          }
+          .dz-admin-root .dz-billing-selected-price {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 20px;
+          }
+          .dz-admin-root .dz-billing-selected-price small {
+            display: inline;
+            font-size: 10px;
+            text-align: right;
+          }
+          .dz-admin-root .dz-settings-payment-title {
+            margin: 14px 0 2px !important;
+            font-size: 16px !important;
+          }
+          .dz-admin-root .dz-settings-payment-layout {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 14px !important;
+          }
+          .dz-admin-root .dz-settings-payment-form {
+            width: 100%;
+            padding: 15px !important;
+            border-radius: 0 !important;
+          }
+          .dz-admin-root .dz-settings-rip-card {
+            margin-bottom: 18px !important;
+            padding: 13px !important;
+          }
+          .dz-admin-root .dz-settings-rip-card > div:first-of-type {
+            align-items: center;
+            gap: 8px;
+          }
+          .dz-admin-root .dz-settings-rip-card .dz-mono {
+            font-size: clamp(11px, 3.5vw, 14px) !important;
+          }
+          .dz-admin-root .dz-settings-payment-history { width: 100%; }
+          .dz-admin-root .dz-settings-payment-history .dz-table-header { padding: 13px 14px; }
+          .dz-admin-root .dz-settings-payment-history .dz-table-scroll {
+            max-height: none !important;
+            overflow: visible !important;
+          }
+          .dz-admin-root .dz-settings-payment-table,
+          .dz-admin-root .dz-settings-payment-table tbody {
+            display: block !important;
+            width: 100%;
+          }
+          .dz-admin-root .dz-settings-payment-table thead {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+          }
+          .dz-admin-root .dz-settings-payment-table tbody tr {
+            display: block !important;
+            padding: 7px 13px;
+            border-bottom: 1px solid var(--border-soft);
+          }
+          .dz-admin-root .dz-settings-payment-table tbody tr:last-child { border-bottom: 0; }
+          .dz-admin-root .dz-settings-payment-table td {
+            display: flex !important;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            min-width: 0;
+            padding: 9px 0 !important;
+            border-bottom: 1px solid rgba(225,229,220,.72) !important;
+            background: transparent !important;
+            text-align: left;
+            font-size: 11px !important;
+          }
+          .dz-admin-root .dz-settings-payment-table td:last-child { border-bottom: 0 !important; }
+          .dz-admin-root .dz-settings-payment-table td::before {
+            content: attr(data-label);
+            flex: 0 0 88px;
+            color: var(--ink-muted);
+            font-size: 10px;
+            font-weight: 700;
+            text-align: right;
+          }
+          .dz-admin-root .dz-settings-payment-table td[colspan] {
+            display: block !important;
+            text-align: center;
+            padding: 22px 8px !important;
+          }
+          .dz-admin-root .dz-settings-payment-table td[colspan]::before { content: none; }
+          .dz-admin-root .dz-settings-payment-plan-cell { align-items: flex-start; }
+          .dz-admin-root .dz-settings-payment-table .dz-mono {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+          }
+        }
+        @media (max-width: 380px) {
+          .dz-admin-root .dz-settings-section { padding-inline: 12px !important; }
+          .dz-admin-root .dz-settings-payment-table td::before { flex-basis: 78px; }
+          .dz-admin-root .dz-billing-plan { padding-inline: 7px; }
+        }
       `}} />
 
       <div className="dz-admin-root">
