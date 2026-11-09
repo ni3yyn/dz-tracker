@@ -363,7 +363,7 @@ export default async function HomePage() {
     isAuthenticated = false;
   }
   return (
-    <main className={styles.page}>
+    <main id="top" className={styles.page}>
       <ScrollRevealObserver />
       <SiteHeader isAuthenticated={isAuthenticated} />
 
@@ -557,7 +557,7 @@ export default async function HomePage() {
         <div className={styles.footerBottom}>
           <span className={styles.footerCopyright}>© {new Date().getFullYear()} تاجر تراك. جميع الحقوق محفوظة.</span>
           <span className={styles.footerBottomNote}>من الطلب إلى التوصيل، في مسار أوضح.</span>
-          <a className={styles.footerTopLink} href="/" aria-label="العودة إلى أعلى الصفحة">العودة للأعلى <span aria-hidden="true">↑</span></a>
+          <a className={styles.footerTopLink} href="#top" aria-label="العودة إلى أعلى الصفحة">العودة للأعلى <span aria-hidden="true">↑</span></a>
         </div>
       </footer>
     </main>
