@@ -52,7 +52,6 @@ export async function GET(req: Request) {
 export const POST = createWebhookHandler({
   source: 'direct',
   transformEvent: ({ merchant, payload }) => {
-    const hasTelegramConsent = payload.telegram_consent === true || payload.telegramConsent === true;
     return {
       merchantId: merchant.id,
       externalOrderId: String(payload.order_id || payload.id || 'DIRECT_ORDER'),
@@ -64,9 +63,6 @@ export const POST = createWebhookHandler({
       productImage: payload.product_image || payload.productImage,
       carrierName: payload.carrier_name || payload.carrier,
       carrierTrackingNumber: payload.carrier_tracking_number || payload.tracking_number,
-      customerTelegramConsent: hasTelegramConsent,
-      telegramConsentSource: hasTelegramConsent ? (payload.telegram_consent_source || payload.telegramConsentSource || 'direct_api') : undefined,
-      telegramConsentVersion: hasTelegramConsent ? (payload.telegram_consent_version || payload.telegramConsentVersion || 'v1') : undefined,
     };
   },
 });
