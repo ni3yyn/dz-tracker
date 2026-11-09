@@ -10,7 +10,6 @@ export interface OrderWithMerchant {
   customer_phone: string | null;
   customer_name: string | null;
   tracking_uuid: string;
-  telegram_consent_at?: string | null;
   merchant: {
     id: string;
     store_name: string;
@@ -107,7 +106,7 @@ export class TelegramQueueManager {
   async fetchOrderDetails(orderId: string): Promise<OrderWithMerchant | null> {
     const { data: order, error: orderErr } = await this.supabase
       .from('orders')
-      .select('id, merchant_id, external_order_id, customer_phone, customer_name, tracking_uuid, telegram_consent_at')
+      .select('id, merchant_id, external_order_id, customer_phone, customer_name, tracking_uuid')
       .eq('id', orderId)
       .maybeSingle();
 
@@ -124,7 +123,6 @@ export class TelegramQueueManager {
 
     return {
       ...order,
-      telegram_consent_at: order.telegram_consent_at ?? null,
       merchant: merchant
         ? {
             id: merchant.id,
@@ -349,7 +347,7 @@ export class TelegramQueueManager {
   async fetchOrderForConfirmation(orderId: string): Promise<OrderWithMerchant | null> {
     const { data: order, error: orderErr } = await this.supabase
       .from('orders')
-      .select('id, merchant_id, external_order_id, customer_phone, customer_name, tracking_uuid, telegram_consent_at')
+      .select('id, merchant_id, external_order_id, customer_phone, customer_name, tracking_uuid')
       .eq('id', orderId)
       .maybeSingle();
 
@@ -366,7 +364,6 @@ export class TelegramQueueManager {
 
     return {
       ...order,
-      telegram_consent_at: order.telegram_consent_at ?? null,
       merchant: merchant
         ? {
             id: merchant.id,
