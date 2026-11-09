@@ -2588,6 +2588,18 @@ export async function registerSavedOrder(savedOrder) {
         .dz-admin-root .dz-search-box { border-radius: 10px; border-color: var(--border-soft); box-shadow: none; background: #fffefa; }
         .dz-admin-root .dz-search-box:focus-within { border-color: #93a095; box-shadow: 0 0 0 3px rgba(53,88,70,.08); }
         .dz-admin-root .dz-stats-bar { border: 1px solid var(--border-soft); border-radius: 15px; background: #fffefa; box-shadow: none; margin-bottom: 24px; }
+        .dz-admin-root .dz-orders-desktop-summary { display: none; }
+        .dz-admin-root .dz-bulk-select-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          padding: 8px 10px;
+          margin-bottom: 10px;
+          border: 1px solid var(--border-soft);
+          border-radius: 0;
+          background: #fffefa;
+        }
         .dz-admin-root .dz-stat-item { padding: 19px 22px; }
         .dz-admin-root .dz-stat-item:not(:last-child)::after { background: var(--border-soft); }
         .dz-admin-root .dz-stat-title { font-size: 10px; font-weight: 600; }
@@ -3195,6 +3207,7 @@ export async function registerSavedOrder(savedOrder) {
           .dz-analytics-kpis .dz-overview-kpi:nth-child(2) { border-inline-start: 0; }
           .dz-analytics-kpis .dz-overview-kpi:last-child { grid-column: span 2; border-inline-start: 0; border-top: 1px solid var(--border-soft); }
           .dz-admin-root .dz-orders-desktop { display: none; }
+          .dz-admin-root .dz-orders-desktop-summary { display: grid; }
           .dz-orders-mobile { display: grid; gap: 12px; }
           .dz-order-mobile-card {
             display: flex;
@@ -6976,7 +6989,7 @@ export async function registerSavedOrder(savedOrder) {
           {/* TABS: ORDERS & ALERTS */}
           {(activeTab === 'orders' || activeTab === 'alerts') && (
             <div>
-              <div className="dz-stats-bar">
+              <div className="dz-stats-bar dz-orders-desktop-summary">
                 <div className="dz-stat-item">
                   <span className="dz-stat-title">إجمالي الشحنات</span>
                   <span className="dz-stat-value">{orders.length}</span>
@@ -7039,21 +7052,7 @@ export async function registerSavedOrder(savedOrder) {
               </div>
 
               {filteredOrders.length > 0 && (
-                <div
-                  role="group"
-                  aria-label="إجراءات الحذف الجماعي"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    flexWrap: 'wrap',
-                    padding: '12px 14px',
-                    marginBottom: 12,
-                    border: '1px solid var(--border-soft)',
-                    borderRadius: 12,
-                    background: 'var(--surface)',
-                  }}
-                >
+                <div className="dz-bulk-select-toolbar" role="group" aria-label="إجراءات الحذف الجماعي">
                   <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 650, cursor: 'pointer' }}>
                     <input
                       type="checkbox"
@@ -7141,7 +7140,6 @@ export async function registerSavedOrder(savedOrder) {
                         <tr><td colSpan={6} style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--ink-muted)' }}>{orders.length === 0 ? 'لا توجد شحنات مسجلة بعد.' : 'لا توجد نتائج تطابق البحث والفلاتر الحالية.'}</td></tr>
                       ) : filteredOrders.slice(0, visibleOrders).map((order) => {
                         const isAlert = isAttentionStatus(order.current_status);
-                        const badgeStyle = getStatusBadgeStyle(order.current_status);
                         return (
                           <tr key={order.id} className={isAlert ? 'row-alert' : ''}>
                             <td>
@@ -7173,7 +7171,6 @@ export async function registerSavedOrder(savedOrder) {
                                 {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600 }}>بانتظار تأكيد العميل</span>}
                                 {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600 }}>أكد العميل الطلب</span>}
                                 {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600 }}>طلب العميل إلغاء الطلب</span>}
-                                <span className={`dz-pill dz-pill-${badgeStyle}`}>{getStatusLabel(order.current_status)}</span>
                                 <StatusSelector orderId={order.id} currentStatus={order.current_status} />
                               </div>
                             </td>
