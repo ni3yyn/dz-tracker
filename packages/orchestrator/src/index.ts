@@ -55,9 +55,6 @@ export interface TrackingEvent {
   sourceEventType?: string;
   /** Stable provider event key persisted for replay/idempotency protection. */
   sourceEventId?: string;
-  customerTelegramConsent?: boolean;
-  telegramConsentSource?: string;
-  telegramConsentVersion?: string;
 }
 
 export interface ProcessEventOptions {
@@ -432,9 +429,6 @@ export class TrackingOrchestrator {
               carrier_order_id: event.carrierOrderId || null,
               carrier_metadata: event.carrierMetadata || null,
             } : {}),
-            telegram_consent_at: event.customerTelegramConsent ? new Date().toISOString() : null,
-            telegram_consent_source: event.customerTelegramConsent ? (event.telegramConsentSource || 'checkout') : null,
-            telegram_consent_version: event.customerTelegramConsent ? (event.telegramConsentVersion || 'v1') : null,
           })
           .select('id, tracking_uuid')
           .single();
