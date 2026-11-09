@@ -1175,3 +1175,99 @@
   .page .brandPageCard, .page .brandPalette, .page .noReplyCard, .page .whatsappQuickAction { animation: none !important; }
 }
 
+
+
+/* TajerTrack homepage footer — full-width, editorial, and responsive. */
+.footer {
+  position: relative; display: block;
+  margin-inline: calc(-1 * clamp(20px, 6.4vw, 104px));
+  padding: 54px clamp(20px, 6.4vw, 104px) 22px;
+  overflow: hidden; background: #203b2b; color: #eef1e9;
+}
+.footer::before {
+  content: ""; position: absolute; inset: auto auto -170px -115px;
+  width: 390px; height: 390px; border: 1px solid rgba(221,232,216,.12);
+  border-radius: 50%; pointer-events: none;
+}
+.footer::after {
+  content: ""; position: absolute; left: 0; bottom: 0; width: min(36%,390px); height: 2px;
+  background: linear-gradient(90deg,transparent,rgba(213,121,85,.8)); pointer-events: none;
+}
+.footerTop {
+  position: relative; z-index: 1; display: grid;
+  grid-template-columns: minmax(230px,1.45fr) minmax(120px,.7fr) minmax(120px,.7fr) minmax(190px,1fr);
+  gap: clamp(26px,4vw,58px); padding-bottom: 44px;
+}
+.footerIdentity { max-width: 350px; }
+.footer .footerBrand { display: inline-flex; align-items: center; gap: 12px; color: #f4f4ed; }
+.footer .footerBrand .brandMark, .footer .footerBrand .brandMarkLight {
+  width: 42px; height: 42px; flex: 0 0 42px; color: #f2f1e9;
+}
+.footer .footerBrand .brandMark svg { width: 40px; height: 40px; }
+.footerWordmark { display: flex; flex-direction: column; gap: 3px; }
+.footerWordmark strong { color: #f4f4ed; font-size: 17px; font-weight: 700; letter-spacing: -.045em; }
+.footerWordmark small {
+  color: #b6c5b5; font: 600 8px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing: .17em; direction: ltr;
+}
+.footerIdentity > p { max-width: 320px; margin: 20px 0 0; color: #c2cfc1; font-size: 12px; line-height: 2.1; }
+.footerSignature { display: flex; align-items: center; gap: 9px; margin-top: 19px; color: #aebead; font-size: 9px; line-height: 1.8; }
+.footerSignature i { width: 6px; height: 6px; flex: 0 0 6px; background: #d57955; transform: rotate(45deg); }
+.footerNav { display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
+.footerNav h2 { margin: 4px 0 7px; color: #f1f2e9; font-size: 12px; font-weight: 700; }
+.footerNav a {
+  color: #b8c6b8; font-size: 11px; line-height: 1.8; text-decoration: none;
+  transition: color .2s ease,transform .2s ease;
+}
+.footerNav a:hover { color: #fffefa; transform: translateX(-3px); }
+.footerStart { align-self: start; padding-inline-start: 22px; border-inline-start: 1px solid rgba(230,237,226,.16); }
+.footerOverline { color: #d9a18a; font-size: 10px; font-weight: 700; }
+.footerStart p { max-width: 230px; margin: 10px 0 17px; color: #c0cec0; font-size: 11px; line-height: 1.9; }
+.footerStartButton {
+  display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 17px;
+  padding: 0 13px; background: #f1f1e9; color: #203b2b; font-size: 11px; font-weight: 700;
+  text-decoration: none; transition: background .2s ease,transform .2s ease;
+}
+.footerStartButton:hover { background: #fffefa; transform: translateY(-2px); }
+.footerStartButton span { color: #bd704f; font-size: 16px; }
+.footerBottom {
+  position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; min-height: 50px; padding-top: 16px; border-top: 1px solid rgba(230,237,226,.16);
+}
+.footer .footerCopyright { color: #aebdad; font: 500 9px/1.7 'Readex Pro','IBM Plex Sans Arabic',sans-serif; direction: rtl; }
+.footerBottomNote { color: #8fa18f; font-size: 9px; }
+.footerTopLink { display: inline-flex; align-items: center; gap: 8px; color: #d5dfd2; font-size: 10px; text-decoration: none; white-space: nowrap; transition: color .2s ease; }
+.footerTopLink:hover { color: #fffefa; }
+.footerTopLink span { color: #d57955; font-size: 16px; }
+@media (max-width: 1080px) {
+  .footerTop { grid-template-columns: minmax(220px,1.2fr) minmax(110px,.7fr) minmax(110px,.7fr); }
+  .footerStart {
+    grid-column: 1 / -1; display: flex; align-items: center; gap: 18px; padding: 18px 0 0;
+    border-inline-start: 0; border-top: 1px solid rgba(230,237,226,.16);
+  }
+  .footerStart p { margin: 0; }
+  .footerStartButton { margin-inline-start: auto; }
+}
+@media (max-width: 820px) {
+  .footer { margin-inline: -24px; padding-inline: 24px; }
+  .footerTop { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 30px 36px; }
+  .footerIdentity, .footerStart { grid-column: 1 / -1; }
+  .footerIdentity { max-width: 480px; }
+}
+@media (max-width: 560px) {
+  .footer { margin-inline: -18px; padding: 42px 18px 18px; }
+  .footerTop { gap: 29px 20px; }
+  .footerIdentity { grid-column: 1 / -1; }
+  .footerIdentity > p { margin-top: 15px; font-size: 11px; }
+  .footerNav { gap: 11px; }
+  .footerNav h2 { margin-bottom: 4px; font-size: 11px; }
+  .footerNav a { font-size: 10px; }
+  .footerStart { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px 12px; padding-top: 17px; }
+  .footerOverline { grid-column: 1 / -1; }
+  .footerStart p { max-width: 240px; font-size: 10px; }
+  .footerStartButton { grid-column: 2; grid-row: 2; min-height: 37px; margin: 0; padding-inline: 10px; }
+  .footerBottom { align-items: flex-start; flex-wrap: wrap; gap: 8px 15px; padding-top: 14px; }
+  .footer .footerCopyright { font-size: 8px; }
+  .footerBottomNote { order: 3; flex-basis: 100%; font-size: 8px; }
+  .footerTopLink { margin-inline-start: auto; font-size: 9px; }
+}
