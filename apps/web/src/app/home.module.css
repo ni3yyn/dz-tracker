@@ -1271,3 +1271,17 @@
   .footerBottomNote { order: 3; flex-basis: 100%; font-size: 8px; }
   .footerTopLink { margin-inline-start: auto; font-size: 9px; }
 }
+
+
+/* Reuse the exact animated SVG mark shown in the shared site header. */
+.footerAnimatedMark {
+  display: block;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+}
+.footerAnimatedMark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
