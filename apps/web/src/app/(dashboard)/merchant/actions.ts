@@ -766,8 +766,6 @@ export async function createManualOrder(formData: FormData) {
   const carrierName = (formData.get('carrier_name') as string)?.trim() || 'Yalidine Express';
   const carrierTrackingNumber = (formData.get('carrier_tracking_number') as string)?.trim() || '';
   const statusRaw = (formData.get('status_raw') as string)?.trim() || 'order_placed';
-  const telegramConsent = formData.get('telegram_consent') === 'true' || formData.get('telegram_consent') === 'on';
-  const autoEnableTelegram = formData.get('auto_enable_telegram') === 'true' || formData.get('auto_enable_telegram') === 'on';
 
   if (!merchantId) {
     return { error: 'معرّف المتجر غير موجود' };
@@ -777,14 +775,6 @@ export async function createManualOrder(formData: FormData) {
   }
 
   const supabase = getSupabaseAdminClient();
-
-  // إذا تم اختيار تيليجرام وكان خيار المتجر معطلاً، نقوم بتفعيله لضمان إدراج مهمة الإرسال في الـ Outbox
-  if (telegramConsent || autoEnableTelegram) {
-    await supabase
-      .from('merchants')
-      .update({ telegram_tracking_link_enabled: true })
-      .eq('id', merchantId);
-  }
 
   const orchestrator = new TrackingOrchestrator();
   const result = await orchestrator.processEvent({
@@ -797,9 +787,6 @@ export async function createManualOrder(formData: FormData) {
     carrierTrackingNumber: carrierTrackingNumber || undefined,
     statusRaw,
     description: 'تم تسجيل الطلب يدوياً من لوحة التاجر',
-    customerTelegramConsent: telegramConsent,
-    telegramConsentSource: 'merchant_manual_test',
-    telegramConsentVersion: 'v1',
   });
 
   if (!result.success) {
@@ -810,6 +797,18 @@ export async function createManualOrder(formData: FormData) {
     return {
       error: 'هذا الطلب موجود بالفعل ولم يتم إنشاء طلب جديد.',
     };
+  }
+
+  // Read the insert-trigger result instead of guessing from UI state.
+  // An outbox row exists only when the merchant enabled Telegram tracking.
+  const { data: telegramTrackingJob, error: telegramTrackingQueueLookupError } = await supabase
+    .from('telegram_tracking_outbox')
+    .select('id')
+    .eq('order_id', result.orderId)
+    .maybeSingle();
+
+  if (telegramTrackingQueueLookupError) {
+    console.warn('[ManualOrderTelegram]: Could not verify tracking-link queue job:', telegramTrackingQueueLookupError.message);
   }
 
   // Queue confirmation and mark the customer-confirmation stage without changing carrier status.
@@ -839,6 +838,8 @@ export async function createManualOrder(formData: FormData) {
     externalOrderId,
     confirmationQueued,
     confirmationQueueError,
+    telegramTrackingQueued: Boolean(telegramTrackingJob),
+    telegramTrackingQueueCheckFailed: Boolean(telegramTrackingQueueLookupError),
   };
 }
 
