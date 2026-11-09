@@ -824,7 +824,7 @@ export function MerchantDashboardView({
   const customMappingTriggerRef = useRef<HTMLButtonElement>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [addOrderError, setAddOrderError] = useState<string | null>(null);
-  const [newOrderSuccess, setNewOrderSuccess] = useState<{ trackingUuid: string; externalOrderId: string } | null>(null);
+  const [newOrderSuccess, setNewOrderSuccess] = useState<{ trackingUuid: string; externalOrderId: string; telegramTrackingQueued: boolean; telegramQueueCheckFailed: boolean } | null>(null);
 
   // Full Brand Customization State
   const [brandConfig, setBrandConfig] = useState<EditableBrandSettings>(() => ({
@@ -1025,13 +1025,23 @@ export function MerchantDashboardView({
         setNewOrderSuccess({
           trackingUuid: res.trackingUuid!,
           externalOrderId: res.externalOrderId!,
+          telegramTrackingQueued: Boolean(res.telegramTrackingQueued),
+          telegramQueueCheckFailed: Boolean(res.telegramTrackingQueueCheckFailed),
         });
-        if (res.confirmationQueueError) {
-          showToast('تم إنشاء الطلب، لكن تعذرت جدولة رسالة تأكيد تيليجرام. راجع سجلات الخادم.');
+        if (res.telegramTrackingQueueCheckFailed) {
+          showToast('تم إنشاء الطلب، لكن تعذّر التحقق من جدولة رابط التتبع عبر تيليجرام.');
+        } else if (res.confirmationQueueError && res.telegramTrackingQueued) {
+          showToast('تم إنشاء الطلب وجدولة رابط التتبع، لكن تعذرت جدولة رسالة التأكيد.');
+        } else if (res.confirmationQueueError) {
+          showToast('تم إنشاء الطلب، لكن تعذرت جدولة رسالة تأكيد تيليجرام.');
+        } else if (res.telegramTrackingQueued && res.confirmationQueued) {
+          showToast('تم إنشاء الطلب وجدولة رابط التتبع ورسالة التأكيد عبر تيليجرام.');
+        } else if (res.telegramTrackingQueued) {
+          showToast('تم إنشاء الطلب وجدولة رابط التتبع عبر تيليجرام.');
         } else if (res.confirmationQueued) {
-          showToast('تم إنشاء الطلب وجدولة رابط التتبع ورسالة تأكيد الطلب عبر تيليجرام 🚀');
+          showToast('تم إنشاء الطلب وجدولة رسالة التأكيد. إرسال روابط التتبع متوقف من الإعدادات.');
         } else {
-          showToast('تم إنشاء الطلب بنجاح! تم جدولة التتبع في طابور تيليجرام 🚀');
+          showToast('تم إنشاء الطلب. إرسال روابط التتبع عبر تيليجرام متوقف من الإعدادات.');
         }
       }
     } catch (err: any) {
@@ -8679,7 +8689,7 @@ export async function registerSavedOrder(savedOrder) {
                       <strong style={{ fontSize: '14px', color: 'var(--ink-main)' }}>روابط التتبع</strong>
                       <span style={{ fontSize: '11px', color: telegramEnabled ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{telegramEnabled ? 'مفعّل' : 'معطّل'}</span>
                     </div>
-                    <p style={{ minHeight: '34px', margin: '0 0 10px', color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.6 }}>إرسال رابط تتبع الشحنة تلقائياً عند تسجيل الطلب وموافقة العميل.</p>
+                    <p style={{ minHeight: '34px', margin: '0 0 10px', color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.6 }}>إرسال رابط تتبّع الشحنة تلقائياً إلى حساب Telegram المرتبط برقم العميل عند تسجيل الطلب.</p>
                     <button type="button" role="switch" aria-checked={telegramEnabled} aria-label="تفعيل إرسال روابط التتبع عبر تيليجرام" disabled={isSavingTelegram}
                       onClick={() => startTransitionTelegram(async () => {
                         const next = !telegramEnabled;
@@ -9182,7 +9192,7 @@ export async function registerSavedOrder(savedOrder) {
                     </h3>
                     <p style={{ margin: '0 0 18px', fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.7 }}>
                       رقم الطلب: <strong>{newOrderSuccess.externalOrderId}</strong><br />
-                      تم إدراج مهمة الإرسال في طابور تيليجرام (Outbox). سيتولى العامل إرسالها فور تشغيله.
+                      {newOrderSuccess.telegramQueueCheckFailed ? 'تم تسجيل الطلب، لكن تعذّر التحقق من حالة جدولة رابط التتبع.' : newOrderSuccess.telegramTrackingQueued ? 'تم إدراج رابط التتبع في طابور تيليجرام، وسيحاول حساب تاجر تراك إرساله إلى الحساب المرتبط برقم العميل.' : 'خدمة إرسال روابط التتبع عبر تيليجرام متوقفة حالياً. فعّلها من إعدادات المتجر لإرسال روابط الطلبات الجديدة.'}
                     </p>
 
                     <div style={{
@@ -9255,7 +9265,6 @@ export async function registerSavedOrder(savedOrder) {
                       </div>
                     )}
 
-                    <input type="hidden" name="auto_enable_telegram" value="true" />
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div>
@@ -9369,30 +9378,18 @@ export async function registerSavedOrder(savedOrder) {
                         </div>
                       </div>
 
-                      {/* TELEGRAM CARD */}
                       <div style={{
-                        background: '#f0f9ff',
-                        border: '1px solid #bae6fd',
-                        borderRadius: '11px',
-                        padding: '16px',
+                        borderInlineStart: '3px solid #52775a',
+                        background: '#f3f6f0',
+                        padding: '12px 14px',
                         marginTop: '6px',
                       }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            name="telegram_consent"
-                            defaultChecked={true}
-                            style={{ marginTop: '3px', width: '20px', height: '20px', accentColor: '#0284c7' }}
-                          />
-                          <div>
-                            <strong style={{ display: 'block', fontSize: '14.5px', fontWeight: 800, color: '#0369a1' }}>
-                              إرسال رابط التتبع فوراً عبر تيليجرام
-                            </strong>
-                            <span style={{ fontSize: '13px', color: '#0c4a6e', lineHeight: 1.6, display: 'block', marginTop: '4px' }}>
-                              يسجل موافقة العميل ويدرج رسالة التتبع في طابور <code>telegram_tracking_outbox</code> ليقوم العامل بتسليمها إلى هاتف العميل عبر تيليجرام تلقائياً.
-                            </span>
-                          </div>
-                        </label>
+                        <strong style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: 'var(--ink-main)' }}>
+                          الإرسال عبر حساب Telegram الخاص بتاجر تراك
+                        </strong>
+                        <span style={{ fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.8, display: 'block', marginTop: '4px' }}>
+                          عند تفعيل «روابط التتبع» من إعدادات المتجر، يُدرج رابط هذا الطلب للإرسال تلقائياً إلى حساب Telegram الذي يمكن العثور عليه برقم الهاتف. لا يحتاج العميل إلى بدء محادثة مع بوت؛ ويعتمد نجاح العثور على الحساب على صحة الرقم وإعدادات خصوصية Telegram.
+                        </span>
                       </div>
                     </div>
 
