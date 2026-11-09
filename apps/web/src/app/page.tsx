@@ -111,18 +111,6 @@ const faqs = [
   },
 ];
 
-function BrandMark({ light = false }: { light?: boolean }) {
-  return (
-    <span className={`${styles.brandMark} ${light ? styles.brandMarkLight : ''}`} aria-hidden="true">
-      <svg viewBox="0 0 36 36" fill="none">
-        <path className={styles.brandRouteLine} d="M5.5 9.5H23c10 0 10 13 0 13H13c-9 0-9 10 0 10h16" stroke="currentColor" strokeWidth="2.15" strokeLinecap="round" strokeLinejoin="round" />
-        <circle className={styles.brandRouteStart} cx="5.5" cy="9.5" r="2.1" fill="#D57955" />
-        <circle className={styles.brandRouteEnd} cx="29" cy="32.5" r="2.1" fill="currentColor" />
-      </svg>
-    </span>
-  );
-}
-
 function TrackingPreview() {
   return (
     <div className={styles.previewScene} aria-label="معاينة توضيحية لصفحة تتبّع الطلب" data-dz-reveal data-dz-reveal-delay="100">
@@ -530,7 +518,10 @@ export default async function HomePage() {
         <div className={styles.footerTop}>
           <div className={styles.footerIdentity}>
             <a href="/" className={styles.footerBrand} aria-label="تاجر تراك - الصفحة الرئيسية">
-              <BrandMark light />
+              <span className={styles.footerAnimatedMark} aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/tajertrack-animated.svg" alt="" width={42} height={42} decoding="async" />
+            </span>
               <span className={styles.footerWordmark}><strong>تاجر تراك</strong><small>TAJERTRACK</small></span>
             </a>
             <p>منصة تربط طلبات متجرك بتجربة تتبّع واضحة، وتجمع تحديثات الشحن في مكان واحد.</p>
