@@ -862,6 +862,9 @@
 .syncBadge { transform-box: fill-box; transform-origin: center; animation: tjt-drift-c 5.4s ease-in-out infinite .3s; }
 .syncArrow { transform-box: fill-box; transform-origin: center; animation: tjt-sync-rotate 12s linear infinite; }
 .syncCheck { stroke-dasharray: 22; animation: tjt-check-draw 4.4s ease-in-out infinite; }
+.browserNotificationWindow { transform-box: fill-box; transform-origin: center; animation: tjt-drift-a 5.8s ease-in-out infinite; }
+.browserNotificationToast { transform-box: fill-box; transform-origin: center; animation: tjt-drift-c 4.9s ease-in-out infinite .25s; }
+.browserNotificationDot { transform-box: fill-box; transform-origin: center; animation: tjt-signal-pulse 2.5s ease-in-out infinite; }
 
 @media (hover: hover) and (pointer: fine) {
   .featureRow:hover .illustrationSvg { transform: translateY(-3px) scale(1.055); }
@@ -962,6 +965,9 @@
   .page .telegramMessage,
   .page .telegramPlane,
   .page .telegramLinkTag,
+  .page .browserNotificationWindow,
+  .page .browserNotificationToast,
+  .page .browserNotificationDot,
   .page .networkRoute,
   .page .networkHub,
   .page .networkPoint,
