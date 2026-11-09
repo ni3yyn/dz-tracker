@@ -824,7 +824,7 @@ export function MerchantDashboardView({
   const customMappingTriggerRef = useRef<HTMLButtonElement>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [addOrderError, setAddOrderError] = useState<string | null>(null);
-  const [newOrderSuccess, setNewOrderSuccess] = useState<{ trackingUuid: string; externalOrderId: string; telegramTrackingQueued: boolean; telegramQueueCheckFailed: boolean } | null>(null);
+  const [newOrderSuccess, setNewOrderSuccess] = useState<{ trackingUuid: string; externalOrderId: string; telegramTrackingEnabled: boolean; telegramTrackingQueued: boolean; telegramQueueCheckFailed: boolean } | null>(null);
 
   // Full Brand Customization State
   const [brandConfig, setBrandConfig] = useState<EditableBrandSettings>(() => ({
@@ -1025,6 +1025,7 @@ export function MerchantDashboardView({
         setNewOrderSuccess({
           trackingUuid: res.trackingUuid!,
           externalOrderId: res.externalOrderId!,
+          telegramTrackingEnabled: telegramEnabled,
           telegramTrackingQueued: Boolean(res.telegramTrackingQueued),
           telegramQueueCheckFailed: Boolean(res.telegramTrackingQueueCheckFailed),
         });
@@ -1032,6 +1033,8 @@ export function MerchantDashboardView({
           showToast('تم إنشاء الطلب، لكن تعذّر التحقق من جدولة رابط التتبع عبر تيليجرام.');
         } else if (res.confirmationQueueError && res.telegramTrackingQueued) {
           showToast('تم إنشاء الطلب وجدولة رابط التتبع، لكن تعذرت جدولة رسالة التأكيد.');
+        } else if (res.confirmationQueueError && telegramEnabled) {
+          showToast('تم إنشاء الطلب، لكن لم تُجدول رسالة التتبع أو التأكيد. راجع إعدادات قاعدة البيانات والعامل.');
         } else if (res.confirmationQueueError) {
           showToast('تم إنشاء الطلب، لكن تعذرت جدولة رسالة تأكيد تيليجرام.');
         } else if (res.telegramTrackingQueued && res.confirmationQueued) {
@@ -1040,6 +1043,8 @@ export function MerchantDashboardView({
           showToast('تم إنشاء الطلب وجدولة رابط التتبع عبر تيليجرام.');
         } else if (res.confirmationQueued) {
           showToast('تم إنشاء الطلب وجدولة رسالة التأكيد. إرسال روابط التتبع متوقف من الإعدادات.');
+        } else if (telegramEnabled) {
+          showToast('تم إنشاء الطلب، لكن لم تُدرج مهمة رابط التتبع رغم تفعيل الخدمة. تحقق من تحديث قاعدة البيانات.');
         } else {
           showToast('تم إنشاء الطلب. إرسال روابط التتبع عبر تيليجرام متوقف من الإعدادات.');
         }
@@ -9192,7 +9197,7 @@ export async function registerSavedOrder(savedOrder) {
                     </h3>
                     <p style={{ margin: '0 0 18px', fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.7 }}>
                       رقم الطلب: <strong>{newOrderSuccess.externalOrderId}</strong><br />
-                      {newOrderSuccess.telegramQueueCheckFailed ? 'تم تسجيل الطلب، لكن تعذّر التحقق من حالة جدولة رابط التتبع.' : newOrderSuccess.telegramTrackingQueued ? 'تم إدراج رابط التتبع في طابور تيليجرام، وسيحاول حساب تاجر تراك إرساله إلى الحساب المرتبط برقم العميل.' : 'خدمة إرسال روابط التتبع عبر تيليجرام متوقفة حالياً. فعّلها من إعدادات المتجر لإرسال روابط الطلبات الجديدة.'}
+                      {newOrderSuccess.telegramQueueCheckFailed ? 'تم تسجيل الطلب، لكن تعذّر التحقق من حالة جدولة رابط التتبع.' : newOrderSuccess.telegramTrackingQueued ? 'تم إدراج رابط التتبع في طابور تيليجرام، وسيحاول حساب تاجر تراك إرساله إلى الحساب المرتبط برقم العميل.' : newOrderSuccess.telegramTrackingEnabled ? 'الخدمة مفعّلة، لكن لم تُدرج مهمة الإرسال. تحقق من تطبيق تحديث قاعدة البيانات وسجلات العامل.' : 'خدمة إرسال روابط التتبع عبر تيليجرام متوقفة حالياً. فعّلها من إعدادات المتجر لإرسال روابط الطلبات الجديدة.'}
                     </p>
 
                     <div style={{
