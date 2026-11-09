@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: 'تاجر تراك',
   },
   icons: {
-    icon: '/icons/icon-192.png',
+    icon: '/favicon.svg',
     apple: '/icons/apple-touch-icon.png',
   },
   openGraph: {
