@@ -8170,8 +8170,8 @@ export async function registerSavedOrder(savedOrder) {
 
           {/* TAB: BILLING */}
           {activeTab === 'settings' && (
-            <div>
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px', marginBottom: '14px', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="dz-settings-page">
+              <div className="dz-settings-section dz-settings-profile" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px', marginBottom: '14px', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
                   <div>
                     <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>01 / STORE PROFILE</span>
@@ -8190,7 +8190,7 @@ export async function registerSavedOrder(savedOrder) {
                       <ImageUploadField label="شعار المتجر" value={brandConfig.logoUrl || ''} onChange={(url) => updateBrandConfig('logoUrl', url)} merchantId={merchantId} folder="upsell-products" quality={0.9} placeholder="ارفع شعار متجرك" />
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--border-soft)', marginTop: '14px', paddingTop: '12px' }}>
+                  <div className="dz-settings-profile-actions" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--border-soft)', marginTop: '14px', paddingTop: '12px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>يُستخدم الشعار نفسه في صفحة التتبع وصفحة تأكيد الطلب.</span>
                     <button type="submit" className="dz-btn" disabled={isSavingBrand || (!hasUnsavedBrandChanges && !hasUnsavedStoreNameChanges)} style={{ minWidth: '132px', padding: '9px 18px', opacity: isSavingBrand || (!hasUnsavedBrandChanges && !hasUnsavedStoreNameChanges) ? .55 : 1 }}>
                       {isSavingBrand ? 'جارٍ الحفظ...' : 'حفظ التغييرات'}
@@ -8199,7 +8199,7 @@ export async function registerSavedOrder(savedOrder) {
                 </form>
               </div>
 
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)' }}>
+              <div className="dz-settings-section dz-settings-telegram" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
                   <div>
                     <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>02 / TELEGRAM SERVICES</span>
@@ -8208,8 +8208,8 @@ export async function registerSavedOrder(savedOrder) {
                   </div>
                   <Icons.Send />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 0 }}>
-                  <div style={{ padding: '11px 16px 8px 8px', minWidth: 0 }}>
+                <div className="dz-settings-telegram-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 0 }}>
+                  <div className="dz-settings-telegram-option" style={{ padding: '11px 16px 8px 8px', minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '7px' }}>
                       <strong style={{ fontSize: '14px', color: 'var(--ink-main)' }}>روابط التتبع</strong>
                       <span style={{ fontSize: '11px', color: telegramEnabled ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{telegramEnabled ? 'مفعّل' : 'معطّل'}</span>
@@ -8227,7 +8227,7 @@ export async function registerSavedOrder(savedOrder) {
                       <span style={{ width: '21px', height: '21px', display: 'block', borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.18)' }} />
                     </button>
                   </div>
-                  <div style={{ padding: '11px 8px 8px 16px', minWidth: 0, borderInlineStart: '1px solid var(--border-soft)' }}>
+                  <div className="dz-settings-telegram-option dz-settings-telegram-option-secondary" style={{ padding: '11px 8px 8px 16px', minWidth: 0, borderInlineStart: '1px solid var(--border-soft)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '7px' }}>
                       <strong style={{ fontSize: '14px', color: 'var(--ink-main)' }}>تأكيد الطلب</strong>
                       <span style={{ fontSize: '11px', color: confirmationEnabled && hasActivePaidPlan ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{!hasActivePaidPlan ? 'للباقات المدفوعة' : confirmationEnabled ? 'مفعّل' : 'معطّل'}</span>
@@ -8248,8 +8248,8 @@ export async function registerSavedOrder(savedOrder) {
                 </div>
                 {!hasActivePaidPlan && <p style={{ margin: '8px 0 0', paddingTop: '9px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '11px' }}>ميزة تأكيد الطلب متاحة في الباقات المدفوعة Basic وGrowth وScale.</p>}
               </div>
-
-              <div style={{ margin: '0 0 13px' }}>
+              <section className="dz-settings-billing">
+              <div className="dz-settings-billing-heading" style={{ margin: '0 0 13px' }}>
                 <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>03 / SUBSCRIPTION</span>
                 <h2 style={{ margin: '3px 0 0', fontSize: '19px', fontWeight: 800, color: 'var(--ink-main)' }}>الاشتراك والاستهلاك</h2>
               </div>
@@ -8280,7 +8280,7 @@ export async function registerSavedOrder(savedOrder) {
                 </div>
               )}
 
-              <div className="dz-stats-bar" style={{ marginBottom: '20px' }}>
+              <div className="dz-stats-bar dz-settings-subscription-stats" style={{ marginBottom: '20px' }}>
                 <div className="dz-stat-item">
                   <span className="dz-stat-title">الباقة الحالية</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
@@ -8410,14 +8410,14 @@ export async function registerSavedOrder(savedOrder) {
               {/* BaridiMob payment form: always shown except when scale plan is active and advance renewal is not requested */}
               {(!hasActivePaidPlan || !isUnlimitedPlan || showAdvanceRenewal) && (
               <>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '32px 0 24px' }}>تأكيد التحويل عبر BaridiMob</h3>
+              <h3 className="dz-settings-payment-title" style={{ fontSize: '18px', fontWeight: 800, margin: '32px 0 24px' }}>تأكيد التحويل عبر BaridiMob</h3>
               
-              <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <div className="dz-settings-payment-layout" style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                 
                 {/* Form Side */}
-                <div className="dz-card-box" style={{ flex: '1 1 400px' }}>
+                <div className="dz-card-box dz-settings-payment-form" style={{ flex: '1 1 400px' }}>
                   
-                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                  <div className="dz-settings-rip-card" style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
                     <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>رقم الحساب البريدي الجاري (RIP):</span>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
                       <strong className="dz-mono" style={{ fontSize: '16px', background: 'transparent', border: 'none', padding: 0 }}>00799999123456789</strong>
@@ -8467,13 +8467,13 @@ export async function registerSavedOrder(savedOrder) {
                 </div>
 
                 {/* History Side */}
-                <div style={{ flex: '2 1 500px' }}>
+                <div className="dz-settings-payment-history" style={{ flex: '2 1 500px' }}>
                   <div className="dz-table-wrap">
                     <div className="dz-table-header">
                       <h3>سجل المدفوعات</h3>
                     </div>
                     <div className="dz-table-scroll" style={{ maxHeight: '420px' }}>
-                      <table>
+                      <table className="dz-settings-payment-table">
                         <thead>
                           <tr>
                             <th>الباقة والمبلغ</th>
@@ -8488,17 +8488,19 @@ export async function registerSavedOrder(savedOrder) {
                           ) : (
                             payments.map((p) => (
                               <tr key={p.id}>
-                                <td>
-                                  <strong style={{ display: 'block' }}>{p.plan_tier.toUpperCase()}</strong>
-                                  <span className="dz-mono" style={{ fontSize: '11px', border: 'none', background: 'transparent', padding: 0 }}>{p.amount_dzd.toLocaleString()} DZD</span>
-                                </td>
-                                <td><span className="dz-mono">{p.transaction_ref || '—'}</span></td>
-                                <td>
-                                  {p.status === 'approved' && <span className="dz-pill dz-pill-success">مقبول</span>}
+                                <td data-label="الباقة والمبلغ">
+                                   <div className="dz-settings-payment-plan-cell">
+                                     <strong>{p.plan_tier.toUpperCase()}</strong>
+                                     <span className="dz-mono" style={{ fontSize: '11px', border: 'none', background: 'transparent', padding: 0 }}>{p.amount_dzd.toLocaleString()} DZD</span>
+                                   </div>
+                                 </td>
+                                <td data-label="المرجع"><span className="dz-mono">{p.transaction_ref || '—'}</span></td>
+                                <td data-label="الحالة">
+                                   {p.status === 'approved' && <span className="dz-pill dz-pill-success">مقبول</span>}
                                   {p.status === 'pending' && <span className="dz-pill dz-pill-warning">قيد المراجعة</span>}
                                   {p.status === 'rejected' && <span className="dz-pill dz-pill-danger">مرفوض</span>}
                                 </td>
-                                <td style={{ color: 'var(--ink-muted)' }}>{new Date(p.created_at).toLocaleDateString('ar-EG')}</td>
+                                <td data-label="التاريخ" style={{ color: 'var(--ink-muted)' }}>{new Date(p.created_at).toLocaleDateString('ar-EG')}</td>
                               </tr>
                             ))
                           )}
@@ -8510,6 +8512,7 @@ export async function registerSavedOrder(savedOrder) {
               </div>
               </>
               )}
+              </section>
             </div>
           )}
 
