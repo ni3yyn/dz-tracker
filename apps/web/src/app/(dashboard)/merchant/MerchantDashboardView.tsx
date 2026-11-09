@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef, useCallback, useTransition, useDeferredValue, memo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { StatusSelector } from './StatusSelector';
 import { BrandedSelect } from './BrandedSelect';
@@ -780,9 +780,9 @@ export function MerchantDashboardView({
   }, [merchantId, integrationChoicesHydratedFor, integrationPlatform, trackingSource, selectedCarrier]);
 
   const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
-  const [isSavingTelegram, startTransitionTelegram] = useTransition();
+  const [isSavingTelegram, setIsSavingTelegram] = useState(false);
   const [confirmationEnabled, setConfirmationEnabled] = useState(confirmationTelegramEnabled);
-  const [isSavingConfirmation, startTransitionConfirmation] = useTransition();
+  const [isSavingConfirmation, setIsSavingConfirmation] = useState(false);
   const [sdkCodeTab, setSdkCodeTab] = useState<'html' | 'react' | 'node' | 'curl' | 'agent'>('agent');
   const [packageManager, setPackageManager] = useState<'npm' | 'pnpm' | 'yarn' | 'bun'>('npm');
   const [apiKeyRevealed, setApiKeyRevealed] = useState(false);
@@ -932,6 +932,52 @@ export function MerchantDashboardView({
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const handleToggleTelegramTracking = async () => {
+    if (isSavingTelegram) return;
+    const next = !telegramEnabled;
+    setIsSavingTelegram(true);
+    setTelegramEnabled(next);
+
+    try {
+      const result = await toggleTelegramTracking(merchantId, next);
+      if (result?.error) {
+        setTelegramEnabled(!next);
+        showToast(result.error);
+        return;
+      }
+      showToast(next ? 'تم تفعيل إرسال روابط التتبع.' : 'تم تعطيل إرسال روابط التتبع.');
+    } catch (error) {
+      console.error('[MerchantDashboard]: Telegram tracking setting update failed:', error);
+      setTelegramEnabled(!next);
+      showToast('تعذر تحديث إعداد تيليجرام. يرجى المحاولة مجدداً.');
+    } finally {
+      setIsSavingTelegram(false);
+    }
+  };
+
+  const handleToggleConfirmationTelegram = async () => {
+    if (!hasActivePaidPlan || isSavingConfirmation) return;
+    const next = !confirmationEnabled;
+    setIsSavingConfirmation(true);
+    setConfirmationEnabled(next);
+
+    try {
+      const result = await toggleConfirmationTelegram(next);
+      if (result?.error) {
+        setConfirmationEnabled(!next);
+        showToast(result.error);
+        return;
+      }
+      showToast(next ? 'تم تفعيل طلب تأكيد الطلب.' : 'تم تعطيل طلب تأكيد الطلب.');
+    } catch (error) {
+      console.error('[MerchantDashboard]: Telegram confirmation setting update failed:', error);
+      setConfirmationEnabled(!next);
+      showToast('تعذر تحديث إعداد تأكيد الطلب. يرجى المحاولة مجدداً.');
+    } finally {
+      setIsSavingConfirmation(false);
+    }
   };
 
   const toggleOrderSelection = (orderId: string, checked: boolean) => {
@@ -6574,6 +6620,34 @@ export async function registerSavedOrder(savedOrder) {
           outline: 2px solid #52735a !important;
           outline-offset: 3px;
         }
+        html body .dz-admin-root .dz-settings-page button[role="switch"] .dz-settings-switch-thumb {
+          position: absolute !important;
+          top: 3px !important;
+          left: 3px !important;
+          width: 21px !important;
+          height: 21px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border-radius: 50% !important;
+          background: #fff !important;
+          box-shadow: 0 1px 3px rgba(0,0,0,.18) !important;
+          transform: translateX(0) !important;
+          transition: transform .22s cubic-bezier(.2,.8,.2,1) !important;
+          will-change: transform;
+        }
+        html body .dz-admin-root .dz-settings-page button[role="switch"][data-checked="true"] .dz-settings-switch-thumb {
+          transform: translateX(21px) !important;
+        }
+        .dz-settings-switch-spinner {
+          width: 11px;
+          height: 11px;
+          border: 2px solid rgba(39,59,48,.2);
+          border-top-color: #273b30;
+          border-radius: 50%;
+          animation: dzSettingsSwitchSpin .65s linear infinite;
+        }
+        @keyframes dzSettingsSwitchSpin { to { transform: rotate(360deg); } }
       `}} />
 
       <div className="dz-admin-root">
@@ -8692,16 +8766,10 @@ export async function registerSavedOrder(savedOrder) {
                       <span style={{ fontSize: '11px', color: telegramEnabled ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{telegramEnabled ? 'مفعّل' : 'معطّل'}</span>
                     </div>
                     <p style={{ minHeight: '34px', margin: '0 0 10px', color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.6 }}>إرسال رابط تتبّع الشحنة تلقائياً إلى حساب Telegram المرتبط برقم العميل عند تسجيل الطلب.</p>
-                    <button type="button" role="switch" aria-checked={telegramEnabled} aria-label="تفعيل إرسال روابط التتبع عبر تيليجرام" disabled={isSavingTelegram}
-                      onClick={() => startTransitionTelegram(async () => {
-                        const next = !telegramEnabled;
-                        setTelegramEnabled(next);
-                        const result = await toggleTelegramTracking(merchantId, next);
-                        if (result?.error) { setTelegramEnabled(!next); showToast(result.error); }
-                        else showToast(next ? 'تم تفعيل إرسال روابط التتبع.' : 'تم تعطيل إرسال روابط التتبع.');
-                      })}
-                      style={{ width: '48px', height: '27px', border: 0, borderRadius: '99px', padding: '3px', display: 'flex', alignItems: 'center', justifyContent: telegramEnabled ? 'flex-end' : 'flex-start', direction: 'ltr', background: telegramEnabled ? '#273b30' : '#cbd1ca', cursor: isSavingTelegram ? 'wait' : 'pointer', opacity: isSavingTelegram ? .65 : 1, transition: 'background .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}>
-                      <span style={{ width: '21px', height: '21px', display: 'block', borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.18)' }} />
+                    <button type="button" role="switch" aria-checked={telegramEnabled} aria-busy={isSavingTelegram} data-checked={telegramEnabled ? 'true' : 'false'} aria-label="تفعيل إرسال روابط التتبع عبر تيليجرام" disabled={isSavingTelegram}
+                      onClick={() => void handleToggleTelegramTracking()}
+                      style={{ width: '48px', height: '27px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: telegramEnabled ? '#273b30' : '#cbd1ca', cursor: isSavingTelegram ? 'wait' : 'pointer', opacity: isSavingTelegram ? .82 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}>
+                      <span className="dz-settings-switch-thumb">{isSavingTelegram && <span className="dz-settings-switch-spinner" aria-hidden="true" />}</span>
                     </button>
                   </div>
                   <div className="dz-settings-telegram-option dz-settings-telegram-option-secondary" style={{ padding: '11px 8px 8px 16px', minWidth: 0, borderInlineStart: '1px solid var(--border-soft)' }}>
@@ -8710,16 +8778,10 @@ export async function registerSavedOrder(savedOrder) {
                       <span style={{ fontSize: '11px', color: confirmationEnabled && hasActivePaidPlan ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{!hasActivePaidPlan ? 'للباقات المدفوعة' : confirmationEnabled ? 'مفعّل' : 'معطّل'}</span>
                     </div>
                     <p style={{ minHeight: '34px', margin: '0 0 10px', color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.6 }}>إرسال رابط آمن للعميل لتأكيد الطلب أو طلب إلغائه.</p>
-                    <button type="button" role="switch" aria-checked={confirmationEnabled && hasActivePaidPlan} aria-label="تفعيل طلب تأكيد الطلب عبر تيليجرام" disabled={!hasActivePaidPlan || isSavingConfirmation}
-                      onClick={() => startTransitionConfirmation(async () => {
-                        const next = !confirmationEnabled;
-                        setConfirmationEnabled(next);
-                        const result = await toggleConfirmationTelegram(next);
-                        if (result?.error) { setConfirmationEnabled(!next); showToast(result.error); }
-                        else showToast(next ? 'تم تفعيل طلب تأكيد الطلب.' : 'تم تعطيل طلب تأكيد الطلب.');
-                      })}
-                      style={{ width: '48px', height: '27px', border: 0, borderRadius: '99px', padding: '3px', display: 'flex', alignItems: 'center', justifyContent: confirmationEnabled ? 'flex-end' : 'flex-start', direction: 'ltr', background: confirmationEnabled && hasActivePaidPlan ? '#273b30' : '#cbd1ca', cursor: !hasActivePaidPlan || isSavingConfirmation ? 'not-allowed' : 'pointer', opacity: !hasActivePaidPlan || isSavingConfirmation ? .55 : 1, transition: 'background .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}>
-                      <span style={{ width: '21px', height: '21px', display: 'block', borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.18)' }} />
+                    <button type="button" role="switch" aria-checked={confirmationEnabled && hasActivePaidPlan} aria-busy={isSavingConfirmation} data-checked={confirmationEnabled && hasActivePaidPlan ? 'true' : 'false'} aria-label="تفعيل طلب تأكيد الطلب عبر تيليجرام" disabled={!hasActivePaidPlan || isSavingConfirmation}
+                      onClick={() => void handleToggleConfirmationTelegram()}
+                      style={{ width: '48px', height: '27px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: confirmationEnabled && hasActivePaidPlan ? '#273b30' : '#cbd1ca', cursor: !hasActivePaidPlan || isSavingConfirmation ? 'not-allowed' : 'pointer', opacity: !hasActivePaidPlan ? .55 : isSavingConfirmation ? .82 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}>
+                      <span className="dz-settings-switch-thumb">{isSavingConfirmation && <span className="dz-settings-switch-spinner" aria-hidden="true" />}</span>
                     </button>
                   </div>
                 </div>
