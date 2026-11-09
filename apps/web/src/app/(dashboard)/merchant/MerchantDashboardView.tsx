@@ -6528,6 +6528,18 @@ export async function registerSavedOrder(savedOrder) {
           .dz-admin-root .dz-settings-payment-table td::before { flex-basis: 78px; }
           .dz-admin-root .dz-billing-plan { padding-inline: 7px; }
         }
+
+        /* Semantic switches keep their native track geometry instead of the global text-button reset. */
+        html body .dz-admin-root .dz-settings-page button[role="switch"]:not(#app-button-radius-reset) {
+          border-radius: 99px !important;
+          padding: 3px !important;
+          min-height: 27px !important;
+          box-shadow: inset 0 1px 2px rgba(0,0,0,.12) !important;
+        }
+        html body .dz-admin-root .dz-settings-page button[role="switch"]:not(#app-button-radius-reset):focus-visible {
+          outline: 2px solid #52735a !important;
+          outline-offset: 3px;
+        }
       `}} />
 
       <div className="dz-admin-root">
