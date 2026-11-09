@@ -81,7 +81,7 @@ export class TelegramTrackingWorker {
       return;
     }
 
-    // Step B: Recheck merchant toggle and consent
+    // Step B: Recheck the merchant's Telegram tracking setting
     if (!orderData.merchant?.telegram_tracking_link_enabled) {
       await this.queue.recordAttempt({
         jobId: job.id,
@@ -95,24 +95,6 @@ export class TelegramTrackingWorker {
       await this.queue.updateJob(job.id, {
         status: 'skipped',
         resultCode: 'merchant_disabled',
-      });
-      this.health.recordJobProcessed('skipped');
-      return;
-    }
-
-    if (!orderData.telegram_consent_at) {
-      await this.queue.recordAttempt({
-        jobId: job.id,
-        attemptNumber: job.attempt_count,
-        operation: 'session_check',
-        outcome: 'skipped',
-        errorCode: 'CONSENT_MISSING',
-        errorMessage: 'Order has no explicit Telegram notification consent timestamp',
-        durationMs: Date.now() - startTime,
-      });
-      await this.queue.updateJob(job.id, {
-        status: 'skipped',
-        resultCode: 'consent_missing',
       });
       this.health.recordJobProcessed('skipped');
       return;
