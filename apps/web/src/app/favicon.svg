@@ -1,5 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="120 120 280 280" width="512" height="512">
   <title>TajerTrack</title>
-  <path d="M156 160 H316 A48 48 0 0 1 316 256 H196 A48 48 0 0 0 196 352 H344"
-        fill="none" stroke="#294B37" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <style>
+    .track {
+      fill: none;
+      stroke: #294B37;
+      stroke-width: 34;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .endpoint {
+      fill: #294B37;
+    }
+    @media (prefers-color-scheme: dark) {
+      .track {
+        stroke: #F4F5F2;
+      }
+      .endpoint {
+        fill: #F4F5F2;
+      }
+    }
+  </style>
+  <path class="track" d="M156 160 H316 A48 48 0 0 1 316 256 H196 A48 48 0 0 0 196 352 H344"/>
+  <circle class="endpoint" cx="156" cy="160" r="20"/>
+  <circle class="endpoint" cx="344" cy="352" r="20"/>
 </svg>
