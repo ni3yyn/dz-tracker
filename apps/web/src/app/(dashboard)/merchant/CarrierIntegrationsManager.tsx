@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getMerchantCarrierIntegrations, getMerchantIntegrationApiKey } from './actions';
 import { EcoTrackConnectionPanel } from './EcoTrackConnectionPanel';
 import { ZRExpressConnectionPanel } from './ZRExpressConnectionPanel';
@@ -69,6 +69,85 @@ const primaryButtonStyle: React.CSSProperties = {
   color: '#fff',
   border: 0,
 };
+
+
+type AnimatedHeightProps = {
+  children: React.ReactNode;
+  contentKey: string;
+  className?: string;
+  expanded?: boolean;
+};
+
+/**
+ * Measures its natural content and animates the wrapper between pixel heights.
+ * Keeping the wrapper mounted prevents surrounding dashboard content from
+ * snapping when a tab or expandable panel changes size.
+ */
+function AnimatedHeight({
+  children,
+  contentKey,
+  className = '',
+  expanded = true,
+}: AnimatedHeightProps) {
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const lastExpandedChildren = useRef<React.ReactNode>(expanded ? children : null);
+  const [height, setHeight] = useState<number | null>(null);
+  const [ready, setReady] = useState(false);
+
+  if (expanded && children !== null && children !== false) {
+    lastExpandedChildren.current = children;
+  }
+
+  useLayoutEffect(() => {
+    const inner = innerRef.current;
+    if (!inner) return;
+
+    const measure = () => {
+      const nextHeight = Math.ceil(inner.getBoundingClientRect().height);
+      setHeight((current) => current === nextHeight ? current : nextHeight);
+    };
+
+    measure();
+    setReady(true);
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(measure);
+      observer.observe(inner);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  const handleTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget || event.propertyName !== 'height' || expanded) return;
+    setHeight(0);
+  };
+
+  return (
+    <div
+      className={`dz-animated-height ${className}`.trim()}
+      data-ready={ready ? 'true' : 'false'}
+      data-expanded={expanded ? 'true' : 'false'}
+      aria-hidden={!expanded}
+      onTransitionEnd={handleTransitionEnd}
+      style={{
+        height: expanded ? (height === null ? 'auto' : `${height}px`) : 0,
+        opacity: expanded ? 1 : 0,
+        overflow: 'hidden',
+        pointerEvents: expanded ? 'auto' : 'none',
+        visibility: expanded || (height ?? 0) > 0 ? 'visible' : 'hidden',
+      }}
+    >
+      <div ref={innerRef} className="dz-animated-height-measure">
+        <div key={contentKey} className="dz-animated-height-enter">
+          {expanded ? children : lastExpandedChildren.current}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function dateLabel(value?: string | null) {
   return value ? new Date(value).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' }) : 'لا يوجد نشاط مسجل بعد';
@@ -353,7 +432,8 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         </button>
       </nav>
 
-      {activeSubtab === 'order_source' && (
+      <AnimatedHeight className="dz-integration-content" contentKey={activeSubtab}>
+        {activeSubtab === 'order_source' && (
               <section className="dz-order-source" aria-labelledby="dz-order-source-title">
                 <div style={{ marginBottom: 14 }}>
                   <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>مصدر الطلبات</span>
@@ -509,7 +589,12 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
             )}
           </section>
 
-          {showProviderDirectory && (
+          <AnimatedHeight
+            className="dz-integration-expansion"
+            expanded={showProviderDirectory}
+            contentKey={showProviderDirectory ? 'provider-directory-open' : 'provider-directory-closed'}
+          >
+            {showProviderDirectory ? (
             <section id="dz-provider-directory" className="dz-provider-directory" aria-labelledby="dz-provider-directory-title">
               <div style={{ marginBottom: 14 }}>
                 <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>دليل الشركات</span>
@@ -528,9 +613,15 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
                 </div>
               )}
             </section>
-          )}
+            ) : null}
+          </AnimatedHeight>
 
-          {activeProvider && (
+          <AnimatedHeight
+            className="dz-integration-expansion"
+            expanded={Boolean(activeProvider)}
+            contentKey={activeProvider || 'provider-editor-closed'}
+          >
+            {activeProvider ? (
             <section className="dz-provider-editor" aria-labelledby="dz-provider-setup-title">
               <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
                 <div>
@@ -545,9 +636,12 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
               </header>
               {renderProviderPanel(activeProvider)}
             </section>
-          )}
+            ) : null}
+          </AnimatedHeight>
         </section>
-      )}
+        )}
+
+      </AnimatedHeight>
 
       <style jsx global>{`
         .dz-carrier-manager .dz-int-guided-panel,
@@ -681,6 +775,57 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         .dz-carrier-manager .dz-provider-directory [style*="borderTop"],
         .dz-carrier-manager .dz-provider-editor [style*="borderTop"] {
           border: 0 !important;
+        }
+
+        .dz-carrier-manager .dz-animated-height {
+          min-width: 0;
+          transition: none;
+        }
+        .dz-carrier-manager .dz-animated-height[data-ready="true"] {
+          transition:
+            height .46s cubic-bezier(.2, .75, .25, 1),
+            opacity .28s ease;
+        }
+        .dz-carrier-manager .dz-animated-height-measure {
+          display: flow-root;
+          min-width: 0;
+        }
+        .dz-carrier-manager .dz-animated-height-enter {
+          min-width: 0;
+          animation: dzIntegrationReveal .38s cubic-bezier(.2, .75, .25, 1) both;
+        }
+        .dz-carrier-manager .dz-animated-height[data-expanded="false"] .dz-animated-height-enter {
+          animation: none;
+        }
+        @keyframes dzIntegrationReveal {
+          from { opacity: 0; transform: translate3d(0, 7px, 0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
+        }
+        .dz-carrier-manager .dz-integration-content {
+          width: 100%;
+          transform-origin: top center;
+        }
+        .dz-carrier-manager .dz-integration-expansion {
+          width: 100%;
+          transform-origin: top center;
+        }
+        .dz-carrier-manager .dz-integration-tab {
+          transition:
+            background-color .22s ease,
+            color .22s ease,
+            opacity .22s ease;
+        }
+        .dz-carrier-manager .dz-integration-tab:active {
+          opacity: .82;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .dz-carrier-manager .dz-animated-height,
+          .dz-carrier-manager .dz-integration-tab {
+            transition-duration: .01ms !important;
+          }
+          .dz-carrier-manager .dz-animated-height-enter {
+            animation: none !important;
+          }
         }
       `}</style>
     </div>
