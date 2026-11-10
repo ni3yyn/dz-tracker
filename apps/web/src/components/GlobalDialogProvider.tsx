@@ -81,6 +81,10 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
   }, [activeDialog, queue]);
 
   useEffect(() => {
+    window.dispatchEvent(new Event('tajer-dashboard-back-layer-change'));
+  }, [activeDialog]);
+
+  useEffect(() => {
     if (!activeDialog) return;
 
     const previousOverflow = document.body.style.overflow;
@@ -137,6 +141,7 @@ export function GlobalDialogProvider({ children }: { children: React.ReactNode }
       {activeDialog && (
         <div
           className={styles.backdrop}
+          data-dashboard-back-dismiss="global-dialog"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
