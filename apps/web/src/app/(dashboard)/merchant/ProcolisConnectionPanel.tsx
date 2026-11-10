@@ -120,11 +120,11 @@ export function ProcolisConnectionPanel() {
 
           <form onSubmit={handleSave} className="dz-procolis-form">
             <div className="dz-procolis-fields">
-              <label className="dz-procolis-field" htmlFor="dz-procolis-token">
-                <span className="dz-procolis-field-heading">
+              <div className="dz-procolis-field">
+                <label className="dz-procolis-field-heading" htmlFor="dz-procolis-token">
                   <strong>Token</strong>
                   <small>رمز الوصول إلى حساب Procolis</small>
-                </span>
+                </label>
                 <span className="dz-procolis-input-shell">
                   <input
                     id="dz-procolis-token"
@@ -152,13 +152,13 @@ export function ProcolisConnectionPanel() {
                     {showToken ? 'إخفاء' : 'إظهار'}
                   </button>
                 </span>
-              </label>
+              </div>
 
-              <label className="dz-procolis-field" htmlFor="dz-procolis-key">
-                <span className="dz-procolis-field-heading">
+              <div className="dz-procolis-field">
+                <label className="dz-procolis-field-heading" htmlFor="dz-procolis-key">
                   <strong>Key</strong>
                   <small>مفتاح التحقق الخاص بحسابك</small>
-                </span>
+                </label>
                 <span className="dz-procolis-input-shell">
                   <input
                     id="dz-procolis-key"
@@ -186,7 +186,7 @@ export function ProcolisConnectionPanel() {
                     {showKey ? 'إخفاء' : 'إظهار'}
                   </button>
                 </span>
-              </label>
+              </div>
             </div>
 
             <p className="dz-int-guided-note">يتحقق تاجر تراك من البيانات عبر واجهة Procolis قبل حفظها، ثم يخزنها مشفرة. لن تظهر المفاتيح المحفوظة في لوحة المتجر.</p>
