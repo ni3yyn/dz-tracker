@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './branded-select.module.css';
 
@@ -52,6 +52,9 @@ export function BrandedSelect({
   const [localValue, setLocalValue] = useState(defaultValue);
   const selectedValue = isControlled ? value : localValue;
   const [isOpen, setIsOpen] = useState(false);
+  const [isMenuMounted, setIsMenuMounted] = useState(false);
+  const [isMenuExpanded, setIsMenuExpanded] = useState(false);
+  const [menuHeight, setMenuHeight] = useState(0);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -101,6 +104,7 @@ export function BrandedSelect({
 
   const closeMenu = useCallback((restoreFocus = false) => {
     setIsOpen(false);
+    setIsMenuExpanded(false);
     if (restoreFocus) triggerRef.current?.focus();
   }, []);
 
@@ -108,8 +112,35 @@ export function BrandedSelect({
     if (disabled || loading) return;
     setActiveIndex(initialActiveIndex());
     updateMenuPosition();
+    if (!isMenuMounted) {
+      setMenuHeight(0);
+      setIsMenuExpanded(false);
+    }
+    setIsMenuMounted(true);
     setIsOpen(true);
-  }, [disabled, initialActiveIndex, loading, updateMenuPosition]);
+  }, [disabled, initialActiveIndex, isMenuMounted, loading, updateMenuPosition]);
+
+  useLayoutEffect(() => {
+    if (!isMenuMounted || !isOpen || !menuPosition) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const menu = menuRef.current;
+      if (!menu) return;
+      const naturalHeight = menu.scrollHeight;
+      setMenuHeight(Math.min(naturalHeight, menuPosition.maxHeight));
+      setIsMenuExpanded(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isMenuMounted, isOpen, menuPosition?.maxHeight, options.length]);
+
+  const handleMenuTransitionEnd = useCallback((event: React.TransitionEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget || event.propertyName !== 'height') return;
+    if (!isOpen) {
+      setIsMenuMounted(false);
+      setMenuHeight(0);
+    }
+  }, [isOpen]);
 
   const chooseOption = useCallback((option: BrandedSelectOption) => {
     if (option.disabled) return;
@@ -235,20 +266,24 @@ export function BrandedSelect({
         </span>
       </button>
 
-      {isOpen && menuPosition && typeof document !== 'undefined' && createPortal(
+      {isMenuMounted && menuPosition && typeof document !== 'undefined' && createPortal(
         <div
           ref={menuRef}
           id={listboxId}
           role="listbox"
           aria-label={ariaLabel}
+          aria-hidden={!isOpen}
+          data-expanded={isMenuExpanded && isOpen ? 'true' : 'false'}
           className={styles.menu}
           style={{
             top: menuPosition.top,
             left: menuPosition.left,
             width: menuPosition.width,
             maxHeight: menuPosition.maxHeight,
+            height: isMenuExpanded && isOpen ? String(menuHeight) + 'px' : '0px',
           }}
           onKeyDown={handleMenuKeyDown}
+          onTransitionEnd={handleMenuTransitionEnd}
           dir="rtl"
         >
           {options.map((option, index) => {
