@@ -6731,6 +6731,117 @@ export function MerchantDashboardView({
           animation: dzSettingsSwitchSpin .65s linear infinite;
         }
         @keyframes dzSettingsSwitchSpin { to { transform: rotate(360deg); } }
+
+        /* One compact KPI language for Overview and Shipments. */
+        .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis),
+        .dz-admin-root .dz-stats-bar.dz-orders-desktop-summary {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 9px;
+          margin: 2px 0 24px;
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          overflow: visible;
+        }
+        .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi,
+        .dz-admin-root .dz-orders-desktop-summary .dz-stat-item {
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: stretch;
+          gap: 5px;
+          width: 100%;
+          min-width: 0;
+          min-height: 78px;
+          margin: 0;
+          padding: 12px 15px;
+          border: 0 !important;
+          border-radius: 4px;
+          background: rgba(105, 129, 109, .12);
+          color: var(--ink-main);
+          text-align: right;
+          font: inherit;
+          box-shadow: none;
+          cursor: pointer;
+          appearance: none;
+          -webkit-appearance: none;
+          transition: background-color .18s ease, transform .18s ease;
+        }
+        .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi:hover,
+        .dz-admin-root .dz-orders-desktop-summary .dz-stat-item:hover {
+          background: rgba(105, 129, 109, .18);
+          transform: translateY(-1px);
+        }
+        .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi:focus-visible,
+        .dz-admin-root .dz-orders-desktop-summary .dz-stat-item:focus-visible {
+          outline: 2px solid rgba(53, 88, 70, .38);
+          outline-offset: 2px;
+        }
+        .dz-admin-root .dz-orders-desktop-summary .dz-stat-item::after {
+          content: none;
+          display: none;
+        }
+        .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi-label,
+        .dz-admin-root .dz-orders-desktop-summary .dz-stat-title {
+          display: block;
+          margin: 0;
+          color: var(--ink-muted);
+          font-size: 13px;
+          font-weight: 650;
+          line-height: 1.45;
+        }
+        .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi-value,
+        .dz-admin-root .dz-orders-desktop-summary .dz-stat-value {
+          display: block;
+          margin: 0;
+          color: var(--ink-main);
+          font-size: 28px;
+          font-weight: 800;
+          line-height: 1.15;
+          letter-spacing: -.04em;
+          font-variant-numeric: tabular-nums;
+        }
+        @media (max-width: 760px) {
+          .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis),
+          .dz-admin-root .dz-stats-bar.dz-orders-desktop-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 18px;
+          }
+          .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi,
+          .dz-admin-root .dz-orders-desktop-summary .dz-stat-item {
+            min-height: 72px;
+            padding: 10px 12px;
+            gap: 4px;
+          }
+          .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi-label,
+          .dz-admin-root .dz-orders-desktop-summary .dz-stat-title {
+            font-size: 13px;
+          }
+          .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi-value,
+          .dz-admin-root .dz-orders-desktop-summary .dz-stat-value {
+            font-size: 26px;
+          }
+        }
+        @media (max-width: 380px) {
+          .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi,
+          .dz-admin-root .dz-orders-desktop-summary .dz-stat-item {
+            padding-inline: 10px;
+          }
+          .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi-label,
+          .dz-admin-root .dz-orders-desktop-summary .dz-stat-title {
+            font-size: 12px;
+          }
+          .dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) .dz-overview-kpi-value,
+          .dz-admin-root .dz-orders-desktop-summary .dz-stat-value {
+            font-size: 24px;
+          }
+        }
+
       `}} />
 
       <div className="dz-admin-root">
@@ -7009,22 +7120,18 @@ export function MerchantDashboardView({
                 <button type="button" className="dz-overview-kpi" onClick={() => openShipmentList('all')}>
                   <span className="dz-overview-kpi-label">إجمالي الشحنات</span>
                   <strong className="dz-overview-kpi-value">{orders.length}</strong>
-                  <span className="dz-overview-kpi-note">كل الشحنات المسجلة</span>
                 </button>
                 <button type="button" className="dz-overview-kpi" onClick={() => openShipmentList('transit')}>
-                  <span className="dz-overview-kpi-label">قيد التوصيل</span>
+                  <span className="dz-overview-kpi-label">في الطريق</span>
                   <strong className="dz-overview-kpi-value">{inTransitCount}</strong>
-                  <span className="dz-overview-kpi-note">شحنات في الطريق</span>
                 </button>
-                <button type="button" className={`dz-overview-kpi ${alertCount ? 'is-alert' : ''}`} onClick={() => openShipmentList('alerts')}>
-                  <span className="dz-overview-kpi-label">تحتاج إلى متابعة</span>
-                  <strong className="dz-overview-kpi-value">{alertCount}</strong>
-                  <span className="dz-overview-kpi-note">حالات قد تتطلب تدخلاً</span>
+                <button type="button" className="dz-overview-kpi" onClick={() => openShipmentList('stopdesk')}>
+                  <span className="dz-overview-kpi-label">نقطة الاستلام</span>
+                  <strong className="dz-overview-kpi-value">{stopdeskCount}</strong>
                 </button>
                 <button type="button" className="dz-overview-kpi" onClick={() => openShipmentList('delivered')}>
                   <span className="dz-overview-kpi-label">تم التسليم</span>
                   <strong className="dz-overview-kpi-value">{deliveredCount}</strong>
-                  <span className="dz-overview-kpi-note">{successRate}% من إجمالي الشحنات</span>
                 </button>
               </div>
 
@@ -7146,25 +7253,23 @@ export function MerchantDashboardView({
           {/* TABS: ORDERS & ALERTS */}
           {(activeTab === 'orders' || activeTab === 'alerts') && (
             <div>
-              <div className="dz-stats-bar dz-orders-desktop-summary">
-                <div className="dz-stat-item">
+              <div className="dz-stats-bar dz-orders-desktop-summary" aria-label="ملخص الشحنات">
+                <button type="button" className="dz-stat-item" onClick={() => openShipmentList('all')}>
                   <span className="dz-stat-title">إجمالي الشحنات</span>
                   <span className="dz-stat-value">{orders.length}</span>
-                  <span className="dz-stat-sub">كل الشحنات المسجلة</span>
-                </div>
-                <div className="dz-stat-item">
+                </button>
+                <button type="button" className="dz-stat-item" onClick={() => openShipmentList('transit')}>
                   <span className="dz-stat-title">في الطريق</span>
                   <span className="dz-stat-value">{inTransitCount}</span>
-                </div>
-                <div className="dz-stat-item">
-                  <span className="dz-stat-title">في نقطة Stopdesk</span>
+                </button>
+                <button type="button" className="dz-stat-item" onClick={() => openShipmentList('stopdesk')}>
+                  <span className="dz-stat-title">نقطة الاستلام</span>
                   <span className="dz-stat-value">{stopdeskCount}</span>
-                </div>
-                <div className="dz-stat-item">
+                </button>
+                <button type="button" className="dz-stat-item" onClick={() => openShipmentList('delivered')}>
                   <span className="dz-stat-title">تم التسليم</span>
-                  <span className="dz-stat-value">{successRate}%</span>
-                  <span className="dz-stat-sub">{deliveredCount} شحنة</span>
-                </div>
+                  <span className="dz-stat-value">{deliveredCount}</span>
+                </button>
               </div>
 
               <div className="dz-filter-row dz-shipment-filters">
