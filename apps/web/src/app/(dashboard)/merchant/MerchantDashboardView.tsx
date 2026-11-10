@@ -818,6 +818,18 @@ export function MerchantDashboardView({
       renderedSelectedOrderId
     ),
     onBack: () => {
+      const globalDialog = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="global-dialog"]')
+        : null;
+      if (globalDialog instanceof HTMLElement) {
+        globalDialog.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
+        return true;
+      }
+
       const openDropdown = typeof document !== 'undefined'
         ? document.querySelector('[data-dashboard-back-dismiss="dropdown"]')
         : null;
