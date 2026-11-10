@@ -105,17 +105,6 @@ export class ShopifyAdapter {
       description = 'تم استلام طلبك بنجاح وهو قيد المراجعة في المتجر';
     }
 
-    // 5. استخراج موافقة العميل على استلام رابط التتبع عبر تيليجرام
-    let customerTelegramConsent: boolean | undefined = undefined;
-    if (Array.isArray(payload.note_attributes)) {
-      const attr = payload.note_attributes.find(
-        (a: any) => a && (a.name === 'telegram_tracking_consent' || a.name === 'telegram_consent')
-      );
-      if (attr && (attr.value === 'true' || attr.value === '1' || attr.value === true)) {
-        customerTelegramConsent = true;
-      }
-    }
-
     return {
       merchantId: safeString(merchantId),
       externalOrderId,
@@ -126,9 +115,6 @@ export class ShopifyAdapter {
       description,
       carrierName,
       carrierTrackingNumber,
-      customerTelegramConsent,
-      telegramConsentSource: customerTelegramConsent ? 'shopify_checkout' : undefined,
-      telegramConsentVersion: customerTelegramConsent ? 'v1' : undefined,
     };
   }
 }
