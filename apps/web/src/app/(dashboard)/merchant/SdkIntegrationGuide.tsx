@@ -30,9 +30,9 @@ const codeTabs: Array<{ id: ExampleTab; label: string }> = [
 ];
 
 const baseButton: React.CSSProperties = {
-  border: '1px solid var(--border-soft, #dfe4dc)',
+  border: 0,
   borderRadius: 0,
-  background: 'var(--bg-surface, #fff)',
+  background: 'var(--bg-base, #f2f5f0)',
   color: 'var(--ink-main, #263b30)',
   padding: '9px 12px',
   minHeight: 38,
@@ -47,9 +47,9 @@ const codeStyle: React.CSSProperties = {
   boxSizing: 'border-box',
   overflowX: 'auto',
   padding: 16,
-  border: '1px solid var(--border-soft, #dfe4dc)',
-  borderRadius: 0,
-  background: 'var(--bg-base, #f5f7f3)',
+  border: 0,
+  borderRadius: 3,
+  background: 'var(--bg-surface, #fff)',
   color: 'var(--ink-main, #263b30)',
   fontSize: 12,
   lineHeight: 1.8,
@@ -111,7 +111,7 @@ function InfoSection({
   children: React.ReactNode;
 }) {
   return (
-    <section style={{ display: 'grid', gap: 12, padding: '20px 0', borderTop: '1px solid var(--border-soft, #dfe4dc)' }}>
+    <section className="dz-sdk-info-section" style={{ display: 'grid', gap: 12, padding: '20px 0', borderTop: '1px solid var(--border-soft, #dfe4dc)' }}>
       <div>
         <h3 style={{ margin: 0, color: 'var(--ink-main)', fontSize: 17, fontWeight: 850 }}>{title}</h3>
         {intro && <p style={{ margin: '5px 0 0', color: 'var(--ink-muted)', fontSize: 13, lineHeight: 1.8 }}>{intro}</p>}
@@ -262,7 +262,7 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
 
   return (
     <div className="dz-sdk-guide" style={{ display: 'grid', gap: 0, width: '100%', maxWidth: 1180, paddingBottom: 40 }}>
-      <header style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', paddingBottom: 20, borderBottom: '2px solid var(--ink-main, #263b30)' }}>
+      <header className="dz-sdk-overview" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', paddingBottom: 20, borderBottom: '2px solid var(--ink-main, #263b30)' }}>
         <div style={{ maxWidth: 720 }}>
           <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 850, letterSpacing: '.08em' }}>DEVELOPER INTEGRATION</span>
           <h2 style={{ margin: '6px 0', color: 'var(--ink-main)', fontSize: 23, fontWeight: 900 }}>SDK وواجهة API</h2>
@@ -276,7 +276,7 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
       </header>
 
       <InfoSection title="1. ابدأ بالتثبيت" intro="حزمة dz-tracking-sdk مخصّصة لتسجيل الطلبات وإرجاع رابط التتبع. استخدم مدير الحزم الموجود أصلاً في مشروعك.">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+        <div className="dz-sdk-package-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
           {(['npm', 'pnpm', 'yarn', 'bun'] as PackageManager[]).map((manager) => (
             <button
               key={manager}
@@ -340,7 +340,7 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
       </InfoSection>
 
       <InfoSection title="3. أمثلة التكامل" intro="ابدأ بالتسجيل من الخادم بعد حفظ الطلب في قاعدة بيانات متجرك. غيّر المثال ليتوافق مع بنية الطلب الفعلية لديك.">
-        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-soft, #dfe4dc)', overflowX: 'auto' }}>
+        <div className="dz-sdk-example-tabs" style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-soft, #dfe4dc)', overflowX: 'auto' }}>
           {codeTabs.map((tab) => (
             <button
               key={tab.id}
@@ -596,6 +596,72 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
         </div>
         <a href={baseUrl + '/skill.md'} target="_blank" rel="noreferrer" style={{ ...baseButton, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>فتح skill.md ↗</a>
       </footer>
+
+      <style jsx global>{`
+        .dz-sdk-guide { gap: 10px !important; }
+        .dz-sdk-guide > .dz-sdk-overview {
+          padding: 18px !important;
+          border: 0 !important;
+          border-radius: 4px;
+          background: var(--bg-base, #f2f5f0);
+        }
+        .dz-sdk-guide > .dz-sdk-info-section {
+          padding: 16px !important;
+          margin: 0 !important;
+          border: 0 !important;
+          border-radius: 4px;
+          background: var(--bg-base, #f2f5f0);
+        }
+        .dz-sdk-guide > footer {
+          padding: 16px !important;
+          border: 0 !important;
+          border-radius: 4px;
+          background: var(--bg-base, #f2f5f0);
+        }
+        .dz-sdk-guide [style*="border: 1px solid"],
+        .dz-sdk-guide [style*="border: '1px solid"] {
+          border: 0 !important;
+          border-radius: 4px;
+          background: var(--bg-surface, #fff);
+        }
+        .dz-sdk-guide pre {
+          border: 0 !important;
+          border-radius: 3px;
+          background: var(--bg-surface, #fff) !important;
+        }
+        .dz-sdk-guide .dz-sdk-package-tabs,
+        .dz-sdk-guide .dz-sdk-example-tabs {
+          width: fit-content;
+          max-width: 100%;
+          gap: 4px !important;
+          padding: 4px;
+          border: 0 !important;
+          border-radius: 4px;
+          background: var(--bg-surface, #fff);
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .dz-sdk-guide .dz-sdk-package-tabs button,
+        .dz-sdk-guide .dz-sdk-example-tabs button {
+          border: 0 !important;
+          border-bottom: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          color: var(--ink-muted) !important;
+          padding: 9px 12px !important;
+          min-height: 36px;
+          white-space: nowrap;
+        }
+        .dz-sdk-guide .dz-sdk-package-tabs button[aria-pressed="true"],
+        .dz-sdk-guide .dz-sdk-example-tabs button[aria-pressed="true"] {
+          background: var(--brand-primary, #263b30) !important;
+          color: #fff !important;
+        }
+        .dz-sdk-guide section { min-width: 0; }
+        .dz-sdk-guide button { border-radius: 0 !important; }
+        .dz-sdk-guide th,
+        .dz-sdk-guide td { border-color: transparent !important; }
+      `}</style>
     </div>
   );
 }
