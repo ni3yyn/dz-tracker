@@ -11,7 +11,7 @@ type Props = {
 };
 
 type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
-type ExampleTab = 'node' | 'rest' | 'react' | 'browser' | 'html';
+type ExampleTab = 'node' | 'rest' | 'react' | 'browser' | 'html' | 'ai';
 
 const packageCommands: Record<PackageManager, string> = {
   npm: 'npm install dz-tracking-sdk',
@@ -26,6 +26,7 @@ const codeTabs: Array<{ id: ExampleTab; label: string }> = [
   { id: 'react', label: 'React Hook' },
   { id: 'browser', label: 'Browser SDK' },
   { id: 'html', label: 'HTML form' },
+  { id: 'ai', label: 'AI Agent Prompt' },
 ];
 
 const baseButton: React.CSSProperties = {
@@ -155,6 +156,14 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
       '  }',
       '  return { trackingCreated: true, trackingUrl: result.trackingUrl };',
       '}',
+      '',
+      'await tracker.updateStatus({',
+      '  orderId: String(savedOrder.id),',
+      "  status: 'out_for_delivery',",
+      "  description: 'Parcel handed to the delivery agent',",
+      '});',
+      '',
+      'const order = await tracker.getOrder(result.trackingUuid);',
     ].join('\n'),
     rest: [
       "const response = await fetch('" + apiEndpoint + "', {",
@@ -224,9 +233,10 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
       '  <button type="submit">Submit existing checkout</button>',
       '</form>',
     ].join('\n'),
-  }), [apiEndpoint, baseUrl]);
+    ai: agentPrompt,
+  }), [apiEndpoint, baseUrl, agentPrompt]);
 
-  const agentPrompt = [
+  const agentPrompt = useMemo(() => [
     'Read ' + baseUrl + '/skill.md completely before changing code.',
     'Inspect the repository package manager, order-save flow, installed dz-tracking-sdk version, package.json exports, and .d.ts declarations before choosing an API.',
     'Run npm view dz-tracking-sdk version, install using the existing package manager, then verify the actual installed exports.',
@@ -238,7 +248,7 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
     'Set telegramConsent true only when the customer explicitly consented in the actual checkout.',
     'Inspect the chosen courier adapter and verified provider payload instead of guessing webhook fields.',
     'TajerTrack base URL: ' + baseUrl,
-  ].join('\n');
+  ].join('\n'), [baseUrl]);
 
   const copy = async (value: string, key: string) => {
     try {
@@ -364,7 +374,59 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
         ) : null}
       </InfoSection>
 
-      <InfoSection title="4. عقد REST API" intro="استخدم هذا المسار إذا كانت نسخة npm المنشورة أقدم من واجهات المصدر، أو إذا كان تنفيذ HTTP في خادمك أبسط.">
+      <InfoSection title="4. مرجع SDK v2" intro="هذه الواجهات تخص مصدر المستودع v2. تحقّق من النسخة المنشورة وملفات .d.ts قبل استخدامها في مشروعك؛ قد لا يحتوي npm حالياً على جميع exports المصدر.">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: 8 }}>
+          {[
+            ['DZTrackerClient', 'عميل الخادم الأساسي من dz-tracking-sdk/core'],
+            ['trackOrder', 'تسجيل طلب محفوظ وإرجاع نتيجة التتبع'],
+            ['updateStatus', 'تحديث الطلب نفسه باستخدام orderId الأصلي'],
+            ['getOrder', 'قراءة طلب التتبع بواسطة tracking UUID'],
+            ['initTracker', 'تهيئة عميل المتصفح من JavaScript bundle'],
+            ['setupAutoCapture', 'التقاط نموذج الدفع المهيأ بخصائص data-dz'],
+            ['OfflineQueue', 'طابور متصفح best-effort فقط'],
+            ['normalizeAlgerianPhone', 'تطبيع تنسيق رقم هاتف جزائري؛ ليس بديلاً عن تحقق المتجر'],
+          ].map(([name, description]) => (
+            <div key={name} style={{ display: 'grid', gap: 5, padding: 12, border: '1px solid var(--border-soft, #dfe4dc)' }}>
+              <code dir="ltr" style={{ color: 'var(--ink-main)', fontSize: 12 }}>{name}</code>
+              <span style={{ color: 'var(--ink-muted)', fontSize: 11, lineHeight: 1.7 }}>{description}</span>
+            </div>
+          ))}
+        </div>
+        <CodePanel
+          title="استيراد وقراءة الطلب"
+          description="مدخل core لا يستورد React؛ مناسب لخوادم Node وServer Actions."
+          code={[
+            "import { DZTrackerClient } from 'dz-tracking-sdk/core';",
+            '',
+            'const tracker = new DZTrackerClient({',
+            '  apiKey: process.env.DZ_TRACKER_API_KEY!,',
+            '  baseUrl: process.env.DZ_TRACKER_BASE_URL,',
+            '});',
+            '',
+            "const result = await tracker.trackOrder({ orderId: 'STORE-ORDER-1042', status: 'order_placed' });",
+            "await tracker.updateStatus({ orderId: 'STORE-ORDER-1042', status: 'out_for_delivery' });",
+            'const order = await tracker.getOrder(result.trackingUuid);',
+          ].join('\n')}
+          copied={copied === 'sdk-methods'}
+          onCopy={() => void copy([
+            "import { DZTrackerClient } from 'dz-tracking-sdk/core';",
+            '',
+            'const tracker = new DZTrackerClient({',
+            '  apiKey: process.env.DZ_TRACKER_API_KEY!,',
+            '  baseUrl: process.env.DZ_TRACKER_BASE_URL,',
+            '});',
+            '',
+            "const result = await tracker.trackOrder({ orderId: 'STORE-ORDER-1042', status: 'order_placed' });",
+            "await tracker.updateStatus({ orderId: 'STORE-ORDER-1042', status: 'out_for_delivery' });",
+            'const order = await tracker.getOrder(result.trackingUuid);',
+          ].join('\n'), 'sdk-methods')}
+        />
+        <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: 12, lineHeight: 1.8 }}>
+          النتيجة غير الناجحة لا تحتوي على tracking UUID أو tracking URL صالحين. لا تنشئ رابطاً مؤقتاً ولا تعِد توجيه العميل حتى تكون success === true ويوجد رابط حقيقي. صفحة العميل العامة هي /t/{'{tracking_uuid}'}، وقراءة API تكون عبر /api/track/{'{tracking_uuid}'}.
+        </p>
+      </InfoSection>
+
+      <InfoSection title="5. عقد REST API" intro="استخدم هذا المسار إذا كانت نسخة npm المنشورة أقدم من واجهات المصدر، أو إذا كان تنفيذ HTTP في خادمك أبسط.">
         <div style={{ display: 'grid', gap: 8 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <strong style={{ padding: '5px 9px', background: 'var(--brand-primary, #263b30)', color: '#fff', fontSize: 11 }}>POST</strong>
@@ -395,7 +457,7 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
         </div>
       </InfoSection>
 
-      <InfoSection title="5. تحديث الحالة لاحقاً" intro="أرسل التحديثات على نفس نقطة REST مع نفس order_id الذي استخدمته عند تسجيل الطلب.">
+      <InfoSection title="6. تحديث الحالة لاحقاً" intro="أرسل التحديثات على نفس نقطة REST مع نفس order_id الذي استخدمته عند تسجيل الطلب.">
         <CodePanel
           title="مثال تحديث حالة"
           code={[
@@ -433,7 +495,7 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
         </p>
       </InfoSection>
 
-      <InfoSection title="6. التقاط الطلب من HTML" intro="يدعم مصدر SDK الحالي التقاط النماذج التي تحمل data-dz-checkout أو data-dz-form أو data-dz-order، بعد تهيئة SDK من حزمة JavaScript مجمّعة.">
+      <InfoSection title="7. التقاط الطلب من HTML" intro="يدعم مصدر SDK الحالي التقاط النماذج التي تحمل data-dz-checkout أو data-dz-form أو data-dz-order، بعد تهيئة SDK من حزمة JavaScript مجمّعة.">
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'start' }}>
             <thead>
@@ -469,7 +531,7 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
         </ul>
       </InfoSection>
 
-      <InfoSection title="7. Shopify وأنظمة ERP وشركات التوصيل" intro="استخدم endpoint الخاص بمصدر الحدث. استقبال الطلبات وتحديث حالة الشحن عمليتان منفصلتان.">
+      <InfoSection title="8. Shopify وأنظمة ERP وشركات التوصيل" intro="استخدم endpoint الخاص بمصدر الحدث. استقبال الطلبات وتحديث حالة الشحن عمليتان منفصلتان.">
         <div style={{ display: 'grid', gap: 0, borderTop: '1px solid var(--border-soft, #dfe4dc)' }}>
           {[
             ['طلب أو تحديث مباشر', '/api/webhooks'],
@@ -501,7 +563,7 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
         </div>
       </InfoSection>
 
-      <InfoSection title="8. أدوات CLI والتحقق" intro="الأوامر الموجودة في مصدر SDK الحالي تساعدك على إعداد بيئة التطوير وفحص مفتاح API.">
+      <InfoSection title="9. أدوات CLI والتحقق" intro="الأوامر الموجودة في مصدر SDK الحالي تساعدك على إعداد بيئة التطوير وفحص مفتاح API.">
         <CodePanel
           title="أوامر CLI"
           code={'npx dz-tracker help\nnpx dz-tracker init\nnpx dz-tracker test\nnpx dz-tracker snippet\nnpx dz-tracker install-skill'}
