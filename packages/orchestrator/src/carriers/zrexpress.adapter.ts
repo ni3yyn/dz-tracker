@@ -317,5 +317,18 @@ export class ZRExpressAdapter {
   }
 }
 
-// تصدير مسمى بديل ProcolisAdapter لدعم كل الشركات المعتمدة على Procolis API
-export const ProcolisAdapter = ZRExpressAdapter;
+/**
+ * Procolis has a separate integration identity and merchant connection.
+ * Its payload currently shares the documented field shape parsed by ZRExpressAdapter,
+ * so we reuse the parser but never reuse the ZR Express carrier identity.
+ */
+export class ProcolisAdapter {
+  static normalize(merchantId: string, rawPayload: any): TrackingEvent {
+    const event = ZRExpressAdapter.normalize(merchantId, rawPayload);
+    return {
+      ...event,
+      carrierName: 'Procolis',
+      description: event.description?.replace(/ZR Express/g, 'Procolis'),
+    };
+  }
+}
