@@ -235,7 +235,7 @@ export class ProcolisSyncWorker {
         for (let index = 0; index < payloads.length; index += INGEST_BATCH_SIZE) {
           const batch = payloads.slice(index, index + INGEST_BATCH_SIZE);
           const response = await fetch(
-            `${this.config.trackingPublicBaseUrl.replace(/\\/+$/, '')}/api/webhooks/procolis/sync`,
+            `${this.config.trackingPublicBaseUrl.replace(/\/+$/, '')}/api/webhooks/procolis/sync`,
             {
               method: 'POST',
               headers: {
