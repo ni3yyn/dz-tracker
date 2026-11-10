@@ -94,6 +94,17 @@ export function AdminDashboardView({
     setActiveTab,
     hasActiveOverlay: Boolean(mobileMenuOpen || editingMerchant),
     onBack: () => {
+      const globalDialog = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="global-dialog"]')
+        : null;
+      if (globalDialog instanceof HTMLElement) {
+        globalDialog.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
+        return true;
+      }
       if (editingMerchant) {
         setEditingMerchant(null);
         return true;
