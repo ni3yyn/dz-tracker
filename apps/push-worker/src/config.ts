@@ -26,6 +26,8 @@ export interface PushWorkerConfig {
   elogistiaSyncIntervalMs: number;
   ecomV2SyncEnabled: boolean;
   ecomV2SyncIntervalMs: number;
+  procolisSyncEnabled: boolean;
+  procolisSyncIntervalMs: number;
 }
 
 export function loadConfig(): PushWorkerConfig {
@@ -76,6 +78,8 @@ export function loadConfig(): PushWorkerConfig {
     elogistiaSyncIntervalMs: Math.max(60_000, parseInt(process.env.ELOGISTIA_SYNC_INTERVAL_MS || '300000', 10)),
     ecomV2SyncEnabled: process.env.ECOM_V2_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
     ecomV2SyncIntervalMs: Math.max(60_000, parseInt(process.env.ECOM_V2_SYNC_INTERVAL_MS || '300000', 10)),
+    procolisSyncEnabled: process.env.PROCOLIS_SYNC_ENABLED === 'true' && (process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '').length >= 32,
+    procolisSyncIntervalMs: Math.max(60_000, parseInt(process.env.PROCOLIS_SYNC_INTERVAL_MS || '300000', 10)),
   };
 }
 
