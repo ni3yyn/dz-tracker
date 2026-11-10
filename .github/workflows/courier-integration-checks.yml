@@ -1,0 +1,48 @@
+name: Courier integration checks
+
+on:
+  pull_request:
+    paths:
+      - "apps/push-worker/**"
+      - "packages/orchestrator/**"
+      - "apps/web/src/app/(dashboard)/merchant/**"
+      - "apps/web/src/app/api/webhooks/procolis/**"
+      - "apps/web/src/lib/webhook-handler.ts"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+
+permissions:
+  contents: read
+
+jobs:
+  courier-integrations:
+    name: Worker typecheck and courier tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.11.2
+          run_install: false
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck background workers
+        run: pnpm --filter push-worker typecheck
+
+      - name: Test background workers
+        run: pnpm --filter push-worker test
+
+      - name: Test tracking orchestrator
+        run: pnpm --filter @saas/orchestrator test
