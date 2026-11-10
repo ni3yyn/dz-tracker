@@ -807,6 +807,8 @@ export function MerchantDashboardView({
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'risk'>('newest');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [renderedSelectedOrderId, setRenderedSelectedOrderId] = useState<string | null>(null);
+  const [isSelectedOrderDrawerOpen, setIsSelectedOrderDrawerOpen] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
   const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
@@ -1416,9 +1418,19 @@ export function MerchantDashboardView({
     [orders]
   );
   const selectedOrder = useMemo(
-    () => orders.find((order) => order.id === selectedOrderId) || null,
-    [orders, selectedOrderId]
+    () => orders.find((order) => order.id === renderedSelectedOrderId) || null,
+    [orders, renderedSelectedOrderId]
   );
+  useLayoutEffect(() => {
+    if (!selectedOrderId) {
+      setIsSelectedOrderDrawerOpen(false);
+      return;
+    }
+
+    setRenderedSelectedOrderId(selectedOrderId);
+    const frame = requestAnimationFrame(() => setIsSelectedOrderDrawerOpen(true));
+    return () => cancelAnimationFrame(frame);
+  }, [selectedOrderId]);
   useEffect(() => {
     if (!selectedOrderId) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -3595,6 +3607,65 @@ export function MerchantDashboardView({
         .dz-order-detail-panel {
           animation: dzDashboardDrawerEnter .4s cubic-bezier(.2,.72,.25,1) both;
           transform-origin: right center;
+        }
+
+        /* Order details drawer: fixed-width inner content avoids text reflow while
+           the outer panel expands and contracts from its anchored edge. */
+        .dz-order-detail-backdrop--drawer {
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          animation: none !important;
+          transition: opacity .3s ease, visibility 0s linear .48s;
+        }
+        .dz-order-detail-backdrop--drawer[data-open="true"] {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transition-delay: 0s;
+        }
+        .dz-order-detail-panel--drawer {
+          box-sizing: border-box;
+          flex: 0 0 0;
+          width: 0;
+          min-width: 0;
+          padding: 0;
+          border-inline-start: 0;
+          overflow: hidden;
+          opacity: 0;
+          visibility: hidden;
+          animation: none !important;
+          transform: none !important;
+          transition:
+            width .48s cubic-bezier(.2,.75,.25,1),
+            flex-basis .48s cubic-bezier(.2,.75,.25,1),
+            opacity .28s ease,
+            visibility 0s linear .48s;
+        }
+        .dz-order-detail-panel--drawer[data-open="true"] {
+          flex-basis: min(520px, 100vw);
+          width: min(520px, 100vw);
+          opacity: 1;
+          visibility: visible;
+          transition-delay: 0s;
+          overflow-x: hidden;
+          overflow-y: auto;
+        }
+        .dz-order-detail-panel-inner {
+          box-sizing: border-box;
+          width: min(520px, 100vw);
+          min-width: min(520px, 100vw);
+          min-height: 100%;
+          padding: 32px 28px;
+        }
+        @media (max-width: 560px) {
+          .dz-order-detail-panel-inner { padding: 24px 18px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .dz-order-detail-backdrop--drawer,
+          .dz-order-detail-panel--drawer {
+            transition-duration: .01ms !important;
+          }
         }
 
         @media (max-width: 1024px) {
@@ -8717,8 +8788,30 @@ export function MerchantDashboardView({
           ), document.body)}
 
           {selectedOrder && typeof document !== 'undefined' && createPortal((
-            <div className="dz-order-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedOrderId(null); }}>
-              <aside className="dz-order-detail-panel" role="dialog" aria-modal="true" aria-labelledby="order-detail-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div
+              className="dz-order-detail-backdrop dz-order-detail-backdrop--drawer"
+              data-open={isSelectedOrderDrawerOpen ? 'true' : 'false'}
+              aria-hidden={!isSelectedOrderDrawerOpen}
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget && isSelectedOrderDrawerOpen) setSelectedOrderId(null);
+              }}
+            >
+              <aside
+                className="dz-order-detail-panel dz-order-detail-panel--drawer"
+                data-open={isSelectedOrderDrawerOpen ? 'true' : 'false'}
+                role="dialog"
+                aria-modal="true"
+                aria-hidden={!isSelectedOrderDrawerOpen}
+                aria-labelledby="order-detail-title"
+                onMouseDown={(event) => event.stopPropagation()}
+                onTransitionEnd={(event) => {
+                  if (event.target === event.currentTarget && event.propertyName === 'width' && !selectedOrderId) {
+                    setRenderedSelectedOrderId(null);
+                  }
+                }}
+              >
+                <div className="dz-order-detail-panel-inner">
                 <div className="dz-order-detail-head">
                   <div>
                     <span className="dz-order-detail-kicker">تفاصيل الشحنة</span>
@@ -8815,6 +8908,7 @@ export function MerchantDashboardView({
                 <div className="dz-order-detail-actions">
                   <a href={`/t/${selectedOrder.tracking_uuid}`} target="_blank" rel="noreferrer" className="dz-btn dz-btn-outline"><Icons.ExternalLink /> صفحة التتبع</a>
                   {selectedOrder.customer_phone && <a href={getWhatsAppRecoveryUrl(selectedOrder)} target="_blank" rel="noreferrer" className={`dz-btn ${isAttentionStatus(selectedOrder.current_status) ? 'dz-btn-wa-urgent' : 'dz-btn-wa'}`}><Icons.MessageCircle /> التواصل عبر واتساب</a>}
+                </div>
                 </div>
               </aside>
             </div>
