@@ -1,6 +1,9 @@
 name: Courier integration checks
 
 on:
+  push:
+    branches:
+      - 'feat/multi-delivery-company-integrations'
   pull_request:
     paths:
       - "apps/push-worker/**"
