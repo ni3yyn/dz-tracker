@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue, memo } from 'react';
+import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, useDeferredValue, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { StatusSelector } from './StatusSelector';
 import { BrandedSelect } from './BrandedSelect';
@@ -604,6 +604,116 @@ const Icons = {
   MousePointer: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg>,
 };
 
+
+type MerchantDashboardTab =
+  | 'overview'
+  | 'orders'
+  | 'alerts'
+  | 'analytics'
+  | 'branding'
+  | 'upsells'
+  | 'integrations'
+  | 'mappings'
+  | 'settings';
+
+const MERCHANT_DASHBOARD_TAB_ORDER: Record<MerchantDashboardTab, number> = {
+  overview: 0,
+  orders: 1,
+  analytics: 2,
+  alerts: 3,
+  branding: 4,
+  upsells: 5,
+  integrations: 6,
+  mappings: 7,
+  settings: 8,
+};
+
+/**
+ * Keeps the active dashboard surface at its measured size while content changes.
+ * Height changes are animated from the previous measured value; the content itself
+ * enters with a small directional x/y reveal. ResizeObserver covers nested forms,
+ * filters, validation messages, and responsive reflows without hard-coded heights.
+ */
+function DashboardPanelTransition({
+  transitionKey,
+  children,
+}: {
+  transitionKey: string;
+  children: React.ReactNode;
+}) {
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const previousKeyRef = useRef(transitionKey);
+  const animationFrameRef = useRef<number | null>(null);
+  const [height, setHeight] = useState<number | null>(null);
+  const [direction, setDirection] = useState<'next' | 'previous'>('next');
+
+  const measure = useCallback(() => {
+    const content = measureRef.current;
+    if (!content) return;
+    const nextHeight = Math.ceil(content.getBoundingClientRect().height);
+    setHeight((current) => (current === nextHeight ? current : nextHeight));
+  }, []);
+
+  useLayoutEffect(() => {
+    const content = measureRef.current;
+    if (!content) return;
+
+    measure();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(measure);
+      observer.observe(content);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure]);
+
+  useLayoutEffect(() => {
+    const previousKey = previousKeyRef.current;
+    if (previousKey === transitionKey) return;
+
+    const previousIndex = MERCHANT_DASHBOARD_TAB_ORDER[previousKey as MerchantDashboardTab];
+    const nextIndex = MERCHANT_DASHBOARD_TAB_ORDER[transitionKey as MerchantDashboardTab];
+    setDirection(
+      previousIndex !== undefined && nextIndex !== undefined && nextIndex < previousIndex
+        ? 'previous'
+        : 'next'
+    );
+    previousKeyRef.current = transitionKey;
+
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    animationFrameRef.current = requestAnimationFrame(measure);
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [measure, transitionKey]);
+
+  return (
+    <div
+      className="dz-dashboard-transition-frame"
+      style={{ height: height === null ? 'auto' : `${height}px` }}
+    >
+      <div ref={measureRef} className="dz-dashboard-transition-measure">
+        <div
+          key={transitionKey}
+          className="dz-dashboard-transition-content"
+          data-direction={direction}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MerchantDashboardView({
   storeName,
   merchantId,
@@ -636,13 +746,17 @@ export function MerchantDashboardView({
     ? new Date(subscription.expiresAt).toLocaleDateString('ar-DZ')
     : null;
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'alerts' | 'analytics' | 'branding' | 'upsells' | 'integrations' | 'mappings' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<MerchantDashboardTab>('overview');
+  const dashboardMainRef = useRef<HTMLElement | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [storeNameDraft, setStoreNameDraft] = useState(storeName);
   const [savedStoreName, setSavedStoreName] = useState(storeName);
   const displayStoreName = storeNameDraft.trim() || storeName;
   const hasUnsavedStoreNameChanges = storeNameDraft.trim() !== savedStoreName;
-  useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    dashboardMainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
   useEffect(() => {
     setStoreNameDraft(storeName);
     setSavedStoreName(storeName);
@@ -2624,7 +2738,7 @@ export function MerchantDashboardView({
         .dz-orders-load-more button:hover { border-color: #8ca391; }
 
         /* Dedicated Analytics Tab Styles */
-        .dz-analytics { display: flex; flex-direction: column; gap: 0; animation: dz-tab-fade-up .3s ease both; }
+        .dz-analytics { display: flex; flex-direction: column; gap: 0; animation: none; }
         .dz-analytics-kpis {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3363,7 +3477,154 @@ export function MerchantDashboardView({
         }
         .dz-support-copy svg { width: 14px; height: 14px; }
         @keyframes dz-tab-fade-up { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-        .dz-main > div:not(.dz-toast) { animation: dz-tab-fade-up .52s cubic-bezier(.2,.65,.25,1) both; }
+
+        /* Shared dashboard motion: measured vertical reflow + directional x/y entrance. */
+        .dz-dashboard-transition-frame {
+          position: relative;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          overflow: clip;
+          transition: height .48s cubic-bezier(.2,.75,.25,1);
+        }
+        .dz-dashboard-transition-measure {
+          display: flow-root;
+          width: 100%;
+          min-width: 0;
+        }
+        .dz-dashboard-transition-content {
+          width: 100%;
+          min-width: 0;
+          transform-origin: top center;
+          animation: dzDashboardRouteEnter .42s cubic-bezier(.2,.72,.25,1) both;
+        }
+        .dz-dashboard-transition-content[data-direction="next"] { --dashboard-enter-x: 11px; }
+        .dz-dashboard-transition-content[data-direction="previous"] { --dashboard-enter-x: -11px; }
+        .dz-header-titles-enter { animation: dzDashboardHeaderEnter .32s cubic-bezier(.2,.72,.25,1) both; }
+        .dz-header-actions { animation: dzDashboardHeaderEnter .34s cubic-bezier(.2,.72,.25,1) both; }
+        @keyframes dzDashboardRouteEnter {
+          from { opacity: 0; transform: translate3d(var(--dashboard-enter-x, 8px), 8px, 0) scale(.997); filter: blur(1px); }
+          to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+        }
+        @keyframes dzDashboardHeaderEnter {
+          from { opacity: 0; transform: translate3d(0, 5px, 0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
+        }
+        @keyframes dzDashboardItemEnter {
+          from { opacity: 0; transform: translate3d(0, 6px, 0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
+        }
+        @keyframes dzDashboardBackdropEnter {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes dzDashboardDialogEnter {
+          from { opacity: 0; transform: translate3d(0, 12px, 0) scale(.985); }
+          to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+        @keyframes dzDashboardDrawerEnter {
+          from { opacity: 0; transform: translate3d(22px, 0, 0) scaleX(.985); }
+          to { opacity: 1; transform: translate3d(0, 0, 0) scaleX(1); }
+        }
+
+        .dz-nav-item {
+          position: relative;
+          isolation: isolate;
+          transition:
+            color .24s ease,
+            background-color .24s ease,
+            transform .3s cubic-bezier(.2,.72,.25,1),
+            box-shadow .24s ease;
+        }
+        .dz-nav-item::after {
+          content: '';
+          position: absolute;
+          inset-inline-start: 0;
+          inset-block: 10px;
+          width: 3px;
+          background: currentColor;
+          opacity: 0;
+          transform: scaleY(.35);
+          transform-origin: center;
+          transition: opacity .22s ease, transform .32s cubic-bezier(.2,.72,.25,1);
+          pointer-events: none;
+        }
+        .dz-nav-item.active::after { opacity: .78; transform: scaleY(1); }
+        .dz-nav-icon svg { transition: transform .28s cubic-bezier(.2,.72,.25,1), opacity .2s ease; }
+        .dz-nav-item:hover .dz-nav-icon svg { transform: translateX(-2px); }
+        .dz-filter-btn, .dz-overview-kpi, .dz-setup-step, .dz-brand-category, .dz-brand-preset {
+          transition:
+            color .2s ease,
+            background-color .2s ease,
+            border-color .2s ease,
+            box-shadow .24s ease,
+            transform .24s cubic-bezier(.2,.72,.25,1);
+        }
+        .dz-overview-item, .dz-order-mobile-card {
+          animation: dzDashboardItemEnter .32s cubic-bezier(.2,.72,.25,1) both;
+        }
+        .dz-order-mobile-card:nth-child(2) { animation-delay: 25ms; }
+        .dz-order-mobile-card:nth-child(3) { animation-delay: 45ms; }
+        .dz-order-mobile-card:nth-child(4) { animation-delay: 65ms; }
+        .dz-order-mobile-card:nth-child(5) { animation-delay: 85ms; }
+        .dz-order-mobile-card:nth-child(6) { animation-delay: 105ms; }
+
+        .dz-mobile-backdrop {
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: opacity .3s ease, visibility 0s linear .3s;
+          animation: none;
+        }
+        .dz-mobile-backdrop.is-visible {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transition-delay: 0s;
+          animation: dzDashboardBackdropEnter .3s ease both;
+        }
+
+        .dz-mapping-modal-backdrop,
+        .dz-order-detail-backdrop {
+          animation: dzDashboardBackdropEnter .26s ease both;
+        }
+        .dz-mapping-modal-panel {
+          animation: dzDashboardDialogEnter .36s cubic-bezier(.2,.72,.25,1) both;
+          transform-origin: center;
+        }
+        .dz-order-detail-panel {
+          animation: dzDashboardDrawerEnter .4s cubic-bezier(.2,.72,.25,1) both;
+          transform-origin: right center;
+        }
+
+        @media (max-width: 1024px) {
+          .dz-sidebar {
+            max-height: 0;
+            transition:
+              max-height .42s cubic-bezier(.2,.75,.25,1),
+              opacity .28s ease,
+              transform .34s cubic-bezier(.2,.72,.25,1),
+              visibility 0s linear .42s;
+          }
+          .dz-sidebar.dz-mobile-nav-open {
+            max-height: calc(100dvh - 90px);
+            transition-delay: 0s;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .dz-dashboard-transition-frame { transition-duration: .01ms !important; }
+          .dz-dashboard-transition-content,
+          .dz-header-titles-enter,
+          .dz-header-actions,
+          .dz-overview-item,
+          .dz-order-mobile-card,
+          .dz-mapping-modal-backdrop,
+          .dz-order-detail-backdrop,
+          .dz-mapping-modal-panel,
+          .dz-order-detail-panel {
+            animation: none !important;
+          }
+        }
         .dz-main > header { animation: dz-tab-fade-up .45s cubic-bezier(.2,.65,.25,1) both; }
         .dz-mobile-menu-toggle { display:none; align-items:center; justify-content:center; gap:5px; width:42px; height:42px; flex:0 0 42px; padding:0; border:1px solid var(--border-soft); border-radius:12px; background:rgba(255,254,250,.88); color:var(--ink-main); cursor:pointer; }
         .dz-mobile-menu-toggle span { display:block; width:17px; height:1.7px; border-radius:2px; background:currentColor; transition:transform .32s cubic-bezier(.2,.65,.25,1),opacity .25s ease; }
@@ -6433,16 +6694,14 @@ export function MerchantDashboardView({
         </aside>
 
         {/* MOBILE MENU BACKDROP */}
-        {mobileMenuOpen && (
-          <div
-            className="dz-mobile-backdrop"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-hidden="true"
-          />
-        )}
+        <div
+          className={`dz-mobile-backdrop ${mobileMenuOpen ? 'is-visible' : ''}`}
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden={!mobileMenuOpen}
+        />
 
         {/* MAIN */}
-        <main className={`dz-main dz-scrollable ${activeTab === 'branding' ? 'dz-main-branding' : ''}`}>
+        <main ref={dashboardMainRef} className={`dz-main dz-scrollable ${activeTab === 'branding' ? 'dz-main-branding' : ''}`}>
           
 
           <SiteHeader
@@ -6452,7 +6711,7 @@ export function MerchantDashboardView({
             onMenuToggle={() => setMobileMenuOpen((open) => !open)}
             menuId="dz-merchant-sidebar"
           >
-            <div className="dz-header-titles">
+            <div key={activeTab} className="dz-header-titles dz-header-titles-enter">
               <h1>
                 {activeTab === 'overview' && 'نظرة عامة'}
                 {activeTab === 'orders' && 'الشحنات'}
@@ -6611,6 +6870,8 @@ export function MerchantDashboardView({
               </button>
             </div>
           )}
+
+          <DashboardPanelTransition transitionKey={activeTab}>
 
           {/* TAB: OPERATIONAL OVERVIEW */}
           {activeTab === 'overview' && (
@@ -8417,6 +8678,8 @@ export function MerchantDashboardView({
               </section>
             </div>
           )}
+
+          </DashboardPanelTransition>
 
           {isCustomMappingModalOpen && typeof document !== 'undefined' && createPortal((
             <div
