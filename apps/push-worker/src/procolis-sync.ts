@@ -195,7 +195,6 @@ export class ProcolisSyncWorker {
               Accept: 'application/json',
             },
             body: JSON.stringify({ Colis: [{ Tracking: tracking }] }),
-            cache: 'no-store',
             redirect: 'error',
             signal: AbortSignal.timeout(TIMEOUT_MS),
           });
