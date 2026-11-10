@@ -6908,6 +6908,35 @@ export function MerchantDashboardView({
           .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-value { font-size: 24px; }
         }
 
+        /* Keep the first and last KPI tiles inset; legacy editorial rules zeroed their edge padding. */
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:first-child {
+          padding-inline-start: 15px;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child {
+          padding-inline-end: 15px;
+        }
+        @media (max-width: 760px) {
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:first-child {
+            padding-inline-start: 12px;
+          }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child {
+            padding-inline: 12px;
+          }
+        }
+        @media (max-width: 520px) {
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi,
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:first-child,
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child {
+            padding: 10px 12px;
+          }
+        }
+        @media (max-width: 380px) {
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:first-child,
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child {
+            padding-inline: 10px;
+          }
+        }
+
       `}} />
 
       <div className="dz-admin-root">
