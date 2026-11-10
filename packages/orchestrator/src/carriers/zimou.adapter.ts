@@ -77,7 +77,7 @@ const STATUS_NAME_IDS: Record<string, string> = {
   'retour (station)':'116', 'retournee au vendeur (sac)':'20', 'warehouse retournee':'29',
   'dropships retournee':'37', 'retour a retirer':'18', 'echange a retirer':'36',
   'alert':'10', 'warehouse hors stock':'27', 'bloque':'83', 'perdu':'118',
-  'annulee':'31', 'annulee':'31', 'annule':'31', 'annule':'31',
+  'annulee':'31', 'annule':'31',
 };
 
 export function mapZimouStatus(value: unknown, statusName?: unknown) {
