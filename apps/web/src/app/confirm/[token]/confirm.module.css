@@ -13,9 +13,10 @@
   place-items: center;
   overflow: hidden;
   padding: clamp(24px, 5vw, 54px);
-  background: #fffefa;
-  color: #26332b;
+  background: var(--canvas, #fffefa);
+  color: var(--ink-main, #26332b);
   font-family: 'Readex Pro', 'Noto Sans Arabic', system-ui, sans-serif;
+  transition: background-color .24s ease, color .24s ease;
 }
 
 .ambient {
@@ -82,8 +83,9 @@
   flex: 0 0 56px;
   display: grid;
   place-items: center;
-  background: color-mix(in srgb, var(--confirm-brand) 9%, #fffefa);
-  color: var(--confirm-brand);
+  background: color-mix(in srgb, var(--confirm-brand) 9%, var(--canvas, #fffefa));
+  color: var(--brand-readable, var(--confirm-brand));
+  border-radius: var(--radius-panel, 0px);
   font-size: 27px;
   font-weight: 850;
 }
@@ -94,7 +96,7 @@
 
 .storeName {
   overflow-wrap: anywhere;
-  color: #26382c;
+  color: var(--ink-main, #26382c);
   font-size: 17px;
   font-weight: 800;
   line-height: 1.5;
@@ -102,7 +104,7 @@
 
 .storeCaption {
   margin-top: 3px;
-  color: #849087;
+  color: var(--ink-light, #849087);
   font-size: 11px;
   line-height: 1.6;
 }
@@ -124,8 +126,13 @@
   display: grid;
   place-items: center;
   margin-bottom: 15px;
-  background: color-mix(in srgb, var(--confirm-brand) 9%, #fffefa);
-  color: var(--confirm-brand);
+  background: var(--status-panel-bg, color-mix(in srgb, var(--confirm-brand) 9%, var(--surface, #fffefa)));
+  color: var(--brand-readable, var(--confirm-brand));
+  border: 1px solid var(--status-panel-border, transparent);
+  border-radius: var(--radius-panel, 0px);
+  box-shadow: var(--status-panel-shadow, none);
+  backdrop-filter: var(--status-panel-blur, none);
+  -webkit-backdrop-filter: var(--status-panel-blur, none);
 }
 
 .statusIcon svg {
@@ -139,7 +146,7 @@
 }
 
 .eyebrow {
-  color: #829087;
+  color: var(--ink-light, #829087);
   font-size: 11px;
   font-weight: 750;
   line-height: 1.5;
@@ -147,7 +154,7 @@
 
 .title {
   margin: 7px 0 0;
-  color: #25342b;
+  color: var(--ink-main, #25342b);
   font-size: clamp(23px, 5vw, 28px);
   font-weight: 850;
   line-height: 1.5;
@@ -156,7 +163,7 @@
 .description {
   max-width: 430px;
   margin: 10px 0 0;
-  color: #6d796f;
+  color: var(--ink-muted, #6d796f);
   font-size: 14px;
   line-height: 2;
 }
@@ -170,7 +177,7 @@
 
 .summaryHeading {
   margin: 0;
-  color: #7e8a80;
+  color: var(--ink-light, #7e8a80);
   font-size: 11px;
   font-weight: 750;
 }
@@ -186,7 +193,8 @@
   width: 58px;
   height: 58px;
   flex: 0 0 58px;
-  background: #f2f4ef;
+  background: var(--surface-raised, #f2f4ef);
+  border-radius: var(--radius-panel, 0px);
   object-fit: contain;
 }
 
@@ -194,7 +202,7 @@
 .productText {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #303d34;
+  color: var(--ink-main, #303d34);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.8;
@@ -206,12 +214,12 @@
   justify-content: space-between;
   gap: 12px;
   padding-top: 2px;
-  color: #879188;
+  color: var(--ink-light, #879188);
   font-size: 11px;
 }
 
 .orderNumberRow strong {
-  color: #37453b;
+  color: var(--ink-main, #37453b);
   font-size: 12px;
   font-weight: 800;
 }
@@ -241,7 +249,7 @@
 
 .confirmButton {
   background: var(--confirm-brand);
-  color: #fffefa;
+  color: var(--brand-on-primary, #fffefa);
   box-shadow: none;
 }
 
@@ -282,7 +290,7 @@
   padding: 11px 13px;
   border: 0;
   border-radius: 0;
-  background: #fbefec;
+  background: color-mix(in srgb, #b4534b 11%, var(--surface, #fffefa));
   color: #9d4d43;
   font-size: 12px;
   line-height: 1.8;
@@ -303,22 +311,27 @@
   display: grid;
   place-items: center;
   margin-bottom: 17px;
-  background: #edf1eb;
-  color: #627565;
+  background: var(--status-panel-bg, color-mix(in srgb, var(--confirm-brand) 7%, var(--surface, #fffefa)));
+  color: var(--brand-readable, #627565);
+  border: 1px solid var(--status-panel-border, transparent);
+  border-radius: var(--radius-panel, 0px);
+  box-shadow: var(--status-panel-shadow, none);
+  backdrop-filter: var(--status-panel-blur, none);
+  -webkit-backdrop-filter: var(--status-panel-blur, none);
 }
 
 .responseState[data-tone='success'] .responseIcon {
-  background: #e8f3e9;
+  background: color-mix(in srgb, #2d7848 11%, var(--surface, #fffefa));
   color: #2d7848;
 }
 
 .responseState[data-tone='danger'] .responseIcon {
-  background: #f8eceb;
+  background: color-mix(in srgb, #a75252 11%, var(--surface, #fffefa));
   color: #a75252;
 }
 
 .responseState[data-tone='warning'] .responseIcon {
-  background: #f8f1e5;
+  background: color-mix(in srgb, #a77a36 11%, var(--surface, #fffefa));
   color: #a77a36;
 }
 
@@ -334,13 +347,13 @@
 
 .responseOrder {
   margin-top: 13px;
-  color: #89938b;
+  color: var(--ink-light, #89938b);
   font-size: 11px;
 }
 
 .responseOrder strong {
   margin-inline-start: 4px;
-  color: #3b4b40;
+  color: var(--ink-main, #3b4b40);
 }
 
 .responseMessage {
@@ -350,7 +363,7 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #69766d;
+  color: var(--ink-muted, #69766d);
   font-size: 14px;
   line-height: 2;
 }
@@ -363,13 +376,13 @@
   margin-top: 48px;
   padding: 0;
   border: 0;
-  color: #a0a99f;
+  color: var(--ink-light, #a0a99f);
   font-size: 10px;
   line-height: 1.6;
 }
 
 .footer strong {
-  color: #647469;
+  color: var(--ink-muted, #647469);
   font-weight: 800;
 }
 
@@ -377,14 +390,79 @@
   width: 17px;
   height: 17px;
   display: inline-block;
-  border: 2px solid rgba(255, 254, 250, .38);
-  border-top-color: #fffefa;
+  border: 2px solid color-mix(in srgb, var(--brand-on-primary, #fffefa) 36%, transparent);
+  border-top-color: var(--brand-on-primary, #fffefa);
   border-radius: 50%;
   animation: confirmSpin .7s linear infinite;
 }
 
 @keyframes confirmSpin {
   to { transform: rotate(360deg); }
+}
+
+
+.announcementBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 476px;
+  margin: 0 auto 27px;
+  padding: 10px 13px;
+  border: 1px solid var(--brand-primary-border, var(--border-soft, transparent));
+  border-radius: var(--radius-control, 0px);
+  background: var(--brand-primary-light, color-mix(in srgb, var(--confirm-brand) 7%, var(--surface, #fffefa)));
+  color: var(--ink-main, #26332b);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.8;
+}
+
+.announcementMark {
+  flex: 0 0 auto;
+  color: var(--brand-readable, var(--confirm-brand));
+  font-weight: 850;
+}
+
+.supportLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: fit-content;
+  margin: 11px auto 0;
+  color: var(--brand-readable, var(--confirm-brand));
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.7;
+  text-decoration: none;
+  transition: opacity .16s ease;
+}
+
+.supportLink:hover { opacity: .72; }
+.supportLink svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.merchantHeader,
+.announcementBanner,
+.content,
+.footer,
+.supportLink {
+  animation: confirmReveal .42s cubic-bezier(.2, .75, .25, 1) both;
+}
+.announcementBanner { animation-delay: .04s; }
+.content { animation-delay: .08s; }
+.footer, .supportLink { animation-delay: .14s; }
+
+@keyframes confirmReveal {
+  from { opacity: 0; transform: translate3d(0, 9px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @media (max-width: 520px) {
@@ -435,12 +513,26 @@
   .footer {
     margin-top: 38px;
   }
+
+  .announcementBanner {
+    margin-bottom: 23px;
+    font-size: 11px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .confirmButton,
-  .cancelButton {
+  .cancelButton,
+  .supportLink {
     transition: none;
+  }
+
+  .merchantHeader,
+  .announcementBanner,
+  .content,
+  .footer,
+  .supportLink {
+    animation: none !important;
   }
 
   .spinner {
