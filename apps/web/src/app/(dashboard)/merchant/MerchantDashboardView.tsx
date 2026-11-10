@@ -759,6 +759,20 @@ export function MerchantDashboardView({
     dashboardMainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
   useEffect(() => {
+    const tabTitles: Record<MerchantDashboardTab, string> = {
+      overview: 'نظرة عامة',
+      orders: 'الشحنات',
+      alerts: 'تنبيهات COD',
+      analytics: 'تحليلات الشحنات',
+      branding: 'تخصيص صفحة التتبّع',
+      upsells: 'زيادة المبيعات',
+      integrations: 'التكاملات',
+      mappings: 'مطابقة الحالات',
+      settings: 'الإعدادات',
+    };
+    document.title = tabTitles[activeTab] + ' — ' + storeName + ' | تاجر تراك';
+  }, [activeTab, storeName]);
+  useEffect(() => {
     setStoreNameDraft(storeName);
     setSavedStoreName(storeName);
   }, [storeName]);
