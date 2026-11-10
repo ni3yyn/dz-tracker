@@ -809,12 +809,20 @@ export function MerchantDashboardView({
     scope: 'merchant',
     activeTab,
     setActiveTab,
+    hasActiveOverlay: Boolean(
+      mobileMenuOpen ||
+      isCustomMappingModalOpen ||
+      isAddOrderModalOpen ||
+      isAddOrderPanelMounted ||
+      selectedOrderId ||
+      renderedSelectedOrderId
+    ),
     onBack: () => {
       const openDropdown = typeof document !== 'undefined'
-        ? document.querySelector('[data-dashboard-back-dismiss="true"]')
+        ? document.querySelector('[data-dashboard-back-dismiss="dropdown"]')
         : null;
-      if (openDropdown) {
-        document.dispatchEvent(new KeyboardEvent('keydown', {
+      if (openDropdown instanceof HTMLElement) {
+        openDropdown.dispatchEvent(new KeyboardEvent('keydown', {
           key: 'Escape',
           bubbles: true,
           cancelable: true,
@@ -8793,6 +8801,7 @@ export function MerchantDashboardView({
           {isCustomMappingModalOpen && typeof document !== 'undefined' && createPortal((
             <div
               className="dz-mapping-modal-backdrop"
+              data-dashboard-back-dismiss="custom-status-modal"
               role="presentation"
               onMouseDown={(event) => {
                 if (event.target === event.currentTarget) setIsCustomMappingModalOpen(false);
@@ -8828,6 +8837,7 @@ export function MerchantDashboardView({
           {selectedOrder && typeof document !== 'undefined' && createPortal((
             <div
               className="dz-order-detail-backdrop dz-order-side-backdrop"
+              data-dashboard-back-dismiss="order-details-panel"
               data-open={isSelectedOrderPanelOpen ? 'true' : 'false'}
               aria-hidden={!isSelectedOrderPanelOpen}
               role="presentation"
@@ -8960,6 +8970,7 @@ export function MerchantDashboardView({
           {isAddOrderPanelMounted && typeof document !== 'undefined' && createPortal((
             <div
               className="dz-order-detail-backdrop dz-order-side-backdrop"
+              data-dashboard-back-dismiss="add-order-panel"
               data-open={isAddOrderPanelOpen ? 'true' : 'false'}
               aria-hidden={!isAddOrderPanelOpen}
               role="presentation"
