@@ -8806,7 +8806,7 @@ export function MerchantDashboardView({
                 aria-labelledby="order-detail-title"
                 onMouseDown={(event) => event.stopPropagation()}
                 onTransitionEnd={(event) => {
-                  if (event.target === event.currentTarget && event.propertyName === 'width' && !selectedOrderId) {
+                  if (event.target === event.currentTarget && event.propertyName === 'flex-basis' && !selectedOrderId) {
                     setRenderedSelectedOrderId(null);
                   }
                 }}
