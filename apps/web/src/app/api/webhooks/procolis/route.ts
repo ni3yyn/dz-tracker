@@ -7,6 +7,7 @@ export const OPTIONS = handleOptions;
 
 export const POST = createWebhookHandler({
   source: 'procolis',
+  providerConnectionTokenAuth: true,
   transformEvent: ({ merchant, payload }) => {
     return ProcolisAdapter.normalize(merchant.id, payload);
   },
