@@ -631,7 +631,7 @@ export class TrackingOrchestrator {
     if (event.carrierOrderId && event.carrierName) {
       const { data } = await this.supabase
         .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
+        .select('id, tracking_uuid, current_status, carrier_name, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
         .eq('merchant_id', event.merchantId)
         .eq('carrier_name', event.carrierName)
         .eq('carrier_order_id', event.carrierOrderId)
@@ -639,7 +639,9 @@ export class TrackingOrchestrator {
       if (data) return data;
     }
 
-    // أ) محاولة المطابقة برقم الطلب الخارجي (مثال: #1042)
+    // Match an external store order only when it is not already assigned to
+    // a different courier. This lets first-time courier events attach to an
+    // existing store order without allowing Procolis to take over a ZR order.
     if (
       event.externalOrderId &&
       event.externalOrderId !== 'UNKNOWN_ORDER' &&
@@ -650,21 +652,25 @@ export class TrackingOrchestrator {
     ) {
       const { data } = await this.supabase
         .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
+        .select('id, tracking_uuid, current_status, carrier_name, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
         .eq('merchant_id', event.merchantId)
         .eq('external_order_id', event.externalOrderId)
         .maybeSingle();
-      if (data) return data;
+      if (data && (!event.carrierName || !data.carrier_name || data.carrier_name === event.carrierName)) {
+        return data;
+      }
     }
 
-    // ب) في حال عدم العثور، محاولة المطابقة برقم بوليصة الشحن (Carrier Tracking Number)
+    // Tracking numbers are only unique inside a courier's own namespace.
     if (event.carrierTrackingNumber) {
-      const { data } = await this.supabase
+      let query = this.supabase
         .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
+        .select('id, tracking_uuid, current_status, carrier_name, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
         .eq('merchant_id', event.merchantId)
-        .eq('carrier_tracking_number', event.carrierTrackingNumber)
-        .maybeSingle();
+        .eq('carrier_tracking_number', event.carrierTrackingNumber);
+
+      if (event.carrierName) query = query.eq('carrier_name', event.carrierName);
+      const { data } = await query.maybeSingle();
       if (data) return data;
     }
 
