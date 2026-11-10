@@ -6,6 +6,11 @@ import MerchantDashboardSkeleton from './MerchantDashboardSkeleton';
 import { logout } from './actions';
 import styles from './merchant.module.css';
 
+export const metadata = {
+  title: 'لوحة التاجر',
+  description: 'إدارة الشحنات والطلبات والتكاملات وإعدادات متجرك في تاجر تراك.',
+};
+
 async function MerchantDashboardContent() {
   const supabaseAuth = await createClient();
   const {
