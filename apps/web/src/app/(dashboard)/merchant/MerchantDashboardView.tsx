@@ -6842,6 +6842,72 @@ export function MerchantDashboardView({
           }
         }
 
+
+        /* Analytics KPIs share the same compact visual system as dashboard stats. */
+        .dz-admin-root .dz-analytics-kpis {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 9px;
+          margin: 2px 0 24px;
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          overflow: visible;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi {
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: stretch;
+          gap: 5px;
+          min-width: 0;
+          min-height: 78px;
+          margin: 0;
+          padding: 12px 15px;
+          border: 0 !important;
+          border-radius: 4px;
+          background: rgba(105, 129, 109, .12);
+          cursor: default;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-label {
+          margin: 0;
+          color: var(--ink-muted);
+          font-size: 13px;
+          font-weight: 650;
+          line-height: 1.45;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-value {
+          margin: 0;
+          color: var(--ink-main);
+          font-size: 28px;
+          font-weight: 800;
+          line-height: 1.15;
+          letter-spacing: -.04em;
+          font-variant-numeric: tabular-nums;
+        }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-note { display: none; }
+        .dz-admin-root .dz-analytics-kpis .dz-overview-kpi.is-alert .dz-overview-kpi-value { color: var(--clay); }
+        @media (max-width: 760px) {
+          .dz-admin-root .dz-analytics-kpis {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 18px;
+          }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi {
+            min-height: 72px;
+            padding: 10px 12px;
+          }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-value { font-size: 26px; }
+        }
+        @media (max-width: 380px) {
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi { padding-inline: 10px; }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-label { font-size: 12px; }
+          .dz-admin-root .dz-analytics-kpis .dz-overview-kpi-value { font-size: 24px; }
+        }
+
       `}} />
 
       <div className="dz-admin-root">
@@ -7589,9 +7655,9 @@ export function MerchantDashboardView({
           {activeTab === 'analytics' && (
             <section className="dz-analytics" aria-label="تحليلات الشحنات">
               <div className="dz-overview-kpis dz-analytics-kpis">
-                <div className="dz-overview-kpi"><span className="dz-overview-kpi-label">إجمالي الشحنات</span><strong className="dz-overview-kpi-value">{orders.length}</strong><span className="dz-overview-kpi-note">كل السجلات الحالية</span></div>
-                <div className="dz-overview-kpi"><span className="dz-overview-kpi-label">نسبة التسليم الحالية</span><strong className="dz-overview-kpi-value">{successRate}%</strong><span className="dz-overview-kpi-note">الشحنات المسجلة بحالة «تم التسليم»</span></div>
-                <div className={`dz-overview-kpi ${alertCount ? 'is-alert' : ''}`}><span className="dz-overview-kpi-label">تحتاج إلى متابعة</span><strong className="dz-overview-kpi-value">{alertCount}</strong><span className="dz-overview-kpi-note">من الحالات الحالية</span></div>
+                <div className="dz-overview-kpi"><span className="dz-overview-kpi-label">إجمالي الشحنات</span><strong className="dz-overview-kpi-value">{orders.length}</strong></div>
+                <div className="dz-overview-kpi"><span className="dz-overview-kpi-label">نسبة التسليم</span><strong className="dz-overview-kpi-value">{successRate}%</strong></div>
+                <div className={`dz-overview-kpi ${alertCount ? 'is-alert' : ''}`}><span className="dz-overview-kpi-label">تحتاج إلى متابعة</span><strong className="dz-overview-kpi-value">{alertCount}</strong></div>
               </div>
               <div className="dz-analytics-grid">
                 <section className="dz-overview-section dz-analytics-section" aria-labelledby="analytics-volume-title">
