@@ -57,10 +57,10 @@ export function useDashboardBackHandler<TTab extends string>({
     const currentPath = markerPath();
     const markerMatches = currentState.__tajerDashboardBackScope === scope
       && currentState.__tajerDashboardBackPath === currentPath;
-    const hasOpenDropdown = typeof document !== 'undefined'
-      && document.querySelector('[data-dashboard-back-dismiss="dropdown"]') !== null;
+    const hasOpenBackLayer = typeof document !== 'undefined'
+      && document.querySelector('[data-dashboard-back-dismiss]') !== null;
     const hasBackTarget = hasActiveOverlayRef.current
-      || hasOpenDropdown
+      || hasOpenBackLayer
       || tabHistoryRef.current.length > 0;
 
     if (hasBackTarget) {
