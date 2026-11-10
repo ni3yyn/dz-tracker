@@ -14,6 +14,7 @@ type Integration = {
   id: string;
   merchant_id: string;
   credentials_encrypted: string;
+  webhook_endpoint_token: string | null;
   sync_enabled: boolean;
 };
 
@@ -106,7 +107,7 @@ export class ProcolisSyncWorker {
   private async runCycle(): Promise<void> {
     const { data, error } = await (this.supabase as any)
       .from('merchant_carrier_integrations')
-      .select('id, merchant_id, credentials_encrypted, sync_enabled')
+      .select('id, merchant_id, credentials_encrypted, webhook_endpoint_token, sync_enabled')
       .eq('provider', 'procolis')
       .eq('sync_enabled', true);
 
@@ -139,13 +140,8 @@ export class ProcolisSyncWorker {
         this.config.credentialsEncryptionKey
       );
 
-      const { data: merchant, error: merchantError } = await (this.supabase as any)
-        .from('merchants')
-        .select('api_key')
-        .eq('id', integration.merchant_id)
-        .maybeSingle();
-      if (merchantError || !merchant?.api_key) {
-        throw new Error('Merchant API key could not be loaded for Procolis tracking sync.');
+      if (!integration.webhook_endpoint_token || integration.webhook_endpoint_token.length < 32) {
+        throw new Error('This Procolis connection has no provider-specific sync token. Re-save its credentials from the merchant dashboard.');
       }
 
       let offset = 0;
@@ -244,7 +240,7 @@ export class ProcolisSyncWorker {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'x-api-key': merchant.api_key,
+                'x-api-key': integration.webhook_endpoint_token,
               },
               body: JSON.stringify({ events: batch }),
               signal: AbortSignal.timeout(TIMEOUT_MS),
