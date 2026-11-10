@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { cache } from 'react';
+import type { Metadata } from 'next';
 import { getSupabaseAdminClient } from '@saas/database';
 import { ConfirmOrderView } from './ConfirmOrderView';
 import type { BrandSettings } from '@saas/ui';
@@ -7,27 +8,43 @@ interface Props {
   params: Promise<{ token: string }>;
 }
 
+const getConfirmationOrder = cache(async (token: string) => {
+  const supabase = getSupabaseAdminClient();
+  return supabase
+    .from('orders')
+    .select('id, external_order_id, customer_name, product_name, product_image, merchant_id, confirmation_status, confirmation_expires_at, merchants(store_name, logo_url)')
+    .eq('confirmation_token', token)
+    .maybeSingle();
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { token } = await params;
+  const { data: order } = await getConfirmationOrder(token);
+  const merchant = Array.isArray(order?.merchants) ? order.merchants[0] : order?.merchants;
+  const storeName = merchant?.store_name || 'المتجر';
+
+  return {
+    title: order ? 'تأكيد الطلب من ' + storeName : 'تأكيد الطلب',
+    description: order
+      ? 'راجع تفاصيل طلبك من ' + storeName + ' وأكّد استلام المتجر لطلبك.'
+      : 'صفحة تأكيد الطلب في تاجر تراك.',
+  };
+}
+
 export default async function ConfirmOrderPage({ params }: Props) {
   const { token } = await params;
   const supabase = getSupabaseAdminClient();
 
-  const { data: order, error } = await supabase
-    .from('orders')
-    .select('id, external_order_id, customer_name, product_name, product_image, merchant_id, confirmation_status, confirmation_expires_at')
-    .eq('confirmation_token', token)
-    .maybeSingle();
+  // Shared with generateMetadata so the merchant lookup is not repeated per request.
+  const { data: order, error } = await getConfirmationOrder(token);
 
   if (error || !order) {
     return <ConfirmOrderView status="invalid" token={token} />;
   }
 
-  // Load merchant identity before resolving status so every valid state stays branded.
-  const [{ data: merchant }, { data: brandColorRow }, { data: legacyBrandSettingsRow }, { data: brandSubtitleRow }] = await Promise.all([
-    supabase
-      .from('merchants')
-      .select('store_name, logo_url')
-      .eq('id', order.merchant_id)
-      .maybeSingle(),
+  // The joined merchant identity is shared by the page and its browser title.
+  const merchant = Array.isArray(order.merchants) ? order.merchants[0] : order.merchants;
+  const [{ data: brandColorRow }, { data: legacyBrandSettingsRow }, { data: brandSubtitleRow }] = await Promise.all([
     supabase
       .from('status_mappings')
       .select('display_status')
