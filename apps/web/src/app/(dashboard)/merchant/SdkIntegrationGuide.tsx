@@ -126,7 +126,7 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
   const [exampleTab, setExampleTab] = useState<ExampleTab>('node');
   const [keyRevealed, setKeyRevealed] = useState(false);
   const [copied, setCopied] = useState('');
-  const baseUrl = siteUrl.replace(/\\/$/, '');
+  const baseUrl = siteUrl.replace(/\/$/, '');
   const directEndpoint = baseUrl + '/api/webhooks';
   const apiEndpoint = baseUrl + '/api/webhooks';
   const shopifyEndpoint = baseUrl + '/api/webhooks/shopify';
