@@ -234,6 +234,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
     return (
       <div
         key={provider.id}
+        className="dz-connected-provider"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -266,6 +267,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
   const renderAvailableProvider = (provider: (typeof PROVIDERS)[number]) => (
     <article
       key={provider.id}
+      className="dz-provider-card"
       style={{
         minWidth: 0,
         padding: 16,
@@ -297,9 +299,10 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
 
   return (
     <div className="dz-carrier-manager" style={{ display: 'grid', gap: 0, width: '100%', maxWidth: 1180, paddingBottom: 50 }}>
-      <nav aria-label="أقسام التكاملات" style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-soft, #dfe4dc)', marginBottom: 26, overflowX: 'auto' }}>
+      <nav className="dz-integration-tabs" aria-label="أقسام التكاملات" style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-soft, #dfe4dc)', marginBottom: 26, overflowX: 'auto' }}>
         <button
           type="button"
+          className="dz-integration-tab"
           aria-pressed={activeSubtab === 'carriers'}
           onClick={() => setActiveSubtab('carriers')}
           style={{
@@ -316,6 +319,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         </button>
         <button
           type="button"
+          className="dz-integration-tab"
           aria-pressed={activeSubtab === 'order_source'}
           onClick={() => setActiveSubtab('order_source')}
           style={{
@@ -332,6 +336,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         </button>
         <button
           type="button"
+          className="dz-integration-tab"
           aria-pressed={activeSubtab === 'sdk'}
           onClick={() => setActiveSubtab('sdk')}
           style={{
@@ -349,7 +354,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
       </nav>
 
       {activeSubtab === 'order_source' && (
-              <section aria-labelledby="dz-order-source-title">
+              <section className="dz-order-source" aria-labelledby="dz-order-source-title">
                 <div style={{ marginBottom: 14 }}>
                   <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>مصدر الطلبات</span>
                   <h2 id="dz-order-source-title" style={{ margin: '5px 0', color: 'var(--ink-main)', fontSize: 19, fontWeight: 850 }}>من أين تصل طلبات متجرك؟</h2>
@@ -450,7 +455,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
 
       {activeSubtab === 'carriers' && (
         <section aria-labelledby="dz-carrier-list-title" style={{ display: 'grid', gap: 28 }}>
-          <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', paddingBottom: 18, borderBottom: '2px solid var(--ink-main, #263b30)' }}>
+          <header className="dz-carrier-overview" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', paddingBottom: 18, borderBottom: '2px solid var(--ink-main, #263b30)' }}>
             <div>
               <span style={{ display: 'block', color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>إدارة شركات التوصيل</span>
               <h2 id="dz-carrier-list-title" style={{ margin: '6px 0', color: 'var(--ink-main)', fontSize: 22, fontWeight: 850 }}>اتصالات شركات التوصيل</h2>
@@ -477,7 +482,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
 
           {connectionError && <p role="alert" style={{ margin: 0, color: '#a12e27', fontSize: 13 }}>{connectionError}</p>}
 
-          <section aria-labelledby="dz-connected-carriers-title">
+          <section className="dz-integration-section" aria-labelledby="dz-connected-carriers-title">
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
               <div>
                 <h3 id="dz-connected-carriers-title" style={{ margin: 0, color: 'var(--ink-main)', fontSize: 17, fontWeight: 850 }}>الشركات المرتبطة</h3>
@@ -498,14 +503,14 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
                 </p>
               </div>
             ) : (
-              <div style={{ borderTop: '1px solid var(--border-soft, #e5e8e2)' }}>
+              <div className="dz-connected-list" style={{ borderTop: '1px solid var(--border-soft, #e5e8e2)' }}>
                 {connectedProviders.map(renderConnectedProvider)}
               </div>
             )}
           </section>
 
           {showProviderDirectory && (
-            <section id="dz-provider-directory" aria-labelledby="dz-provider-directory-title" style={{ borderTop: '2px solid var(--ink-main, #263b30)', paddingTop: 22 }}>
+            <section id="dz-provider-directory" className="dz-provider-directory" aria-labelledby="dz-provider-directory-title" style={{ borderTop: '2px solid var(--ink-main, #263b30)', paddingTop: 22 }}>
               <div style={{ marginBottom: 14 }}>
                 <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>دليل الشركات</span>
                 <h3 id="dz-provider-directory-title" style={{ margin: '5px 0', color: 'var(--ink-main)', fontSize: 18, fontWeight: 850 }}>اختر شركة لإضافتها</h3>
@@ -526,7 +531,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
           )}
 
           {activeProvider && (
-            <section aria-labelledby="dz-provider-setup-title" style={{ borderTop: '2px solid var(--ink-main, #263b30)', paddingTop: 22 }}>
+            <section className="dz-provider-editor" aria-labelledby="dz-provider-setup-title" style={{ borderTop: '2px solid var(--ink-main, #263b30)', paddingTop: 22 }}>
               <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
                 <div>
                   <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800 }}>إعداد اتصال مستقل</span>
@@ -563,6 +568,113 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         .dz-carrier-manager .dz-int-guided-panel {
           margin: 0 !important;
           box-shadow: none !important;
+        }
+
+        .dz-carrier-manager .dz-integration-tabs {
+          display: flex !important;
+          width: fit-content;
+          max-width: 100%;
+          gap: 4px !important;
+          padding: 4px !important;
+          margin: 0 0 20px !important;
+          border: 0 !important;
+          border-bottom: 0 !important;
+          background: var(--bg-base, #f2f5f0) !important;
+          border-radius: 4px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .dz-carrier-manager .dz-integration-tabs::-webkit-scrollbar { display: none; }
+        .dz-carrier-manager .dz-integration-tab {
+          flex: 0 0 auto;
+          min-height: 40px;
+          padding: 10px 15px !important;
+          border: 0 !important;
+          border-bottom: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          color: var(--ink-muted) !important;
+          font-size: 13px;
+          font-weight: 750;
+          transition: background-color 150ms ease, color 150ms ease;
+        }
+        .dz-carrier-manager .dz-integration-tab[aria-pressed="true"] {
+          background: var(--brand-primary, #263b30) !important;
+          color: #fff !important;
+        }
+        .dz-carrier-manager .dz-integration-tab:not([aria-pressed="true"]):hover {
+          background: var(--bg-surface, #fff) !important;
+          color: var(--ink-main) !important;
+        }
+        .dz-carrier-manager .dz-carrier-overview {
+          padding: 18px !important;
+          border: 0 !important;
+          background: var(--bg-base, #f2f5f0) !important;
+          border-radius: 4px;
+        }
+        .dz-carrier-manager .dz-integration-section,
+        .dz-carrier-manager .dz-order-source,
+        .dz-carrier-manager .dz-provider-directory,
+        .dz-carrier-manager .dz-provider-editor {
+          padding: 18px !important;
+          border: 0 !important;
+          background: var(--bg-base, #f2f5f0);
+          border-radius: 4px;
+        }
+        .dz-carrier-manager .dz-integration-section {
+          display: grid;
+          gap: 12px;
+        }
+        .dz-carrier-manager .dz-connected-list {
+          display: grid;
+          gap: 7px;
+          border: 0 !important;
+          background: transparent;
+        }
+        .dz-carrier-manager .dz-connected-provider {
+          margin: 0;
+          padding: 13px 14px !important;
+          border: 0 !important;
+          border-radius: 3px;
+          background: var(--bg-surface, #fff);
+        }
+        .dz-carrier-manager .dz-provider-card {
+          padding: 15px !important;
+          border: 0 !important;
+          border-radius: 4px;
+          background: var(--bg-surface, #fff) !important;
+          box-shadow: 0 1px 2px rgb(20 35 24 / 5%);
+        }
+        .dz-carrier-manager .dz-order-source button[aria-pressed="true"] {
+          background: var(--bg-surface, #fff) !important;
+          box-shadow: inset 3px 0 0 var(--brand-primary, #263b30);
+        }
+        .dz-carrier-manager .dz-order-source [style*="borderBlock"],
+        .dz-carrier-manager .dz-order-source [style*="borderTop"] {
+          border: 0 !important;
+        }
+        .dz-carrier-manager .dz-order-source [style*="padding: 15"],
+        .dz-carrier-manager .dz-order-source [style*="padding: 12"] {
+          border: 0 !important;
+          border-radius: 4px;
+          background: var(--bg-surface, #fff);
+        }
+        .dz-carrier-manager .dz-int-guided-panel,
+        .dz-carrier-manager .dz-int-guided-card,
+        .dz-carrier-manager .dz-int-guided-result,
+        .dz-carrier-manager .dz-int-guided-panel-title,
+        .dz-carrier-manager .dz-int-guided-copy,
+        .dz-carrier-manager .dz-int-guided-meta,
+        .dz-carrier-manager .dz-int-guided-note {
+          border-radius: 4px !important;
+          border-color: transparent !important;
+        }
+        .dz-carrier-manager .dz-int-guided-panel {
+          background: var(--bg-base, #f2f5f0) !important;
+        }
+        .dz-carrier-manager button,
+        .dz-carrier-manager input {
+          border-radius: 0 !important;
         }
       `}</style>
     </div>
