@@ -53,8 +53,8 @@ const PROVIDERS: Array<{ id: ProviderId; name: string; method: string; descripti
 ];
 
 const panelButtonStyle: React.CSSProperties = {
-  border: '1px solid var(--border-soft, #dfe4dc)',
-  background: 'var(--bg-surface, #fff)',
+  border: 0,
+  background: 'var(--bg-base, #f2f5f0)',
   color: 'var(--ink-main, #263b30)',
   borderRadius: 0,
   padding: '10px 13px',
@@ -67,7 +67,7 @@ const primaryButtonStyle: React.CSSProperties = {
   ...panelButtonStyle,
   background: 'var(--brand-primary, #263b30)',
   color: '#fff',
-  borderColor: 'var(--brand-primary, #263b30)',
+  border: 0,
 };
 
 function dateLabel(value?: string | null) {
@@ -242,7 +242,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
           gap: 14,
           flexWrap: 'wrap',
           padding: '16px 0',
-          borderBottom: '1px solid var(--border-soft, #e5e8e2)',
+          border: 0,
         }}
       >
         <div style={{ minWidth: 0, flex: '1 1 240px' }}>
@@ -271,7 +271,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
       style={{
         minWidth: 0,
         padding: 16,
-        border: '1px solid var(--border-soft, #dfe4dc)',
+        border: 0,
         background: 'var(--bg-surface, #fff)',
         display: 'flex',
         flexDirection: 'column',
@@ -389,7 +389,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
                 </div>
         
                 {orderSource === 'shopify' && (
-                  <div style={{ marginTop: 12, padding: 15, background: 'var(--bg-surface, #fff)', borderBlock: '1px solid var(--border-soft, #dfe4dc)', display: 'grid', gap: 11 }}>
+                  <div style={{ marginTop: 12, padding: 15, background: 'var(--bg-surface, #fff)', border: 0, borderRadius: 4, display: 'grid', gap: 11 }}>
                     <strong>رابط استقبال طلبات Shopify</strong>
                     {apiKeyLoading ? <p style={{ margin: 0, color: 'var(--ink-muted)' }}>جارٍ تحميل بيانات الربط...</p> : apiKeyError ? <p role="alert" style={{ margin: 0, color: '#a12e27' }}>{apiKeyError}</p> : (
                       <>
@@ -406,7 +406,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
                 )}
         
                 {orderSource === 'website' && (
-                  <div style={{ marginTop: 12, padding: 15, background: 'var(--bg-surface, #fff)', borderBlock: '1px solid var(--border-soft, #dfe4dc)', display: 'grid', gap: 11 }}>
+                  <div style={{ marginTop: 12, padding: 15, background: 'var(--bg-surface, #fff)', border: 0, borderRadius: 4, display: 'grid', gap: 11 }}>
                     <strong>بيانات الربط الخاصة بموقعك</strong>
                     {apiKeyLoading ? <p style={{ margin: 0, color: 'var(--ink-muted)' }}>جارٍ تحميل بيانات الربط...</p> : apiKeyError ? <p role="alert" style={{ margin: 0, color: '#a12e27' }}>{apiKeyError}</p> : (
                       <>
@@ -455,7 +455,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
 
       {activeSubtab === 'carriers' && (
         <section aria-labelledby="dz-carrier-list-title" style={{ display: 'grid', gap: 28 }}>
-          <header className="dz-carrier-overview" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', paddingBottom: 18, borderBottom: '2px solid var(--ink-main, #263b30)' }}>
+          <header className="dz-carrier-overview" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
             <div>
               <span style={{ display: 'block', color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>إدارة شركات التوصيل</span>
               <h2 id="dz-carrier-list-title" style={{ margin: '6px 0', color: 'var(--ink-main)', fontSize: 22, fontWeight: 850 }}>اتصالات شركات التوصيل</h2>
@@ -496,21 +496,21 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
             {loadingConnections ? (
               <p style={{ margin: 0, padding: '20px 0', color: 'var(--ink-muted)', fontSize: 13 }}>جارٍ تحميل الاتصالات...</p>
             ) : connectedProviders.length === 0 ? (
-              <div style={{ padding: '22px 0', borderBlock: '1px solid var(--border-soft, #e5e8e2)' }}>
+              <div style={{ padding: '16px', border: 0, background: 'var(--bg-surface, #fff)', borderRadius: 4 }}>
                 <strong style={{ display: 'block', color: 'var(--ink-main)', fontSize: 14 }}>لم تربط أي شركة توصيل بعد</strong>
                 <p style={{ margin: '5px 0 0', color: 'var(--ink-muted)', fontSize: 12, lineHeight: 1.8 }}>
                   ابدأ بإضافة شركة، ثم ارجع إلى هذه القائمة لإدارة كل اتصالاتك من مكان واحد.
                 </p>
               </div>
             ) : (
-              <div className="dz-connected-list" style={{ borderTop: '1px solid var(--border-soft, #e5e8e2)' }}>
+              <div className="dz-connected-list">
                 {connectedProviders.map(renderConnectedProvider)}
               </div>
             )}
           </section>
 
           {showProviderDirectory && (
-            <section id="dz-provider-directory" className="dz-provider-directory" aria-labelledby="dz-provider-directory-title" style={{ borderTop: '2px solid var(--ink-main, #263b30)', paddingTop: 22 }}>
+            <section id="dz-provider-directory" className="dz-provider-directory" aria-labelledby="dz-provider-directory-title">
               <div style={{ marginBottom: 14 }}>
                 <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>دليل الشركات</span>
                 <h3 id="dz-provider-directory-title" style={{ margin: '5px 0', color: 'var(--ink-main)', fontSize: 18, fontWeight: 850 }}>اختر شركة لإضافتها</h3>
@@ -531,7 +531,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
           )}
 
           {activeProvider && (
-            <section className="dz-provider-editor" aria-labelledby="dz-provider-setup-title" style={{ borderTop: '2px solid var(--ink-main, #263b30)', paddingTop: 22 }}>
+            <section className="dz-provider-editor" aria-labelledby="dz-provider-setup-title">
               <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
                 <div>
                   <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800 }}>إعداد اتصال مستقل</span>
@@ -609,7 +609,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         .dz-carrier-manager .dz-carrier-overview {
           padding: 18px !important;
           border: 0 !important;
-          background: var(--bg-base, #f2f5f0) !important;
+          background: var(--bg-surface, #fff) !important;
           border-radius: 4px;
         }
         .dz-carrier-manager .dz-integration-section,
@@ -675,6 +675,12 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         .dz-carrier-manager button,
         .dz-carrier-manager input {
           border-radius: 0 !important;
+        }
+
+        .dz-carrier-manager .dz-integration-section [style*="borderBlock"],
+        .dz-carrier-manager .dz-provider-directory [style*="borderTop"],
+        .dz-carrier-manager .dz-provider-editor [style*="borderTop"] {
+          border: 0 !important;
         }
       `}</style>
     </div>
