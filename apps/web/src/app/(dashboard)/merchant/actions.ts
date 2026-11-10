@@ -1320,12 +1320,61 @@ export async function getMerchantCarrierIntegrations(): Promise<{
 
 type ProcolisIntegrationStatus = {
   connected: boolean;
-  webhookToken?: string | null;
   connectedAt?: string | null;
-  lastWebhookReceivedAt?: string | null;
-  lastWebhookProcessedAt?: string | null;
+  lastSyncAt?: string | null;
+  lastSuccessAt?: string | null;
   lastError?: string | null;
 };
+
+const PROCOLIS_API_BASE = 'https://procolis.com/api_v1';
+
+function encryptProcolisCredentials(token: string, keyValue: string, merchantId: string): string {
+  const secret = process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '';
+  if (secret.length < 32) {
+    throw new Error('أكمل إعداد CARRIER_CREDENTIALS_ENCRYPTION_KEY بطول 32 حرفاً على الأقل في Vercel وRailway أولاً.');
+  }
+  const key = createHash('sha256').update(secret, 'utf8').digest();
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  cipher.setAAD(Buffer.from(`${merchantId}:procolis:v1`, 'utf8'));
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify({ token, key: keyValue }), 'utf8'),
+    cipher.final(),
+  ]);
+  return [
+    'v1',
+    iv.toString('base64'),
+    cipher.getAuthTag().toString('base64'),
+    ciphertext.toString('base64'),
+  ].join('.');
+}
+
+async function verifyProcolisCredentials(token: string, keyValue: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${PROCOLIS_API_BASE}/token`, {
+      method: 'GET',
+      headers: { token, key: keyValue, Accept: 'application/json' },
+      cache: 'no-store',
+      redirect: 'error',
+      signal: AbortSignal.timeout(12_000),
+    });
+  } catch {
+    throw new Error('تعذر الوصول إلى واجهة Procolis. تحقق من اتصال الإنترنت وحاول مجدداً.');
+  }
+
+  let body: any = null;
+  try { body = await response.json(); } catch { /* normalized below */ }
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('رفضت Procolis بيانات Token أو Key. تحقق من القيم أو اطلب بيانات API جديدة.');
+  }
+  if (!response.ok) {
+    throw new Error(`تعذر التحقق من حساب Procolis (HTTP ${response.status}). حاول لاحقاً أو تواصل مع دعم الشركة.`);
+  }
+  if (body?.Statut !== 'Accès activé') {
+    throw new Error('وصل رد من Procolis، لكن الحساب لم يُرجع حالة «Accès activé». لم يتم حفظ البيانات.');
+  }
+}
 
 export async function getProcolisIntegrationStatus(): Promise<{
   success: boolean;
@@ -1337,21 +1386,19 @@ export async function getProcolisIntegrationStatus(): Promise<{
     const supabase = getSupabaseAdminClient();
     const { data, error } = await (supabase as any)
       .from('merchant_carrier_integrations')
-      .select('sync_enabled, webhook_endpoint_token, connected_at, last_webhook_received_at, last_webhook_processed_at, last_error')
+      .select('sync_enabled, credentials_encrypted, connected_at, last_sync_at, last_success_at, last_error')
       .eq('merchant_id', merchantId)
       .eq('provider', 'procolis')
       .maybeSingle();
 
     if (error) throw new Error('تعذر قراءة حالة اتصال Procolis.');
-    const webhookToken = data?.webhook_endpoint_token || null;
     return {
       success: true,
       status: {
-        connected: Boolean(data?.sync_enabled && webhookToken),
-        webhookToken: data?.sync_enabled ? webhookToken : null,
+        connected: Boolean(data?.sync_enabled && data?.credentials_encrypted && data.credentials_encrypted !== 'disabled'),
         connectedAt: data?.connected_at || null,
-        lastWebhookReceivedAt: data?.last_webhook_received_at || null,
-        lastWebhookProcessedAt: data?.last_webhook_processed_at || null,
+        lastSyncAt: data?.last_sync_at || null,
+        lastSuccessAt: data?.last_success_at || null,
         lastError: data?.last_error || null,
       },
     };
@@ -1365,83 +1412,81 @@ export async function getProcolisIntegrationStatus(): Promise<{
 }
 
 /**
- * Procolis owns a dedicated high-entropy webhook token, independent from the
- * merchant API key and from every other carrier connection.
+ * Verify and encrypt Procolis' own token + key pair. The account is independent
+ * from ZR Express even though both use the legacy Procolis API host.
  */
-export async function saveProcolisIntegration(): Promise<{
-  success: boolean;
-  status?: ProcolisIntegrationStatus;
-  error?: string;
-}> {
+export async function saveProcolisIntegration(
+  tokenInput: string,
+  keyInput: string
+): Promise<{ success: boolean; status?: ProcolisIntegrationStatus; error?: string }> {
   try {
     const merchantId = await getAuthenticatedMerchantId();
+    const token = tokenInput.trim();
+    const keyValue = keyInput.trim();
+
+    const printable = (value: string) => [...value].every((character) => {
+      const code = character.charCodeAt(0);
+      return code >= 33 && code <= 126;
+    });
+    if (token.length < 4 || token.length > 2048 || !printable(token)) {
+      throw new Error('أدخل Token صالحاً من حساب Procolis.');
+    }
+    if (keyValue.length < 4 || keyValue.length > 2048 || !printable(keyValue)) {
+      throw new Error('أدخل Key صالحاً من حساب Procolis.');
+    }
+
+    await verifyProcolisCredentials(token, keyValue);
+    const credentialsEncrypted = encryptProcolisCredentials(token, keyValue, merchantId);
     const supabase = getSupabaseAdminClient();
     const { data: existing, error: readError } = await (supabase as any)
       .from('merchant_carrier_integrations')
-      .select('webhook_endpoint_token, connected_at, last_webhook_received_at, last_webhook_processed_at, last_error, sync_enabled')
+      .select('connected_at, sync_enabled')
       .eq('merchant_id', merchantId)
       .eq('provider', 'procolis')
       .maybeSingle();
-
     if (readError) throw new Error('تعذر قراءة إعداد Procolis الحالي.');
 
-    const existingToken = existing?.webhook_endpoint_token || null;
-    if (existing?.sync_enabled && existingToken) {
-      return {
-        success: true,
-        status: {
-          connected: true,
-          webhookToken: existingToken,
-          connectedAt: existing.connected_at || null,
-          lastWebhookReceivedAt: existing.last_webhook_received_at || null,
-          lastWebhookProcessedAt: existing.last_webhook_processed_at || null,
-          lastError: existing.last_error || null,
-        },
-      };
-    }
-
-    const webhookToken = randomBytes(32).toString('base64url');
     const now = new Date().toISOString();
     const { data, error } = await (supabase as any)
       .from('merchant_carrier_integrations')
       .upsert({
         merchant_id: merchantId,
         provider: 'procolis',
-        webhook_endpoint_token: webhookToken,
+        base_url: PROCOLIS_API_BASE,
+        credentials_encrypted: credentialsEncrypted,
         sync_enabled: true,
-        connected_at: now,
+        connected_at: existing?.sync_enabled ? existing.connected_at : now,
         last_error: null,
         last_error_at: null,
         updated_at: now,
       }, { onConflict: 'merchant_id,provider' })
-      .select('webhook_endpoint_token, connected_at, last_webhook_received_at, last_webhook_processed_at, last_error, sync_enabled')
+      .select('sync_enabled, connected_at, last_sync_at, last_success_at, last_error')
       .single();
 
     if (error || !data) {
-      console.error('[ProcolisIntegration] Could not save independent connection:', error?.message);
-      throw new Error('تعذر حفظ اتصال Procolis. تأكد من تطبيق تحديثات قاعدة البيانات.');
+      console.error('[ProcolisIntegration] Could not save verified credentials:', error?.message);
+      throw new Error('تم التحقق من بيانات Procolis، لكن تعذر حفظ الاتصال. تأكد من تطبيق تحديثات قاعدة البيانات.');
     }
 
     revalidatePath('/merchant');
     return {
       success: true,
       status: {
-        connected: Boolean(data.sync_enabled && data.webhook_endpoint_token),
-        webhookToken: data.webhook_endpoint_token,
+        connected: Boolean(data.sync_enabled),
         connectedAt: data.connected_at || null,
-        lastWebhookReceivedAt: data.last_webhook_received_at || null,
-        lastWebhookProcessedAt: data.last_webhook_processed_at || null,
+        lastSyncAt: data.last_sync_at || null,
+        lastSuccessAt: data.last_success_at || null,
         lastError: data.last_error || null,
       },
     };
   } catch (error: any) {
-    return { success: false, error: error?.message || 'تعذر ربط Procolis.' };
+    return { success: false, error: error?.message || 'تعذر ربط حساب Procolis.' };
   }
 }
 
 /**
- * Keep a disabled row as a tombstone. The webhook handler uses it to reject
- * legacy merchant-wide Procolis keys after this dedicated connection is off.
+ * Disable the Procolis poller and erase its encrypted credentials. Keep the
+ * provider row as a tombstone so legacy Procolis webhook requests are rejected.
  */
 export async function disconnectProcolisIntegration(): Promise<{ success: boolean; error?: string }> {
   try {
@@ -1451,7 +1496,7 @@ export async function disconnectProcolisIntegration(): Promise<{ success: boolea
       .from('merchant_carrier_integrations')
       .update({
         sync_enabled: false,
-        webhook_endpoint_token: null,
+        credentials_encrypted: 'disabled',
         last_error: null,
         last_error_at: null,
         updated_at: new Date().toISOString(),
