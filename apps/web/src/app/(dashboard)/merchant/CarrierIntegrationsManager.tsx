@@ -624,7 +624,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
                 <div>
                   <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800 }}>إعداد اتصال مستقل</span>
                   <h3 id="dz-provider-setup-title" style={{ margin: '5px 0 0', color: 'var(--ink-main)', fontSize: 19, fontWeight: 850 }}>
-                    {PROVIDERS.find((provider) => provider.id === activeProvider)?.name}
+                    {PROVIDERS.find((provider) => provider.id === renderedProvider)?.name}
                   </h3>
                 </div>
                 <button type="button" style={panelButtonStyle} onClick={() => void closeProviderSettings()}>
