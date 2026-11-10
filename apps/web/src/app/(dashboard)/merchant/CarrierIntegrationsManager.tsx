@@ -733,8 +733,8 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         .dz-carrier-manager .dz-carrier-overview {
           padding: 18px !important;
           border: 0 !important;
-          background: var(--bg-surface, #fff) !important;
-          border-radius: 4px;
+          background: #fffefa !important;
+          border-radius: 0;
         }
         .dz-carrier-manager .dz-integration-section,
         .dz-carrier-manager .dz-order-source,
@@ -742,8 +742,8 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         .dz-carrier-manager .dz-provider-editor {
           padding: 18px !important;
           border: 0 !important;
-          background: var(--bg-base, #f2f5f0);
-          border-radius: 4px;
+          background: #fffefa !important;
+          border-radius: 0;
         }
         .dz-carrier-manager .dz-integration-section {
           display: grid;
@@ -795,6 +795,9 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         }
         .dz-carrier-manager .dz-int-guided-panel {
           background: var(--bg-base, #f2f5f0) !important;
+        }
+        .dz-carrier-manager .dz-provider-editor .dz-int-guided-panel {
+          background: transparent !important;
         }
         .dz-carrier-manager button,
         .dz-carrier-manager input {
