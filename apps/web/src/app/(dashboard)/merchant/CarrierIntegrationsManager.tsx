@@ -170,6 +170,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
     () => PROVIDERS.filter((provider) => connectedByProvider.has(provider.id)),
     [connectedByProvider],
   );
+  const initialLoading = loadingConnections && connections.length === 0;
   const availableProviders = useMemo(
     () => PROVIDERS.filter((provider) => !connectedByProvider.has(provider.id)),
     [connectedByProvider],
@@ -418,7 +419,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
           <p style={{ margin: '0 0 14px', color: 'var(--ink-muted)', fontSize: 12 }}>جارٍ التحقق من اتصالات المتجر...</p>
         )}
 
-        {!loadingConnections && connectedProviders.length > 0 && (
+        {connectedProviders.length > 0 && (
           <section aria-labelledby="dz-connected-carriers-title" style={{ marginBottom: 28 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
               <h3 id="dz-connected-carriers-title" style={{ margin: 0, color: 'var(--ink-main)', fontSize: 16, fontWeight: 850 }}>الشركات المرتبطة</h3>
@@ -434,15 +435,15 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         <section aria-labelledby="dz-available-carriers-title">
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
             <h3 id="dz-available-carriers-title" style={{ margin: 0, color: 'var(--ink-main)', fontSize: 16, fontWeight: 850 }}>
-              {loadingConnections ? 'شركات التوصيل المدعومة' : connectedProviders.length > 0 ? 'شركات أخرى متاحة للربط' : 'الشركات المتاحة للربط'}
+              {initialLoading ? 'شركات التوصيل المدعومة' : connectedProviders.length > 0 ? 'شركات أخرى متاحة للربط' : 'الشركات المتاحة للربط'}
             </h3>
-            <span style={{ color: 'var(--ink-muted)', fontSize: 12 }}>{loadingConnections ? PROVIDERS.length : availableProviders.length} شركة</span>
+            <span style={{ color: 'var(--ink-muted)', fontSize: 12 }}>{initialLoading ? PROVIDERS.length : availableProviders.length} شركة</span>
           </div>
           <p style={{ margin: '4px 0 0', color: 'var(--ink-muted)', fontSize: 12 }}>
             يمكنك ربط شركة جديدة دون فصل شركة مرتبطة حالياً أو إعادة إعداد مصدر الطلبات.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', columnGap: 34, marginTop: 8 }}>
-            {(loadingConnections ? PROVIDERS : availableProviders).map(renderProviderRow)}
+            {(initialLoading ? PROVIDERS : availableProviders).map(renderProviderRow)}
           </div>
           {!loadingConnections && availableProviders.length === 0 && (
             <p style={{ margin: '14px 0 0', color: 'var(--ink-muted)', fontSize: 12 }}>كل الشركات المدعومة مرتبطة بالفعل. يمكنك فتح إعدادات أي شركة من قسم الاتصالات أعلاه.</p>
