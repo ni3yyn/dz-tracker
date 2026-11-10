@@ -81,6 +81,16 @@ export function AdminDashboardView({
   const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'merchants' | 'telemetry' | 'settings'>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
+  useEffect(() => {
+    const tabTitles: Record<'overview' | 'payments' | 'merchants' | 'telemetry' | 'settings', string> = {
+      overview: 'مركز القيادة والإحصائيات',
+      payments: 'الاشتراكات والدفعات',
+      merchants: 'دليل المتاجر',
+      telemetry: 'تيار الشحن والبيانات',
+      settings: 'إعدادات المنصة',
+    };
+    document.title = tabTitles[activeTab] + ' | إدارة تاجر تراك';
+  }, [activeTab]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [merchantFilter, setMerchantFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'suspended'>('all');
