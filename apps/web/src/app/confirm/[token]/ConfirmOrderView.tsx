@@ -24,7 +24,8 @@ const DEFAULT_CONFIRMATION_BRAND_SETTINGS: ConfirmationBrandSettings = {
   backgroundBlur: true,
 };
 
-interface Props {  status: ConfirmStatus;
+interface Props {
+  status: ConfirmStatus;
   token: string;
   orderNumber?: string;
   customerName?: string;
@@ -56,8 +57,9 @@ export function ConfirmOrderView({
     ...(brandColor ? { brandColor } : {}),
     ...(brandSubtitle ? { brandSubtitle } : {}),
   };
-  const accent = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(settings.brandColor)
-    ? settings.brandColor
+  const configuredAccent = settings.brandColor || '#27342D';
+  const accent = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(configuredAccent)
+    ? configuredAccent
     : '#27342D';
   const [status, setStatus] = useState<ConfirmStatus>(initialStatus);
   const [isPending, startTransition] = useTransition();
@@ -135,6 +137,7 @@ export function ConfirmOrderView({
     '--brand-primary-border': expandedAccent + '35',
     '--brand-glow': expandedAccent + '20',
     '--brand-on-primary': getReadableBrandForeground(accent),
+    '--brand-readable': getReadableBrandAccent(accent, settings.themeMode),
   } as React.CSSProperties;
 
   const showProductSection = settings.showProductSection !== false;
@@ -412,6 +415,21 @@ function getReadableBrandForeground(hex: string): string {
   const contrastWithWhite = 1.05 / (luminance + 0.05);
   const contrastWithInk = (luminance + 0.05) / (0.006 + 0.05);
   return contrastWithWhite >= contrastWithInk ? '#FFFFFF' : '#17211B';
+}
+function getReadableBrandAccent(hex: string, themeMode: string | undefined): string {
+  const normalized = (hex || '').replace('#', '').trim();
+  const fallback = themeMode === 'dark' ? '#D4E6D8' : '#28513B';
+  if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(normalized)) return fallback;
+  const full = normalized.length === 3 ? normalized.split('').map((char) => char + char).join('') : normalized;
+  const channels = [0, 2, 4].map((index) => parseInt(full.slice(index, index + 2), 16) / 255)
+    .map((channel) => channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4));
+  const luminance = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  const backgroundHex = themeMode === 'dark' ? '#202622' : '#F4F5F1';
+  const backgroundChannels = [0, 2, 4].map((index) => parseInt(backgroundHex.slice(index + 1, index + 3), 16) / 255)
+    .map((channel) => channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4));
+  const backgroundLuminance = 0.2126 * backgroundChannels[0] + 0.7152 * backgroundChannels[1] + 0.0722 * backgroundChannels[2];
+  const contrast = (Math.max(luminance, backgroundLuminance) + 0.05) / (Math.min(luminance, backgroundLuminance) + 0.05);
+  return contrast >= 4.5 ? '#' + full : fallback;
 }
 function Spinner() {
   return <span className={styles.spinner} aria-hidden="true" />;
