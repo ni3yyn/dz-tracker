@@ -1259,3 +1259,210 @@ export async function toggleConfirmationTelegram(enabled: boolean) {
   revalidatePath('/merchant');
   return { success: true };
 }
+
+
+/**
+ * Return only safe connection metadata for the authenticated merchant.
+ * Provider credentials and webhook secrets never leave the server.
+ */
+export async function getMerchantCarrierIntegrations(): Promise<{
+  success: boolean;
+  connections: Array<{
+    provider: string;
+    sync_enabled: boolean | null;
+    connected_at: string | null;
+    last_sync_at: string | null;
+    last_success_at: string | null;
+    last_error: string | null;
+    last_webhook_received_at: string | null;
+    last_webhook_processed_at: string | null;
+  }>;
+  error?: string;
+}> {
+  try {
+    const merchantId = await getAuthenticatedMerchantId();
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .select('provider, sync_enabled, connected_at, last_sync_at, last_success_at, last_error, last_webhook_received_at, last_webhook_processed_at')
+      .eq('merchant_id', merchantId)
+      .order('connected_at', { ascending: false });
+
+    if (error) throw new Error('تعذر تحميل اتصالات شركات التوصيل.');
+    const supported = new Set([
+      'yalidine', 'ecotrack', 'zrexpress', 'procolis',
+      'maystro', 'zimou', 'elogistia', 'ecom_v2',
+    ]);
+
+    return {
+      success: true,
+      connections: (data || [])
+        .filter((row: any) => supported.has(String(row.provider)))
+        .map((row: any) => ({
+          provider: String(row.provider),
+          sync_enabled: typeof row.sync_enabled === 'boolean' ? row.sync_enabled : null,
+          connected_at: row.connected_at || null,
+          last_sync_at: row.last_sync_at || null,
+          last_success_at: row.last_success_at || null,
+          last_error: row.last_error || null,
+          last_webhook_received_at: row.last_webhook_received_at || null,
+          last_webhook_processed_at: row.last_webhook_processed_at || null,
+        })),
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      connections: [],
+      error: error?.message || 'تعذر تحميل شركات التوصيل.',
+    };
+  }
+}
+
+type ProcolisIntegrationStatus = {
+  connected: boolean;
+  webhookToken?: string | null;
+  connectedAt?: string | null;
+  lastWebhookReceivedAt?: string | null;
+  lastWebhookProcessedAt?: string | null;
+  lastError?: string | null;
+};
+
+export async function getProcolisIntegrationStatus(): Promise<{
+  success: boolean;
+  status: ProcolisIntegrationStatus;
+  error?: string;
+}> {
+  try {
+    const merchantId = await getAuthenticatedMerchantId();
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .select('sync_enabled, webhook_endpoint_token, connected_at, last_webhook_received_at, last_webhook_processed_at, last_error')
+      .eq('merchant_id', merchantId)
+      .eq('provider', 'procolis')
+      .maybeSingle();
+
+    if (error) throw new Error('تعذر قراءة حالة اتصال Procolis.');
+    const webhookToken = data?.webhook_endpoint_token || null;
+    return {
+      success: true,
+      status: {
+        connected: Boolean(data?.sync_enabled && webhookToken),
+        webhookToken: data?.sync_enabled ? webhookToken : null,
+        connectedAt: data?.connected_at || null,
+        lastWebhookReceivedAt: data?.last_webhook_received_at || null,
+        lastWebhookProcessedAt: data?.last_webhook_processed_at || null,
+        lastError: data?.last_error || null,
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      status: { connected: false },
+      error: error?.message || 'تعذر قراءة حالة اتصال Procolis.',
+    };
+  }
+}
+
+/**
+ * Procolis owns a dedicated high-entropy webhook token, independent from the
+ * merchant API key and from every other carrier connection.
+ */
+export async function saveProcolisIntegration(): Promise<{
+  success: boolean;
+  status?: ProcolisIntegrationStatus;
+  error?: string;
+}> {
+  try {
+    const merchantId = await getAuthenticatedMerchantId();
+    const supabase = getSupabaseAdminClient();
+    const { data: existing, error: readError } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .select('webhook_endpoint_token, connected_at, last_webhook_received_at, last_webhook_processed_at, last_error, sync_enabled')
+      .eq('merchant_id', merchantId)
+      .eq('provider', 'procolis')
+      .maybeSingle();
+
+    if (readError) throw new Error('تعذر قراءة إعداد Procolis الحالي.');
+
+    const existingToken = existing?.webhook_endpoint_token || null;
+    if (existing?.sync_enabled && existingToken) {
+      return {
+        success: true,
+        status: {
+          connected: true,
+          webhookToken: existingToken,
+          connectedAt: existing.connected_at || null,
+          lastWebhookReceivedAt: existing.last_webhook_received_at || null,
+          lastWebhookProcessedAt: existing.last_webhook_processed_at || null,
+          lastError: existing.last_error || null,
+        },
+      };
+    }
+
+    const webhookToken = randomBytes(32).toString('base64url');
+    const now = new Date().toISOString();
+    const { data, error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .upsert({
+        merchant_id: merchantId,
+        provider: 'procolis',
+        webhook_endpoint_token: webhookToken,
+        sync_enabled: true,
+        connected_at: now,
+        last_error: null,
+        last_error_at: null,
+        updated_at: now,
+      }, { onConflict: 'merchant_id,provider' })
+      .select('webhook_endpoint_token, connected_at, last_webhook_received_at, last_webhook_processed_at, last_error, sync_enabled')
+      .single();
+
+    if (error || !data) {
+      console.error('[ProcolisIntegration] Could not save independent connection:', error?.message);
+      throw new Error('تعذر حفظ اتصال Procolis. تأكد من تطبيق تحديثات قاعدة البيانات.');
+    }
+
+    revalidatePath('/merchant');
+    return {
+      success: true,
+      status: {
+        connected: Boolean(data.sync_enabled && data.webhook_endpoint_token),
+        webhookToken: data.webhook_endpoint_token,
+        connectedAt: data.connected_at || null,
+        lastWebhookReceivedAt: data.last_webhook_received_at || null,
+        lastWebhookProcessedAt: data.last_webhook_processed_at || null,
+        lastError: data.last_error || null,
+      },
+    };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'تعذر ربط Procolis.' };
+  }
+}
+
+/**
+ * Keep a disabled row as a tombstone. The webhook handler uses it to reject
+ * legacy merchant-wide Procolis keys after this dedicated connection is off.
+ */
+export async function disconnectProcolisIntegration(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const merchantId = await getAuthenticatedMerchantId();
+    const supabase = getSupabaseAdminClient();
+    const { error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .update({
+        sync_enabled: false,
+        webhook_endpoint_token: null,
+        last_error: null,
+        last_error_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('merchant_id', merchantId)
+      .eq('provider', 'procolis');
+
+    if (error) throw new Error('تعذر إيقاف اتصال Procolis.');
+    revalidatePath('/merchant');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'تعذر إيقاف Procolis.' };
+  }
+}
