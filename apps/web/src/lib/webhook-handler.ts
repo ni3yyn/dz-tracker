@@ -27,6 +27,8 @@ export interface WebhookContext {
 export interface WebhookHandlerOptions {
   source: 'yalidine' | 'ecotrack' | 'shopify' | 'direct' | 'zrexpress' | 'procolis' | 'odoo' | 'maystro' | 'zimou' | 'elogistia' | 'ecom_v2';
   transformEvent: (ctx: WebhookContext) => TrackingEvent | Promise<TrackingEvent>;
+  /** Resolve a provider-scoped connection token before the legacy merchant API key. */
+  providerConnectionTokenAuth?: boolean;
 }
 
 export function handleOptions() {
@@ -72,13 +74,81 @@ export function createWebhookHandler(options: WebhookHandlerOptions) {
         );
       }
 
-      // 2. التحقق من صحة التاجر وحالة اشتراكه
+      // 2. Resolve the merchant through a provider-scoped connection token where enabled.
+      // Procolis keeps accepting the old merchant API key during migration, but a
+      // disabled Procolis connection explicitly blocks that legacy route.
       const supabase = getSupabaseAdminClient();
-      const { data: merchant, error: merchantError } = await supabase
-        .from('merchants')
-        .select('id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at')
-        .eq('api_key', apiKey)
-        .maybeSingle();
+      const merchantSelect = 'id, store_name, api_key, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at';
+      let merchant: any = null;
+      let merchantError: any = null;
+
+      if (options.providerConnectionTokenAuth) {
+        const { data: providerConnection, error: providerConnectionError } = await (supabase as any)
+          .from('merchant_carrier_integrations')
+          .select('merchant_id')
+          .eq('provider', options.source)
+          .eq('webhook_endpoint_token', apiKey)
+          .eq('sync_enabled', true)
+          .maybeSingle();
+
+        if (providerConnectionError) {
+          console.error(`[Webhook Auth - ${options.source}]: Could not resolve provider token:`, providerConnectionError.message);
+          return NextResponse.json(
+            { error: 'Unable to verify provider connection.' },
+            { status: 500, headers: corsHeaders }
+          );
+        }
+
+        if (providerConnection?.merchant_id) {
+          const result = await supabase
+            .from('merchants')
+            .select(merchantSelect)
+            .eq('id', providerConnection.merchant_id)
+            .maybeSingle();
+          merchant = result.data;
+          merchantError = result.error;
+        } else {
+          const legacyResult = await supabase
+            .from('merchants')
+            .select(merchantSelect)
+            .eq('api_key', apiKey)
+            .maybeSingle();
+          merchant = legacyResult.data;
+          merchantError = legacyResult.error;
+
+          if (merchant && !merchantError) {
+            const { data: connectionState, error: connectionStateError } = await (supabase as any)
+              .from('merchant_carrier_integrations')
+              .select('sync_enabled')
+              .eq('merchant_id', merchant.id)
+              .eq('provider', options.source)
+              .maybeSingle();
+
+            if (connectionStateError) {
+              console.error(`[Webhook Auth - ${options.source}]: Could not verify legacy connection state:`, connectionStateError.message);
+              return NextResponse.json(
+                { error: 'Unable to verify provider connection.' },
+                { status: 500, headers: corsHeaders }
+              );
+            }
+
+            if (connectionState && connectionState.sync_enabled === false) {
+              return NextResponse.json(
+                { error: 'This provider connection is disabled.' },
+                { status: 401, headers: corsHeaders }
+              );
+            }
+          }
+        }
+      } else {
+        const result = await supabase
+          .from('merchants')
+          .select(merchantSelect)
+          .eq('api_key', apiKey)
+          .maybeSingle();
+        merchant = result.data;
+        merchantError = result.error;
+      }
 
       if (merchantError || !merchant) {
         return NextResponse.json(
