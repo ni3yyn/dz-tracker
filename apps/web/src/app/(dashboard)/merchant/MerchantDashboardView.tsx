@@ -6259,7 +6259,7 @@ export function MerchantDashboardView({
         .dz-admin-root .dz-settings-section {
           margin: 0 !important;
           padding: 20px 22px !important;
-          border: 1px solid #e1e5dc !important;
+          border: 0 !important;
           border-radius: 0 !important;
           background: #fffefa !important;
           box-shadow: none !important;
@@ -6935,6 +6935,57 @@ export function MerchantDashboardView({
           .dz-admin-root .dz-analytics-kpis .dz-overview-kpi:last-child {
             padding-inline: 10px;
           }
+        }
+
+        /* Ivory surfaces: give analytics and shipment controls one calm, borderless home. */
+        .dz-admin-root .dz-analytics-grid { gap: 12px; }
+        .dz-admin-root .dz-analytics-section,
+        .dz-admin-root .dz-analytics-section.dz-overview-section:first-child {
+          min-width: 0;
+          padding: 20px 22px !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          background: #fffefa !important;
+          box-shadow: none !important;
+        }
+        .dz-admin-root .dz-analytics-section + .dz-analytics-section {
+          border-inline-start: 0 !important;
+          padding-inline-start: 22px !important;
+        }
+        .dz-admin-root .dz-shipment-filters {
+          min-width: 0;
+          padding: 10px 12px;
+          margin-bottom: 18px;
+          border: 0;
+          border-radius: 0;
+          background: #fffefa;
+          box-shadow: none;
+        }
+        @media (max-width: 1100px) {
+          .dz-admin-root .dz-analytics-grid { gap: 10px; }
+          .dz-admin-root .dz-analytics-section + .dz-analytics-section {
+            padding-inline-start: 18px !important;
+          }
+        }
+        @media (max-width: 760px) {
+          .dz-admin-root .dz-analytics-section,
+          .dz-admin-root .dz-analytics-section.dz-overview-section:first-child {
+            padding: 16px 14px !important;
+          }
+          .dz-admin-root .dz-analytics-section + .dz-analytics-section {
+            padding-inline-start: 14px !important;
+          }
+          .dz-admin-root .dz-shipment-filters {
+            padding: 9px 10px;
+            gap: 8px;
+          }
+        }
+        @media (max-width: 380px) {
+          .dz-admin-root .dz-analytics-section,
+          .dz-admin-root .dz-analytics-section.dz-overview-section:first-child {
+            padding: 14px 12px !important;
+          }
+          .dz-admin-root .dz-shipment-filters { padding: 8px; }
         }
 
       `}} />
