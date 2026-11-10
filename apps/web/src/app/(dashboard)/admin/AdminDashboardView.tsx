@@ -11,6 +11,7 @@ import {
 } from './actions';
 import styles from './admin.module.css';
 import SiteHeader from '../../SiteHeader';
+import { useDashboardBackHandler } from '../useDashboardBackHandler';
 
 interface MerchantItem {
   id: string;
@@ -81,30 +82,28 @@ export function AdminDashboardView({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
 
-  // Mobile Back Button Handler: when mobile menu drawer is open, back button closes it instead of leaving dashboard
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-
-    window.history.pushState({ tajerAdminMobileMenu: true }, '');
-
-    const handlePopState = () => {
-      setMobileMenuOpen(false);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      if (window.history.state?.tajerAdminMobileMenu) {
-        window.history.back();
-      }
-    };
-  }, [mobileMenuOpen]);
   const [searchQuery, setSearchQuery] = useState('');
   const [merchantFilter, setMerchantFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'suspended'>('all');
   const [carrierFilter, setCarrierFilter] = useState<string>('all');
   
   const [editingMerchant, setEditingMerchant] = useState<MerchantItem | null>(null);
+
+  useDashboardBackHandler({
+    scope: 'admin',
+    activeTab,
+    setActiveTab,
+    onBack: () => {
+      if (editingMerchant) {
+        setEditingMerchant(null);
+        return true;
+      }
+      if (mobileMenuOpen) {
+        setMobileMenuOpen(false);
+        return true;
+      }
+      return false;
+    },
+  });
   const [editTier, setEditTier] = useState<string>('growth');
   const [editLimit, setEditLimit] = useState<number>(200);
   const [isSubmitting, setIsSubmitting] = useState(false);
