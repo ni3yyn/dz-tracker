@@ -223,25 +223,25 @@ export function parseMaystroWebhookEnvelope(rawBody: string): MaystroWebhookEnve
   };
 }
 
-const MAYSTRO_STATUS_CODES: Record<string, { status: string; title: string; description: string }> = {
-  '4': { status: 'processing', title: 'تم تسجيل الطلب لدى Maystro', description: 'تم تسجيل الطرد في نظام Maystro Delivery.' },
-  '11': { status: 'processing', title: 'الطلب قيد الانتظار', description: 'الطلب مسجل لدى Maystro وينتظر بدء التجهيز.' },
-  '12': { status: 'processing', title: 'المنتج غير متوفر مؤقتاً', description: 'أبلغت Maystro عن عدم توفر المنتج مؤقتاً.' },
-  '5': { status: 'dispatched', title: 'تم طلب استلام الشحنة', description: 'تم إرسال طلب استلام الطرد من المتجر.' },
-  '6': { status: 'processing', title: 'الشحنة قيد المعالجة', description: 'تقوم Maystro بتجهيز الشحنة ومعالجتها.' },
-  '8': { status: 'in_transit', title: 'الشحنة بانتظار النقل', description: 'وصلت الشحنة إلى مركز Maystro وتنتظر النقل.' },
-  '9': { status: 'in_transit', title: 'الشحنة في مرحلة النقل', description: 'تم تجهيز الشحنة لإرسالها إلى وجهتها.' },
-  '15': { status: 'in_transit', title: 'تم تجهيز الشحنة للإرسال', description: 'أصبحت الشحنة جاهزة للخروج مع شبكة التوصيل.' },
-  '22': { status: 'in_transit', title: 'تم تعيين مندوب للشحنة', description: 'تم تعيين مندوب لمتابعة توصيل الشحنة.' },
-  '31': { status: 'in_transit', title: 'تم شحن الطرد', description: 'غادرت الشحنة مرحلة التجهيز وهي في طريقها إلى وجهتها.' },
-  '32': { status: 'attempt_failed', title: 'يوجد تنبيه على الشحنة', description: 'سجلت Maystro تنبيهاً أو مشكلة تتعلق بمحاولة التوصيل.' },
-  '42': { status: 'postponed', title: 'تم تأجيل التسليم', description: 'تم تأجيل موعد تسليم الشحنة.' },
-  '41': { status: 'delivered', title: 'تم تسليم الطلب بنجاح', description: 'أكدت Maystro تسليم الشحنة.' },
-  '50': { status: 'cancelled', title: 'تم إلغاء الطلب', description: 'تم إلغاء الطلب لدى Maystro.' },
-  '10': { status: 'returned', title: 'بدأت عملية إرجاع الشحنة', description: 'الشحنة في طريق العودة إلى المتجر.' },
-  '51': { status: 'returned', title: 'الشحنة جاهزة للإرجاع', description: 'أصبحت الشحنة جاهزة لإعادتها إلى المتجر.' },
-  '52': { status: 'returned', title: 'استلم المتجر الشحنة المرتجعة', description: 'تم تسليم الشحنة المرتجعة إلى المتجر.' },
-  '53': { status: 'returned', title: 'تم تسجيل عدم استلام المرتجع', description: 'سجلت Maystro أن المتجر لم يستلم الشحنة المرتجعة.' },
+const MAYSTRO_STATUS_CODES: Record<string, { statusRaw: string; statusTitle: string; description: string }> = {
+  '4': { statusRaw: 'processing', statusTitle: 'تم تسجيل الطلب لدى Maystro', description: 'تم تسجيل الطرد في نظام Maystro Delivery.' },
+  '11': { statusRaw: 'processing', statusTitle: 'الطلب قيد الانتظار', description: 'الطلب مسجل لدى Maystro وينتظر بدء التجهيز.' },
+  '12': { statusRaw: 'processing', statusTitle: 'المنتج غير متوفر مؤقتاً', description: 'أبلغت Maystro عن عدم توفر المنتج مؤقتاً.' },
+  '5': { statusRaw: 'dispatched', statusTitle: 'تم طلب استلام الشحنة', description: 'تم إرسال طلب استلام الطرد من المتجر.' },
+  '6': { statusRaw: 'processing', statusTitle: 'الشحنة قيد المعالجة', description: 'تقوم Maystro بتجهيز الشحنة ومعالجتها.' },
+  '8': { statusRaw: 'in_transit', statusTitle: 'الشحنة بانتظار النقل', description: 'وصلت الشحنة إلى مركز Maystro وتنتظر النقل.' },
+  '9': { statusRaw: 'in_transit', statusTitle: 'الشحنة في مرحلة النقل', description: 'تم تجهيز الشحنة لإرسالها إلى وجهتها.' },
+  '15': { statusRaw: 'in_transit', statusTitle: 'تم تجهيز الشحنة للإرسال', description: 'أصبحت الشحنة جاهزة للخروج مع شبكة التوصيل.' },
+  '22': { statusRaw: 'in_transit', statusTitle: 'تم تعيين مندوب للشحنة', description: 'تم تعيين مندوب لمتابعة توصيل الشحنة.' },
+  '31': { statusRaw: 'in_transit', statusTitle: 'تم شحن الطرد', description: 'غادرت الشحنة مرحلة التجهيز وهي في طريقها إلى وجهتها.' },
+  '32': { statusRaw: 'attempt_failed', statusTitle: 'يوجد تنبيه على الشحنة', description: 'سجلت Maystro تنبيهاً أو مشكلة تتعلق بمحاولة التوصيل.' },
+  '42': { statusRaw: 'postponed', statusTitle: 'تم تأجيل التسليم', description: 'تم تأجيل موعد تسليم الشحنة.' },
+  '41': { statusRaw: 'delivered', statusTitle: 'تم تسليم الطلب بنجاح', description: 'أكدت Maystro تسليم الشحنة.' },
+  '50': { statusRaw: 'cancelled', statusTitle: 'تم إلغاء الطلب', description: 'تم إلغاء الطلب لدى Maystro.' },
+  '10': { statusRaw: 'returned', statusTitle: 'بدأت عملية إرجاع الشحنة', description: 'الشحنة في طريق العودة إلى المتجر.' },
+  '51': { statusRaw: 'returned', statusTitle: 'الشحنة جاهزة للإرجاع', description: 'أصبحت الشحنة جاهزة لإعادتها إلى المتجر.' },
+  '52': { statusRaw: 'returned', statusTitle: 'استلم المتجر الشحنة المرتجعة', description: 'تم تسليم الشحنة المرتجعة إلى المتجر.' },
+  '53': { statusRaw: 'returned', statusTitle: 'تم تسجيل عدم استلام المرتجع', description: 'سجلت Maystro أن المتجر لم يستلم الشحنة المرتجعة.' },
 };
 
 const MAYSTRO_STATUS_NAMES: Record<string, string> = {
