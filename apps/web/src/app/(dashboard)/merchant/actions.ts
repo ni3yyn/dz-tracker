@@ -1440,13 +1440,14 @@ export async function saveProcolisIntegration(
     const supabase = getSupabaseAdminClient();
     const { data: existing, error: readError } = await (supabase as any)
       .from('merchant_carrier_integrations')
-      .select('connected_at, sync_enabled')
+      .select('connected_at, sync_enabled, webhook_endpoint_token')
       .eq('merchant_id', merchantId)
       .eq('provider', 'procolis')
       .maybeSingle();
     if (readError) throw new Error('تعذر قراءة إعداد Procolis الحالي.');
 
     const now = new Date().toISOString();
+    const endpointToken = existing?.webhook_endpoint_token || randomBytes(32).toString('base64url');
     const { data, error } = await (supabase as any)
       .from('merchant_carrier_integrations')
       .upsert({
@@ -1454,6 +1455,7 @@ export async function saveProcolisIntegration(
         provider: 'procolis',
         base_url: PROCOLIS_API_BASE,
         credentials_encrypted: credentialsEncrypted,
+        webhook_endpoint_token: endpointToken,
         sync_enabled: true,
         connected_at: existing?.sync_enabled ? existing.connected_at : now,
         last_error: null,
@@ -1497,6 +1499,7 @@ export async function disconnectProcolisIntegration(): Promise<{ success: boolea
       .update({
         sync_enabled: false,
         credentials_encrypted: 'disabled',
+        webhook_endpoint_token: null,
         last_error: null,
         last_error_at: null,
         updated_at: new Date().toISOString(),
