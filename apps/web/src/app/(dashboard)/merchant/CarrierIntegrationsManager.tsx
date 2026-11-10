@@ -91,11 +91,13 @@ function AnimatedHeight({
 }: AnimatedHeightProps) {
   const innerRef = useRef<HTMLDivElement | null>(null);
   const lastExpandedChildren = useRef<React.ReactNode>(expanded ? children : null);
+  const lastExpandedKey = useRef(contentKey);
   const [height, setHeight] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
 
   if (expanded && children !== null && children !== false) {
     lastExpandedChildren.current = children;
+    lastExpandedKey.current = contentKey;
   }
 
   useLayoutEffect(() => {
@@ -122,6 +124,7 @@ function AnimatedHeight({
 
   const handleTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget || event.propertyName !== 'height' || expanded) return;
+    lastExpandedChildren.current = null;
     setHeight(0);
   };
 
@@ -141,7 +144,7 @@ function AnimatedHeight({
       }}
     >
       <div ref={innerRef} className="dz-animated-height-measure">
-        <div key={contentKey} className="dz-animated-height-enter">
+        <div key={expanded ? contentKey : lastExpandedKey.current} className="dz-animated-height-enter">
           {expanded ? children : lastExpandedChildren.current}
         </div>
       </div>
