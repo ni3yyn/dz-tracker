@@ -5,6 +5,11 @@ import { AdminDashboardView } from './AdminDashboardView';
 import { logout } from './actions';
 import styles from './admin.module.css';
 
+export const metadata = {
+  title: 'إدارة المنصة',
+  description: 'إدارة متاجر تاجر تراك واشتراكاتها وبيانات الشحن.',
+};
+
 export default async function AdminDashboardPage() {
   // 1. التحقق من هوية السوبر أدمن
   const supabaseAuth = await createClient();
