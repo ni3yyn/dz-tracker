@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { cache } from 'react';
+import type { Metadata } from 'next';
 import { getSupabaseAdminClient } from '@saas/database';
 import { TrackingLiveView } from './TrackingLiveView';
 import styles from './t.module.css';
@@ -7,18 +8,37 @@ interface PageProps {
   params: Promise<{ uuid: string }>;
 }
 
+const getTrackingOrder = cache(async (uuid: string) => {
+  const supabase = getSupabaseAdminClient();
+  return supabase
+    .from('orders')
+    .select('id, merchant_id, external_order_id, customer_name, product_name, product_image, carrier_name, carrier_tracking_number, confirmation_status, merchants(store_name, logo_url)')
+    .eq('tracking_uuid', uuid)
+    .maybeSingle();
+});
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { uuid } = await params;
+  const { data: order } = await getTrackingOrder(uuid);
+  const merchant = Array.isArray(order?.merchants) ? order.merchants[0] : order?.merchants;
+  const storeName = merchant?.store_name || 'المتجر';
+
+  return {
+    title: order ? 'تتبّع شحنتك لدى ' + storeName : 'تتبّع الشحنة',
+    description: order
+      ? 'تابع آخر حالة وتحديثات شحنتك لدى ' + storeName + ' من صفحة التتبّع الخاصة بطلبك.'
+      : 'صفحة تتبّع الشحنة في تاجر تراك.',
+  };
+}
+
 export default async function TrackingPage({ params }: PageProps) {
   const resolvedParams = await params;
   const { uuid } = resolvedParams;
 
   const supabase = getSupabaseAdminClient();
 
-  // 1. جلب الطلب
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .select('id, merchant_id, external_order_id, customer_name, product_name, product_image, carrier_name, carrier_tracking_number, confirmation_status, merchants(store_name, logo_url)')
-    .eq('tracking_uuid', uuid)
-    .maybeSingle();
+  // The shared request-cached lookup also powers generateMetadata above.
+  const { data: order, error: orderError } = await getTrackingOrder(uuid);
 
   if (orderError || !order) {
     return (
