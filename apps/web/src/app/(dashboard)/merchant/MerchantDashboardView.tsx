@@ -808,7 +808,7 @@ export function MerchantDashboardView({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [renderedSelectedOrderId, setRenderedSelectedOrderId] = useState<string | null>(null);
-  const [isSelectedOrderDrawerOpen, setIsSelectedOrderDrawerOpen] = useState(false);
+  const [isSelectedOrderPanelOpen, setIsSelectedOrderPanelOpen] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
   const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
@@ -816,6 +816,8 @@ export function MerchantDashboardView({
   const [confirmationEnabled, setConfirmationEnabled] = useState(confirmationTelegramEnabled);
   const [isSavingConfirmation, setIsSavingConfirmation] = useState(false);
   const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
+  const [isAddOrderPanelMounted, setIsAddOrderPanelMounted] = useState(false);
+  const [isAddOrderPanelOpen, setIsAddOrderPanelOpen] = useState(false);
   const [isCustomMappingModalOpen, setIsCustomMappingModalOpen] = useState(false);
   const customMappingTriggerRef = useRef<HTMLButtonElement>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
@@ -1423,14 +1425,24 @@ export function MerchantDashboardView({
   );
   useLayoutEffect(() => {
     if (!selectedOrderId) {
-      setIsSelectedOrderDrawerOpen(false);
+      setIsSelectedOrderPanelOpen(false);
       return;
     }
 
     setRenderedSelectedOrderId(selectedOrderId);
-    const frame = requestAnimationFrame(() => setIsSelectedOrderDrawerOpen(true));
+    const frame = requestAnimationFrame(() => setIsSelectedOrderPanelOpen(true));
     return () => cancelAnimationFrame(frame);
   }, [selectedOrderId]);
+  useLayoutEffect(() => {
+    if (!isAddOrderModalOpen) {
+      setIsAddOrderPanelOpen(false);
+      return;
+    }
+
+    setIsAddOrderPanelMounted(true);
+    const frame = requestAnimationFrame(() => setIsAddOrderPanelOpen(true));
+    return () => cancelAnimationFrame(frame);
+  }, [isAddOrderModalOpen]);
   useEffect(() => {
     if (!selectedOrderId) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -3609,22 +3621,23 @@ export function MerchantDashboardView({
           transform-origin: right center;
         }
 
-        /* Order details drawer: fixed-width inner content avoids text reflow while
-           the outer panel expands and contracts from its anchored edge. */
-        .dz-order-detail-backdrop--drawer {
+        /* Shared horizontal reveal for Add order and See order details.
+           Fixed-width inner surfaces prevent text reflow while the panel expands. */
+        .dz-order-side-backdrop {
           opacity: 0;
           visibility: hidden;
           pointer-events: none;
           animation: none !important;
-          transition: opacity .3s ease, visibility 0s linear .48s;
+          transition: opacity .3s ease, visibility 0s linear .5s;
         }
-        .dz-order-detail-backdrop--drawer[data-open="true"] {
+        .dz-order-side-backdrop[data-open="true"] {
           opacity: 1;
           visibility: visible;
           pointer-events: auto;
           transition-delay: 0s;
         }
-        .dz-order-detail-panel--drawer {
+        .dz-order-side-panel {
+          --order-side-panel-width: min(520px, 100vw);
           box-sizing: border-box;
           flex: 0 0 0;
           width: 0;
@@ -3637,33 +3650,41 @@ export function MerchantDashboardView({
           animation: none !important;
           transform: none !important;
           transition:
-            width .48s cubic-bezier(.2,.75,.25,1),
             flex-basis .48s cubic-bezier(.2,.75,.25,1),
+            width .48s cubic-bezier(.2,.75,.25,1),
             opacity .28s ease,
             visibility 0s linear .48s;
         }
-        .dz-order-detail-panel--drawer[data-open="true"] {
-          flex-basis: min(520px, 100vw);
-          width: min(520px, 100vw);
+        .dz-order-side-panel--add { --order-side-panel-width: min(500px, 100vw); }
+        .dz-order-side-panel[data-open="true"] {
+          flex-basis: var(--order-side-panel-width);
+          width: var(--order-side-panel-width);
           opacity: 1;
           visibility: visible;
-          transition-delay: 0s;
+          border-inline-start: 1px solid var(--border-soft);
           overflow-x: hidden;
           overflow-y: auto;
+          transition-delay: 0s;
         }
-        .dz-order-detail-panel-inner {
+        .dz-order-side-panel-inner {
           box-sizing: border-box;
-          width: min(520px, 100vw);
-          min-width: min(520px, 100vw);
           min-height: 100%;
           padding: 32px 28px;
         }
+        .dz-order-side-panel-inner--details {
+          width: min(520px, 100vw);
+          min-width: min(520px, 100vw);
+        }
+        .dz-order-side-panel-inner--add {
+          width: min(500px, 100vw);
+          min-width: min(500px, 100vw);
+        }
         @media (max-width: 560px) {
-          .dz-order-detail-panel-inner { padding: 24px 18px; }
+          .dz-order-side-panel-inner { padding: 24px 18px; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .dz-order-detail-backdrop--drawer,
-          .dz-order-detail-panel--drawer {
+          .dz-order-side-backdrop,
+          .dz-order-side-panel {
             transition-duration: .01ms !important;
           }
         }
@@ -8789,29 +8810,34 @@ export function MerchantDashboardView({
 
           {selectedOrder && typeof document !== 'undefined' && createPortal((
             <div
-              className="dz-order-detail-backdrop dz-order-detail-backdrop--drawer"
-              data-open={isSelectedOrderDrawerOpen ? 'true' : 'false'}
-              aria-hidden={!isSelectedOrderDrawerOpen}
+              className="dz-order-detail-backdrop dz-order-side-backdrop"
+              data-open={isSelectedOrderPanelOpen ? 'true' : 'false'}
+              aria-hidden={!isSelectedOrderPanelOpen}
               role="presentation"
               onMouseDown={(event) => {
-                if (event.target === event.currentTarget && isSelectedOrderDrawerOpen) setSelectedOrderId(null);
+                if (event.target === event.currentTarget && isSelectedOrderPanelOpen) setSelectedOrderId(null);
               }}
             >
               <aside
-                className="dz-order-detail-panel dz-order-detail-panel--drawer"
-                data-open={isSelectedOrderDrawerOpen ? 'true' : 'false'}
+                className="dz-order-detail-panel dz-order-side-panel"
+                data-open={isSelectedOrderPanelOpen ? 'true' : 'false'}
                 role="dialog"
                 aria-modal="true"
-                aria-hidden={!isSelectedOrderDrawerOpen}
+                aria-hidden={!isSelectedOrderPanelOpen}
                 aria-labelledby="order-detail-title"
                 onMouseDown={(event) => event.stopPropagation()}
                 onTransitionEnd={(event) => {
-                  if (event.target === event.currentTarget && event.propertyName === 'flex-basis' && !selectedOrderId) {
+                  if (
+                    event.target === event.currentTarget &&
+                    event.propertyName === 'flex-basis' &&
+                    !selectedOrderId &&
+                    !isSelectedOrderPanelOpen
+                  ) {
                     setRenderedSelectedOrderId(null);
                   }
                 }}
               >
-                <div className="dz-order-detail-panel-inner">
+                <div className="dz-order-side-panel-inner dz-order-side-panel-inner--details">
                 <div className="dz-order-detail-head">
                   <div>
                     <span className="dz-order-detail-kicker">تفاصيل الشحنة</span>
@@ -8909,29 +8935,43 @@ export function MerchantDashboardView({
                   <a href={`/t/${selectedOrder.tracking_uuid}`} target="_blank" rel="noreferrer" className="dz-btn dz-btn-outline"><Icons.ExternalLink /> صفحة التتبع</a>
                   {selectedOrder.customer_phone && <a href={getWhatsAppRecoveryUrl(selectedOrder)} target="_blank" rel="noreferrer" className={`dz-btn ${isAttentionStatus(selectedOrder.current_status) ? 'dz-btn-wa-urgent' : 'dz-btn-wa'}`}><Icons.MessageCircle /> التواصل عبر واتساب</a>}
                 </div>
-                </div>
+              </div>
               </aside>
             </div>
           ), document.body)}
 
-          {isAddOrderModalOpen && typeof document !== 'undefined' && createPortal((
+          {isAddOrderPanelMounted && typeof document !== 'undefined' && createPortal((
             <div
-              className="dz-order-detail-backdrop"
+              className="dz-order-detail-backdrop dz-order-side-backdrop"
+              data-open={isAddOrderPanelOpen ? 'true' : 'false'}
+              aria-hidden={!isAddOrderPanelOpen}
               role="presentation"
               onMouseDown={(event) => {
-                if (event.target === event.currentTarget && !isCreatingOrder) {
+                if (event.target === event.currentTarget && isAddOrderPanelOpen && !isCreatingOrder) {
                   setIsAddOrderModalOpen(false);
                 }
               }}
             >
               <aside
-                className="dz-order-detail-panel"
+                className="dz-order-detail-panel dz-order-side-panel dz-order-side-panel--add"
+                data-open={isAddOrderPanelOpen ? 'true' : 'false'}
                 role="dialog"
                 aria-modal="true"
+                aria-hidden={!isAddOrderPanelOpen}
                 aria-labelledby="add-order-title"
                 onMouseDown={(event) => event.stopPropagation()}
-                style={{ width: 'min(500px, 100%)' }}
+                onTransitionEnd={(event) => {
+                  if (
+                    event.target === event.currentTarget &&
+                    event.propertyName === 'flex-basis' &&
+                    !isAddOrderModalOpen &&
+                    !isAddOrderPanelOpen
+                  ) {
+                    setIsAddOrderPanelMounted(false);
+                  }
+                }}
               >
+                <div className="dz-order-side-panel-inner dz-order-side-panel-inner--add">
                 <div className="dz-order-detail-head">
                   <div>
                     <span className="dz-order-detail-kicker">شحنة تجريبية / يدوية</span>
@@ -9194,6 +9234,7 @@ export function MerchantDashboardView({
                     </div>
                   </form>
                 )}
+              </div>
               </aside>
             </div>
           ), document.body)}
