@@ -236,7 +236,12 @@ export function BrandedSelect({
   ].filter(Boolean).join(' ');
 
   return (
-    <div ref={rootRef} className={rootClassName} aria-busy={loading || undefined}>
+    <div
+      ref={rootRef}
+      className={rootClassName}
+      aria-busy={loading || undefined}
+      data-dashboard-back-dismiss={isOpen ? 'true' : undefined}
+    >
       {name && <input type="hidden" name={name} value={selectedValue} />}
       <button
         ref={triggerRef}
