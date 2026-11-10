@@ -10,6 +10,7 @@ import { ZimouConnectionPanel } from './ZimouConnectionPanel';
 import { ElogistiaConnectionPanel } from './ElogistiaConnectionPanel';
 import { EcomV2ConnectionPanel } from './EcomV2ConnectionPanel';
 import { YalidineConnectionPanel } from './YalidineConnectionPanel';
+import { SdkIntegrationGuide } from './SdkIntegrationGuide';
 
 type ProviderId =
   | 'yalidine'
@@ -78,7 +79,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [connectionError, setConnectionError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [activeSubtab, setActiveSubtab] = useState<'carriers' | 'order_source'>('carriers');
+  const [activeSubtab, setActiveSubtab] = useState<'carriers' | 'order_source' | 'sdk'>('carriers');
   const [showProviderDirectory, setShowProviderDirectory] = useState(false);
   const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
   const [orderSource, setOrderSource] = useState<OrderSource | null>(null);
@@ -138,7 +139,8 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
 
   useEffect(() => {
     let cancelled = false;
-    if (orderSource !== 'shopify' && orderSource !== 'website') {
+    const shouldLoadApiKey = activeSubtab === 'sdk' || orderSource === 'shopify' || orderSource === 'website';
+    if (!shouldLoadApiKey) {
       setApiKey('');
       setApiKeyError('');
       setApiKeyLoading(false);
@@ -160,7 +162,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         if (!cancelled) setApiKeyLoading(false);
       });
     return () => { cancelled = true; };
-  }, [orderSource, merchantId]);
+  }, [activeSubtab, orderSource, merchantId]);
 
   const connectedByProvider = useMemo(() => {
     const map = new Map<string, ProviderSummary>();
@@ -328,6 +330,22 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         >
           مصدر الطلبات
         </button>
+        <button
+          type="button"
+          aria-pressed={activeSubtab === 'sdk'}
+          onClick={() => setActiveSubtab('sdk')}
+          style={{
+            ...panelButtonStyle,
+            border: 0,
+            borderBottom: activeSubtab === 'sdk' ? '3px solid var(--brand-primary, #263b30)' : '3px solid transparent',
+            background: 'transparent',
+            color: activeSubtab === 'sdk' ? 'var(--ink-main)' : 'var(--ink-muted)',
+            padding: '12px 18px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          SDK وواجهة API
+        </button>
       </nav>
 
       {activeSubtab === 'order_source' && (
@@ -418,6 +436,16 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
                   </div>
                 )}
               </section>
+      )}
+
+      {activeSubtab === 'sdk' && (
+        <SdkIntegrationGuide
+          siteUrl={siteUrl}
+          merchantId={merchantId}
+          apiKey={apiKey}
+          loading={apiKeyLoading}
+          error={apiKeyError}
+        />
       )}
 
       {activeSubtab === 'carriers' && (
