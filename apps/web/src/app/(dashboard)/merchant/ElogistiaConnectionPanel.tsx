@@ -50,7 +50,7 @@ export function ElogistiaConnectionPanel() {
       if (!result.success) throw new Error(result.error || 'تعذر ربط حساب Elogistia.');
       setStatus(result.status as Status);
       setApiKey('');
-      setMessage('تم التحقق من API Key وحفظه مشفراً. أصبح حساب Elogistia جاهزاً لإنشاء الشحنات ومزامنة حالاتها.');
+      setMessage('تم التحقق من API Key وحفظه مشفراً. أصبح اتصال Elogistia جاهزاً لقراءة بيانات الشحنات ومزامنة حالاتها.');
     } catch (error: any) {
       setMessage(error?.message || 'حدث خطأ أثناء الربط.');
       setIsError(true);
@@ -99,7 +99,7 @@ export function ElogistiaConnectionPanel() {
     </p>
     {loading ? <p className="dz-int-guided-note">جارٍ تحميل حالة الربط...</p> : <>
       <div className="dz-int-guided-meta">
-        <span>حالة الربط</span><strong style={{ fontSize: 16 }}>{status?.connected ? 'الحساب مربوط — إنشاء شحنات ومزامنة دورية' : 'لم يتم الربط بعد'}</strong>
+        <span>حالة الربط</span><strong style={{ fontSize: 16 }}>{status?.connected ? 'متصل — مزامنة بيانات الشحنات المرتبطة' : 'لم يتم الربط بعد'}</strong>
         {status?.connected && <><span>آخر دورة مزامنة</span><strong>{dateLabel(status.last_sync_at)}</strong><span>آخر مزامنة ناجحة</span><strong>{dateLabel(status.last_success_at)}</strong></>}
       </div>
       {status?.connected && <>
@@ -120,7 +120,7 @@ export function ElogistiaConnectionPanel() {
       <div style={{ marginTop: 16 }}>
         <h5 style={{ margin: '0 0 8px', fontSize: 16 }}>كيف تعمل المزامنة؟</h5>
         <p className="dz-int-guided-note" style={{ fontSize: 14, lineHeight: 1.8 }}>
-          ينشئ تاجر تراك الشحنة داخل حساب Elogistia عند طلبك ذلك من تفاصيل الطلب، ثم يفحص سجل تتبع الشحنات المرتبطة دورياً كل 5 دقائق تقريباً. لا يعتمد الربط على Webhook غير موثق ولا يستورد تلقائياً شحنات أُنشئت خارج تاجر تراك.
+          تنشئ الشحنة من حسابك لدى Elogistia كالمعتاد. يقرأ تاجر تراك بيانات الشحنات المرتبطة بأرقام تتبع مسجلة في الطلبات، ثم يحدّث حالاتها دورياً كل 5 دقائق تقريباً. لا ينشئ تاجر تراك شحنات ولا يغيّر بياناتها لدى الشركة.
         </p>
       </div>
     </>}
