@@ -4,11 +4,27 @@ import React, { useState, useTransition } from 'react';
 import { respondToConfirmation } from './actions';
 import styles from './confirm.module.css';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
+import { DEFAULT_BRAND_SETTINGS, type BrandSettings } from '@saas/ui';
+import trackingStyles from '../../t/[uuid]/t.module.css';
 
 type ConfirmStatus = 'pending' | 'confirmed' | 'cancelled' | 'expired' | 'invalid';
 
-interface Props {
-  status: ConfirmStatus;
+type ConfirmationBrandSettings = Partial<BrandSettings> & {
+  showWhatsAppButton?: boolean;
+  animateBackgroundBlobs?: boolean;
+  backgroundBlur?: boolean;
+};
+
+const DEFAULT_CONFIRMATION_BRAND_SETTINGS: ConfirmationBrandSettings = {
+  ...DEFAULT_BRAND_SETTINGS,
+  brandColor: '#27342D',
+  brandSubtitle: '',
+  showWhatsAppButton: true,
+  animateBackgroundBlobs: false,
+  backgroundBlur: true,
+};
+
+interface Props {  status: ConfirmStatus;
   token: string;
   orderNumber?: string;
   customerName?: string;
@@ -17,6 +33,8 @@ interface Props {
   storeName?: string;
   logoUrl?: string;
   brandColor?: string;
+  brandSubtitle?: string;
+  brandSettings?: ConfirmationBrandSettings;
 }
 
 export function ConfirmOrderView({
@@ -28,12 +46,105 @@ export function ConfirmOrderView({
   productImage,
   storeName,
   logoUrl,
-  brandColor = '#273b30',
+  brandColor,
+  brandSubtitle,
+  brandSettings,
 }: Props) {
+  const settings: ConfirmationBrandSettings = {
+    ...DEFAULT_CONFIRMATION_BRAND_SETTINGS,
+    ...(brandSettings || {}),
+    ...(brandColor ? { brandColor } : {}),
+    ...(brandSubtitle ? { brandSubtitle } : {}),
+  };
+  const accent = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(settings.brandColor)
+    ? settings.brandColor
+    : '#27342D';
   const [status, setStatus] = useState<ConfirmStatus>(initialStatus);
   const [isPending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
-  const accent = /^#[0-9a-f]{6}$/i.test(brandColor) ? brandColor : '#273b30';
+
+  const darkMode = settings.themeMode === 'dark';
+  const backgroundClassMap: Record<string, string> = {
+    aurora: trackingStyles.bgAurora,
+    midnight: darkMode ? trackingStyles.bgMidnight : trackingStyles.bgMidnightLight,
+    minimal: trackingStyles.bgMinimal,
+    sunset: trackingStyles.bgSunset,
+    emerald: trackingStyles.bgEmerald,
+    mesh: trackingStyles.bgMesh,
+    linen: trackingStyles.bgLinen,
+    porcelain: trackingStyles.bgPorcelain,
+    slate: trackingStyles.bgSlate,
+    ocean: trackingStyles.bgOcean,
+    terracotta: trackingStyles.bgTerracotta,
+    plum: trackingStyles.bgPlum,
+    blueprint: trackingStyles.bgBlueprint,
+    sandstone: trackingStyles.bgSandstone,
+    zellige: trackingStyles.bgZellige,
+    blockprint: trackingStyles.bgBlockprint,
+    weave: trackingStyles.bgWeave,
+    mashrabiya: trackingStyles.bgMashrabiya,
+    amazigh: trackingStyles.bgAmazigh,
+    embroidery: trackingStyles.bgEmbroidery,
+    blobs: trackingStyles.bgBlobs,
+  };
+  const backgroundClass = backgroundClassMap[String(settings.bgStyle)] || trackingStyles.bgAurora;
+
+  const surfaceClassMap: Record<string, string> = {
+    glass: trackingStyles.cardGlass,
+    solid: trackingStyles.cardSolid,
+    bordered: trackingStyles.cardBordered,
+    borderless: trackingStyles.cardBorderless,
+    elevated: trackingStyles.cardElevated,
+    tinted: trackingStyles.cardTinted,
+    paper: trackingStyles.cardPaper,
+    inset: trackingStyles.cardInset,
+  };
+  const surfaceClass = surfaceClassMap[String(settings.cardSurface)] || trackingStyles.cardGlass;
+
+  const radiusClass = settings.cardRadius === 'sleek'
+    ? trackingStyles.radiusSleek
+    : settings.cardRadius === 'pebble'
+      ? trackingStyles.radiusPebble
+      : trackingStyles.radiusModern;
+
+  const fontClass = settings.fontFamily === 'cairo' ? trackingStyles.fontCairo
+    : settings.fontFamily === 'tajawal' ? trackingStyles.fontTajawal
+    : settings.fontFamily === 'ibm-plex' ? trackingStyles.fontIbmPlex
+    : settings.fontFamily === 'noto-kufi' ? trackingStyles.fontNotoKufi
+    : trackingStyles.fontReadex;
+
+  const animationClass = settings.animationLevel === 'none'
+    ? trackingStyles.animNone
+    : settings.animationLevel === 'subtle'
+      ? trackingStyles.animSubtle
+      : '';
+  const blobAnimationClass = String(settings.bgStyle) === 'blobs' && settings.animateBackgroundBlobs
+    ? trackingStyles.animateBlobs
+    : '';
+  const backgroundBlurClass = settings.backgroundBlur !== false
+    ? trackingStyles.backgroundBlurEnabled
+    : '';
+
+  const expandedAccent = accent.length === 4
+    ? '#' + accent[1] + accent[1] + accent[2] + accent[2] + accent[3] + accent[3]
+    : accent;
+  const dynamicStyle = {
+    '--confirm-brand': accent,
+    '--brand-primary': accent,
+    '--brand-primary-light': expandedAccent + '14',
+    '--brand-primary-border': expandedAccent + '35',
+    '--brand-glow': expandedAccent + '20',
+    '--brand-on-primary': getReadableBrandForeground(accent),
+  } as React.CSSProperties;
+
+  const showProductSection = settings.showProductSection !== false;
+  const showOrderNumber = settings.showOrderNumberBadge !== false;
+  const supportNumber = (settings.supportPhone || '').replace(/[^0-9]/g, '').replace(/^0/, '213');
+  const waSupportUrl = settings.showWhatsAppButton !== false && supportNumber
+    ? 'https://wa.me/' + supportNumber + '?text=' + encodeURIComponent(
+        'السلام عليكم، أود الاستفسار عن طلبي رقم (' + (orderNumber || '') + ') لدى متجر ' + (storeName || 'المتجر') + '.'
+      )
+    : null;
 
   const handleResponse = (action: 'confirm' | 'cancel') => {
     setActionError(null);
@@ -48,11 +159,22 @@ export function ConfirmOrderView({
   };
 
   return (
-    <main className={styles.page} dir="rtl" style={{ ['--confirm-brand' as string]: accent } as React.CSSProperties}>
-      <div className={styles.ambient} aria-hidden="true">
-        <span className={styles.ambientOrbOne} />
-        <span className={styles.ambientOrbTwo} />
-      </div>
+    <main
+      className={[
+        styles.page,
+        backgroundClass,
+        darkMode ? trackingStyles.themeDark : '',
+        surfaceClass,
+        radiusClass,
+        fontClass,
+        animationClass,
+        blobAnimationClass,
+        backgroundBlurClass,
+      ].filter(Boolean).join(' ')}
+      dir="rtl"
+      style={dynamicStyle}
+    >
+      <div className={trackingStyles.backgroundBlurLayer} aria-hidden="true" />
 
       <section className={styles.shell} aria-labelledby="confirm-title">
         {(storeName || logoUrl) && (
@@ -71,9 +193,16 @@ export function ConfirmOrderView({
             )}
             <div className={styles.merchantIdentity}>
               <div className={styles.storeName}>{storeName || 'متجرك'}</div>
-              <div className={styles.storeCaption}>يسعدنا خدمتك</div>
+              <div className={styles.storeCaption}>{settings.brandSubtitle?.trim() || 'يسعدنا خدمتك'}</div>
             </div>
           </header>
+        )}
+
+        {settings.announcementText?.trim() && (
+          <div className={styles.announcementBanner}>
+            <span className={styles.announcementMark}>تنبيه</span>
+            <span>{settings.announcementText}</span>
+          </div>
         )}
 
         <div className={styles.content}>
@@ -94,6 +223,8 @@ export function ConfirmOrderView({
                 orderNumber={orderNumber}
                 productName={productName}
                 productImage={productImage}
+                showProductSection={showProductSection}
+                showOrderNumber={showOrderNumber}
               />
 
               {actionError && <p className={styles.errorMessage} role="alert">{actionError}</p>}
@@ -120,7 +251,7 @@ export function ConfirmOrderView({
               </div>
             </>
           ) : (
-            <ResponseState status={status} orderNumber={orderNumber} />
+            <ResponseState status={status} orderNumber={orderNumber} showOrderNumber={showOrderNumber} />
           )}
         </div>
 
@@ -128,6 +259,12 @@ export function ConfirmOrderView({
           <span>تأكيد طلبك بكل سهولة عبر</span>
           <strong>TajerTrack</strong>
         </footer>
+        {waSupportUrl && (
+          <a className={styles.supportLink} href={waSupportUrl} target="_blank" rel="noreferrer">
+            <WhatsAppIcon />
+            <span>تحتاج مساعدة؟ تواصل مع المتجر</span>
+          </a>
+        )}
       </section>
     </main>
   );
@@ -137,17 +274,23 @@ function OrderSummary({
   orderNumber,
   productName,
   productImage,
+  showProductSection,
+  showOrderNumber,
 }: {
   orderNumber?: string;
   productName?: string;
   productImage?: string;
+  showProductSection: boolean;
+  showOrderNumber: boolean;
 }) {
-  if (!orderNumber && !productName && !productImage) return null;
+  const hasProduct = showProductSection && Boolean(productName || productImage);
+  const hasOrderNumber = showOrderNumber && Boolean(orderNumber);
+  if (!hasOrderNumber && !hasProduct) return null;
 
   return (
     <section className={styles.orderSummary} aria-label="تفاصيل الطلب">
       <div className={styles.summaryHeading}>تفاصيل طلبك</div>
-      {(productImage || productName) && (
+      {hasProduct && (
         <div className={styles.productRow}>
           {productImage && (
             <img className={styles.productImage} src={toCachedImageUrl(productImage)} alt={productName || 'صورة المنتج'} />
@@ -155,7 +298,7 @@ function OrderSummary({
           {productName && <strong className={styles.productName}>{productName}</strong>}
         </div>
       )}
-      {orderNumber && (
+      {hasOrderNumber && orderNumber && (
         <div className={styles.orderNumberRow}>
           <span>رقم الطلب</span>
           <strong dir="ltr">#{orderNumber}</strong>
@@ -165,7 +308,7 @@ function OrderSummary({
   );
 }
 
-function ResponseState({ status, orderNumber }: { status: Exclude<ConfirmStatus, 'pending'>; orderNumber?: string }) {
+function ResponseState({ status, orderNumber, showOrderNumber }: { status: Exclude<ConfirmStatus, 'pending'>; orderNumber?: string; showOrderNumber: boolean }) {
   const content = {
     confirmed: {
       title: 'يعطيك الصحة، تم تأكيد طلبك!',
@@ -198,7 +341,7 @@ function ResponseState({ status, orderNumber }: { status: Exclude<ConfirmStatus,
       <div className={styles.responseIcon}>{content.icon}</div>
       <span className={styles.eyebrow}>تحديث طلبك</span>
       <h1 id="confirm-title" className={styles.title}>{content.title}</h1>
-      {orderNumber && <div className={styles.responseOrder}>رقم الطلب <strong dir="ltr">#{orderNumber}</strong></div>}
+      {showOrderNumber && orderNumber && <div className={styles.responseOrder}>رقم الطلب <strong dir="ltr">#{orderNumber}</strong></div>}
       <p className={styles.responseMessage}>{content.message}</p>
     </div>
   );
@@ -250,6 +393,26 @@ function LinkOffIcon() {
   );
 }
 
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20.5 11.5a8.4 8.4 0 0 1-1 4 8.5 8.5 0 0 1-7.5 4.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.2a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5h.5a8.5 8.5 0 0 1 7.5 7.5v.5Z" />
+      <path d="M8.8 8.2c.2-.4.4-.4.7-.4h.4c.2 0 .3.1.4.4l.7 1.7c.1.2 0 .4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.7c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.3.6-.1.5-.4 1-1 1.2-.5.2-1.2.2-1.8 0-1-.3-2.3-1.2-3.2-2.2-.8-.9-1.5-2.1-1.5-2.9 0-.6.1-1.2.3-1.9Z" />
+    </svg>
+  );
+}
+
+function getReadableBrandForeground(hex: string): string {
+  const normalized = (hex || '').replace('#', '').trim();
+  if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(normalized)) return '#FFFFFF';
+  const full = normalized.length === 3 ? normalized.split('').map((char) => char + char).join('') : normalized;
+  const channels = [0, 2, 4].map((index) => parseInt(full.slice(index, index + 2), 16) / 255)
+    .map((channel) => channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4));
+  const luminance = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  const contrastWithWhite = 1.05 / (luminance + 0.05);
+  const contrastWithInk = (luminance + 0.05) / (0.006 + 0.05);
+  return contrastWithWhite >= contrastWithInk ? '#FFFFFF' : '#17211B';
+}
 function Spinner() {
   return <span className={styles.spinner} aria-hidden="true" />;
 }
