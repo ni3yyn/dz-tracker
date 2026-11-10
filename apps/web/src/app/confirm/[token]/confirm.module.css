@@ -7,17 +7,18 @@
   --confirm-brand: #273b30;
   position: relative;
   isolation: isolate;
+  min-height: 100vh;
   min-height: 100dvh;
   display: grid;
   place-items: center;
   overflow: hidden;
-  padding: clamp(16px, 4vw, 36px);
-  background: #f1f2ed;
+  padding: clamp(24px, 5vw, 54px);
+  background: #fffefa;
   color: #26332b;
   font-family: 'Readex Pro', 'Noto Sans Arabic', system-ui, sans-serif;
 }
 
- .ambient {
+.ambient {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -30,74 +31,61 @@
   position: absolute;
   display: block;
   border-radius: 50%;
-  filter: blur(60px);
-  opacity: .38;
+  filter: blur(72px);
+  opacity: .22;
 }
 
 .ambientOrbOne {
-  width: 340px;
-  height: 340px;
-  top: -190px;
-  inset-inline-start: -130px;
+  width: 330px;
+  height: 330px;
+  top: -210px;
+  inset-inline-start: -150px;
   background: #cbdacb;
 }
 
 .ambientOrbTwo {
-  width: 300px;
-  height: 300px;
+  width: 280px;
+  height: 280px;
   bottom: -190px;
-  inset-inline-end: -100px;
-  background: #dfe6d9;
+  inset-inline-end: -120px;
+  background: #e4e9dc;
 }
 
- .shell {
+.shell {
   position: relative;
   z-index: 1;
-  width: min(100%, 470px);
-  overflow: hidden;
-  border: 1px solid rgba(39, 59, 48, .09);
-  border-radius: 24px;
-  background: rgba(255, 255, 253, .96);
-  box-shadow: 0 24px 70px rgba(33, 48, 38, .09), 0 2px 8px rgba(33, 48, 38, .035);
+  width: min(100%, 500px);
+  margin: auto;
 }
 
 .merchantHeader {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 13px;
-  padding: 22px 24px;
-  border-bottom: 1px solid #edf0e9;
-  background: rgba(255, 255, 253, .92);
-}
-
-.logoFrame {
-  width: 54px;
-  height: 54px;
-  display: grid;
-  flex: 0 0 54px;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid #e8ece5;
-  border-radius: 16px;
-  background: #f4f6f1;
+  gap: 15px;
+  margin: 0 auto 42px;
+  text-align: right;
 }
 
 .logo {
-  width: 100%;
-  height: 100%;
-  padding: 5px;
+  display: block;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
   object-fit: contain;
+  object-position: center;
 }
 
-.logoFrame svg {
-  width: 27px;
-  height: 27px;
-  fill: none;
-  stroke: #526b58;
-  stroke-width: 1.55;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.logoFallback {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--confirm-brand) 9%, #fffefa);
+  color: var(--confirm-brand);
+  font-size: 27px;
+  font-weight: 850;
 }
 
 .merchantIdentity {
@@ -107,19 +95,20 @@
 .storeName {
   overflow-wrap: anywhere;
   color: #26382c;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
   line-height: 1.5;
 }
 
 .storeCaption {
-  margin-top: 2px;
+  margin-top: 3px;
   color: #849087;
   font-size: 11px;
+  line-height: 1.6;
 }
 
 .content {
-  padding: 24px clamp(18px, 5vw, 30px) 22px;
+  padding: 0 clamp(2px, 2vw, 12px);
 }
 
 .intro {
@@ -130,19 +119,18 @@
 }
 
 .statusIcon {
-  width: 58px;
-  height: 58px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
-  margin-bottom: 13px;
-  border-radius: 50%;
-  background: #eaf0e9;
+  margin-bottom: 15px;
+  background: color-mix(in srgb, var(--confirm-brand) 9%, #fffefa);
   color: var(--confirm-brand);
 }
 
 .statusIcon svg {
-  width: 29px;
-  height: 29px;
+  width: 25px;
+  height: 25px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.65;
@@ -152,57 +140,54 @@
 
 .eyebrow {
   color: #829087;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .08em;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.5;
 }
 
 .title {
-  margin: 5px 0 0;
+  margin: 7px 0 0;
   color: #25342b;
-  font-size: clamp(21px, 5vw, 25px);
+  font-size: clamp(23px, 5vw, 28px);
   font-weight: 850;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .description {
-  margin: 7px 0 0;
-  color: #758077;
-  font-size: 13px;
-  line-height: 1.8;
+  max-width: 430px;
+  margin: 10px 0 0;
+  color: #6d796f;
+  font-size: 14px;
+  line-height: 2;
 }
 
 .orderSummary {
-  margin-top: 21px;
-  padding: 14px 15px;
-  border: 1px solid #e9ede6;
-  border-radius: 15px;
-  background: #f7f8f4;
+  display: grid;
+  gap: 13px;
+  margin-top: 30px;
+  padding: 0;
 }
 
 .summaryHeading {
-  margin-bottom: 10px;
-  color: #34463a;
-  font-size: 13px;
-  font-weight: 800;
+  margin: 0;
+  color: #7e8a80;
+  font-size: 11px;
+  font-weight: 750;
 }
 
 .productRow {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 13px;
   min-width: 0;
-  margin-bottom: 11px;
 }
 
 .productImage {
-  width: 50px;
-  height: 50px;
-  flex: 0 0 50px;
-  border: 1px solid #e4e9e1;
-  border-radius: 10px;
-  background: #fff;
-  object-fit: cover;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  background: #f2f4ef;
+  object-fit: contain;
 }
 
 .productName,
@@ -212,10 +197,7 @@
   color: #303d34;
   font-size: 13px;
   font-weight: 700;
-}
-
-.productText {
-  margin-bottom: 10px;
+  line-height: 1.8;
 }
 
 .orderNumberRow {
@@ -223,8 +205,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-top: 10px;
-  border-top: 1px solid #e6eae3;
+  padding-top: 2px;
   color: #879188;
   font-size: 11px;
 }
@@ -235,56 +216,54 @@
   font-weight: 800;
 }
 
-.question {
-  margin: 18px 0 12px;
-  color: #59675e;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-}
-
 .actions {
   display: grid;
-  gap: 9px;
+  gap: 7px;
+  margin-top: 27px;
 }
 
 .confirmButton,
 .cancelButton {
-  min-height: 48px;
+  width: 100%;
+  min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
-  border-radius: 12px;
+  border: 0;
+  border-radius: 0;
   font: inherit;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform .16s ease, background .16s ease, border-color .16s ease, opacity .16s ease;
+  transition: transform .16s ease, background .16s ease, color .16s ease, opacity .16s ease;
 }
 
 .confirmButton {
-  border: 1px solid var(--confirm-brand);
   background: var(--confirm-brand);
-  color: #fff;
-  box-shadow: 0 5px 14px color-mix(in srgb, var(--confirm-brand) 18%, transparent);
+  color: #fffefa;
+  box-shadow: none;
 }
 
 .cancelButton {
-  border: 1px solid #eadede;
-  background: #fff;
-  color: #a45f5f;
+  min-height: 43px;
+  background: transparent;
+  color: #926565;
 }
 
-.confirmButton:hover:not(:disabled),
+.confirmButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--confirm-brand) 88%, #000);
+}
+
 .cancelButton:hover:not(:disabled) {
-  transform: translateY(-1px);
+  background: #f8f0ed;
+  color: #874d4d;
 }
 
 .confirmButton:disabled,
 .cancelButton:disabled {
   cursor: wait;
-  opacity: .6;
+  opacity: .58;
 }
 
 .confirmButton svg,
@@ -299,14 +278,14 @@
 }
 
 .errorMessage {
-  margin: 0 0 11px;
-  padding: 10px 12px;
-  border: 1px solid #f1caca;
-  border-radius: 10px;
-  background: #fff5f5;
-  color: #a33f3f;
+  margin: 18px 0 0;
+  padding: 11px 13px;
+  border: 0;
+  border-radius: 0;
+  background: #fbefec;
+  color: #9d4d43;
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.8;
   text-align: center;
 }
 
@@ -314,17 +293,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0 7px;
+  padding: 8px 0 4px;
   text-align: center;
 }
 
 .responseIcon {
-  width: 66px;
-  height: 66px;
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
-  margin-bottom: 15px;
-  border-radius: 50%;
+  margin-bottom: 17px;
   background: #edf1eb;
   color: #627565;
 }
@@ -345,36 +323,36 @@
 }
 
 .responseIcon svg {
-  width: 32px;
-  height: 32px;
+  width: 27px;
+  height: 27px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.6;
+  stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .responseOrder {
-  margin-top: 12px;
+  margin-top: 13px;
   color: #89938b;
   font-size: 11px;
 }
 
 .responseOrder strong {
-  color: #3b4b40;
   margin-inline-start: 4px;
+  color: #3b4b40;
 }
 
 .responseMessage {
-  max-width: 350px;
-  margin: 15px 0 0;
-  padding: 13px 15px;
-  border: 1px solid #e9ede6;
-  border-radius: 12px;
-  background: #f7f8f4;
+  max-width: 420px;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: #69766d;
-  font-size: 13px;
-  line-height: 1.9;
+  font-size: 14px;
+  line-height: 2;
 }
 
 .footer {
@@ -382,10 +360,12 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 13px 20px 17px;
-  border-top: 1px solid #eff1ec;
+  margin-top: 48px;
+  padding: 0;
+  border: 0;
   color: #a0a99f;
   font-size: 10px;
+  line-height: 1.6;
 }
 
 .footer strong {
@@ -397,8 +377,8 @@
   width: 17px;
   height: 17px;
   display: inline-block;
-  border: 2px solid rgba(255, 255, 255, .4);
-  border-top-color: #fff;
+  border: 2px solid rgba(255, 254, 250, .38);
+  border-top-color: #fffefa;
   border-radius: 50%;
   animation: confirmSpin .7s linear infinite;
 }
@@ -407,23 +387,53 @@
   to { transform: rotate(360deg); }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 520px) {
   .page {
     align-items: start;
-    padding: 13px;
+    padding: 28px 20px 22px;
   }
 
   .shell {
     margin-block: auto;
-    border-radius: 20px;
   }
 
   .merchantHeader {
-    padding: 17px 18px;
+    justify-content: flex-start;
+    margin-bottom: 34px;
+    gap: 12px;
+  }
+
+  .logo {
+    width: 56px;
+    height: 56px;
+    flex-basis: 56px;
+  }
+
+  .logoFallback {
+    width: 50px;
+    height: 50px;
+    flex-basis: 50px;
   }
 
   .content {
-    padding: 20px 17px 18px;
+    padding-inline: 0;
+  }
+
+  .description,
+  .responseMessage {
+    font-size: 13px;
+  }
+
+  .orderSummary {
+    margin-top: 25px;
+  }
+
+  .actions {
+    margin-top: 23px;
+  }
+
+  .footer {
+    margin-top: 38px;
   }
 }
 
@@ -432,6 +442,7 @@
   .cancelButton {
     transition: none;
   }
+
   .spinner {
     animation-duration: 1.5s;
   }
