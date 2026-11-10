@@ -164,7 +164,7 @@ async function bootstrap(): Promise<void> {
     );
   }, 30000);
 
-  const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop, elogistiaSyncLoop, ecomV2SyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
+  const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, zimouSyncLoop, elogistiaSyncLoop, ecomV2SyncLoop, procolisSyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
   if (loops.length === 0) {
     console.log('[Bootstrap]: No background consumers are enabled. Remaining in standby mode.');
     return; // Keep the heartbeat interval alive; SIGTERM/SIGINT handlers still shut down cleanly.
