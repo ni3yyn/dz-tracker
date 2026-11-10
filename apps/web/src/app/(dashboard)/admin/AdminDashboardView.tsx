@@ -92,6 +92,7 @@ export function AdminDashboardView({
     scope: 'admin',
     activeTab,
     setActiveTab,
+    hasActiveOverlay: Boolean(mobileMenuOpen || editingMerchant),
     onBack: () => {
       if (editingMerchant) {
         setEditingMerchant(null);
