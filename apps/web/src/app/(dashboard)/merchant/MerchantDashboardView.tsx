@@ -810,17 +810,27 @@ export function MerchantDashboardView({
     activeTab,
     setActiveTab,
     onBack: () => {
+      const openDropdown = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="true"]')
+        : null;
+      if (openDropdown) {
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
+        return true;
+      }
       if (isCustomMappingModalOpen) {
         setIsCustomMappingModalOpen(false);
         return true;
       }
-      if (isAddOrderModalOpen) {
-        if (isCreatingOrder) return true;
-        setIsAddOrderModalOpen(false);
+      if (isAddOrderModalOpen || isAddOrderPanelMounted) {
+        if (isAddOrderModalOpen && !isCreatingOrder) setIsAddOrderModalOpen(false);
         return true;
       }
-      if (selectedOrderId) {
-        setSelectedOrderId(null);
+      if (selectedOrderId || renderedSelectedOrderId) {
+        if (selectedOrderId) setSelectedOrderId(null);
         return true;
       }
       if (mobileMenuOpen) {
