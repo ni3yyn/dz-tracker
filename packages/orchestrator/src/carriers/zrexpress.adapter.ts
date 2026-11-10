@@ -328,6 +328,7 @@ export class ProcolisAdapter {
     return {
       ...event,
       carrierName: 'Procolis',
+      sourceProvider: 'procolis',
       description: event.description?.replace(/ZR Express/g, 'Procolis'),
     };
   }
