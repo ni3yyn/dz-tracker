@@ -6650,8 +6650,8 @@ export function MerchantDashboardView({
                     <button type="button" className="dz-setup-step" onClick={() => { setActiveTab('integrations'); setMobileMenuOpen(false); }}>
                       <span className="dz-setup-step-no">01</span><span><strong>اربط مصدر الطلبات</strong><small>Shopify أو موقع مبرمج خصيصاً</small></span><span className="dz-setup-step-arrow">↙</span>
                     </button>
-                    <button type="button" className="dz-setup-step" onClick={() => { setTrackingSource('carrier'); setActiveTab('integrations'); }}>
-                      <span className="dz-setup-step-no">02</span><span><strong>اختَر مصدر حالة الشحنة</strong><small>شركة توصيل مدعومة أو تحديث يدوي</small></span><span className="dz-setup-step-arrow">↙</span>
+                    <button type="button" className="dz-setup-step" onClick={() => { setActiveTab('integrations'); setMobileMenuOpen(false); }}>
+                      <span className="dz-setup-step-no">02</span><span><strong>اربط شركات التوصيل التي تستخدمها</strong><small>اربط أكثر من شركة دون استبدال اتصال موجود</small></span><span className="dz-setup-step-arrow">↙</span>
                     </button>
                     <button type="button" className="dz-setup-step" onClick={() => { setActiveTab('branding'); setMobileMenuOpen(false); }}>
                       <span className="dz-setup-step-no">03</span><span><strong>جهّز صفحة التتبع</strong><small>عدّل الهوية قبل مشاركة الرابط مع الزبائن</small></span><span className="dz-setup-step-arrow">↙</span>
@@ -8735,7 +8735,7 @@ export function MerchantDashboardView({
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                         <div>
                           <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
-                            شركة الشحن
+                            شركة التوصيل لهذه الشحنة
                           </label>
                           <BrandedSelect
                             name="carrier_name"
@@ -8749,6 +8749,8 @@ export function MerchantDashboardView({
                               { value: 'EcoTrack', label: 'EcoTrack' },
                               { value: 'Zimou Express', label: 'Zimou Express' },
                               { value: 'Elogistia', label: 'Elogistia' },
+                              { value: 'Procolis', label: 'Procolis' },
+                              { value: 'E-com Delivery v2', label: 'E-com Delivery v2' },
                               { value: 'توصيل خاص', label: 'توصيل خاص (متجرنا)' },
                             ]}
                           />
