@@ -131,6 +131,20 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
   const apiEndpoint = baseUrl + '/api/webhooks';
   const shopifyEndpoint = baseUrl + '/api/webhooks/shopify';
 
+  const agentPrompt = useMemo(() => [
+    'Read ' + baseUrl + '/skill.md completely before changing code.',
+    'Inspect the repository package manager, order-save flow, installed dz-tracking-sdk version, package.json exports, and .d.ts declarations before choosing an API.',
+    'Run npm view dz-tracking-sdk version, install using the existing package manager, then verify the actual installed exports.',
+    'The repository source declares SDK 2.0.0, while the public npm release may be behind. Do not invent a v2 import or method if installed declarations do not expose it; use the documented POST /api/webhooks REST contract instead.',
+    'Register tracking only after the store has successfully saved its order. Preserve payment, COD, inventory, messaging, and the original checkout.',
+    'Keep the merchant key in a private server-only variable named DZ_TRACKER_API_KEY. Never put it in NEXT_PUBLIC_*, browser source, HTML, prompts, chat, logs, or source control.',
+    'Use the existing stable external order ID. Never generate a new ID for each retry or status update.',
+    'Only return or redirect to a tracking URL when the API confirms success and a real tracking UUID and URL.',
+    'Set telegramConsent true only when the customer explicitly consented in the actual checkout.',
+    'Inspect the chosen courier adapter and verified provider payload instead of guessing webhook fields.',
+    'TajerTrack base URL: ' + baseUrl,
+  ].join('\n'), [baseUrl]);
+
   const examples = useMemo<Record<ExampleTab, string>>(() => ({
     node: [
       "import { DZTrackerClient } from 'dz-tracking-sdk/core';",
@@ -235,20 +249,6 @@ export function SdkIntegrationGuide({ siteUrl, merchantId, apiKey, loading, erro
     ].join('\n'),
     ai: agentPrompt,
   }), [apiEndpoint, baseUrl, agentPrompt]);
-
-  const agentPrompt = useMemo(() => [
-    'Read ' + baseUrl + '/skill.md completely before changing code.',
-    'Inspect the repository package manager, order-save flow, installed dz-tracking-sdk version, package.json exports, and .d.ts declarations before choosing an API.',
-    'Run npm view dz-tracking-sdk version, install using the existing package manager, then verify the actual installed exports.',
-    'The repository source declares SDK 2.0.0, while the public npm release may be behind. Do not invent a v2 import or method if installed declarations do not expose it; use the documented POST /api/webhooks REST contract instead.',
-    'Register tracking only after the store has successfully saved its order. Preserve payment, COD, inventory, messaging, and the original checkout.',
-    'Keep the merchant key in a private server-only variable named DZ_TRACKER_API_KEY. Never put it in NEXT_PUBLIC_*, browser source, HTML, prompts, chat, logs, or source control.',
-    'Use the existing stable external order ID. Never generate a new ID for each retry or status update.',
-    'Only return or redirect to a tracking URL when the API confirms success and a real tracking UUID and URL.',
-    'Set telegramConsent true only when the customer explicitly consented in the actual checkout.',
-    'Inspect the chosen courier adapter and verified provider payload instead of guessing webhook fields.',
-    'TajerTrack base URL: ' + baseUrl,
-  ].join('\n'), [baseUrl]);
 
   const copy = async (value: string, key: string) => {
     try {
