@@ -372,7 +372,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
             {activeProvider === 'yalidine' && <YalidineConnectionPanel />}
             {activeProvider === 'ecotrack' && <EcoTrackConnectionPanel />}
             {activeProvider === 'zrexpress' && <ZRExpressConnectionPanel />}
-            {activeProvider === 'procolis' && <ProcolisConnectionPanel siteUrl={siteUrl} />}
+            {activeProvider === 'procolis' && <ProcolisConnectionPanel />}
             {activeProvider === 'maystro' && <MaystroConnectionPanel />}
             {activeProvider === 'zimou' && <ZimouConnectionPanel />}
             {activeProvider === 'elogistia' && <ElogistiaConnectionPanel />}
