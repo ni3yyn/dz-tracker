@@ -168,6 +168,17 @@ export function createWebhookHandler(options: WebhookHandlerOptions) {
         );
       }
 
+      if (options.providerConnectionTokenAuth) {
+        const { error: receivedUpdateError } = await (supabase as any)
+          .from('merchant_carrier_integrations')
+          .update({ last_webhook_received_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .eq('merchant_id', merchant.id)
+          .eq('provider', options.source);
+        if (receivedUpdateError) {
+          console.warn(`[Webhook ${options.source}]: Could not record webhook receipt:`, receivedUpdateError.message);
+        }
+      }
+
       // 3. قراءة البيانات وحمايتها من الـ Malformed JSON
       let payload: any;
       try {
@@ -249,6 +260,18 @@ export function createWebhookHandler(options: WebhookHandlerOptions) {
 
       if (!result.success) {
         IdempotencyEngine.release(fingerprint);
+        if (options.providerConnectionTokenAuth) {
+          const { error: providerErrorUpdate } = await (supabase as any)
+            .from('merchant_carrier_integrations')
+            .update({
+              last_error: String(result.message || result.error || 'Provider event processing failed').slice(0, 1000),
+              last_error_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('merchant_id', merchant.id)
+            .eq('provider', options.source);
+          if (providerErrorUpdate) console.warn(`[Webhook ${options.source}]: Could not record processing error:`, providerErrorUpdate.message);
+        }
         const isPaymentRequired = result.error === 'subscription_limit_reached' || result.error === 'subscription_expired';
         const isSuspended = result.error === 'account_suspended';
         const statusCode = isPaymentRequired ? 402 : isSuspended ? 403 : 500;
@@ -274,6 +297,22 @@ export function createWebhookHandler(options: WebhookHandlerOptions) {
         } catch (confirmErr: any) {
           // Non-fatal: the carrier status and tracking event must remain unaffected.
           console.warn('[ConfirmEnqueue]: Failed to enqueue confirmation job:', confirmErr?.message);
+        }
+      }
+
+      if (options.providerConnectionTokenAuth) {
+        const { error: processedUpdateError } = await (supabase as any)
+          .from('merchant_carrier_integrations')
+          .update({
+            last_webhook_processed_at: new Date().toISOString(),
+            last_error: null,
+            last_error_at: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('merchant_id', merchant.id)
+          .eq('provider', options.source);
+        if (processedUpdateError) {
+          console.warn(`[Webhook ${options.source}]: Could not record successful processing:`, processedUpdateError.message);
         }
       }
 
