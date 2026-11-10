@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from 'react';
 import { respondToConfirmation } from './actions';
 import styles from './confirm.module.css';
+import { toCachedImageUrl } from '../../../lib/imageProxy';
 
 type ConfirmStatus = 'pending' | 'confirmed' | 'cancelled' | 'expired' | 'invalid';
 
@@ -54,29 +55,38 @@ export function ConfirmOrderView({
       </div>
 
       <section className={styles.shell} aria-labelledby="confirm-title">
-        <header className={styles.merchantHeader}>
-          <div className={styles.logoFrame}>
+        {(storeName || logoUrl) && (
+          <header className={styles.merchantHeader}>
             {logoUrl ? (
-              <img className={styles.logo} src={logoUrl} alt={storeName ? `شعار ${storeName}` : 'شعار المتجر'} />
+              <img
+                className={styles.logo}
+                src={toCachedImageUrl(logoUrl)}
+                alt={storeName ? `شعار ${storeName}` : 'شعار المتجر'}
+                onError={(event) => { event.currentTarget.style.display = 'none'; }}
+              />
             ) : (
-              <StoreMark />
+              <span className={styles.logoFallback} aria-hidden="true">
+                {storeName?.trim().charAt(0) || 'م'}
+              </span>
             )}
-          </div>
-          <div className={styles.merchantIdentity}>
-            <div className={styles.storeName}>{storeName || 'متجرك'}</div>
-            <div className={styles.storeCaption}>تجربة تأكيد الطلب</div>
-          </div>
-        </header>
+            <div className={styles.merchantIdentity}>
+              <div className={styles.storeName}>{storeName || 'متجرك'}</div>
+              <div className={styles.storeCaption}>يسعدنا خدمتك</div>
+            </div>
+          </header>
+        )}
 
         <div className={styles.content}>
           {status === 'pending' ? (
             <>
               <div className={styles.intro}>
                 <div className={styles.statusIcon}><PackageCheckIcon /></div>
-                <span className={styles.eyebrow}>مراجعة الطلب</span>
-                <h1 id="confirm-title" className={styles.title}>تأكيد طلبك</h1>
+                <span className={styles.eyebrow}>خطوة أخيرة</span>
+                <h1 id="confirm-title" className={styles.title}>نأكدوا طلبك؟</h1>
                 <p className={styles.description}>
-                  {customerName ? `مرحباً ${customerName}، راجع تفاصيل طلبك قبل التأكيد.` : 'يرجى مراجعة تفاصيل طلبك قبل التأكيد.'}
+                  {customerName
+                    ? `أهلاً ${customerName}، شكراً لطلبك من ${storeName || 'متجرنا'}. راجع التفاصيل بالأسفل، وإذا كل شيء صحيح أكّد لنا.`
+                    : `شكراً لطلبك من ${storeName || 'متجرنا'}. راجع التفاصيل بالأسفل، وإذا كل شيء صحيح أكّد لنا.`}
                 </p>
               </div>
 
@@ -86,7 +96,6 @@ export function ConfirmOrderView({
                 productImage={productImage}
               />
 
-              <p className={styles.question}>هل ترغب في تأكيد هذا الطلب والمتابعة؟</p>
               {actionError && <p className={styles.errorMessage} role="alert">{actionError}</p>}
 
               <div className={styles.actions}>
@@ -97,7 +106,7 @@ export function ConfirmOrderView({
                   disabled={isPending}
                 >
                   {isPending ? <Spinner /> : <CheckCircleIcon />}
-                  <span>{isPending ? 'جارٍ تسجيل التأكيد...' : 'نعم، أؤكد طلبي'}</span>
+                  <span>{isPending ? 'جارٍ تأكيد طلبك...' : 'تأكيد الطلب'}</span>
                 </button>
                 <button
                   type="button"
@@ -106,7 +115,7 @@ export function ConfirmOrderView({
                   disabled={isPending}
                 >
                   <XCircleIcon />
-                  <span>أطلب إلغاء الطلب</span>
+                  <span>أرغب في إلغاء الطلب</span>
                 </button>
               </div>
             </>
@@ -116,7 +125,7 @@ export function ConfirmOrderView({
         </div>
 
         <footer className={styles.footer}>
-          <span>مشغّل بواسطة</span>
+          <span>تأكيد طلبك بكل سهولة عبر</span>
           <strong>TajerTrack</strong>
         </footer>
       </section>
@@ -137,14 +146,15 @@ function OrderSummary({
 
   return (
     <section className={styles.orderSummary} aria-label="تفاصيل الطلب">
-      <div className={styles.summaryHeading}>تفاصيل الطلب</div>
-      {productImage && (
+      <div className={styles.summaryHeading}>تفاصيل طلبك</div>
+      {(productImage || productName) && (
         <div className={styles.productRow}>
-          <img className={styles.productImage} src={productImage} alt={productName || 'صورة المنتج'} />
+          {productImage && (
+            <img className={styles.productImage} src={toCachedImageUrl(productImage)} alt={productName || 'صورة المنتج'} />
+          )}
           {productName && <strong className={styles.productName}>{productName}</strong>}
         </div>
       )}
-      {!productImage && productName && <div className={styles.productText}>{productName}</div>}
       {orderNumber && (
         <div className={styles.orderNumberRow}>
           <span>رقم الطلب</span>
@@ -158,26 +168,26 @@ function OrderSummary({
 function ResponseState({ status, orderNumber }: { status: Exclude<ConfirmStatus, 'pending'>; orderNumber?: string }) {
   const content = {
     confirmed: {
-      title: 'تم تأكيد طلبك',
-      message: 'شكراً لك. تم تسجيل تأكيدك بنجاح، وسيتم التواصل معك عند تجهيز الطلب.',
+      title: 'يعطيك الصحة، تم تأكيد طلبك!',
+      message: 'وصلنا تأكيدك بنجاح. المتجر يكمل الآن تجهيز طلبك، وتقدر تتابع آخر المستجدات من رابط التتبع.',
       tone: 'success',
       icon: <CheckCircleIcon />,
     },
     cancelled: {
-      title: 'تم تسجيل طلب الإلغاء',
-      message: 'وصل طلب الإلغاء إلى المتجر لمراجعته. هذا الإجراء لا يوقف الشحنة تلقائياً؛ سيتواصل معك المتجر لتأكيد إمكانية الإيقاف.',
+      title: 'وصل طلب الإلغاء',
+      message: 'تم إرسال طلبك إلى المتجر للمراجعة. فقط للتوضيح: طلب الإلغاء لا يوقف الشحنة تلقائياً، والمتجر سيتواصل معك لتأكيد إمكانية إيقافها.',
       tone: 'danger',
       icon: <XCircleIcon />,
     },
     expired: {
-      title: 'انتهت صلاحية الرابط',
-      message: 'انتهت صلاحية رابط التأكيد. يرجى التواصل مع المتجر مباشرة.',
+      title: 'انتهت مهلة التأكيد',
+      message: 'يبدو أن رابط التأكيد لم يعد صالحاً. تواصل مع المتجر مباشرة وسيساعدك في متابعة طلبك.',
       tone: 'warning',
       icon: <ClockIcon />,
     },
     invalid: {
-      title: 'الرابط غير صالح',
-      message: 'تعذر العثور على طلب مرتبط بهذا الرابط، أو أن الرابط غير صالح.',
+      title: 'ما لقيناش هذا الطلب',
+      message: 'الرابط غير صالح أو لم نتمكن من العثور على الطلب المرتبط به. راجع الرابط أو تواصل مع المتجر للمساعدة.',
       tone: 'muted',
       icon: <LinkOffIcon />,
     },
@@ -186,21 +196,11 @@ function ResponseState({ status, orderNumber }: { status: Exclude<ConfirmStatus,
   return (
     <div className={styles.responseState} data-tone={content.tone}>
       <div className={styles.responseIcon}>{content.icon}</div>
-      <span className={styles.eyebrow}>حالة الطلب</span>
+      <span className={styles.eyebrow}>تحديث طلبك</span>
       <h1 id="confirm-title" className={styles.title}>{content.title}</h1>
-      {orderNumber && <div className={styles.responseOrder}>طلب رقم <strong dir="ltr">#{orderNumber}</strong></div>}
+      {orderNumber && <div className={styles.responseOrder}>رقم الطلب <strong dir="ltr">#{orderNumber}</strong></div>}
       <p className={styles.responseMessage}>{content.message}</p>
     </div>
-  );
-}
-
-function StoreMark() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 9.5 4.6 4h14.8L21 9.5" />
-      <path d="M3 9.5c0 1.7 1.2 2.8 2.7 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.6 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.7 2.8S19 11.2 19 9.5" />
-      <path d="M5.2 12.2V20h13.6v-7.8M9 20v-5h6v5" />
-    </svg>
   );
 }
 
