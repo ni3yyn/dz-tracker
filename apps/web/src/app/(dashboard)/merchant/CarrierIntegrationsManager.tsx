@@ -76,29 +76,23 @@ type AnimatedHeightProps = {
   contentKey: string;
   className?: string;
   expanded?: boolean;
+  onCollapsed?: () => void;
 };
 
 /**
- * Measures its natural content and animates the wrapper between pixel heights.
- * Keeping the wrapper mounted prevents surrounding dashboard content from
- * snapping when a tab or expandable panel changes size.
+ * Measures its natural content and animates between pixel heights. The panel
+ * remains mounted for the exit motion; callers may clean up after onCollapsed.
  */
 function AnimatedHeight({
   children,
   contentKey,
   className = '',
   expanded = true,
+  onCollapsed,
 }: AnimatedHeightProps) {
   const innerRef = useRef<HTMLDivElement | null>(null);
-  const lastExpandedChildren = useRef<React.ReactNode>(expanded ? children : null);
-  const lastExpandedKey = useRef(contentKey);
   const [height, setHeight] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
-
-  if (expanded && children !== null && children !== false) {
-    lastExpandedChildren.current = children;
-    lastExpandedKey.current = contentKey;
-  }
 
   useLayoutEffect(() => {
     const inner = innerRef.current;
@@ -124,8 +118,7 @@ function AnimatedHeight({
 
   const handleTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget || event.propertyName !== 'height' || expanded) return;
-    lastExpandedChildren.current = null;
-    setHeight(0);
+    onCollapsed?.();
   };
 
   return (
@@ -140,12 +133,12 @@ function AnimatedHeight({
         opacity: expanded ? 1 : 0,
         overflow: 'hidden',
         pointerEvents: expanded ? 'auto' : 'none',
-        visibility: expanded || (height ?? 0) > 0 ? 'visible' : 'hidden',
+        visibility: expanded ? 'visible' : 'hidden',
       }}
     >
       <div ref={innerRef} className="dz-animated-height-measure">
-        <div key={expanded ? contentKey : lastExpandedKey.current} className="dz-animated-height-enter">
-          {expanded ? children : lastExpandedChildren.current}
+        <div key={contentKey} className="dz-animated-height-enter">
+          {children}
         </div>
       </div>
     </div>
@@ -164,6 +157,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
   const [activeSubtab, setActiveSubtab] = useState<'carriers' | 'order_source' | 'sdk'>('carriers');
   const [showProviderDirectory, setShowProviderDirectory] = useState(false);
   const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
+  const [renderedProvider, setRenderedProvider] = useState<ProviderId | null>(null);
   const [orderSource, setOrderSource] = useState<OrderSource | null>(null);
   const [sourceHydrated, setSourceHydrated] = useState(false);
   const [apiKey, setApiKey] = useState('');
@@ -278,6 +272,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
 
   const openProviderSettings = (providerId: ProviderId) => {
     setActiveProvider(providerId);
+    setRenderedProvider(providerId);
     setShowProviderDirectory(false);
   };
 
@@ -597,7 +592,6 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
             expanded={showProviderDirectory}
             contentKey={showProviderDirectory ? 'provider-directory-open' : 'provider-directory-closed'}
           >
-            {showProviderDirectory ? (
             <section id="dz-provider-directory" className="dz-provider-directory" aria-labelledby="dz-provider-directory-title">
               <div style={{ marginBottom: 14 }}>
                 <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>دليل الشركات</span>
@@ -616,15 +610,15 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
                 </div>
               )}
             </section>
-            ) : null}
           </AnimatedHeight>
 
           <AnimatedHeight
             className="dz-integration-expansion"
             expanded={Boolean(activeProvider)}
-            contentKey={activeProvider || 'provider-editor-closed'}
+            contentKey={renderedProvider || 'provider-editor-closed'}
+            onCollapsed={() => setRenderedProvider(null)}
           >
-            {activeProvider ? (
+            {renderedProvider ? (
             <section className="dz-provider-editor" aria-labelledby="dz-provider-setup-title">
               <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
                 <div>
@@ -637,7 +631,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
                   إغلاق الإعدادات وتحديث القائمة
                 </button>
               </header>
-              {renderProviderPanel(activeProvider)}
+              {renderProviderPanel(renderedProvider)}
             </section>
             ) : null}
           </AnimatedHeight>
@@ -787,7 +781,14 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         .dz-carrier-manager .dz-animated-height[data-ready="true"] {
           transition:
             height .46s cubic-bezier(.2, .75, .25, 1),
-            opacity .28s ease;
+            opacity .28s ease,
+            visibility 0s linear 0s;
+        }
+        .dz-carrier-manager .dz-animated-height[data-ready="true"][data-expanded="false"] {
+          transition:
+            height .46s cubic-bezier(.2, .75, .25, 1),
+            opacity .28s ease,
+            visibility 0s linear .46s;
         }
         .dz-carrier-manager .dz-animated-height-measure {
           display: flow-root;
