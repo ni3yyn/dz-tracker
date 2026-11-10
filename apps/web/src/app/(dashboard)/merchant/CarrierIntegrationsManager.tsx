@@ -173,7 +173,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
   );
 
   const activeProviderDetails = PROVIDERS.find((provider) => provider.id === activeProvider) ?? null;
-  const baseUrl = siteUrl.replace(/\\/$/, '');
+  const baseUrl = siteUrl.replace(/\/$/, '');
   const shopifyWebhookUrl = apiKey ? `${baseUrl}/api/webhooks/shopify?key=${encodeURIComponent(apiKey)}` : '';
   const websiteWebhookUrl = apiKey ? `${baseUrl}/api/webhooks?key=${encodeURIComponent(apiKey)}` : '';
 
