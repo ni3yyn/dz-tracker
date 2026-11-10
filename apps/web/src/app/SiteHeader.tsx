@@ -111,7 +111,11 @@ export default function SiteHeader({
 
   if (isDashboard) {
     return (
-      <header ref={headerRef} className={styles.dashboardHeader}>
+      <header
+        ref={headerRef}
+        className={styles.dashboardHeader}
+        data-dashboard-back-dismiss={effectiveMenuOpen ? 'header-menu' : undefined}
+      >
         <button
           type="button"
           className={`${styles.dashboardMenuToggle} ${menuOpen ? styles.menuToggleOpen : ''}`}
