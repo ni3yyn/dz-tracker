@@ -9,26 +9,25 @@ import {
 
 type ProcolisStatus = {
   connected: boolean;
-  webhookToken?: string | null;
-  lastWebhookReceivedAt?: string | null;
-  lastWebhookProcessedAt?: string | null;
+  connectedAt?: string | null;
+  lastSyncAt?: string | null;
+  lastSuccessAt?: string | null;
   lastError?: string | null;
 };
 
-type Props = { siteUrl: string };
-
 function formatDate(value?: string | null) {
-  return value ? new Date(value).toLocaleString('ar-DZ') : 'لم يصل أي إشعار بعد';
+  return value ? new Date(value).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' }) : 'لا يوجد نشاط مسجل بعد';
 }
 
-export function ProcolisConnectionPanel({ siteUrl }: Props) {
+export function ProcolisConnectionPanel() {
   const [status, setStatus] = useState<ProcolisStatus | null>(null);
+  const [token, setToken] = useState('');
+  const [keyValue, setKeyValue] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [message, setMessage] = useState('');
   const [failed, setFailed] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   async function refresh() {
     setLoading(true);
@@ -46,22 +45,21 @@ export function ProcolisConnectionPanel({ siteUrl }: Props) {
 
   useEffect(() => { void refresh(); }, []);
 
-  const endpointUrl = status?.webhookToken
-    ? `${siteUrl.replace(/\\/$/, '')}/api/webhooks/procolis?token=${encodeURIComponent(status.webhookToken)}`
-    : '';
-
-  async function handleConnect() {
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (saving || disconnecting) return;
     setSaving(true);
     setMessage('');
     setFailed(false);
     try {
-      const result = await saveProcolisIntegration();
-      if (!result.success) throw new Error(result.error || 'تعذر تجهيز رابط Procolis.');
+      const result = await saveProcolisIntegration(token, keyValue);
+      if (!result.success || !result.status) throw new Error(result.error || 'تعذر ربط حساب Procolis.');
       setStatus(result.status);
-      setMessage('تم تجهيز نقطة استقبال مستقلة لـ Procolis. أضف الرابط في لوحة الشركة لاختبار وصول التحديثات.');
+      setToken('');
+      setKeyValue('');
+      setMessage('تم التحقق من بيانات Procolis وحفظ الاتصال. ستبدأ مزامنة أرقام التتبع المسجلة في طلباتك.');
     } catch (error: any) {
-      setMessage(error?.message || 'تعذر تجهيز رابط Procolis.');
+      setMessage(error?.message || 'تعذر ربط حساب Procolis.');
       setFailed(true);
     } finally {
       setSaving(false);
@@ -70,32 +68,22 @@ export function ProcolisConnectionPanel({ siteUrl }: Props) {
 
   async function handleDisconnect() {
     if (saving || disconnecting) return;
-    if (!window.confirm('هل عطّلت Webhook الخاص بتاجر تراك من لوحة Procolis؟ سيؤدي ذلك إلى إيقاف استقبال التحديثات لهذا الاتصال.')) return;
+    if (!window.confirm('هل تريد إيقاف مزامنة Procolis وحذف بيانات الدخول المحفوظة؟ ستبقى الطلبات وسجلات التتبع السابقة محفوظة.')) return;
     setDisconnecting(true);
     setMessage('');
     setFailed(false);
     try {
       const result = await disconnectProcolisIntegration();
       if (!result.success) throw new Error(result.error || 'تعذر فصل Procolis.');
-      setStatus({ connected: false, webhookToken: null });
-      setMessage('تم إيقاف اتصال Procolis في تاجر تراك. بقيت الطلبات وسجلات التتبع السابقة محفوظة.');
+      setStatus((current) => ({ ...(current || { connected: false }), connected: false, lastError: null }));
+      setToken('');
+      setKeyValue('');
+      setMessage('تم فصل Procolis وحذف بيانات الدخول المحفوظة. بقيت الطلبات وسجلات التتبع السابقة محفوظة.');
     } catch (error: any) {
       setMessage(error?.message || 'تعذر فصل Procolis.');
       setFailed(true);
     } finally {
       setDisconnecting(false);
-    }
-  }
-
-  async function handleCopy() {
-    if (!endpointUrl) return;
-    try {
-      await navigator.clipboard.writeText(endpointUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    } catch {
-      setMessage('تعذر النسخ تلقائياً. حدّد الرابط وانسخه يدوياً.');
-      setFailed(true);
     }
   }
 
@@ -107,7 +95,7 @@ export function ProcolisConnectionPanel({ siteUrl }: Props) {
         <span className="dz-int-guided-number">P</span>
         <div>
           <h4>ربط Procolis</h4>
-          <p>اتصال مستقل عن ZR Express. يستقبل تاجر تراك تحديثات الشحنات التي تنشئها من حساب Procolis، ولا ينشئ شحنات أو يغيّرها.</p>
+          <p>اتصال مستقل عن ZR Express، باستخدام Token وKey من حساب Procolis. تاجر تراك يقرأ حالات الشحنات ولا ينشئها أو يغيّرها.</p>
         </div>
       </div>
 
@@ -117,45 +105,69 @@ export function ProcolisConnectionPanel({ siteUrl }: Props) {
         <>
           <div className="dz-int-guided-meta">
             <span>حالة الاتصال</span>
-            <strong>{status?.connected ? 'اتصال Procolis مفعّل' : 'لم يتم تفعيل الاتصال'}</strong>
+            <strong>{status?.connected ? 'متصل — المزامنة مفعّلة' : 'غير متصل'}</strong>
             {status?.connected && (
               <>
-                <span>آخر إشعار وصل</span>
-                <strong>{formatDate(status.lastWebhookReceivedAt)}</strong>
-                <span>آخر إشعار تمت معالجته</span>
-                <strong>{formatDate(status.lastWebhookProcessedAt)}</strong>
+                <span>تاريخ الربط</span>
+                <strong>{formatDate(status.connectedAt)}</strong>
+                <span>آخر مزامنة ناجحة</span>
+                <strong>{formatDate(status.lastSuccessAt)}</strong>
               </>
             )}
           </div>
 
-          {status?.connected && endpointUrl ? (
-            <>
-              <div className="dz-int-guided-copy">
-                <div>
-                  <small>رابط استقبال Procolis الخاص بهذا المتجر</small>
-                  <code dir="ltr">{endpointUrl}</code>
-                </div>
-                <button type="button" onClick={handleCopy}>{copied ? 'تم النسخ' : 'نسخ الرابط'}</button>
-              </div>
-              <ol className="dz-int-guided-steps">
-                <li>افتح إعدادات Webhooks في حساب Procolis.</li>
-                <li>أضف الرابط أعلاه كعنوان استقبال لأحداث الشحنات.</li>
-                <li>فعّل أحداث إنشاء الشحنة وتحديث حالتها، ثم أرسل حدثاً تجريبياً.</li>
-                <li>ارجع إلى تاجر تراك وحدّث القائمة للتحقق من وصول النشاط.</li>
-              </ol>
-              <p className="dz-int-guided-note">هذا الرابط خاص باتصال Procolis وحده. لا تستخدم رابط ZR Express أو مفتاح API العام. احتفظ بالرابط داخل إعدادات الشركة فقط.</p>
-              {status.lastError && <p className="dz-int-guided-note" role="alert" style={{ color: '#a12e27' }}>آخر خطأ: {status.lastError}</p>}
-              <button type="button" className="dz-support-copy" disabled={busy} onClick={handleDisconnect}>
-                {disconnecting ? 'جارٍ إيقاف الاتصال...' : 'إيقاف اتصال Procolis'}
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="dz-int-guided-note">سينشئ تاجر تراك رمز استقبال عشوائياً خاصاً بهذا المتجر وبهذا المزود. لن يتأثر اتصال ZR Express أو أي شركة أخرى.</p>
-              <button type="button" className="dz-btn" disabled={busy} onClick={handleConnect}>
-                {saving ? 'جارٍ تجهيز الاتصال...' : 'تجهيز رابط استقبال Procolis'}
-              </button>
-            </>
+          <form onSubmit={handleSave} style={{ display: 'grid', gap: 11 }}>
+            <label style={{ display: 'grid', gap: 5 }}>
+              <span>Token</span>
+              <input
+                type="password"
+                autoComplete="off"
+                value={token}
+                onChange={(event) => setToken(event.target.value)}
+                placeholder={status?.connected ? 'أدخل Token جديداً لتحديث بيانات الربط' : 'Token الخاص بحساب Procolis'}
+                required
+                minLength={4}
+                maxLength={2048}
+                disabled={busy}
+                dir="ltr"
+              />
+            </label>
+            <label style={{ display: 'grid', gap: 5 }}>
+              <span>Key</span>
+              <input
+                type="password"
+                autoComplete="off"
+                value={keyValue}
+                onChange={(event) => setKeyValue(event.target.value)}
+                placeholder={status?.connected ? 'أدخل Key جديداً لتحديث بيانات الربط' : 'Key الخاص بحساب Procolis'}
+                required
+                minLength={4}
+                maxLength={2048}
+                disabled={busy}
+                dir="ltr"
+              />
+            </label>
+            <p className="dz-int-guided-note">يتحقق تاجر تراك من البيانات عبر واجهة Procolis قبل حفظها، ثم يخزنها مشفرة. لن تظهر المفاتيح المحفوظة في لوحة المتجر.</p>
+            <button type="submit" className="dz-btn" disabled={busy || !token.trim() || !keyValue.trim()}>
+              {saving ? 'جارٍ التحقق والحفظ...' : status?.connected ? 'التحقق من البيانات وتحديث الاتصال' : 'التحقق من البيانات وربط Procolis'}
+            </button>
+          </form>
+
+          <div className="dz-int-guided-meta">
+            <span>نطاق المزامنة</span>
+            <strong>أرقام التتبع المسجلة في طلبات تاجر تراك فقط</strong>
+            <p className="dz-int-guided-note">واجهة Procolis المستخدمة هنا تقرأ الشحنة برقم تتبع محدد. لا تعرض قائمة شاملة لكل طرود حسابك؛ أضف رقم التتبع إلى الطلب أولاً حتى يتمكن تاجر تراك من متابعته.</p>
+          </div>
+
+          {status?.lastError && (
+            <p className="dz-int-guided-note" role="alert" style={{ color: '#a12e27' }}>
+              آخر خطأ: {status.lastError}
+            </p>
+          )}
+          {status?.connected && (
+            <button type="button" className="dz-support-copy" disabled={busy} onClick={handleDisconnect}>
+              {disconnecting ? 'جارٍ فصل الاتصال...' : 'فصل Procolis وحذف بيانات الدخول'}
+            </button>
           )}
         </>
       )}
