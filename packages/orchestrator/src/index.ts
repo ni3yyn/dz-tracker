@@ -425,7 +425,7 @@ export class TrackingOrchestrator {
             carrier_last_event_at: event.sourceOccurredAt || null,
             carrier_name: event.carrierName || 'Yalidine Express',
             carrier_tracking_number: event.carrierTrackingNumber || null,
-            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex' ? {
+            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex' || event.sourceProvider === 'procolis' ? {
               carrier_order_id: event.carrierOrderId || null,
               carrier_metadata: event.carrierMetadata || null,
             } : {}),
