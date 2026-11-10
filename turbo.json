@@ -5,12 +5,29 @@
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_ROLE_KEY",
-    "ADMIN_EMAIL"
+    "ADMIN_EMAIL",
+    "SUPABASE_URL",
+    "SUPABASE_SECRET_KEY",
+    "WEB_PUSH_VAPID_PUBLIC_KEY",
+    "WEB_PUSH_VAPID_PRIVATE_KEY",
+    "WEB_PUSH_VAPID_SUBJECT",
+    "WEB_PUSH_WORKER_ENABLED",
+    "WEB_PUSH_WORKER_ID",
+    "TRACKING_PUBLIC_BASE_URL",
+    "POLL_INTERVAL_MS",
+    "LEASE_DURATION_SECONDS",
+    "CARRIER_CREDENTIALS_ENCRYPTION_KEY"
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**"
+      ]
     },
     "dev": {
       "cache": false,
