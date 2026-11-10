@@ -4035,11 +4035,11 @@ export function MerchantDashboardView({
           background: rgba(15, 23, 42, 0.45);
           backdrop-filter: blur(4px);
           -webkit-backdrop-filter: blur(4px);
-          animation: dzFadeIn 0.2s ease-out;
-        }
-        @keyframes dzFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: opacity .3s ease, visibility 0s linear .3s;
+          animation: none;
         }
 
         @media (max-width: 1024px) {
