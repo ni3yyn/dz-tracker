@@ -9,10 +9,11 @@ import { YalidineWebhookWorker } from './yalidine-webhook-worker.js';
 import { ZimouSyncWorker } from './zimou-sync.js';
 import { ElogistiaSyncWorker } from './elogistia-sync.js';
 import { EcomV2SyncWorker } from './ecom-v2-sync.js';
+import { ProcolisSyncWorker } from './procolis-sync.js';
 
 async function bootstrap(): Promise<void> {
   console.log('====================================================');
-  console.log(' TajerTrack Background Workers (Web Push + EcoTrack + ZR Express + Yalidine + Zimou + Elogistia + E-com v2)');
+  console.log(' TajerTrack Background Workers (Web Push + EcoTrack + ZR Express + Yalidine + Zimou + Elogistia + E-com v2 + Procolis)');
   console.log('====================================================');
 
   let config;
@@ -26,6 +27,7 @@ async function bootstrap(): Promise<void> {
     console.log(`[Bootstrap]: Zimou read-only status sync enabled: ${config.zimouSyncEnabled}`);
     console.log(`[Bootstrap]: Elogistia status polling enabled: ${config.elogistiaSyncEnabled}`);
     console.log(`[Bootstrap]: E-com Delivery v2 status polling enabled: ${config.ecomV2SyncEnabled}`);
+    console.log(`[Bootstrap]: Procolis read-only tracking sync enabled: ${config.procolisSyncEnabled}`);
     if (process.env.YALIDINE_WEBHOOK_WORKER_ENABLED === 'true' && !config.yalidineWebhookWorkerEnabled) {
       console.warn('[Bootstrap]: Yalidine webhook processing was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
     }
@@ -40,6 +42,9 @@ async function bootstrap(): Promise<void> {
     }
     if (process.env.ZIMOU_SYNC_ENABLED === 'true' && !config.zimouSyncEnabled) {
       console.warn('[Bootstrap]: Zimou sync was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
+    }
+    if (process.env.PROCOLIS_SYNC_ENABLED === 'true' && !config.procolisSyncEnabled) {
+      console.warn('[Bootstrap]: Procolis sync was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
     }
     if (process.env.CARRIER_SYNC_ENABLED === 'true' && !config.ecoTrackSyncEnabled) {
       console.warn('[Bootstrap]: EcoTrack sync was requested but is disabled because CARRIER_CREDENTIALS_ENCRYPTION_KEY is missing or shorter than 32 characters.');
@@ -58,6 +63,7 @@ async function bootstrap(): Promise<void> {
   const zimouSync = config.zimouSyncEnabled ? new ZimouSyncWorker(config) : null;
   const elogistiaSync = config.elogistiaSyncEnabled ? new ElogistiaSyncWorker(config) : null;
   const ecomV2Sync = config.ecomV2SyncEnabled ? new EcomV2SyncWorker(config) : null;
+  const procolisSync = config.procolisSyncEnabled ? new ProcolisSyncWorker(config) : null;
 
   let pushWorker: WebPushWorker | null = null;
   let pushLoop: Promise<void> | null = null;
@@ -67,6 +73,7 @@ async function bootstrap(): Promise<void> {
   let zimouSyncLoop: Promise<void> | null = null;
   let elogistiaSyncLoop: Promise<void> | null = null;
   let ecomV2SyncLoop: Promise<void> | null = null;
+  let procolisSyncLoop: Promise<void> | null = null;
   let shutdownPromise: Promise<void> | null = null;
 
   if (config.isEnabled) {
@@ -120,6 +127,12 @@ async function bootstrap(): Promise<void> {
     console.log('[Bootstrap]: ECOM_V2_SYNC_ENABLED=false; E-com Delivery v2 status polling is disabled.');
   }
 
+  if (procolisSync) {
+    procolisSyncLoop = procolisSync.start();
+  } else {
+    console.log('[Bootstrap]: PROCOLIS_SYNC_ENABLED=false; Procolis read-only tracking polling is disabled.');
+  }
+
   const shutdown = (signal: string): Promise<void> => {
     if (shutdownPromise) return shutdownPromise;
     console.log(`\n[Bootstrap]: Caught signal ${signal}. Shutting down background workers...`);
@@ -129,10 +142,11 @@ async function bootstrap(): Promise<void> {
       zimouSync?.stop();
       elogistiaSync?.stop();
       ecomV2Sync?.stop();
+      procolisSync?.stop();
       await zrExpressWebhookWorker?.stop();
       await yalidineWebhookWorker?.stop();
       await pushWorker?.stop();
-      const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, yalidineWebhookLoop, zimouSyncLoop, elogistiaSyncLoop, ecomV2SyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
+      const loops = [pushLoop, ecoTrackLoop, zrExpressWebhookLoop, yalidineWebhookLoop, zimouSyncLoop, elogistiaSyncLoop, ecomV2SyncLoop, procolisSyncLoop].filter((loop): loop is Promise<void> => Boolean(loop));
       await Promise.allSettled(loops);
       console.log('[Bootstrap]: Graceful shutdown complete.');
       process.exit(0);
@@ -146,7 +160,7 @@ async function bootstrap(): Promise<void> {
   const heartbeat = setInterval(() => {
     const status = health.getStatus();
     console.log(
-      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'} | Yalidine webhooks: ${yalidineWebhookWorker ? 'enabled' : 'disabled'} | Zimou sync: ${zimouSync ? 'enabled' : 'disabled'} | Elogistia sync: ${elogistiaSync ? 'enabled' : 'disabled'} | E-com v2 sync: ${ecomV2Sync ? 'enabled' : 'disabled'}`
+      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'} | Yalidine webhooks: ${yalidineWebhookWorker ? 'enabled' : 'disabled'} | Zimou sync: ${zimouSync ? 'enabled' : 'disabled'} | Elogistia sync: ${elogistiaSync ? 'enabled' : 'disabled'} | E-com v2 sync: ${ecomV2Sync ? 'enabled' : 'disabled'} | Procolis read-only sync: ${procolisSync ? 'enabled' : 'disabled'}`
     );
   }, 30000);
 
