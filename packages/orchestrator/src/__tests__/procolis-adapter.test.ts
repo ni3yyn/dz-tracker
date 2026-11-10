@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ProcolisAdapter } from '../carriers/zrexpress.adapter.js';
+import { ProcolisAdapter, ZRExpressAdapter } from '../carriers/zrexpress.adapter.js';
 
 test('normalizes Procolis shipments with a separate provider identity from ZR Express', () => {
   const event = ProcolisAdapter.normalize('merchant-1', {
@@ -22,6 +22,13 @@ test('normalizes Procolis shipments with a separate provider identity from ZR Ex
   assert.equal(event.carrierName, 'Procolis');
   assert.equal(event.sourceProvider, 'procolis');
   assert.equal(event.statusRaw, 'in_transit');
-  assert.match(event.description || '', /Procolis/);
+  const zrEvent = ZRExpressAdapter.normalize('merchant-1', {
+    Tracking: 'PR-123456',
+    id_Externe: 'STORE-ORDER-42',
+    Situation: 'En transit',
+  });
+  assert.equal(zrEvent.carrierName, 'ZR Express');
+  assert.notEqual(event.carrierName, zrEvent.carrierName);
+  assert.equal(event.sourceProvider, 'procolis');
   assert.doesNotMatch(event.description || '', /ZR Express/);
 });
