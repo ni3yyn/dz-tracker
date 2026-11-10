@@ -112,7 +112,8 @@
   direction: rtl;
   scrollbar-width: thin;
   scrollbar-color: #bdcbbd transparent;
-  animation: brandedSelectMenuIn .12s ease-out both;
+  transform-origin: top right;
+  animation: brandedSelectMenuIn .22s cubic-bezier(.2,.72,.25,1) both;
 }
 
 .option {
@@ -211,8 +212,8 @@
 }
 
 @keyframes brandedSelectMenuIn {
-  from { opacity: 0; transform: translateY(-3px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate3d(0, -7px, 0) scale(.985); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
