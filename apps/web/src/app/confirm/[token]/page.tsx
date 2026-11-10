@@ -1,6 +1,7 @@
 import React from 'react';
 import { getSupabaseAdminClient } from '@saas/database';
 import { ConfirmOrderView } from './ConfirmOrderView';
+import type { BrandSettings } from '@saas/ui';
 
 interface Props {
   params: Promise<{ token: string }>;
@@ -21,7 +22,7 @@ export default async function ConfirmOrderPage({ params }: Props) {
   }
 
   // Load merchant identity before resolving status so every valid state stays branded.
-  const [{ data: merchant }, { data: brandColorRow }, { data: legacyBrandSettingsRow }] = await Promise.all([
+  const [{ data: merchant }, { data: brandColorRow }, { data: legacyBrandSettingsRow }, { data: brandSubtitleRow }] = await Promise.all([
     supabase
       .from('merchants')
       .select('store_name, logo_url')
@@ -39,18 +40,42 @@ export default async function ConfirmOrderPage({ params }: Props) {
       .eq('merchant_id', order.merchant_id)
       .eq('source_status', '__brand_settings_json__')
       .maybeSingle(),
+    supabase
+      .from('status_mappings')
+      .select('display_status')
+      .eq('merchant_id', order.merchant_id)
+      .eq('source_status', '__brand_subtitle__')
+      .maybeSingle(),
   ]);
 
-  // Compatibility only: merchants.logo_url is canonical; older rows may still
-  // have a logo saved exclusively in the previous brand-settings JSON.
-  let legacyLogoUrl: string | undefined;
+  // Use the exact saved settings object used by the tracking page. The
+  // dedicated mapping rows remain authoritative for the color and subtitle.
+  let savedBrandSettings: (Partial<BrandSettings> & {
+    logoUrl?: string;
+    showWhatsAppButton?: boolean;
+    animateBackgroundBlobs?: boolean;
+    backgroundBlur?: boolean;
+  }) | undefined;
   if (legacyBrandSettingsRow?.display_status) {
     try {
-      legacyLogoUrl = JSON.parse(legacyBrandSettingsRow.display_status)?.logoUrl;
+      const parsed = JSON.parse(legacyBrandSettingsRow.display_status);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        savedBrandSettings = parsed;
+      }
     } catch {
-      legacyLogoUrl = undefined;
+      savedBrandSettings = undefined;
     }
   }
+
+  const legacyLogoUrl = typeof savedBrandSettings?.logoUrl === 'string'
+    ? savedBrandSettings.logoUrl
+    : undefined;
+  const savedBrandColor = typeof savedBrandSettings?.brandColor === 'string'
+    ? savedBrandSettings.brandColor
+    : undefined;
+  const savedBrandSubtitle = typeof savedBrandSettings?.brandSubtitle === 'string'
+    ? savedBrandSettings.brandSubtitle
+    : undefined;
 
   const isExpired =
     order.confirmation_expires_at &&
@@ -72,7 +97,9 @@ export default async function ConfirmOrderPage({ params }: Props) {
       productImage={order.product_image ?? undefined}
       storeName={merchant?.store_name ?? undefined}
       logoUrl={merchant?.logo_url || legacyLogoUrl}
-      brandColor={brandColorRow?.display_status ?? '#273b30'}
+      brandColor={brandColorRow?.display_status || savedBrandColor || '#27342D'}
+      brandSubtitle={brandSubtitleRow?.display_status || savedBrandSubtitle || ''}
+      brandSettings={savedBrandSettings}
     />
   );
 }
