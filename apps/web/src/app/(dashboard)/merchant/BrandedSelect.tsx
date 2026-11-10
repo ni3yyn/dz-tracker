@@ -235,12 +235,21 @@ export function BrandedSelect({
     className,
   ].filter(Boolean).join(' ');
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const notifyBackLayerChange = () => {
+      window.dispatchEvent(new Event('tajer-dashboard-back-layer-change'));
+    };
+    notifyBackLayerChange();
+    return notifyBackLayerChange;
+  }, [isMenuMounted]);
+
   return (
     <div
       ref={rootRef}
       className={rootClassName}
       aria-busy={loading || undefined}
-      data-dashboard-back-dismiss={isOpen ? 'true' : undefined}
+      data-dashboard-back-dismiss={isMenuMounted ? 'dropdown' : undefined}
     >
       {name && <input type="hidden" name={name} value={selectedValue} />}
       <button
