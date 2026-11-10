@@ -70,6 +70,23 @@ const primaryButtonStyle: React.CSSProperties = {
   border: 0,
 };
 
+function scrollExpandedPanelIntoView(element: HTMLDivElement) {
+  if (typeof window === 'undefined') return;
+
+  const rect = element.getBoundingClientRect();
+  const needsReveal = rect.top < 16 || rect.bottom > window.innerHeight - 28;
+  if (!needsReveal) return;
+
+  const prefersReducedMotion = typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  element.scrollIntoView({
+    behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    block: 'start',
+    inline: 'nearest',
+  });
+}
+
 
 type AnimatedHeightProps = {
   children: React.ReactNode;
@@ -77,6 +94,7 @@ type AnimatedHeightProps = {
   className?: string;
   expanded?: boolean;
   onCollapsed?: () => void;
+  onExpanded?: (element: HTMLDivElement) => void;
 };
 
 /**
@@ -89,8 +107,10 @@ function AnimatedHeight({
   className = '',
   expanded = true,
   onCollapsed,
+  onExpanded,
 }: AnimatedHeightProps) {
   const innerRef = useRef<HTMLDivElement | null>(null);
+  const revealedContentKeyRef = useRef<string | null>(null);
   const [height, setHeight] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -117,8 +137,20 @@ function AnimatedHeight({
   }, []);
 
   const handleTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget || event.propertyName !== 'height' || expanded) return;
-    onCollapsed?.();
+    if (event.target !== event.currentTarget || event.propertyName !== 'height') return;
+
+    if (!expanded) {
+      revealedContentKeyRef.current = null;
+      onCollapsed?.();
+      return;
+    }
+
+    // Scroll only once for each newly revealed panel/content selection. Later
+    // ResizeObserver measurements must not pull the merchant around mid-edit.
+    if (revealedContentKeyRef.current !== contentKey) {
+      revealedContentKeyRef.current = contentKey;
+      onExpanded?.(event.currentTarget);
+    }
   };
 
   return (
@@ -590,6 +622,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
             className="dz-integration-expansion"
             expanded={showProviderDirectory}
             contentKey={showProviderDirectory ? 'provider-directory-open' : 'provider-directory-closed'}
+            onExpanded={scrollExpandedPanelIntoView}
           >
             <section id="dz-provider-directory" className="dz-provider-directory" aria-labelledby="dz-provider-directory-title">
               <div style={{ marginBottom: 14 }}>
@@ -615,6 +648,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
             className="dz-integration-expansion"
             expanded={Boolean(activeProvider)}
             contentKey={renderedProvider || 'provider-editor-closed'}
+            onExpanded={scrollExpandedPanelIntoView}
             onCollapsed={() => setRenderedProvider(null)}
           >
             {renderedProvider ? (
@@ -815,6 +849,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         .dz-carrier-manager .dz-integration-expansion {
           width: 100%;
           transform-origin: top center;
+          scroll-margin-block-start: 18px;
         }
         .dz-carrier-manager .dz-integration-tab {
           transition:
