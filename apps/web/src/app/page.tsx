@@ -5,6 +5,11 @@ import SiteHeader from './SiteHeader';
 import FaqAccordion from './FaqAccordion';
 import { createClient } from '../lib/supabase-server';
 
+export const metadata = {
+  title: 'نظام تتبّع طلبات المتاجر',
+  description: 'نظّم تتبّع طلبات متجرك، وخصّص تجربة الزبون بهويتك التجارية، وتابع حالات الشحن من مكان واحد.',
+};
+
 const steps = [
   {
     number: '01',
