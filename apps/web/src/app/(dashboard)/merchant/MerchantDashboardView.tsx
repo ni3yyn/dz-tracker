@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, useDeferredValue, memo } from 'react';
 import { createPortal } from 'react-dom';
+import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import { StatusSelector } from './StatusSelector';
 import { BrandedSelect } from './BrandedSelect';
 import SiteHeader from '../../SiteHeader';
@@ -762,26 +763,6 @@ export function MerchantDashboardView({
     setSavedStoreName(storeName);
   }, [storeName]);
 
-  // Mobile Back Button Handler: when mobile menu drawer is open, back button closes it instead of leaving dashboard
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-
-    window.history.pushState({ tajerMobileMenu: true }, '');
-
-    const handlePopState = () => {
-      setMobileMenuOpen(false);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      if (window.history.state?.tajerMobileMenu) {
-        window.history.back();
-      }
-    };
-  }, [mobileMenuOpen]);
-
   // Upsell Features State
   const [upsellsList, setUpsellsList] = useState<MerchantUpsellItem[]>(initialUpsells);
   const [upsellScrapeUrl, setUpsellScrapeUrl] = useState('');
@@ -823,6 +804,32 @@ export function MerchantDashboardView({
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [addOrderError, setAddOrderError] = useState<string | null>(null);
   const [newOrderSuccess, setNewOrderSuccess] = useState<{ trackingUuid: string; externalOrderId: string; telegramTrackingEnabled: boolean; telegramTrackingQueued: boolean; telegramQueueCheckFailed: boolean } | null>(null);
+
+  useDashboardBackHandler({
+    scope: 'merchant',
+    activeTab,
+    setActiveTab,
+    onBack: () => {
+      if (isCustomMappingModalOpen) {
+        setIsCustomMappingModalOpen(false);
+        return true;
+      }
+      if (isAddOrderModalOpen) {
+        if (isCreatingOrder) return true;
+        setIsAddOrderModalOpen(false);
+        return true;
+      }
+      if (selectedOrderId) {
+        setSelectedOrderId(null);
+        return true;
+      }
+      if (mobileMenuOpen) {
+        setMobileMenuOpen(false);
+        return true;
+      }
+      return false;
+    },
+  });
 
   // Full Brand Customization State
   const [brandConfig, setBrandConfig] = useState<EditableBrandSettings>(() => ({
