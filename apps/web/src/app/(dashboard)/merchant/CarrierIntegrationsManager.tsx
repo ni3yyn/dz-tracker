@@ -78,8 +78,7 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [connectionError, setConnectionError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [showProviderPicker, setShowProviderPicker] = useState(false);
-  const [activeProvider, setActiveProvider] = useState<ProviderId | null>(null);
+  const [expandedProviders, setExpandedProviders] = useState<ProviderId[]>([]);
   const [orderSource, setOrderSource] = useState<OrderSource | null>(null);
   const [sourceHydrated, setSourceHydrated] = useState(false);
   const [apiKey, setApiKey] = useState('');
@@ -167,12 +166,14 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
     return map;
   }, [connections]);
 
+  const connectedProviders = useMemo(
+    () => PROVIDERS.filter((provider) => connectedByProvider.has(provider.id)),
+    [connectedByProvider],
+  );
   const availableProviders = useMemo(
     () => PROVIDERS.filter((provider) => !connectedByProvider.has(provider.id)),
     [connectedByProvider],
   );
-
-  const activeProviderDetails = PROVIDERS.find((provider) => provider.id === activeProvider) ?? null;
   const baseUrl = siteUrl.replace(/\/$/, '');
   const shopifyWebhookUrl = apiKey ? `${baseUrl}/api/webhooks/shopify?key=${encodeURIComponent(apiKey)}` : '';
   const websiteWebhookUrl = apiKey ? `${baseUrl}/api/webhooks?key=${encodeURIComponent(apiKey)}` : '';
@@ -188,14 +189,123 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
     }
   };
 
-  const handleReturnToList = async () => {
-    setActiveProvider(null);
-    setShowProviderPicker(false);
+  const toggleProviderPanel = (providerId: ProviderId) => {
+    setExpandedProviders((current) => (
+      current.includes(providerId)
+        ? current.filter((id) => id !== providerId)
+        : [...current, providerId]
+    ));
+  };
+
+  const closeProviderPanel = async (providerId: ProviderId) => {
+    setExpandedProviders((current) => current.filter((id) => id !== providerId));
     await refreshConnections();
   };
 
+  const renderProviderPanel = (providerId: ProviderId) => {
+    switch (providerId) {
+      case 'yalidine': return <YalidineConnectionPanel />;
+      case 'ecotrack': return <EcoTrackConnectionPanel />;
+      case 'zrexpress': return <ZRExpressConnectionPanel />;
+      case 'procolis': return <ProcolisConnectionPanel />;
+      case 'maystro': return <MaystroConnectionPanel />;
+      case 'zimou': return <ZimouConnectionPanel />;
+      case 'elogistia': return <ElogistiaConnectionPanel />;
+      case 'ecom_v2': return <EcomV2ConnectionPanel />;
+      default: return null;
+    }
+  };
+
+  const renderProviderRow = (provider: (typeof PROVIDERS)[number]) => {
+    const connection = connectedByProvider.get(provider.id);
+    const isConnected = Boolean(connection);
+    const isExpanded = expandedProviders.includes(provider.id);
+    const hasError = Boolean(connection?.last_error);
+    const lastActivity = connection?.last_webhook_processed_at
+      || connection?.last_webhook_received_at
+      || connection?.last_success_at
+      || connection?.last_sync_at;
+    const connectionLabel = loadingConnections
+      ? 'جارٍ التحقق من الاتصال'
+      : hasError
+        ? 'الاتصال يحتاج إلى مراجعة'
+        : connection?.sync_enabled === false
+          ? 'متصل — التحديثات متوقفة'
+          : isConnected
+            ? 'متصل'
+            : 'غير مرتبط';
+
+    return (
+      <article
+        key={provider.id}
+        style={{
+          minWidth: 0,
+          gridColumn: isExpanded ? '1 / -1' : 'auto',
+          borderBottom: '1px solid var(--border-soft, #e5e8e2)',
+          padding: '15px 0',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0, flex: '1 1 220px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, flexWrap: 'wrap' }}>
+              <strong style={{ color: 'var(--ink-main)', fontSize: 15 }}>{provider.name}</strong>
+              <span style={{ color: hasError ? '#a12e27' : isConnected ? '#34734a' : 'var(--ink-muted)', fontSize: 12, fontWeight: 700 }}>
+                {connectionLabel}
+              </span>
+            </div>
+            <p style={{ margin: '5px 0 0', color: 'var(--ink-muted)', fontSize: 12, lineHeight: 1.7 }}>
+              {provider.description}
+            </p>
+            <span style={{ display: 'block', marginTop: 4, color: 'var(--ink-muted)', fontSize: 11 }}>
+              {lastActivity
+                ? 'آخر نشاط: ' + dateLabel(lastActivity)
+                : connection?.connected_at
+                  ? 'تاريخ الربط: ' + dateLabel(connection.connected_at)
+                  : provider.method}
+              {connection?.last_error ? ' · ' + connection.last_error : ''}
+            </span>
+          </div>
+          <button
+            type="button"
+            style={isExpanded ? panelButtonStyle : isConnected ? panelButtonStyle : primaryButtonStyle}
+            onClick={() => toggleProviderPanel(provider.id)}
+            aria-expanded={isExpanded}
+            aria-controls={'carrier-config-' + provider.id}
+          >
+            {isExpanded ? 'إغلاق الإعدادات' : isConnected ? 'إدارة الاتصال' : 'ربط الشركة'}
+          </button>
+        </div>
+
+        {isExpanded && (
+          <div
+            id={'carrier-config-' + provider.id}
+            style={{
+              minWidth: 0,
+              marginTop: 16,
+              paddingTop: 16,
+              borderTop: '1px solid var(--border-soft, #e5e8e2)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div>
+                <strong style={{ color: 'var(--ink-main)', fontSize: 15 }}>{provider.name}</strong>
+                <p style={{ margin: '3px 0 0', color: 'var(--ink-muted)', fontSize: 12 }}>
+                  إعداد هذا الاتصال مستقل عن بقية الشركات.
+                </p>
+              </div>
+              <button type="button" style={panelButtonStyle} onClick={() => void closeProviderPanel(provider.id)}>
+                إغلاق وتحديث الحالة
+              </button>
+            </div>
+            {renderProviderPanel(provider.id)}
+          </div>
+        )}
+      </article>
+    );
+  };
+
   return (
-    <div className="dz-carrier-manager" style={{ display: 'grid', gap: 26, maxWidth: 1100, paddingBottom: 50 }}>
+    <div className="dz-carrier-manager" style={{ display: 'grid', gap: 34, width: '100%', maxWidth: 1180, paddingBottom: 50 }}>
       <section aria-labelledby="dz-order-source-title">
         <div style={{ marginBottom: 14 }}>
           <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>مصدر الطلبات</span>
@@ -284,107 +394,60 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         )}
       </section>
 
-      <section aria-labelledby="dz-carrier-list-title" style={{ borderTop: '1px solid var(--border-soft, #dfe4dc)', paddingTop: 22 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+      <section aria-labelledby="dz-carrier-list-title" style={{ borderTop: '2px solid var(--ink-main, #263b30)', paddingTop: 24 }}>
+        <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 22 }}>
           <div>
-            <span style={{ color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>تحديثات الشحن</span>
-            <h2 id="dz-carrier-list-title" style={{ margin: '5px 0', color: 'var(--ink-main)', fontSize: 19, fontWeight: 850 }}>شركات التوصيل</h2>
-            <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: 13, lineHeight: 1.8 }}>اربط أكثر من شركة. لكل شركة بيانات ومزامنة مستقلة.</p>
+            <span style={{ display: 'block', color: 'var(--ink-muted)', fontSize: 11, fontWeight: 800, letterSpacing: '.08em' }}>02 · تحديثات الشحن</span>
+            <h2 id="dz-carrier-list-title" style={{ margin: '6px 0', color: 'var(--ink-main)', fontSize: 22, fontWeight: 850 }}>شركات التوصيل</h2>
+            <p style={{ margin: 0, maxWidth: 620, color: 'var(--ink-muted)', fontSize: 13, lineHeight: 1.8 }}>
+              اربط كل الشركات التي تتعامل معها. لكل شركة بيانات اعتماد ومزامنة مستقلة، ويمكنك إدارة عدة اتصالات في الوقت نفسه.
+            </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: 'var(--ink-muted)', fontSize: 12 }}>{connections.length} اتصال محفوظ</span>
-            <button type="button" style={primaryButtonStyle} onClick={() => { setActiveProvider(null); setShowProviderPicker((value) => !value); }}>
-              {showProviderPicker ? 'إغلاق القائمة' : '+ إضافة شركة'}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, color: 'var(--ink-muted)', fontSize: 12 }}>
+            <strong style={{ color: 'var(--ink-main)', fontSize: 23, fontVariantNumeric: 'tabular-nums' }}>{connectedProviders.length}</strong>
+            <span>من {PROVIDERS.length} شركات مرتبطة</span>
+            <button type="button" style={{ ...panelButtonStyle, marginInlineStart: 8 }} onClick={() => void refreshConnections()} disabled={refreshing}>
+              {refreshing ? 'جارٍ التحديث...' : 'تحديث'}
             </button>
           </div>
-        </div>
+        </header>
 
         {connectionError && <p role="alert" style={{ color: '#a12e27', fontSize: 13 }}>{connectionError}</p>}
-        {loadingConnections ? (
-          <p style={{ padding: '18px 0', color: 'var(--ink-muted)', fontSize: 13 }}>جارٍ تحميل اتصالات المتجر...</p>
-        ) : connections.length === 0 ? (
-          <div style={{ padding: '22px 0', borderBlock: '1px solid var(--border-soft, #dfe4dc)' }}>
-            <strong style={{ color: 'var(--ink-main)' }}>لم تربط أي شركة توصيل بعد</strong>
-            <p style={{ margin: '6px 0 0', color: 'var(--ink-muted)', fontSize: 13 }}>أضف أول شركة تستخدمها. يمكنك إضافة شركات أخرى في أي وقت دون إعادة إعداد مصدر الطلبات.</p>
-          </div>
-        ) : (
-          <div>
-            {connections.map((connection) => {
-              const provider = PROVIDERS.find((item) => item.id === connection.provider);
-              if (!provider) return null;
-              const active = connection.sync_enabled !== false;
-              const hasError = Boolean(connection.last_error);
-              const lastActivity = connection.last_webhook_processed_at || connection.last_webhook_received_at || connection.last_success_at || connection.last_sync_at;
-              return (
-                <div key={connection.provider} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 0', borderBottom: '1px solid var(--border-soft, #e5e8e2)' }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <strong style={{ display: 'block', color: 'var(--ink-main)', fontSize: 14 }}>{provider.name}</strong>
-                    <span style={{ display: 'block', marginTop: 3, color: hasError ? '#a12e27' : active ? '#34734a' : 'var(--ink-muted)', fontSize: 12 }}>
-                      {hasError ? 'يحتاج إلى مراجعة' : active ? 'الاتصال مفعّل' : 'الاتصال متوقف'}
-                    </span>
-                    <span style={{ display: 'block', marginTop: 3, color: 'var(--ink-muted)', fontSize: 11 }}>
-                      {lastActivity ? `آخر نشاط: ${dateLabel(lastActivity)}` : `أضيف في: ${dateLabel(connection.connected_at)}`}
-                      {connection.last_error ? ` · ${connection.last_error}` : ''}
-                    </span>
-                  </div>
-                  <button type="button" style={panelButtonStyle} onClick={() => { setShowProviderPicker(false); setActiveProvider(provider.id); }}>إدارة</button>
-                </div>
-              );
-            })}
-          </div>
+
+        {loadingConnections && (
+          <p style={{ margin: '0 0 14px', color: 'var(--ink-muted)', fontSize: 12 }}>جارٍ التحقق من اتصالات المتجر...</p>
         )}
 
-        {showProviderPicker && (
-          <div style={{ marginTop: 18, borderTop: '1px solid var(--border-soft, #dfe4dc)', paddingTop: 16 }}>
-            <div style={{ marginBottom: 12 }}>
-              <strong>اختر شركة التوصيل</strong>
-              <p style={{ margin: '4px 0 0', color: 'var(--ink-muted)', fontSize: 12 }}>لن تتغير الاتصالات الموجودة عند إضافة شركة جديدة.</p>
+        {!loadingConnections && connectedProviders.length > 0 && (
+          <section aria-labelledby="dz-connected-carriers-title" style={{ marginBottom: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
+              <h3 id="dz-connected-carriers-title" style={{ margin: 0, color: 'var(--ink-main)', fontSize: 16, fontWeight: 850 }}>الشركات المرتبطة</h3>
+              <span style={{ color: 'var(--ink-muted)', fontSize: 12 }}>{connectedProviders.length} اتصال</span>
             </div>
-            {availableProviders.length === 0 ? (
-              <p style={{ color: 'var(--ink-muted)', fontSize: 13 }}>جميع الشركات المدرجة لها اتصال محفوظ بالفعل.</p>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 7 }}>
-                {availableProviders.map((provider) => (
-                  <button
-                    key={provider.id}
-                    type="button"
-                    onClick={() => { setActiveProvider(provider.id); setShowProviderPicker(false); }}
-                    style={{ ...panelButtonStyle, textAlign: 'start', minHeight: 70 }}
-                  >
-                    <strong style={{ display: 'block' }}>{provider.name}</strong>
-                    <span style={{ display: 'block', marginTop: 4, fontSize: 11, fontWeight: 500, color: 'var(--ink-muted)' }}>{provider.method}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeProvider && activeProviderDetails && (
-          <div style={{ marginTop: 18, borderTop: '1px solid var(--border-soft, #dfe4dc)', paddingTop: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-              <div>
-                <span style={{ color: 'var(--ink-muted)', fontSize: 11 }}>إعداد مستقل</span>
-                <h3 style={{ margin: '4px 0', fontSize: 17, color: 'var(--ink-main)' }}>{activeProviderDetails.name}</h3>
-              </div>
-              <button type="button" style={panelButtonStyle} onClick={handleReturnToList}>العودة إلى الشركات</button>
+            <p style={{ margin: '4px 0 0', color: 'var(--ink-muted)', fontSize: 12 }}>تظهر هنا كل شركة تم ربطها بحسابك. إدارة أي اتصال لا تؤثر في الاتصالات الأخرى.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', columnGap: 34, marginTop: 8 }}>
+              {connectedProviders.map(renderProviderRow)}
             </div>
-            {activeProvider === 'yalidine' && <YalidineConnectionPanel />}
-            {activeProvider === 'ecotrack' && <EcoTrackConnectionPanel />}
-            {activeProvider === 'zrexpress' && <ZRExpressConnectionPanel />}
-            {activeProvider === 'procolis' && <ProcolisConnectionPanel />}
-            {activeProvider === 'maystro' && <MaystroConnectionPanel />}
-            {activeProvider === 'zimou' && <ZimouConnectionPanel />}
-            {activeProvider === 'elogistia' && <ElogistiaConnectionPanel />}
-            {activeProvider === 'ecom_v2' && <EcomV2ConnectionPanel />}
-          </div>
+          </section>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
-          <button type="button" style={panelButtonStyle} onClick={() => void refreshConnections()} disabled={refreshing}>
-            {refreshing ? 'جارٍ التحديث...' : 'تحديث القائمة'}
-          </button>
-        </div>
+        <section aria-labelledby="dz-available-carriers-title">
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
+            <h3 id="dz-available-carriers-title" style={{ margin: 0, color: 'var(--ink-main)', fontSize: 16, fontWeight: 850 }}>
+              {loadingConnections ? 'شركات التوصيل المدعومة' : connectedProviders.length > 0 ? 'شركات أخرى متاحة للربط' : 'الشركات المتاحة للربط'}
+            </h3>
+            <span style={{ color: 'var(--ink-muted)', fontSize: 12 }}>{loadingConnections ? PROVIDERS.length : availableProviders.length} شركة</span>
+          </div>
+          <p style={{ margin: '4px 0 0', color: 'var(--ink-muted)', fontSize: 12 }}>
+            يمكنك ربط شركة جديدة دون فصل شركة مرتبطة حالياً أو إعادة إعداد مصدر الطلبات.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', columnGap: 34, marginTop: 8 }}>
+            {(loadingConnections ? PROVIDERS : availableProviders).map(renderProviderRow)}
+          </div>
+          {!loadingConnections && availableProviders.length === 0 && (
+            <p style={{ margin: '14px 0 0', color: 'var(--ink-muted)', fontSize: 12 }}>كل الشركات المدعومة مرتبطة بالفعل. يمكنك فتح إعدادات أي شركة من قسم الاتصالات أعلاه.</p>
+          )}
+        </section>
       </section>
 
       <style jsx global>{`
