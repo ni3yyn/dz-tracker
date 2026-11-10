@@ -44,7 +44,7 @@ const PROVIDERS: Array<{ id: ProviderId; name: string; method: string; descripti
   { id: 'yalidine', name: 'Yalidine', method: 'Webhook موقّع', description: 'تحديثات الشحنات عبر Webhook موثّق' },
   { id: 'ecotrack', name: 'EcoTrack', method: 'API ومزامنة دورية', description: 'اكتشاف الشحنات ومزامنة الحالات عبر API' },
   { id: 'zrexpress', name: 'ZR Express', method: 'API وWebhook', description: 'اتصال مستقل ببيانات حساب ZR Express' },
-  { id: 'procolis', name: 'Procolis', method: 'Webhook مستقل', description: 'رابط استقبال خاص لا يتشارك مع ZR Express' },
+  { id: 'procolis', name: 'Procolis', method: 'API ومزامنة دورية', description: 'قراءة حالات أرقام التتبع المسجلة في الطلبات، باتصال مستقل عن ZR Express' },
   { id: 'maystro', name: 'Maystro', method: 'API وWebhook', description: 'استقبال الأحداث وربط بيانات الطرود' },
   { id: 'zimou', name: 'Zimou Express', method: 'API ومزامنة دورية', description: 'قراءة الشحنات المرتبطة ومزامنة الحالات' },
   { id: 'elogistia', name: 'Elogistia', method: 'API ومزامنة دورية', description: 'قراءة بيانات الشحنات ومزامنة الحالات' },
