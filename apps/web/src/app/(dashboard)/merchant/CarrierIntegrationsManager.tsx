@@ -133,7 +133,6 @@ function AnimatedHeight({
         opacity: expanded ? 1 : 0,
         overflow: 'hidden',
         pointerEvents: expanded ? 'auto' : 'none',
-        visibility: expanded ? 'visible' : 'hidden',
       }}
     >
       <div ref={innerRef} className="dz-animated-height-measure">
@@ -779,10 +778,14 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
           transition: none;
         }
         .dz-carrier-manager .dz-animated-height[data-ready="true"] {
+          visibility: visible;
           transition:
             height .46s cubic-bezier(.2, .75, .25, 1),
             opacity .28s ease,
             visibility 0s linear 0s;
+        }
+        .dz-carrier-manager .dz-animated-height[data-ready="true"][data-expanded="false"] {
+          visibility: hidden;
         }
         .dz-carrier-manager .dz-animated-height[data-ready="true"][data-expanded="false"] {
           transition:
@@ -802,8 +805,8 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
           animation: none;
         }
         @keyframes dzIntegrationReveal {
-          from { opacity: 0; transform: translate3d(0, 7px, 0); }
-          to { opacity: 1; transform: translate3d(0, 0, 0); }
+          from { opacity: 0; transform: translate3d(8px, 7px, 0) scale(.997); }
+          to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
         }
         .dz-carrier-manager .dz-integration-content {
           width: 100%;
