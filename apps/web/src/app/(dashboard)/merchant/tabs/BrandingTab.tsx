@@ -11,9 +11,11 @@ import {
   FONT_FAMILIES,
   TIMELINE_DESIGNS,
   TIMELINE_LINE_STYLES,
-  getBrandCont };
-type FontOption = { id: FontFamily; name: string; sample: string };
-type AnimationOption = { id: AnimationLevel; name: string; desc: string; icon: string };
+  getBrandContrastRatio,
+  getReadableBrandAccent,
+  getReadableOnBrand,
+} from '../features/branding/branding-options';
+import { Icons } from '../components/DashboardIcons';
 
 interface BrandingTabProps {
   brandConfig: EditableBrandSettings;
