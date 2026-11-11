@@ -59,7 +59,7 @@ export default function LegalDocument({
         </article>
 
       </div>
-      <SiteFooter homeHref="/" currentDocument={currentDocument} />
+      <SiteFooter homeHref="/" currentDocument={currentDocument} className={styles.legalFooter} />
     </main>
   );
 }
