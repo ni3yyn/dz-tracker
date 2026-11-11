@@ -84,7 +84,7 @@ async function MerchantDashboardContent() {
   // جلب جميع الطلبات
   const extendedOrdersQuery = await supabaseAdmin
     .from('orders')
-    .select('id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, carrier_order_id, carrier_metadata, tracking_uuid, created_at, confirmation_status')
+    .select('id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, carrier_last_event_at, carrier_order_id, carrier_metadata, tracking_uuid, created_at, confirmation_status')
     .eq('merchant_id', merchant.id)
     .order('created_at', { ascending: false });
 
@@ -97,10 +97,18 @@ async function MerchantDashboardContent() {
   ) {
     const fallbackOrdersQuery = await supabaseAdmin
       .from('orders')
-      .select('id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, tracking_uuid, created_at, confirmation_status')
+      .select('id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, carrier_last_event_at, tracking_uuid, created_at, confirmation_status')
       .eq('merchant_id', merchant.id)
       .order('created_at', { ascending: false });
     orders = fallbackOrdersQuery.data;
+  }
+
+  const { data: exceptionStatesData, error: exceptionStatesError } = await (supabaseAdmin as any)
+    .from('merchant_shipment_exception_states')
+    .select('order_id, exception_type, state, event_fingerprint, snoozed_until, updated_at')
+    .eq('merchant_id', merchant.id);
+  if (exceptionStatesError) {
+    console.error('[ShipmentExceptions] Could not load merchant exception actions:', exceptionStatesError.message);
   }
 
   // التحقق من صلاحية الاشتراك وتحديثه إذا انتهت المدة
@@ -218,6 +226,8 @@ async function MerchantDashboardContent() {
       storeName={merchant.store_name}
       merchantId={merchant.id}
       orders={orders || []}
+      exceptionStates={(exceptionStatesData || []) as any}
+      exceptionStateStorageAvailable={!exceptionStatesError}
       mappings={cleanMappings}
       brandSettings={brandSettings}
       brandColor={brandColor}

@@ -4,6 +4,8 @@ import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallba
 import { createPortal } from 'react-dom';
 import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import { StatusSelector } from './StatusSelector';
+import { ShipmentExceptionsPanel } from './ShipmentExceptionsPanel';
+import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
 import { BrandedSelect } from './BrandedSelect';
 import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
@@ -52,6 +54,7 @@ interface OrderItem {
   current_status: string;
   carrier_name: string | null;
   carrier_tracking_number: string | null;
+  carrier_last_event_at?: string | null;
   tracking_uuid: string;
   created_at: string;
   confirmation_status?: 'pending' | 'confirmed' | 'cancelled' | null;
@@ -145,6 +148,8 @@ interface Props {
   telegramTrackingLinkEnabled?: boolean;
   confirmationTelegramEnabled?: boolean;
   initialUpsells?: MerchantUpsellItem[];
+  exceptionStates?: ShipmentExceptionState[];
+  exceptionStateStorageAvailable?: boolean;
 }
 
 const SAMPLE_PREVIEW_EVENTS: TimelineEvent[] = [
@@ -609,7 +614,7 @@ const Icons = {
 type MerchantDashboardTab =
   | 'overview'
   | 'orders'
-  | 'alerts'
+  | 'exceptions'
   | 'analytics'
   | 'branding'
   | 'upsells'
@@ -621,7 +626,7 @@ const MERCHANT_DASHBOARD_TAB_ORDER: Record<MerchantDashboardTab, number> = {
   overview: 0,
   orders: 1,
   analytics: 2,
-  alerts: 3,
+  exceptions: 3,
   branding: 4,
   upsells: 5,
   integrations: 6,
@@ -730,6 +735,8 @@ export function MerchantDashboardView({
   telegramTrackingLinkEnabled = false,
   confirmationTelegramEnabled = false,
   initialUpsells = [],
+  exceptionStates = [],
+  exceptionStateStorageAvailable = false,
 }: Props) {
   const { alert: alertDialog, confirm: confirmDialog } = useGlobalDialog();
   const isUnlimitedPlan = subscription.tier === 'scale' || (subscription.limit !== undefined && subscription.limit >= 999999);
@@ -762,7 +769,7 @@ export function MerchantDashboardView({
     const tabTitles: Record<MerchantDashboardTab, string> = {
       overview: 'نظرة عامة',
       orders: 'الشحنات',
-      alerts: 'تنبيهات COD',
+      exceptions: 'استثناءات الشحن',
       analytics: 'تحليلات الشحنات',
       branding: 'تخصيص صفحة التتبّع',
       upsells: 'زيادة المبيعات',
@@ -797,7 +804,7 @@ export function MerchantDashboardView({
   const [brandingCategory, setBrandingCategory] = useState<BrandingCategory>('identity');
   const [hasUnsavedBrandChanges, setHasUnsavedBrandChanges] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'transit' | 'stopdesk' | 'alerts' | 'delivered' | 'returned'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'transit' | 'stopdesk' | 'attention' | 'delivered' | 'returned'>('all');
   const [carrierFilter, setCarrierFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'risk'>('newest');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -1460,11 +1467,21 @@ export function MerchantDashboardView({
     ['returned', 'cancelled'].includes(o.current_status)
   ).length;
 
-  const alertOrders = useMemo(() => {
-    return orders.filter((o) => isAttentionStatus(o.current_status));
-  }, [orders]);
-
-  const alertCount = alertOrders.length;
+  const detectedShipmentExceptions = useMemo(() => detectShipmentExceptions(orders), [orders]);
+  const visibleShipmentExceptions = useMemo(
+    () => detectedShipmentExceptions.filter((exception) => !isShipmentExceptionResolved(exception, exceptionStates)),
+    [detectedShipmentExceptions, exceptionStates]
+  );
+  const exceptionCount = visibleShipmentExceptions.length;
+  const exceptionOrders = useMemo(() => {
+    const uniqueOrders = new Map<string, OrderItem>();
+    for (const exception of visibleShipmentExceptions) uniqueOrders.set(exception.orderId, exception.order as OrderItem);
+    return Array.from(uniqueOrders.values());
+  }, [visibleShipmentExceptions]);
+  const exceptionOrderIds = useMemo(
+    () => new Set(visibleShipmentExceptions.map((exception) => exception.orderId)),
+    [visibleShipmentExceptions]
+  );
   const successRate = orders.length > 0 ? Math.round((deliveredCount / orders.length) * 100) : 0;
   const recentOrders = useMemo(
     () => [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6),
@@ -1535,12 +1552,12 @@ export function MerchantDashboardView({
   }, [orders]);
   const ordersCreatedLastSevenDays = lastSevenDays.reduce((sum, day) => sum + day.count, 0);
   const maxDailyOrders = Math.max(1, ...lastSevenDays.map((day) => day.count));
-  const classifiedStatusCount = inTransitCount + stopdeskCount + deliveredCount + alertCount + returnedCount;
+  const classifiedStatusCount = inTransitCount + stopdeskCount + deliveredCount + exceptionCount + returnedCount;
   const statusBreakdown = [
     { key: 'moving', label: 'في الطريق', count: inTransitCount, color: '#638797' },
     { key: 'pickup', label: 'جاهزة للاستلام', count: stopdeskCount, color: '#ac8a4a' },
     { key: 'delivered', label: 'تم التسليم', count: deliveredCount, color: '#5d8968' },
-    { key: 'attention', label: 'تحتاج إلى متابعة', count: alertCount, color: '#b95a4a' },
+    { key: 'attention', label: 'تحتاج إلى متابعة', count: exceptionCount, color: '#b95a4a' },
     { key: 'returned', label: 'مرتجعة أو ملغاة', count: returnedCount, color: '#877b85' },
     { key: 'other', label: 'حالات أخرى أو قيد المعالجة', count: Math.max(0, orders.length - classifiedStatusCount), color: '#9a9c91' },
   ];
@@ -1567,7 +1584,7 @@ export function MerchantDashboardView({
         return false;
       }
 
-      if (activeTab === 'alerts' || statusFilter === 'alerts') {
+      if (statusFilter === 'attention') {
         return isAttentionStatus(order.current_status);
       }
       if (statusFilter === 'delivered') return order.current_status === 'delivered';
@@ -1585,14 +1602,14 @@ export function MerchantDashboardView({
       list.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     } else if (sortBy === 'risk') {
       list.sort((a, b) => {
-        const aRisk = isAttentionStatus(a.current_status) ? 1 : 0;
-        const bRisk = isAttentionStatus(b.current_status) ? 1 : 0;
+        const aRisk = exceptionOrderIds.has(a.id) ? 1 : 0;
+        const bRisk = exceptionOrderIds.has(b.id) ? 1 : 0;
         return bRisk - aRisk;
       });
     }
 
     return list;
-  }, [orders, searchTerm, statusFilter, carrierFilter, sortBy, activeTab]);
+  }, [orders, searchTerm, statusFilter, carrierFilter, sortBy, activeTab, exceptionOrderIds]);
 
   const allFilteredOrdersSelected =
     filteredOrders.length > 0 &&
@@ -1659,10 +1676,10 @@ export function MerchantDashboardView({
     return labels[normalizedStatus] || normalizedStatus.replace(/_/g, ' ');
   };
 
-  const openShipmentList = (filter: 'all' | 'transit' | 'stopdesk' | 'alerts' | 'delivered' | 'returned', query = '') => {
+  const openShipmentList = (filter: 'all' | 'transit' | 'stopdesk' | 'attention' | 'exceptions' | 'delivered' | 'returned', query = '') => {
     setSearchTerm(query);
-    setStatusFilter(filter);
-    setActiveTab(filter === 'alerts' ? 'alerts' : 'orders');
+    setStatusFilter(filter === 'exceptions' ? 'all' : filter);
+    setActiveTab(filter === 'exceptions' ? 'exceptions' : 'orders');
     setVisibleOrders(20);
   };
 
@@ -7057,9 +7074,9 @@ export function MerchantDashboardView({
             <button className={`dz-nav-item ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => { setActiveTab('analytics'); setMobileMenuOpen(false); }}>
               <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Chart /></span> التحليلات</span>
             </button>
-            <button className={`dz-nav-item ${activeTab === 'alerts' ? 'active' : ''}`} onClick={() => { setActiveTab('alerts'); setStatusFilter('alerts'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.AlertTriangle /></span> تنبيهات COD</span>
-              {alertCount > 0 && <span className="dz-alert-badge">{alertCount}</span>}
+            <button className={`dz-nav-item ${activeTab === 'exceptions' ? 'active' : ''}`} onClick={() => { setActiveTab('exceptions'); setStatusFilter('all'); setMobileMenuOpen(false); }}>
+              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.AlertTriangle /></span> استثناءات الشحن</span>
+              {exceptionCount > 0 && <span className="dz-alert-badge">{exceptionCount}</span>}
             </button>
             <div className="dz-nav-caption dz-nav-caption-secondary">إدارة المتجر</div>
             <button className={`dz-nav-item ${activeTab === 'branding' ? 'active' : ''}`} onClick={() => { setActiveTab('branding'); setMobileMenuOpen(false); }}>
@@ -7115,7 +7132,7 @@ export function MerchantDashboardView({
               <h1>
                 {activeTab === 'overview' && 'نظرة عامة'}
                 {activeTab === 'orders' && 'الشحنات'}
-                {activeTab === 'alerts' && 'رادار تنبيهات الـ COD'}
+                {activeTab === 'exceptions' && 'مركز استثناءات الشحن'}
                 {activeTab === 'analytics' && 'تحليلات الشحنات'}
                 {activeTab === 'branding' && 'تخصيص صفحة الزبون'}
                 {activeTab === 'upsells' && 'زيادة المبيعات (قد يعجبك أيضاً)'}
@@ -7126,7 +7143,7 @@ export function MerchantDashboardView({
               <p>
                 {activeTab === 'overview' && `مرحباً ${displayStoreName}، إليك ملخص الشحنات وما يحتاج إلى متابعة.`}
                 {activeTab === 'orders' && 'ابحث عن شحنة، حدّد الحالة، واتخذ الإجراء من مكان واحد.'}
-                {activeTab === 'alerts' && 'طلبات مهددة بالإرجاع (عدم الرد/مؤجل). تواصل معهم فوراً.'}
+                {activeTab === 'exceptions' && 'الشحنات التي خرجت عن المسار المتوقع وتحتاج إلى تدخلك.'}
                 {activeTab === 'analytics' && 'مؤشرات مبنية على الشحنات المسجلة والحالات الحالية، دون تقديرات غير متاحة.'}
                 {activeTab === 'branding' && 'عزز ولاء زبائنك بصفحة تتبع تحمل هويتك البصرية.'}
                 {activeTab === 'upsells' && 'اعرض منتجات إضافية للزبون في أسفل صفحة التتبع لزيادة متوسط قيمة الطلب بدون إعلانات مدفوعة.'}
@@ -7136,7 +7153,7 @@ export function MerchantDashboardView({
               </p>
             </div>
 
-            {(activeTab === 'overview' || activeTab === 'orders' || activeTab === 'alerts') && (
+            {(activeTab === 'overview' || activeTab === 'orders' || activeTab === 'exceptions') && (
               <div className="dz-header-actions">
                 <div className="dz-search-box" role="search">
                   <Icons.Search />
@@ -7256,16 +7273,16 @@ export function MerchantDashboardView({
             return null;
           })()}
 
-          {alertCount > 0 && activeTab === 'orders' && (
+          {exceptionCount > 0 && activeTab === 'orders' && (
             <div className="dz-alert-banner">
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ color: '#ef4444' }}><Icons.AlertTriangle /></span>
                 <div>
-                  <strong style={{ color: '#991b1b', display: 'block', fontSize: '14px' }}>تنبيهات خطر الإرجاع</strong>
-                  <span style={{ fontSize: '13px', color: '#b91c1c' }}>يوجد {alertCount} طلب مهدد. يتطلب إنقاذ عبر الواتساب.</span>
+                  <strong style={{ color: '#991b1b', display: 'block', fontSize: '14px' }}>استثناءات تحتاج إلى متابعة</strong>
+                  <span style={{ fontSize: '13px', color: '#b91c1c' }}>يوجد {exceptionCount} استثناءً يحتاج إلى مراجعة.</span>
                 </div>
               </div>
-              <button className="dz-btn" style={{ background: '#ef4444' }} onClick={() => { setActiveTab('alerts'); setStatusFilter('alerts'); setMobileMenuOpen(false); }}>
+              <button className="dz-btn" style={{ background: '#ef4444' }} onClick={() => { setActiveTab('exceptions'); setStatusFilter('all'); setMobileMenuOpen(false); }}>
                 عرض الطلبات
               </button>
             </div>
@@ -7323,13 +7340,13 @@ export function MerchantDashboardView({
                     <div className="dz-overview-section-head">
                       <div>
                         <h2 id="overview-attention-title" className="dz-overview-section-title">تحتاج إلى متابعة</h2>
-                        <span className="dz-overview-section-subtitle">الشحنات التي تتطلب اهتماماً بسبب تعذّر التوصيل أو التأجيل</span>
+                        <span className="dz-overview-section-subtitle">الشحنات التي اكتُشف فيها خروج عن المسار المتوقع</span>
                       </div>
-                      {alertCount > 0 && <button type="button" className="dz-overview-text-link" onClick={() => openShipmentList('alerts')}>عرض الكل ({alertCount})</button>}
+                      {exceptionCount > 0 && <button type="button" className="dz-overview-text-link" onClick={() => openShipmentList('exceptions')}>عرض الكل ({exceptionCount})</button>}
                     </div>
-                    {alertOrders.length === 0 ? (
-                      <div className="dz-overview-empty">لا توجد شحنات تحتاج إلى متابعة حالياً. ستظهر هنا الحالات التي تتطلب تدخلاً.</div>
-                    ) : alertOrders.slice(0, 5).map((order) => (
+                    {exceptionOrders.length === 0 ? (
+                      <div className="dz-overview-empty">لا توجد استثناءات نشطة حالياً.</div>
+                    ) : exceptionOrders.slice(0, 5).map((order) => (
                       <div className="dz-overview-item" key={`attention-${order.id}`}>
                         <div className="dz-overview-item-main">
                           <span className="dz-overview-item-mark" aria-hidden="true" />
@@ -7385,9 +7402,9 @@ export function MerchantDashboardView({
                         <span className="dz-overview-action-icon"><Icons.Box /></span>
                         <span className="dz-overview-action-copy"><strong>كل الشحنات</strong><small>بحث وتصفية وتحديث الحالة</small></span>
                       </button>
-                      <button type="button" className="dz-overview-action" onClick={() => openShipmentList('alerts')}>
+                      <button type="button" className="dz-overview-action" onClick={() => openShipmentList('exceptions')}>
                         <span className="dz-overview-action-icon"><Icons.AlertTriangle /></span>
-                        <span className="dz-overview-action-copy"><strong>تنبيهات COD</strong><small>{alertCount ? `${alertCount} شحنة تحتاج إلى مراجعة` : 'لا توجد تنبيهات حالياً'}</small></span>
+                        <span className="dz-overview-action-copy"><strong>استثناءات الشحن</strong><small>{exceptionCount ? `${exceptionCount} شحنة تحتاج إلى مراجعة` : 'لا توجد تنبيهات حالياً'}</small></span>
                       </button>
                       <button type="button" className="dz-overview-action" onClick={() => { setActiveTab('branding'); setMobileMenuOpen(false); }}>
                         <span className="dz-overview-action-icon"><Icons.Palette /></span>
@@ -7410,8 +7427,8 @@ export function MerchantDashboardView({
             </section>
           )}
 
-          {/* TABS: ORDERS & ALERTS */}
-          {(activeTab === 'orders' || activeTab === 'alerts') && (
+          {/* TAB: ORDERS */}
+          {activeTab === 'orders' && (
             <div>
               <div className="dz-stats-bar dz-orders-desktop-summary" aria-label="ملخص الشحنات">
                 <button type="button" className="dz-stat-item" onClick={() => openShipmentList('all')}>
@@ -7437,7 +7454,7 @@ export function MerchantDashboardView({
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'all' && activeTab === 'orders' ? 'active' : ''}`} aria-pressed={statusFilter === 'all' && activeTab === 'orders'} onClick={() => { setStatusFilter('all'); if (activeTab !== 'orders') setActiveTab('orders'); }}>الكل</button>
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'transit' ? 'active' : ''}`} aria-pressed={statusFilter === 'transit'} onClick={() => { setActiveTab('orders'); setStatusFilter('transit'); }}>في الطريق</button>
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'stopdesk' ? 'active' : ''}`} aria-pressed={statusFilter === 'stopdesk'} onClick={() => { setActiveTab('orders'); setStatusFilter('stopdesk'); }}>نقطة الاستلام</button>
-                  <button type="button" className={`dz-filter-btn ${statusFilter === 'alerts' || activeTab === 'alerts' ? 'active' : ''}`} aria-pressed={statusFilter === 'alerts' || activeTab === 'alerts'} onClick={() => { setActiveTab('alerts'); setStatusFilter('alerts'); setMobileMenuOpen(false); }}>تنبيهات ({alertCount})</button>
+                  <button type="button" className="dz-filter-btn" aria-pressed={false} onClick={() => { setActiveTab('exceptions'); setStatusFilter('all'); setMobileMenuOpen(false); }}>استثناءات ({exceptionCount})</button>
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'delivered' ? 'active' : ''}`} aria-pressed={statusFilter === 'delivered'} onClick={() => { setActiveTab('orders'); setStatusFilter('delivered'); }}>تم التسليم</button>
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'returned' ? 'active' : ''}`} aria-pressed={statusFilter === 'returned'} onClick={() => { setActiveTab('orders'); setStatusFilter('returned'); }}>مرتجع</button>
                 </div>
@@ -7561,7 +7578,7 @@ export function MerchantDashboardView({
                       {filteredOrders.length === 0 ? (
                         <tr><td colSpan={6} style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--ink-muted)' }}>{orders.length === 0 ? 'لا توجد شحنات مسجلة بعد.' : 'لا توجد نتائج تطابق البحث والفلاتر الحالية.'}</td></tr>
                       ) : filteredOrders.slice(0, visibleOrders).map((order) => {
-                        const isAlert = isAttentionStatus(order.current_status);
+                        const isAlert = exceptionOrderIds.has(order.id);
                         return (
                           <tr key={order.id} className={isAlert ? 'row-alert' : ''}>
                             <td>
@@ -7657,7 +7674,7 @@ export function MerchantDashboardView({
                 {filteredOrders.length === 0 ? (
                   <div className="dz-overview-empty">{orders.length === 0 ? 'لا توجد شحنات مسجلة بعد.' : 'لا توجد نتائج تطابق البحث والفلاتر الحالية.'}</div>
                 ) : filteredOrders.slice(0, visibleOrders).map((order) => {
-                  const isAlert = isAttentionStatus(order.current_status);
+                  const isAlert = exceptionOrderIds.has(order.id);
                   const badgeStyle = getStatusBadgeStyle(order.current_status);
                   return (
                     <article key={`mobile-${order.id}`} className="dz-order-mobile-card">
@@ -7746,12 +7763,25 @@ export function MerchantDashboardView({
           )}
 
           {/* TAB: ANALYTICS */}
+          {activeTab === 'exceptions' && (
+            <ShipmentExceptionsPanel
+              orders={orders}
+              exceptionStates={exceptionStates}
+              exceptionStateStorageAvailable={exceptionStateStorageAvailable}
+              siteUrl={siteUrl}
+              searchTerm={searchTerm}
+              onSearchTermChange={setSearchTerm}
+              onOpenOrder={setSelectedOrderId}
+              getStatusLabel={getStatusLabel}
+            />
+          )}
+
           {activeTab === 'analytics' && (
             <section className="dz-analytics" aria-label="تحليلات الشحنات">
               <div className="dz-overview-kpis dz-analytics-kpis">
                 <div className="dz-overview-kpi"><span className="dz-overview-kpi-label">إجمالي الشحنات</span><strong className="dz-overview-kpi-value">{orders.length}</strong></div>
                 <div className="dz-overview-kpi"><span className="dz-overview-kpi-label">نسبة التسليم</span><strong className="dz-overview-kpi-value">{successRate}%</strong></div>
-                <div className={`dz-overview-kpi ${alertCount ? 'is-alert' : ''}`}><span className="dz-overview-kpi-label">تحتاج إلى متابعة</span><strong className="dz-overview-kpi-value">{alertCount}</strong></div>
+                <div className={`dz-overview-kpi ${exceptionCount ? 'is-alert' : ''}`}><span className="dz-overview-kpi-label">تحتاج إلى متابعة</span><strong className="dz-overview-kpi-value">{exceptionCount}</strong></div>
               </div>
               <div className="dz-analytics-grid">
                 <section className="dz-overview-section dz-analytics-section" aria-labelledby="analytics-volume-title">
@@ -7786,7 +7816,7 @@ export function MerchantDashboardView({
                   هذه الشاشة تعتمد على تاريخ تسجيل الطلب والحالة الحالية في قاعدة البيانات. لا تعرض متوسط مدة التوصيل أو نسبة الالتزام بموعد التسليم لأن بيانات بداية ونهاية النقل اللازمة لحسابهما غير متاحة في هذا العرض.
                 </div>
               </div>
-              <div className="dz-analytics-action-row"><button type="button" className="dz-btn dz-btn-outline" onClick={() => openShipmentList('all')}>عرض الشحنات</button><button type="button" className="dz-btn" onClick={() => openShipmentList('alerts')}>مراجعة التنبيهات ({alertCount})</button></div>
+              <div className="dz-analytics-action-row"><button type="button" className="dz-btn dz-btn-outline" onClick={() => openShipmentList('all')}>عرض الشحنات</button><button type="button" className="dz-btn" onClick={() => openShipmentList('exceptions')}>مراجعة التنبيهات ({exceptionCount})</button></div>
             </section>
           )}
 
