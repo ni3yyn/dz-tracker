@@ -323,3 +323,32 @@ The first Vercel preview for `83bc795` failed because the extracted `DashboardHe
 - [ ] Vercel preview build/deployment must complete successfully.
 - [ ] Review the next repeated component candidates only after checking all of their callsites (metric-card element semantics, filter controls, form-field contracts, empty states).
 - [ ] Continue the extraction manifest for hooks/effects/handlers, portals and CSS before moving those responsibilities.
+
+
+## Phase 2 — Feature tab boundaries (in progress)
+
+The Phase 1 baseline preview build completed successfully for commit `ca02fb8eacdafacb874419c89eb387741834391b`. Production `main` remains unchanged.
+
+Phase 2 moves tab-level rendering into dedicated modules while leaving feature state, derived data, server actions, mutations, cross-tab navigation, and existing feature modules in their current owners. Each tab is extracted only after its dependencies and event callbacks are explicit.
+
+### Completed first batch
+
+| Module | Extraction contract |
+|---|---|
+| `tabs/ExceptionsTab.tsx` | Thin typed adapter over the existing `ShipmentExceptionsPanel`; no duplicate exception state or feature logic. |
+| `tabs/AnalyticsTab.tsx` | Analytics JSX moved without changing its DOM/classes/copy/styles. It receives existing derived counts/series and the two original navigation callbacks; calculations remain in the composition root. |
+| `tabs/IntegrationsTab.tsx` | Thin typed adapter over the existing `CarrierIntegrationsManager`; provider state and integration actions remain in that canonical feature component. |
+
+### Remaining Phase 2 batches
+
+- [ ] Overview tab.
+- [ ] Orders tab and its existing order interactions.
+- [ ] Branding Studio tab.
+- [ ] Upsells tab.
+- [ ] Mappings tab.
+- [ ] Settings/Billing tab.
+- [ ] Re-map and document remaining portal ownership after tab boundaries are stable.
+- [ ] Run and pass Vercel preview plus applicable workspace CI for the completed Phase 2 changes.
+
+No tab receives a second copy of state. Existing feature components and CSS remain canonical; tab extraction must preserve element semantics, current classes, handlers, conditional rendering, and responsive behavior.
+

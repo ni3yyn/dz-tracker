@@ -11,12 +11,13 @@ import { Icons } from './components/DashboardIcons';
 import { DashboardSidebar, type MerchantDashboardTab } from './dashboard/DashboardSidebar';
 import { DashboardPanelTransition } from './dashboard/DashboardPanelTransition';
 import { DashboardHeader } from './dashboard/DashboardHeader';
-import { ShipmentExceptionsPanel } from './ShipmentExceptionsPanel';
+import { AnalyticsTab } from './tabs/AnalyticsTab';
+import { ExceptionsTab } from './tabs/ExceptionsTab';
+import { IntegrationsTab } from './tabs/IntegrationsTab';
 import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
 import { BrandedSelect } from './BrandedSelect';
 import { MappingForm } from './MappingForm';
 import { ImageUploadField } from './ImageUploadField';
-import { CarrierIntegrationsManager } from './CarrierIntegrationsManager';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
@@ -7943,7 +7944,7 @@ export function MerchantDashboardView({
 
           {/* TAB: ANALYTICS */}
           {activeTab === 'exceptions' && (
-            <ShipmentExceptionsPanel
+            <ExceptionsTab
               orders={orders}
               exceptionStates={exceptionStates}
               exceptionStateStorageAvailable={exceptionStateStorageAvailable}
@@ -7956,56 +7957,17 @@ export function MerchantDashboardView({
           )}
 
           {activeTab === 'analytics' && (
-            <section className="dz-analytics" aria-label="تحليلات الشحنات">
-              <div className="dz-overview-kpis dz-analytics-kpis">
-                <DashboardMetricCard as="div" label="إجمالي الشحنات" value={orders.length} />
-                <DashboardMetricCard as="div" label="نسبة التسليم" value={<>{successRate}%</>} />
-                <DashboardMetricCard as="div" className={`dz-overview-kpi ${exceptionCount ? 'is-alert' : ''}`} label="تحتاج إلى متابعة" value={exceptionCount} />
-              </div>
-              <div className="dz-analytics-grid">
-                <section className="dz-overview-section dz-analytics-section" aria-labelledby="analytics-volume-title">
-                  <DashboardSectionHeading
-                    id="analytics-volume-title"
-                    title="حجم تسجيل الطلبات"
-                    description="عدد الطلبات التي تم تسجيلها في كل يوم من آخر 7 أيام"
-                    action={<span className="dz-analytics-total">{ordersCreatedLastSevenDays} طلباً</span>}
-                  />
-                  <div className="dz-analytics-bars">
-                    {lastSevenDays.map((day) => (
-                      <div className="dz-analytics-bar-row" key={`${day.label}-${day.dateLabel}`}>
-                        <span className="dz-analytics-day">{day.label} <small>{day.dateLabel}</small></span>
-                        <div className="dz-analytics-bar-track"><div className="dz-analytics-bar-fill" style={{ width: `${Math.round((day.count / maxDailyOrders) * 100)}%` }} /></div>
-                        <strong className="dz-analytics-bar-count">{day.count}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-                <section className="dz-overview-section dz-analytics-section" aria-labelledby="analytics-status-title">
-                  <DashboardSectionHeading
-                    id="analytics-status-title"
-                    title="توزيع الحالات"
-                    description="حسب الحالة الحالية لكل شحنة"
-                  />
-                  <div className="dz-analytics-status-list">
-                    {statusBreakdown.map((item) => {
-                      const percent = orders.length ? Math.round((item.count / orders.length) * 100) : 0;
-                      return <div className="dz-analytics-status-item" key={item.key}>
-                        <div className="dz-analytics-status-heading"><span><i style={{ background: item.color }} />{item.label}</span><strong>{item.count} <small>({percent}%)</small></strong></div>
-                        <div className="dz-analytics-bar-track"><div className="dz-analytics-bar-fill" style={{ width: `${percent}%`, background: item.color }} /></div>
-                      </div>;
-                    })}
-                  </div>
-                </section>
-              </div>
-              <div className="dz-analytics-footnote">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px', color: '#416B52' }}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
-                <div>
-                  <strong style={{ display: 'inline-block', marginInlineEnd: '6px', color: 'var(--ink-main)' }}>ملاحظة تحليلية:</strong>
-                  هذه الشاشة تعتمد على تاريخ تسجيل الطلب والحالة الحالية في قاعدة البيانات. لا تعرض متوسط مدة التوصيل أو نسبة الالتزام بموعد التسليم لأن بيانات بداية ونهاية النقل اللازمة لحسابهما غير متاحة في هذا العرض.
-                </div>
-              </div>
-              <div className="dz-analytics-action-row"><button type="button" className="dz-btn dz-btn-outline" onClick={() => openShipmentList('all')}>عرض الشحنات</button><button type="button" className="dz-btn" onClick={() => openShipmentList('exceptions')}>مراجعة التنبيهات ({exceptionCount})</button></div>
-            </section>
+            <AnalyticsTab
+              orderCount={orders.length}
+              successRate={successRate}
+              exceptionCount={exceptionCount}
+              ordersCreatedLastSevenDays={ordersCreatedLastSevenDays}
+              lastSevenDays={lastSevenDays}
+              maxDailyOrders={maxDailyOrders}
+              statusBreakdown={statusBreakdown}
+              onOpenOrders={() => openShipmentList('all')}
+              onOpenExceptions={() => openShipmentList('exceptions')}
+            />
           )}
 
           {/* TAB: BRANDING STUDIO */}
@@ -8840,7 +8802,7 @@ export function MerchantDashboardView({
 
           {/* TAB: MULTI-CARRIER INTEGRATIONS */}
           {activeTab === 'integrations' && (
-            <CarrierIntegrationsManager
+            <IntegrationsTab
               merchantId={merchantId}
               siteUrl={siteUrl}
               onOpenOrders={() => setActiveTab('orders')}
