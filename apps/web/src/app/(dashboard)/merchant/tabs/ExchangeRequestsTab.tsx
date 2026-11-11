@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { EXCHANGE_REQUEST_REASONS, type ExchangeRequestStatus, type ExchangeShipmentCandidate, type MerchantExchangeRequest } from '../../../../lib/exchange';
+import { DashboardMetricCard } from '../components/DashboardMetricCard';
+import { DashboardFilterTabs } from '../components/DashboardFilterTabs';
 import { confirmExchangeShipmentMatch, reviewExchangeRequest } from '../exchange-actions';
 import styles from './exchange-requests.module.css';
 
@@ -107,7 +109,6 @@ export function ExchangeRequestsTab({ initialRequests, initialCandidates, storag
           <h2>طلبات الاستبدال</h2>
           <p>راجع طلبات الزبائن، وأنشئ شحنة بديلة بعد الموافقة. يتعرف عليها النظام تلقائياً عند وصولها.</p>
         </div>
-        <div className={styles.total}><strong>{counts.pending.toLocaleString('ar-DZ')}</strong><span>تحتاج مراجعتك</span></div>
       </div>
 
       {!storageAvailable && (
@@ -161,22 +162,26 @@ export function ExchangeRequestsTab({ initialRequests, initialCandidates, storag
         </section>
       )}
 
-      <div className={styles.metrics}>
-        <div><span>كل الطلبات</span><strong>{counts.all.toLocaleString('ar-DZ')}</strong></div>
-        <div><span>تحتاج مراجعة</span><strong>{counts.pending.toLocaleString('ar-DZ')}</strong></div>
-        <div><span>بانتظار الشحنة</span><strong>{counts.awaiting_shipment.toLocaleString('ar-DZ')}</strong></div>
-        <div><span>جاري الاستبدال</span><strong>{counts.replacement_in_transit.toLocaleString('ar-DZ')}</strong></div>
-        <div><span>مكتملة</span><strong>{counts.completed.toLocaleString('ar-DZ')}</strong></div>
-        <div><span>مرفوضة</span><strong>{counts.rejected.toLocaleString('ar-DZ')}</strong></div>
+      <div className="dz-overview-kpis dz-analytics-kpis" aria-label="ملخص طلبات الاستبدال">
+        <DashboardMetricCard as="div" label="كل الطلبات" value={counts.all.toLocaleString('ar-DZ')} />
+        <DashboardMetricCard as="div" label="تحتاج مراجعة" value={counts.pending.toLocaleString('ar-DZ')} />
+        <DashboardMetricCard as="div" label="بانتظار الشحنة" value={counts.awaiting_shipment.toLocaleString('ar-DZ')} />
+        <DashboardMetricCard as="div" label="جاري الاستبدال" value={counts.replacement_in_transit.toLocaleString('ar-DZ')} />
+        <DashboardMetricCard as="div" label="مكتملة" value={counts.completed.toLocaleString('ar-DZ')} />
+        <DashboardMetricCard as="div" label="مرفوضة" value={counts.rejected.toLocaleString('ar-DZ')} />
       </div>
 
-      <div className={styles.toolbar} role="tablist" aria-label="تصفية طلبات الاستبدال">
-        {FILTERS.map((item) => (
-          <button key={item.value} type="button" role="tab" aria-selected={filter === item.value}
-            className={filter === item.value ? styles.filterActive : ''} onClick={() => setFilter(item.value)}>
-            {item.label}<span>{counts[item.value].toLocaleString('ar-DZ')}</span>
-          </button>
-        ))}
+      <div className="dz-filter-row dz-shipment-filters">
+        <DashboardFilterTabs
+          ariaLabel="تصفية طلبات الاستبدال"
+          items={FILTERS.map((item) => ({
+            value: item.value,
+            label: item.label,
+            count: counts[item.value].toLocaleString('ar-DZ'),
+            active: filter === item.value,
+            onSelect: () => setFilter(item.value),
+          }))}
+        />
       </div>
 
       {visibleRequests.length === 0 ? (

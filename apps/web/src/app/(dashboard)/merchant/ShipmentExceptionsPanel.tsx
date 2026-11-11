@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateShipmentExceptionState } from './actions';
 import { BrandedSelect } from './BrandedSelect';
+import { DashboardFilterTabs } from './components/DashboardFilterTabs';
 import {
   detectShipmentExceptions,
   shipmentExceptionStateKey,
@@ -163,19 +164,17 @@ export function ShipmentExceptionsPanel({
         <div className={styles.total}><strong>{counts.total}</strong><span>استثناء نشط</span></div>
       </div>
       <div className="dz-filter-row dz-shipment-filters">
-        <div className="dz-shipment-status-tabs dz-exceptions-status-tabs" role="group" aria-label="تصفية الاستثناءات حسب الإجراء">
-          {views.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              aria-pressed={viewState === item.value}
-              className={`dz-filter-btn ${viewState === item.value ? 'active' : ''} ${styles.statusButton}`}
-              onClick={() => setViewState(item.value)}
-            >
-              {item.label}<span className={styles.statusCount}>{item.count}</span>
-            </button>
-          ))}
-        </div>
+        <DashboardFilterTabs
+          className="dz-shipment-status-tabs dz-exceptions-status-tabs"
+          ariaLabel="تصفية الاستثناءات حسب الإجراء"
+          items={views.map((item) => ({
+            value: item.value,
+            label: item.label,
+            count: item.count,
+            active: viewState === item.value,
+            onSelect: () => setViewState(item.value),
+          }))}
+        />
         <div className="dz-shipment-filter-controls dz-exceptions-filter-controls">
           <label className="dz-shipment-search-wrap" role="search">
             <span className="sr-only">البحث في الاستثناءات</span>

@@ -3,6 +3,8 @@ import type { MerchantDashboardTab } from '../dashboard/DashboardSidebar';
 import { BrandedSelect } from '../BrandedSelect';
 import { StatusSelector } from '../StatusSelector';
 import { Icons } from '../components/DashboardIcons';
+import { DashboardMetricCard } from '../components/DashboardMetricCard';
+import { DashboardFilterTabs } from '../components/DashboardFilterTabs';
 import type {
   OrderItem,
   OrderSort as OrdersSort,
@@ -94,34 +96,25 @@ export function OrdersTab({
   return (
             <div>
               <div className="dz-stats-bar dz-orders-desktop-summary" aria-label="ملخص الشحنات">
-                <button type="button" className="dz-stat-item" onClick={() => onOpenShipmentList('all')}>
-                  <span className="dz-stat-title">إجمالي الشحنات</span>
-                  <span className="dz-stat-value">{orders.length}</span>
-                </button>
-                <button type="button" className="dz-stat-item" onClick={() => onOpenShipmentList('transit')}>
-                  <span className="dz-stat-title">في الطريق</span>
-                  <span className="dz-stat-value">{inTransitCount}</span>
-                </button>
-                <button type="button" className="dz-stat-item" onClick={() => onOpenShipmentList('stopdesk')}>
-                  <span className="dz-stat-title">نقطة الاستلام</span>
-                  <span className="dz-stat-value">{stopdeskCount}</span>
-                </button>
-                <button type="button" className="dz-stat-item" onClick={() => onOpenShipmentList('delivered')}>
-                  <span className="dz-stat-title">تم التسليم</span>
-                  <span className="dz-stat-value">{deliveredCount}</span>
-                </button>
+                <DashboardMetricCard as="button" className="dz-stat-item" labelClassName="dz-stat-title" valueClassName="dz-stat-value" label="إجمالي الشحنات" value={orders.length} onClick={() => onOpenShipmentList('all')} />
+                <DashboardMetricCard as="button" className="dz-stat-item" labelClassName="dz-stat-title" valueClassName="dz-stat-value" label="في الطريق" value={inTransitCount} onClick={() => onOpenShipmentList('transit')} />
+                <DashboardMetricCard as="button" className="dz-stat-item" labelClassName="dz-stat-title" valueClassName="dz-stat-value" label="نقطة الاستلام" value={stopdeskCount} onClick={() => onOpenShipmentList('stopdesk')} />
+                <DashboardMetricCard as="button" className="dz-stat-item" labelClassName="dz-stat-title" valueClassName="dz-stat-value" label="تم التسليم" value={deliveredCount} onClick={() => onOpenShipmentList('delivered')} />
               </div>
 
               <div className="dz-filter-row dz-shipment-filters">
-                <div className="dz-shipment-status-tabs" role="group" aria-label="تصفية حسب حالة الشحنة">
-                  <button type="button" className={`dz-filter-btn ${statusFilter === 'all' && activeTab === 'orders' ? 'active' : ''}`} aria-pressed={statusFilter === 'all' && activeTab === 'orders'} onClick={() => { onStatusFilterChange('all'); if (activeTab !== 'orders') onActiveTabChange('orders'); }}>الكل</button>
-                  <button type="button" className={`dz-filter-btn ${statusFilter === 'transit' ? 'active' : ''}`} aria-pressed={statusFilter === 'transit'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('transit'); }}>في الطريق</button>
-                  <button type="button" className={`dz-filter-btn ${statusFilter === 'stopdesk' ? 'active' : ''}`} aria-pressed={statusFilter === 'stopdesk'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('stopdesk'); }}>نقطة الاستلام</button>
-                  <button type="button" className="dz-filter-btn" aria-pressed={false} onClick={() => { onActiveTabChange('exceptions'); onStatusFilterChange('all'); onCloseMobileMenu(); }}>استثناءات ({exceptionCount})</button>
-                  <button type="button" className={`dz-filter-btn ${statusFilter === 'exchange' ? 'active' : ''}`} aria-pressed={statusFilter === 'exchange'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('exchange'); }}>الاستبدال ({orders.filter((order) => order.exchange_status === 'awaiting_shipment' || order.exchange_status === 'replacement_in_transit').length})</button>
-                  <button type="button" className={`dz-filter-btn ${statusFilter === 'delivered' ? 'active' : ''}`} aria-pressed={statusFilter === 'delivered'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('delivered'); }}>تم التسليم</button>
-                  <button type="button" className={`dz-filter-btn ${statusFilter === 'returned' ? 'active' : ''}`} aria-pressed={statusFilter === 'returned'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('returned'); }}>مرتجع</button>
-                </div>
+                <DashboardFilterTabs
+                  ariaLabel="تصفية حسب حالة الشحنة"
+                  items={[
+                    { value: 'all', label: 'الكل', active: statusFilter === 'all' && activeTab === 'orders', onSelect: () => { onStatusFilterChange('all'); if (activeTab !== 'orders') onActiveTabChange('orders'); } },
+                    { value: 'transit', label: 'في الطريق', active: statusFilter === 'transit', onSelect: () => { onActiveTabChange('orders'); onStatusFilterChange('transit'); } },
+                    { value: 'stopdesk', label: 'نقطة الاستلام', active: statusFilter === 'stopdesk', onSelect: () => { onActiveTabChange('orders'); onStatusFilterChange('stopdesk'); } },
+                    { value: 'exceptions', label: 'استثناءات', count: exceptionCount, active: false, onSelect: () => { onActiveTabChange('exceptions'); onStatusFilterChange('all'); onCloseMobileMenu(); } },
+                    { value: 'exchange', label: 'الاستبدال', count: orders.filter((order) => order.exchange_status === 'awaiting_shipment' || order.exchange_status === 'replacement_in_transit').length, active: statusFilter === 'exchange', onSelect: () => { onActiveTabChange('orders'); onStatusFilterChange('exchange'); } },
+                    { value: 'delivered', label: 'تم التسليم', active: statusFilter === 'delivered', onSelect: () => { onActiveTabChange('orders'); onStatusFilterChange('delivered'); } },
+                    { value: 'returned', label: 'مرتجع', active: statusFilter === 'returned', onSelect: () => { onActiveTabChange('orders'); onStatusFilterChange('returned'); } },
+                  ]}
+                />
                 <div className="dz-shipment-filter-controls dz-orders-filter-controls">
                   <label className="dz-shipment-search-wrap" role="search">
                     <span className="sr-only">البحث في الشحنات برقم الطلب أو الهاتف أو اسم العميل</span>
