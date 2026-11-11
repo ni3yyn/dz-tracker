@@ -68,19 +68,19 @@ export function MappingsTab({
                   </div>
                 </div>
                 <div className="dz-mappings-preset-actions">
-                  <form action={async (fd) => { await onApplyPreset(fd); void 0; }}>
+                  <form action={async (fd) => { await onApplyPreset(fd); }}>
                     <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="yalidine" />
                     <button type="submit" className="dz-mapping-preset">ياليدين <span>تطبيق</span></button>
                   </form>
-                  <form action={async (fd) => { await onApplyPreset(fd); void 0; }}>
+                  <form action={async (fd) => { await onApplyPreset(fd); }}>
                     <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="ecotrack" />
                     <button type="submit" className="dz-mapping-preset">إيكوتراك <span>تطبيق</span></button>
                   </form>
-                  <form action={async (fd) => { await onApplyPreset(fd); void 0; }}>
+                  <form action={async (fd) => { await onApplyPreset(fd); }}>
                     <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="zrexpress" />
                     <button type="submit" className="dz-mapping-preset">ZR Express <span>تطبيق</span></button>
                   </form>
-                  <form action={async (fd) => { await onApplyPreset(fd); void 0; }}>
+                  <form action={async (fd) => { await onApplyPreset(fd); }}>
                     <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="shopify" />
                     <button type="submit" className="dz-mapping-preset">شوبيفاي <span>تطبيق</span></button>
                   </form>
@@ -128,8 +128,8 @@ export function MappingsTab({
                               </>
                             ) : (
                               <>
-                                <button onClick={() => { setEditingMappingId(m.id); onEditDisplayStatusChange(m.display_status); }} className="dz-mapping-action">تعديل</button>
-                                <form action={async (fd) => { await onDeleteMapping(fd); void 0; }}>
+                                <button onClick={() => onBeginInlineEdit(m.id, m.display_status)} className="dz-mapping-action">تعديل</button>
+                                <form action={async (fd) => { await onDeleteMapping(fd); }}>
                                   <input type="hidden" name="id" value={m.id} />
                                   <button type="submit" className="dz-mapping-action dz-mapping-action-delete">حذف</button>
                                 </form>
