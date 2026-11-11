@@ -7084,6 +7084,35 @@ export function MerchantDashboardView({
           .dz-admin-root .dz-shipment-filters { padding: 8px; }
         }
 
+        /* Orders table: keep selection narrow and give operational columns predictable room. */
+        .dz-admin-root .dz-orders-desktop .dz-orders-table {
+          width: 100%;
+          min-width: 960px;
+          table-layout: fixed;
+        }
+        .dz-admin-root .dz-orders-desktop .dz-order-select-cell {
+          width: 32px;
+          min-width: 32px;
+          max-width: 32px;
+          padding-inline: 4px !important;
+          text-align: center;
+          vertical-align: middle;
+        }
+        .dz-admin-root .dz-orders-desktop .dz-order-select-cell input {
+          display: block;
+          width: 15px;
+          height: 15px;
+          margin: 0 auto;
+        }
+        .dz-admin-root .dz-orders-desktop .dz-order-date-cell {
+          white-space: nowrap;
+        }
+        .dz-admin-root .dz-orders-desktop .dz-orders-table th:not(.dz-order-select-cell),
+        .dz-admin-root .dz-orders-desktop .dz-orders-table td:not(.dz-order-select-cell) {
+          overflow-wrap: anywhere;
+        }
+
+
       `}} />
 
       <div className="dz-admin-root">
@@ -7641,11 +7670,19 @@ export function MerchantDashboardView({
                   </div>
                 </div>
                 <div className="dz-table-scroll">
-                  <table>
+                  <table className="dz-orders-table">
+                    <colgroup>
+                      <col style={{ width: '32px' }} />
+                      <col style={{ width: '140px' }} />
+                      <col style={{ width: '24%' }} />
+                      <col style={{ width: '24%' }} />
+                      <col style={{ width: '24%' }} />
+                      <col style={{ width: '124px' }} />
+                    </colgroup>
                     <thead>
                       <tr>
-                        <th aria-label="تحديد الطلبات" style={{ width: 42 }} />
-                        <th>الطلب</th>
+                        <th className="dz-order-select-cell" aria-label="تحديد الطلبات" />
+                        <th className="dz-order-date-cell">التاريخ</th>
                         <th>العميل</th>
                         <th>شركة الشحن</th>
                         <th>الحالة</th>
@@ -7659,7 +7696,7 @@ export function MerchantDashboardView({
                         const isAlert = exceptionOrderIds.has(order.id);
                         return (
                           <tr key={order.id} className={isAlert ? 'row-alert' : ''}>
-                            <td>
+                            <td className="dz-order-select-cell">
                               <input
                                 type="checkbox"
                                 aria-label={`تحديد الطلب ${order.external_order_id}`}
@@ -7668,9 +7705,8 @@ export function MerchantDashboardView({
                                 onChange={(event) => toggleOrderSelection(order.id, event.target.checked)}
                               />
                             </td>
-                            <td>
-                              <strong style={{ display: 'block', fontSize: '12px', marginBottom: '5px', overflowWrap: 'anywhere' }}>{order.external_order_id}</strong>
-                              <span style={{ color: 'var(--ink-light)', fontSize: '10px' }}>{formatOrderDate(order.created_at)} · تاريخ التسجيل</span>
+                            <td className="dz-order-date-cell">
+                              <span style={{ color: 'var(--ink-muted)', fontSize: '11px', fontWeight: 650, whiteSpace: 'nowrap' }}>{formatOrderDate(order.created_at)}</span>
                             </td>
                             <td>
                               <strong style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>{order.customer_name || 'عميل'}</strong>
@@ -7767,7 +7803,7 @@ export function MerchantDashboardView({
                         تحديد الطلب
                       </label>
                       <div className="dz-order-mobile-top">
-                        <div className="dz-order-mobile-number"><strong>{order.external_order_id}</strong><small>تاريخ التسجيل: {formatOrderDate(order.created_at)}</small></div>
+                        <div className="dz-order-mobile-number"><strong>{formatOrderDate(order.created_at)}</strong><small>التاريخ</small></div>
                         <div className="dz-order-mobile-badges">
                           {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600, whiteSpace: 'nowrap' }}>بانتظار تأكيد العميل</span>}
                           {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600, whiteSpace: 'nowrap' }}>أكد العميل الطلب</span>}
