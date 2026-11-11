@@ -304,6 +304,10 @@ User authorization: 2026-11-11. Screenshot capture was explicitly waived as an e
 | `8c2a8136a36dab5b8b88125254cbc55cfd1acaa4` | Analytics heading correction | Preserved the Analytics total label inside the shared heading's action slot and removed duplicate closing markup after the first static review caught it. |
 | `27c0d7580b1983223aa60dc7e59322faebe032fc` | `components/DashboardMetricCard.tsx` | Seven KPI cards now share one renderer: four Overview cards remain `button` elements with their original callbacks; three Analytics cards remain static `div` elements, including the conditional alert class. |
 
+### Build issue found and corrected
+
+The first Vercel preview for `83bc795` failed because the extracted `DashboardHeader.tsx` retained the old relative import `../../SiteHeader`. Moving the component one directory deeper required changing this to `../../../SiteHeader`. Corrected in commit `6a3d35523985992af529a6052bb7d1e665942a62`. The next Vercel preview is pending; the fix is not considered build-verified until that preview completes successfully.
+
 ### Current ownership boundaries
 
 - `MerchantDashboardView.tsx` remains the composition root and still owns feature state, data derivations, mutations, and cross-tab handlers.
