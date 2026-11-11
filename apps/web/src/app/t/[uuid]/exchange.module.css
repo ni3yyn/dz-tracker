@@ -14,7 +14,7 @@
 .section::before {
   content: '';
   position: absolute;
-  z-index: -1;
+  z-index: 0;
   inset-inline-start: -92px;
   top: -146px;
   width: 290px;
