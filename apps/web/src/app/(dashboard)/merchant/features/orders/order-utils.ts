@@ -1,4 +1,4 @@
-import type { OrderItem, OrderStatusFilter } from './order-types';
+import type { OrderItem } from './order-types';
 import type { MappingItem } from '../mappings/mapping-types';
 
 export const isAttentionStatus = (status: string) =>
@@ -67,11 +67,11 @@ export const getWhatsAppRecoveryUrl = (order: OrderItem, siteUrl: string, displa
 
   let msg = '';
   if (order.current_status === 'attempt_failed_no_answer') {
-    msg = `⚠️ تنبيه عاجل من ${displayStoreName}!\\nمرحباً ${order.customer_name || ''}، حاول مندوب التوصيل الاتصال بك بخصوص طلبك (${order.external_order_id}) ولم يتم الرد.\\nيرجى فتح الرابط لتأكيد توفرك اليوم لتجنب إرجاع الطلب:\\n${trackingUrl}`;
+    msg = `⚠️ تنبيه عاجل من ${displayStoreName}!\nمرحباً ${order.customer_name || ''}، حاول مندوب التوصيل الاتصال بك بخصوص طلبك (${order.external_order_id}) ولم يتم الرد.\nيرجى فتح الرابط لتأكيد توفرك اليوم لتجنب إرجاع الطلب:\n${trackingUrl}`;
   } else if (order.current_status === 'ready_for_pickup') {
-    msg = `🏢 إشعار استلام من ${displayStoreName}!\\nمرحباً ${order.customer_name || ''}، طردك جاهز للاستلام الآن من مكتب شركة الشحن.\\nتفاصيل الاستلام والتتبع:\\n${trackingUrl}`;
+    msg = `🏢 إشعار استلام من ${displayStoreName}!\nمرحباً ${order.customer_name || ''}، طردك جاهز للاستلام الآن من مكتب شركة الشحن.\nتفاصيل الاستلام والتتبع:\n${trackingUrl}`;
   } else {
-    msg = `مرحباً ${order.customer_name || ''}، يمكنك متابعة شحنتك رقم (${order.external_order_id}) لحظة بلحظة عبر الرابط:\\n${trackingUrl}`;
+    msg = `مرحباً ${order.customer_name || ''}، يمكنك متابعة شحنتك رقم (${order.external_order_id}) لحظة بلحظة عبر الرابط:\n${trackingUrl}`;
   }
 
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
