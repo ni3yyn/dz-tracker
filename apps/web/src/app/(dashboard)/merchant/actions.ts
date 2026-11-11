@@ -1514,3 +1514,75 @@ export async function disconnectProcolisIntegration(): Promise<{ success: boolea
     return { success: false, error: error?.message || 'تعذر إيقاف Procolis.' };
   }
 }
+
+const SHIPMENT_EXCEPTION_TYPES = new Set([
+  'delivery_failed', 'delivery_postponed', 'no_first_scan',
+  'out_for_delivery_stalled', 'shipment_stalled', 'pickup_waiting',
+  'returning', 'returned',
+]);
+const SHIPMENT_EXCEPTION_STATES = new Set(['open', 'acknowledged', 'snoozed', 'resolved']);
+
+export async function updateShipmentExceptionState(
+  orderId: string,
+  exceptionType: string,
+  state: 'open' | 'acknowledged' | 'snoozed' | 'resolved',
+  eventFingerprint: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!orderId || !SHIPMENT_EXCEPTION_TYPES.has(exceptionType) ||
+      !SHIPMENT_EXCEPTION_STATES.has(state) || !eventFingerprint ||
+      eventFingerprint.length > 500) {
+    return { success: false, error: 'بيانات إجراء الاستثناء غير صالحة.' };
+  }
+
+  const authSupabase = await createClient();
+  const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مجدداً.' };
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data: merchant, error: merchantError } = await supabase
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  if (merchantError || !merchant) {
+    console.error('[ShipmentExceptions] Could not resolve authenticated merchant:', merchantError?.message);
+    return { success: false, error: 'تعذر التحقق من حساب المتجر.' };
+  }
+
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('id', orderId)
+    .eq('merchant_id', merchant.id)
+    .maybeSingle();
+
+  if (orderError || !order) {
+    return { success: false, error: 'لم يتم العثور على الشحنة ضمن متجرك.' };
+  }
+
+  const now = new Date();
+  const { error: saveError } = await (supabase as any)
+    .from('merchant_shipment_exception_states')
+    .upsert({
+      merchant_id: merchant.id,
+      order_id: orderId,
+      exception_type: exceptionType,
+      state,
+      event_fingerprint: eventFingerprint,
+      snoozed_until: state === 'snoozed'
+        ? new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
+        : null,
+      updated_at: now.toISOString(),
+    }, { onConflict: 'merchant_id,order_id,exception_type' });
+
+  if (saveError) {
+    console.error('[ShipmentExceptions] Could not persist merchant action:', saveError.message);
+    return { success: false, error: 'تعذر حفظ الإجراء. تأكد من تطبيق ترحيل استثناءات الشحن ثم أعد المحاولة.' };
+  }
+
+  revalidatePath('/merchant');
+  return { success: true };
+}
