@@ -39,7 +39,7 @@ export function useMerchantSettings({
   const [isSavingConfirmation, setIsSavingConfirmation] = useState(false);
   const [isSubmittingProof, setIsSubmittingProof] = useState(false);
   const [proofImageUrl, setProofImageUrl] = useState('');
-  const [selectedUpgradeTier, setSelectedUpgradeTier] = useState<'basic' | 'growth' | 'scale'>(() => subscription.tier === 'scale' ? 'scale' : subscription.tier === 'growth' ? 'growth' : 'basic');
+  const [selectedUpgradeTier, setSelectedUpgradeTier] = useState<UpgradeTier>(() => subscription.tier === 'scale' ? 'scale' : subscription.tier === 'growth' ? 'growth' : 'basic');
   const [showAdvanceRenewal, setShowAdvanceRenewal] = useState(false);
 
   const handleToggleTelegramTracking = async () => {
