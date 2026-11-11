@@ -835,6 +835,25 @@ export type Database = {
         };
         Returns: boolean;
       };
+      pause_telegram_worker_until: {
+        Args: {
+          p_paused_until: string;
+        };
+        Returns: boolean;
+      };
+      reserve_telegram_phone_resolution_slot: {
+        Args: {
+          p_min_interval_ms: number;
+        };
+        Returns: string;
+      };
+      confirm_telegram_phone_resolution_slot: {
+        Args: {
+          p_reserved_at: string;
+          p_min_interval_ms: number;
+        };
+        Returns: string;
+      };
       record_order_status_change: {
         Args: {
           p_order_id: string;
