@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom';
 import { OrderDetailField } from './OrderDetailField';
 import { Icons } from './DashboardIcons';
+import { StatusSelector } from '../StatusSelector';
 import type { OrderItem } from '../features/orders/order-types';
 
 export interface OrderDetailsSidePanelHandle {
