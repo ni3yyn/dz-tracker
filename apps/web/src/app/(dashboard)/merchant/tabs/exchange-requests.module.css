@@ -5,7 +5,7 @@
 .intro h2 { margin: 0; color: var(--ink-main); font-size: clamp(20px, 2.2vw, 25px); font-weight: 850; letter-spacing: -.03em; }
 .intro p { margin: 6px 0 0; color: var(--ink-muted); font-size: 12px; line-height: 1.75; }
 .list { display: grid; gap: 10px; }
-.request { min-width: 0; padding: 17px 18px; background: var(--surface); border: 1px solid var(--border-soft); }
+.request { min-width: 0; padding: 17px 18px; background: var(--surface); border: 0; }
 .requestHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .orderNumber { display: inline-block; color: var(--ink-light); font-size: 10px; font-weight: 800; }
 .requestHeader h3 { margin: 4px 0 0; color: var(--ink-main); font-size: 15px; font-weight: 850; }
@@ -18,21 +18,21 @@
 .reasonBlock strong { color: var(--ink-main); font-size: 13px; font-weight: 800; }
 .reasonBlock p { margin: 0; color: var(--ink-muted); font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
 .requestMeta { margin-top: 10px; color: var(--ink-light); font-size: 10px; }
-.reviewArea { display: grid; gap: 11px; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--border-soft); }
+.reviewArea { display: grid; gap: 11px; margin-top: 14px; padding-top: 0; border-top: 0; }
 .reviewArea label { display: grid; gap: 7px; color: var(--ink-main); font-size: 11px; font-weight: 800; }
 .reviewArea label span { display: inline; color: var(--ink-light); font-weight: 500; }
-.reviewArea textarea { width: 100%; min-height: 66px; resize: vertical; padding: 10px 11px; border: 1px solid var(--border-soft); border-radius: 0; outline: none; background: var(--bg-base); color: var(--ink-main); font: inherit; font-size: 12px; font-weight: 500; line-height: 1.7; }
-.reviewArea textarea:focus { border-color: var(--ink-muted); }
+.reviewArea textarea { width: 100%; min-height: 66px; resize: vertical; padding: 10px 11px; border: 0; border-radius: 0; outline: none; background: var(--bg-base); color: var(--ink-main); font: inherit; font-size: 12px; font-weight: 500; line-height: 1.7; }
+.reviewArea textarea:focus-visible { outline: 2px solid rgba(53, 88, 70, .38); outline-offset: 2px; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .actions button { min-height: 39px; padding: 9px 14px; border: 0; border-radius: 0; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
 .actions button:disabled { opacity: .55; cursor: wait; }
 .approve { background: #234b35; color: #fff; }.reject { background: #f7ece8; color: #9b4533; }
-.savedResponse { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border-soft); }
+.savedResponse { margin-top: 12px; padding-top: 0; border-top: 0; }
 .savedResponse p { margin: 4px 0 0; color: var(--ink-main); font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
 .empty { display: grid; justify-items: center; padding: 42px 18px; background: var(--surface); text-align: center; }
 .emptyMark { width: 38px; height: 38px; display: grid; place-items: center; margin-bottom: 9px; background: var(--bg-base); color: var(--ink-muted); font-size: 23px; }
 .empty h3 { margin: 0; color: var(--ink-main); font-size: 14px; font-weight: 800; }.empty p { margin: 5px 0 0; color: var(--ink-muted); font-size: 11px; line-height: 1.7; }
-.migrationNotice { padding: 13px 15px; border-inline-start: 3px solid #b8893d; background: #fbf5e9; color: #72541f; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }.migrationNotice code { font-size: 11px; }
+.migrationNotice { padding: 13px 15px; border-inline-start: 0; background: #fbf5e9; color: #72541f; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }.migrationNotice code { font-size: 11px; }
 .notice, .error { margin: 0; padding: 10px 12px; font-size: 12px; line-height: 1.7; }.notice { color: #267548; background: #edf7ef; }.error { color: #a33f32; background: #fbefec; }
 @media (max-width: 760px) { .page { gap: 13px; }.request { padding: 14px; } }
 @media (max-width: 420px) { .intro { align-items: flex-start; }.actions { display: grid; grid-template-columns: 1fr; } }

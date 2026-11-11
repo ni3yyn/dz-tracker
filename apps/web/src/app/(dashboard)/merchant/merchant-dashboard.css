@@ -5576,3 +5576,31 @@
   min-width: 112px;
   max-width: none;
 }
+
+
+/* Orders status filters stay on a single line across desktop and mobile. */
+.dz-admin-root .dz-shipment-status-tabs.dz-orders-status-tabs {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.dz-admin-root .dz-shipment-status-tabs.dz-orders-status-tabs::-webkit-scrollbar {
+  display: none;
+}
+.dz-admin-root .dz-shipment-status-tabs.dz-orders-status-tabs > .dz-filter-btn {
+  flex: 1 0 auto;
+  width: auto !important;
+  min-width: max-content;
+  max-width: none;
+  white-space: nowrap;
+  padding-inline: 12px;
+}

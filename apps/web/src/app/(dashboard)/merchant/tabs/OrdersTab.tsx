@@ -102,8 +102,9 @@ export function OrdersTab({
                 <DashboardMetricCard as="button" className="dz-stat-item" labelClassName="dz-stat-title" valueClassName="dz-stat-value" label="تم التسليم" value={deliveredCount} onClick={() => onOpenShipmentList('delivered')} />
               </div>
 
-              <div className="dz-filter-row dz-shipment-filters">
+              <div className="dz-filter-row dz-shipment-filters dz-orders-filter-row">
                 <DashboardFilterTabs
+                  className="dz-shipment-status-tabs dz-orders-status-tabs"
                   ariaLabel="تصفية حسب حالة الشحنة"
                   items={[
                     { value: 'all', label: 'الكل', active: statusFilter === 'all' && activeTab === 'orders', onSelect: () => { onStatusFilterChange('all'); if (activeTab !== 'orders') onActiveTabChange('orders'); } },
