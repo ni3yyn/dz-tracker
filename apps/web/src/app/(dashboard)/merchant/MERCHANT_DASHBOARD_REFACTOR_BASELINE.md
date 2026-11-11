@@ -390,3 +390,12 @@ Brand configuration/history, save behavior, selected category, active preset, de
 
 Scraper/form draft values, loading/error states, list data, confirmation-backed delete/toggle/reorder/save handlers and optimistic updates remain in the parent. The existing `ImageUploadField` and SVG icon registry are reused unchanged.
 
+
+### Completed sixth batch — Mappings
+
+| Module | Extraction contract |
+|---|---|
+| `tabs/MappingsTab.tsx` | Status-mapping presets, active mappings list and inline edit controls moved into a typed component. The original mapping trigger ref is passed through so focus can still return to the same button after the parent-owned modal closes. |
+
+The mapping editor modal, focus/keyboard lifecycle, inline edit state, save handler and server action/toast wrappers remain in the parent. The tab receives only the required display data and callbacks.
+

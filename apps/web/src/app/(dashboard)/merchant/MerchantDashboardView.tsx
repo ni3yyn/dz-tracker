@@ -19,6 +19,7 @@ export type { MerchantUpsellItem } from './shared/upsell-types';
 import { OrdersTab } from './tabs/OrdersTab';
 import { BrandingTab } from './tabs/BrandingTab';
 import { UpsellsTab } from './tabs/UpsellsTab';
+import { MappingsTab } from './tabs/MappingsTab';
 import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
 import { BrandedSelect } from './BrandedSelect';
 import { MappingForm } from './MappingForm';
@@ -7587,113 +7588,32 @@ export function MerchantDashboardView({
 
           {/* TAB: STATUS LABELS */}
           {activeTab === 'mappings' && (
-            <section className="dz-mappings-tab" aria-labelledby="dz-mappings-title">
-              <header className="dz-mappings-intro">
-                <div>
-                  <span className="dz-mappings-eyebrow">تجربة التتبع</span>
-                  <h2 id="dz-mappings-title">مسميات الحالات</h2>
-                  <p>حوّل أكواد شركات التوصيل أو متجرك إلى عبارات واضحة يفهمها العميل.</p>
-                </div>
-                <div className="dz-mappings-intro-actions">
-                  <span className="dz-mappings-count"><strong>{mappings.length}</strong> مطابقة مفعّلة</span>
-                  <button
-                    ref={customMappingTriggerRef}
-                    type="button"
-                    className="dz-mappings-add-button"
-                    onClick={() => setIsCustomMappingModalOpen(true)}
-                  >
-                    <Icons.Plus />
-                    إضافة مسمى مخصص
-                  </button>
-                </div>
-              </header>
-
-              <section className="dz-mappings-presets" aria-labelledby="dz-presets-title">
-                <div className="dz-mappings-section-head">
-                  <div>
-                    <h3 id="dz-presets-title">ابدأ بحزمة جاهزة</h3>
-                    <p>طبّق المسميات المناسبة لمصدر طلباتك، ويمكنك تعديلها لاحقاً.</p>
-                  </div>
-                </div>
-                <div className="dz-mappings-preset-actions">
-                  <form action={async (fd) => { await applyPresetMappings(fd); showToast('تم تطبيق الحزمة بنجاح'); }}>
-                    <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="yalidine" />
-                    <button type="submit" className="dz-mapping-preset">ياليدين <span>تطبيق</span></button>
-                  </form>
-                  <form action={async (fd) => { await applyPresetMappings(fd); showToast('تم تطبيق الحزمة بنجاح'); }}>
-                    <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="ecotrack" />
-                    <button type="submit" className="dz-mapping-preset">إيكوتراك <span>تطبيق</span></button>
-                  </form>
-                  <form action={async (fd) => { await applyPresetMappings(fd); showToast('تم تطبيق الحزمة بنجاح'); }}>
-                    <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="zrexpress" />
-                    <button type="submit" className="dz-mapping-preset">ZR Express <span>تطبيق</span></button>
-                  </form>
-                  <form action={async (fd) => { await applyPresetMappings(fd); showToast('تم تطبيق الحزمة بنجاح'); }}>
-                    <input type="hidden" name="merchant_id" value={merchantId} /><input type="hidden" name="preset_type" value="shopify" />
-                    <button type="submit" className="dz-mapping-preset">شوبيفاي <span>تطبيق</span></button>
-                  </form>
-                </div>
-              </section>
-
-              <section className="dz-mappings-list" aria-labelledby="dz-active-mappings-title">
-                <div className="dz-mappings-section-head dz-mappings-list-head">
-                  <div>
-                    <h3 id="dz-active-mappings-title">المسميات المفعّلة</h3>
-                    <p>يمكنك تعديل أي مسمى أو حذفه دون التأثير على بقية المطابقات.</p>
-                  </div>
-                  <span className="dz-mappings-list-count">{mappings.length}</span>
-                </div>
-
-                {mappings.length === 0 ? (
-                  <div className="dz-mappings-empty">
-                    <strong>لا توجد مسميات مخصصة بعد</strong>
-                    <p>ابدأ بحزمة جاهزة أو أضف أول مطابقة يدوياً.</p>
-                  </div>
-                ) : (
-                  <div className="dz-mappings-rows">
-                    {mappings.map((m) => {
-                      const isEditing = editingMappingId === m.id;
-                      return (
-                        <article className="dz-mapping-row" key={m.id}>
-                          <div className="dz-mapping-source">
-                            <span>الحالة الأصلية</span>
-                            <code className="dz-mono">{m.source_status}</code>
-                          </div>
-                          <div className="dz-mapping-arrow" aria-hidden="true">←</div>
-                          <div className="dz-mapping-display">
-                            <span>ما يراه العميل</span>
-                            {isEditing ? (
-                              <input type="text" value={editDisplayStatus} onChange={(e) => setEditDisplayStatus(e.target.value)} className="input" autoFocus aria-label="المسمى الظاهر للعميل" />
-                            ) : (
-                              <strong>{m.display_status}</strong>
-                            )}
-                          </div>
-                          <div className="dz-mapping-actions">
-                            {isEditing ? (
-                              <>
-                                <button onClick={() => handleSaveInlineEdit(m.source_status)} disabled={isSavingEdit} className="dz-mapping-action dz-mapping-action-primary">{isSavingEdit ? 'جارٍ الحفظ...' : 'حفظ'}</button>
-                                <button onClick={() => setEditingMappingId(null)} className="dz-mapping-action">إلغاء</button>
-                              </>
-                            ) : (
-                              <>
-                                <button onClick={() => { setEditingMappingId(m.id); setEditDisplayStatus(m.display_status); }} className="dz-mapping-action">تعديل</button>
-                                <form action={async (fd) => { await deleteStatusMapping(fd); showToast('تم حذف المطابقة بنجاح'); }}>
-                                  <input type="hidden" name="id" value={m.id} />
-                                  <button type="submit" className="dz-mapping-action dz-mapping-action-delete">حذف</button>
-                                </form>
-                              </>
-                            )}
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            </section>
+            <MappingsTab
+              merchantId={merchantId}
+              mappings={mappings}
+              triggerRef={customMappingTriggerRef}
+              onOpenCustomMapping={() => setIsCustomMappingModalOpen(true)}
+              editingMappingId={editingMappingId}
+              editDisplayStatus={editDisplayStatus}
+              onEditDisplayStatusChange={setEditDisplayStatus}
+              isSavingEdit={isSavingEdit}
+              onSaveInlineEdit={handleSaveInlineEdit}
+              onCancelInlineEdit={() => setEditingMappingId(null)}
+              onBeginInlineEdit={(id, displayStatus) => {
+                setEditingMappingId(id);
+                setEditDisplayStatus(displayStatus);
+              }}
+              onApplyPreset={async (formData) => {
+                await applyPresetMappings(formData);
+                showToast('تم تطبيق الحزمة بنجاح');
+              }}
+              onDeleteMapping={async (formData) => {
+                await deleteStatusMapping(formData);
+                showToast('تم حذف المطابقة بنجاح');
+              }}
+            />
           )}
 
-          {/* TAB: BILLING */}
           {activeTab === 'settings' && (
             <div className="dz-settings-page">
               <div className="dz-settings-section dz-settings-profile" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px', marginBottom: '14px', boxShadow: 'var(--shadow-sm)' }}>
