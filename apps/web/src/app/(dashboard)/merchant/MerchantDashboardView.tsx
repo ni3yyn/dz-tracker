@@ -596,6 +596,16 @@ export function MerchantDashboardView({
           {activeTab === 'branding' && (
             <BrandingTab
               brandConfig={brandConfig}
+              activeBrandPresetId={activeBrandPresetId}
+              onApplyBrandPreset={applyBrandPreset}
+              brandingCategory={brandingCategory}
+              onSetBrandingCategory={setBrandingCategory}
+              brandHistoryTick={brandHistoryTick}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onUndo={undoBrandChange}
+              onRedo={redoBrandChange}
+              onResetCategory={resetBrandCategory}
               onUpdateBrandConfig={updateBrandConfig}
               hasUnsavedBrandChanges={hasUnsavedBrandChanges}
               isSavingBrand={isSavingBrand}
