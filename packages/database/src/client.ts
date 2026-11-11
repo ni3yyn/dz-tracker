@@ -867,6 +867,30 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['order_confirmation_outbox']['Row'][];
       };
+      create_tracked_order_with_quota: {
+        Args: {
+          p_merchant_id: string;
+          p_external_order_id: string;
+          p_customer_name: string | null;
+          p_customer_phone: string | null;
+          p_product_name: string | null;
+          p_product_image: string | null;
+          p_current_status: string;
+          p_carrier_last_event_at: string | null;
+          p_carrier_name: string | null;
+          p_carrier_tracking_number: string | null;
+          p_carrier_order_id: string | null;
+          p_carrier_metadata: Json | null;
+          p_source_provider: string | null;
+        };
+        Returns: Json;
+      };
+      reconcile_merchant_order_usage: {
+        Args: {
+          p_merchant_id: string;
+        };
+        Returns: number;
+      };
       delete_merchant_orders: {
         Args: {
           p_merchant_id: string;

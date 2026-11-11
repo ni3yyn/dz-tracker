@@ -137,7 +137,7 @@ export class TrackingOrchestrator {
     }
   }
 
-  private async executeProcessEvent(event: TrackingEvent, options?: ProcessEventOptions): Promise<ProcessEventResult> {
+  private async executeProcessEvent(event: TrackingEvent, options?: ProcessEventOptions, recoveryAttempt = 0): Promise<ProcessEventResult> {
     try {
       // 0. التحقق من ملف التاجر وحالة الحساب
       const { data: merchant } = await this.supabase
@@ -369,18 +369,87 @@ export class TrackingOrchestrator {
           };
         }
       } else {
-        // فحص صلاحية وسقف اشتراك المتجر قبل إنشاء أي طلب جديد
-        const isExpired = merchant.subscription_expires_at &&
-          new Date(merchant.subscription_expires_at).getTime() < Date.now() &&
-          merchant.subscription_tier !== 'starter';
-
-        if (isExpired || merchant.subscription_status === 'expired') {
-          if (isExpired && merchant.subscription_status !== 'expired') {
-            await this.supabase
-              .from('merchants')
-              .update({ subscription_status: 'expired' })
-              .eq('id', merchant.id);
+        // Database transaction locks the merchant row, reconciles the real
+        // rolling/billing-period usage, checks the limit, creates the order,
+        // and increments the counter atomically.
+        const { data: quotaReservation, error: quotaError } = await this.supabase.rpc(
+          'create_tracked_order_with_quota',
+          {
+            p_merchant_id: event.merchantId,
+            p_external_order_id: event.externalOrderId,
+            p_customer_name: event.customerName || null,
+            p_customer_phone: event.customerPhone || null,
+            p_product_name: event.productName || null,
+            p_product_image: event.productImage || null,
+            p_current_status: event.statusRaw,
+            p_carrier_last_event_at: event.sourceOccurredAt || null,
+            p_carrier_name: event.carrierName || null,
+            p_carrier_tracking_number: event.carrierTrackingNumber || null,
+            p_carrier_order_id: (
+              event.sourceProvider === 'maystro' ||
+              event.sourceProvider === 'zimou' ||
+              event.sourceProvider === 'elogistia' ||
+              event.sourceProvider === 'ecom_v2' ||
+              event.sourceProvider === 'yalidine' ||
+              event.sourceProvider === 'guepex' ||
+              event.sourceProvider === 'procolis'
+            ) ? event.carrierOrderId || null : null,
+            p_carrier_metadata: (
+              event.sourceProvider === 'maystro' ||
+              event.sourceProvider === 'zimou' ||
+              event.sourceProvider === 'elogistia' ||
+              event.sourceProvider === 'ecom_v2' ||
+              event.sourceProvider === 'yalidine' ||
+              event.sourceProvider === 'guepex' ||
+              event.sourceProvider === 'procolis'
+            ) ? event.carrierMetadata || null : null,
+            p_source_provider: event.sourceProvider || null,
           }
+        );
+
+        if (quotaError) {
+          // A conflicting insert from an older/parallel application instance
+          // may still win the race. Recover through the normal existing-order
+          // path; otherwise preserve the database error for observability.
+          const racedOrder = await this.findExistingOrder(event);
+          if (racedOrder && recoveryAttempt < 1) {
+            return this.executeProcessEvent(event, options, recoveryAttempt + 1);
+          }
+          throw quotaError;
+        }
+
+        const reservation = quotaReservation as any;
+        if (!reservation || typeof reservation.outcome !== 'string') {
+          throw new Error('Quota reservation returned an invalid response.');
+        }
+
+        if (reservation.outcome === 'existing') {
+          // Another request created this same order while this request waited
+          // on the merchant lock. Re-run once so its new status is applied by
+          // the established existing-order update path.
+          if (recoveryAttempt < 1) {
+            return this.executeProcessEvent(event, options, recoveryAttempt + 1);
+          }
+          return {
+            success: false,
+            error: 'order_race_recovery_failed',
+            message: 'تعذر استكمال تحديث الطلب المتزامن. أعد إرسال الحدث.',
+          };
+        }
+
+        if (reservation.outcome === 'merchant_not_found') {
+          return { success: false, error: 'merchant_not_found', message: 'لم يتم العثور على المتجر في النظام' };
+        }
+
+        if (reservation.outcome === 'account_suspended') {
+          return {
+            success: false,
+            error: 'account_suspended',
+            message: 'حساب المتجر موقوف مؤقتاً، يرجى التواصل مع إدارة تاجر تراك.',
+          };
+        }
+
+        if (reservation.outcome === 'subscription_expired') {
           return {
             success: false,
             error: 'subscription_expired',
@@ -388,128 +457,28 @@ export class TrackingOrchestrator {
           };
         }
 
-        const currentTier = merchant.subscription_tier || 'starter';
-        const tierLimits: Record<string, number> = {
-          starter: 30,
-          basic: 100,
-          growth: 200,
-          scale: 999999,
-        };
-        const defaultTierLimit = tierLimits[currentTier] || 30;
-        const orderLimit = currentTier === 'scale'
-          ? 999999
-          : (merchant.max_orders_limit && merchant.max_orders_limit >= defaultTierLimit
-              ? merchant.max_orders_limit
-              : defaultTierLimit);
-        const currentUsed = merchant.monthly_orders_used ?? 0;
-
-        if (currentTier !== 'scale' && currentUsed >= orderLimit) {
+        if (reservation.outcome === 'subscription_limit_reached') {
           return {
             success: false,
             error: 'subscription_limit_reached',
-            message: `لقد استنفدت الحد الأقصى للطلبات المسموحة في باقتك الحالية (${orderLimit} طلب). يرجى ترقية باقتك للاستمرار في استقبال طلبات جديدة.`,
+            message: `لقد استنفدت الحد الأقصى للطلبات المسموحة في باقتك الحالية (${reservation.order_limit} طلب). يرجى ترقية باقتك للاستمرار في استقبال طلبات جديدة.`,
           };
         }
 
-        // إنشاء طلب جديد إذا لم يكن موجوداً
-        const { data: newOrder, error: createError } = await (this.supabase as any)
-          .from('orders')
-          .insert({
-            merchant_id: event.merchantId,
-            external_order_id: event.externalOrderId,
-            customer_name: event.customerName || null,
-            customer_phone: event.customerPhone || null,
-            product_name: event.productName || null,
-            product_image: event.productImage || null,
-            current_status: event.statusRaw,
-            carrier_last_event_at: event.sourceOccurredAt || null,
-            carrier_name: event.carrierName || 'Yalidine Express',
-            carrier_tracking_number: event.carrierTrackingNumber || null,
-            ...(event.sourceProvider === 'maystro' || event.sourceProvider === 'zimou' || event.sourceProvider === 'elogistia' || event.sourceProvider === 'ecom_v2' || event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex' || event.sourceProvider === 'procolis' ? {
-              carrier_order_id: event.carrierOrderId || null,
-              carrier_metadata: event.carrierMetadata || null,
-            } : {}),
-          })
-          .select('id, tracking_uuid')
-          .single();
-
-        if (createError) {
-          // خطوة إنقاذ ضد Race Conditions في حال إنشاء الطلب في نفس اللحظة عبر مسار موازي
-          const retryExisting = await this.findExistingOrder(event);
-          if (retryExisting) {
-            orderId = retryExisting.id;
-            trackingUuid = retryExisting.tracking_uuid;
-            const changed = retryExisting.current_status !== event.statusRaw;
-            let triggers: TriggerResult[] | undefined = undefined;
-
-            if (event.sourceOccurredAt) {
-              const { data: orderedResult, error: orderedError } = await recordOrderedCarrierStatus(
-                this.supabase,
-                event,
-                orderId,
-                displayStatus
-              );
-              if (orderedError) throw orderedError;
-              const actuallyChanged = orderedResult?.[0]?.changed === true;
-              if (actuallyChanged && !event.suppressTriggers) {
-                triggers = await this.dispatchTriggers({
-                  event,
-                  orderId,
-                  trackingUuid,
-                  isNewOrder: false,
-                  statusChanged: true,
-                  displayStatus,
-                  options,
-                });
-              }
-              return {
-                success: true,
-                trackingUuid,
-                deduplicated: !actuallyChanged,
-                isNewOrder: false,
-                triggers,
-              };
-            }
-
-            if (changed) {
-              await this.supabase.rpc('record_order_status_change', {
-                p_order_id: orderId,
-                p_status_raw: event.statusRaw,
-                p_status_title: displayStatus,
-                p_description: event.description || null,
-              });
-
-              triggers = event.suppressTriggers ? [] : await this.dispatchTriggers({
-                event,
-                orderId,
-                trackingUuid,
-                isNewOrder: false,
-                statusChanged: true,
-                displayStatus,
-                options,
-              });
-            }
-            return {
-              success: true,
-              trackingUuid,
-              deduplicated: !changed,
-              isNewOrder: false,
-              triggers,
-            };
-          }
-          throw createError;
+        if (reservation.outcome === 'invalid_order_identity') {
+          return {
+            success: false,
+            error: 'invalid_order_identity',
+            message: 'يجب إرسال رقم طلب خارجي أو رقم تتبع ثابت قبل تسجيل الطلب.',
+          };
         }
 
-        if (!newOrder) throw new Error('Failed to create order');
+        if (reservation.outcome !== 'created' || !reservation.order_id || !reservation.tracking_uuid) {
+          throw new Error(`Unexpected quota reservation outcome: ${reservation.outcome}`);
+        }
 
-        // زيادة استهلاك الطلبات للتاجر بعد تأكيد إنشاء الطلب بنجاح
-        await this.supabase
-          .from('merchants')
-          .update({ monthly_orders_used: currentUsed + 1 })
-          .eq('id', merchant.id);
-
-        orderId = newOrder.id;
-        trackingUuid = newOrder.tracking_uuid;
+        orderId = reservation.order_id;
+        trackingUuid = reservation.tracking_uuid;
 
         // Explicitly classify initial history as order_created (bypasses push notification fanout)
         await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description, 'order_created', event.sourceOccurredAt, Boolean(event.sourceEventId));

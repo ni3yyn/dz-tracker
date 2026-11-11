@@ -49,12 +49,12 @@ export async function GET(req: Request) {
   }
 }
 
-export const POST = createWebhookHandler({
+const handleDirectWebhook = createWebhookHandler({
   source: 'direct',
   transformEvent: ({ merchant, payload }) => {
     return {
       merchantId: merchant.id,
-      externalOrderId: String(payload.order_id || payload.id || 'DIRECT_ORDER'),
+      externalOrderId: String(payload.order_id ?? payload.id).trim(),
       customerName: payload.customer_name || payload.name,
       customerPhone: payload.customer_phone || payload.phone,
       statusRaw: payload.status || 'order_placed',
@@ -66,3 +66,38 @@ export const POST = createWebhookHandler({
     };
   },
 });
+
+export async function POST(req: Request) {
+  let payload: any;
+  try {
+    payload = await req.clone().json();
+  } catch {
+    return NextResponse.json(
+      { success: false, error: 'Malformed JSON payload.' },
+      { status: 400, headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Authorization',
+      } }
+    );
+  }
+
+  const rawOrderId = payload && (payload.order_id ?? payload.id);
+  const hasStableOrderId =
+    (typeof rawOrderId === 'string' || typeof rawOrderId === 'number') &&
+    String(rawOrderId).trim().length > 0 &&
+    String(rawOrderId).trim().length <= 200;
+
+  if (!hasStableOrderId) {
+    return NextResponse.json(
+      { success: false, error: 'Missing stable order identifier. Send order_id or id.' },
+      { status: 400, headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Authorization',
+      } }
+    );
+  }
+
+  return handleDirectWebhook(req);
+}

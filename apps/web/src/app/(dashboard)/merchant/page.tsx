@@ -120,24 +120,28 @@ async function MerchantDashboardContent() {
       .eq('id', merchant.id);
   }
 
-  // حساب دقيق للطلبات المستهلكة في الدورة الشهرية الحالية
-  const cycleStart = merchant.subscription_expires_at
-    ? new Date(new Date(merchant.subscription_expires_at).getTime() - 30 * 24 * 60 * 60 * 1000)
-    : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const currentTier = merchant.subscription_tier || 'starter';
+
+  // Free accounts use a rolling 30-day window. Paid plans use the current
+  // 30-day billing period anchored by subscription_expires_at.
+  const cycleStart = currentTier === 'starter' || !merchant.subscription_expires_at
+    ? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    : new Date(new Date(merchant.subscription_expires_at).getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const ordersInCycle = (orders || []).filter(
     (o) => new Date(o.created_at).getTime() >= cycleStart.getTime()
   ).length;
 
-  const usedCount = Math.max(merchant.monthly_orders_used || 0, ordersInCycle);
-
-  // تحديث العداد تلقائياً في قاعدة البيانات إذا كان غير متزامن
-  if ((merchant.monthly_orders_used ?? 0) < usedCount) {
-    await supabaseAdmin
-      .from('merchants')
-      .update({ monthly_orders_used: usedCount })
-      .eq('id', merchant.id);
+  // The SQL function serializes this reconciliation against concurrent order
+  // creation, so a stale page snapshot can never overwrite a newer counter.
+  const { data: reconciledUsage, error: usageReconcileError } = await supabaseAdmin.rpc(
+    'reconcile_merchant_order_usage',
+    { p_merchant_id: merchant.id }
+  );
+  if (usageReconcileError) {
+    console.error('[Merchant quota]: Could not reconcile displayed usage:', usageReconcileError.message);
   }
+  const usedCount = typeof reconciledUsage === 'number' ? reconciledUsage : ordersInCycle;
 
   // جلب سجل المدفوعات للتاجر
   const { data: payments } = await supabaseAdmin
@@ -183,7 +187,6 @@ async function MerchantDashboardContent() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tajertrack.vercel.app';
 
   // معالجة سقف الطلبات وتحديثه تلقائياً حسب الباقة
-  const currentTier = merchant.subscription_tier || 'starter';
   const tierLimits: Record<string, number> = {
     starter: 30,
     basic: 100,

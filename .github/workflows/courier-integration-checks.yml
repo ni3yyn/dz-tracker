@@ -1,28 +1,64 @@
-name: Courier integration checks
+name: Courier and worker integration checks
 
 on:
   push:
     branches:
+      - main
       - 'feat/multi-delivery-company-integrations'
-  pull_request:
     paths:
       - "apps/push-worker/**"
-      - "packages/orchestrator/**"
+      - "apps/telegram-worker/**"
+      - "apps/web/src/app/migrations/**"
+      - "apps/web/tests/sql/**"
       - "apps/web/src/app/(dashboard)/merchant/**"
-      - "apps/web/src/app/api/webhooks/procolis/**"
+      - "apps/web/src/app/api/webhooks/**"
+      - "apps/web/src/app/api/internal/**"
       - "apps/web/src/lib/webhook-handler.ts"
+      - "packages/orchestrator/**"
+      - "packages/database/**"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "package.json"
+      - ".github/workflows/courier-integration-checks.yml"
+  pull_request:
+    paths:
+      - "apps/push-worker/**"
+      - "apps/telegram-worker/**"
+      - "apps/web/src/app/migrations/**"
+      - "apps/web/tests/sql/**"
+      - "apps/web/src/app/(dashboard)/merchant/**"
+      - "apps/web/src/app/api/webhooks/**"
+      - "apps/web/src/app/api/internal/**"
+      - "apps/web/src/lib/webhook-handler.ts"
+      - "packages/orchestrator/**"
+      - "packages/database/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+      - ".github/workflows/courier-integration-checks.yml"
 
 permissions:
   contents: read
 
 jobs:
   courier-integrations:
-    name: Worker typecheck and courier tests
+    name: Worker, orchestrator and quota verification
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tajertrack_quota_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tajertrack_quota_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -42,10 +78,54 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck background workers
-        run: pnpm --filter push-worker typecheck
+        run: |
+          pnpm --filter push-worker typecheck
+          pnpm --filter telegram-worker typecheck
 
       - name: Test background workers
-        run: pnpm --filter push-worker test
+        run: |
+          pnpm --filter push-worker test
+          pnpm --filter telegram-worker test
 
       - name: Test tracking orchestrator
         run: pnpm --filter @saas/orchestrator test
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Verify SQL quota rules and concurrent reservations
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: tajertrack_quota_test
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -f apps/web/tests/sql/quota-fixture-and-sequential-tests.sql
+
+          psql -X -A -t -q -v ON_ERROR_STOP=1 \
+            -v merchant_id=10000000-0000-4000-8000-000000000004 \
+            -v external_order_id=concurrent-order-a \
+            -f apps/web/tests/sql/quota-race-call.sql > /tmp/quota-a.txt &
+          pid_a=$!
+
+          psql -X -A -t -q -v ON_ERROR_STOP=1 \
+            -v merchant_id=10000000-0000-4000-8000-000000000004 \
+            -v external_order_id=concurrent-order-b \
+            -f apps/web/tests/sql/quota-race-call.sql > /tmp/quota-b.txt &
+          pid_b=$!
+
+          wait "$pid_a"
+          wait "$pid_b"
+
+          a="$(tail -n 1 /tmp/quota-a.txt | tr -d '\r')"
+          b="$(tail -n 1 /tmp/quota-b.txt | tr -d '\r')"
+          if ! { [[ "$a" == "created" && "$b" == "subscription_limit_reached" ]] || [[ "$b" == "created" && "$a" == "subscription_limit_reached" ]]; }; then
+            echo "Unexpected concurrent quota outcomes: A=$a B=$b"
+            exit 1
+          fi
+
+          psql -X -v ON_ERROR_STOP=1 -f apps/web/tests/sql/quota-race-assert.sql
