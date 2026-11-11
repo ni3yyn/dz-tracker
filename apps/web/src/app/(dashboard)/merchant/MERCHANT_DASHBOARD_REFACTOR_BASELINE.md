@@ -568,3 +568,16 @@ The portal and MappingForm DOM remain in MerchantDashboardView. MappingsTab rece
 - [x] Portal markup and form remain unchanged in the root.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed eleventh batch — Order details side-panel component
+
+| Module | Extraction contract |
+|---|---|
+| components/OrderDetailsSidePanel.tsx | The existing memoized, forward-ref order details side panel, its imperative handle, internal selected-order/open state, portal markup, keyboard/backdrop dismissal, and transition cleanup moved into a dedicated component module. |
+
+The component's JSX and classes are carried over intact. It receives the same order collection and existing status/date/WhatsApp helper functions through props; its public imperative API remains `open(orderId)` and `closeIfDeleted(orderIds)`. A local structural order type avoids introducing a circular dependency on MerchantDashboardView.
+
+- [x] Side-panel implementation removed from the composition root.
+- [x] The root retains the same ref and open/close-if-deleted call sites.
+- [x] Portal remains rendered in the same parent position; no CSS or animation changes.
+- [ ] Vercel preview for this component extraction must pass before moving another domain.
+
