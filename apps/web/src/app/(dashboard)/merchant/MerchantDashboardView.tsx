@@ -618,6 +618,189 @@ const Icons = {
 };
 
 
+
+interface OrderDetailsSidePanelHandle {
+  open: (orderId: string) => void;
+}
+
+interface OrderDetailsSidePanelProps {
+  orders: OrderItem[];
+  getStatusLabel: (status: string) => string;
+  getStatusBadgeStyle: (status: string) => string;
+  getWhatsAppRecoveryUrl: (order: OrderItem) => string;
+}
+
+/**
+ * Keep order-detail interaction state outside the large dashboard component.
+ * Opening the side panel must not synchronously rerender the orders table and
+ * every dashboard tab.
+ */
+const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSidePanelHandle, OrderDetailsSidePanelProps>(
+  function OrderDetailsSidePanel({ orders, getStatusLabel, getStatusBadgeStyle, getWhatsAppRecoveryUrl }, ref) {
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const selectedOrder = useMemo(
+      () => orders.find((order) => order.id === selectedOrderId) || null,
+      [orders, selectedOrderId]
+    );
+
+    const openPanel = useCallback((orderId: string) => {
+      setSelectedOrderId(orderId);
+      setIsOpen(true);
+    }, []);
+    const closePanel = useCallback(() => setIsOpen(false), []);
+
+    React.useImperativeHandle(ref, () => ({ open: openPanel }), [openPanel]);
+
+    useEffect(() => {
+      window.dispatchEvent(new Event('tajer-dashboard-back-layer-change'));
+    }, [isOpen, selectedOrderId]);
+
+    useEffect(() => {
+      if (!selectedOrderId || !isOpen) return;
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') closePanel();
+      };
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
+    }, [selectedOrderId, isOpen, closePanel]);
+
+    if (!selectedOrder || typeof document === 'undefined') return null;
+
+    return createPortal((
+            <div
+              className="dz-order-detail-backdrop dz-order-details-backdrop"
+              data-dashboard-back-dismiss="order-details-panel"
+              data-open={isOpen ? 'true' : 'false'}
+              aria-hidden={!isOpen}
+              role="presentation"
+              onTransitionEnd={(event) => {
+                if (
+                  event.target === event.currentTarget &&
+                  event.propertyName === 'opacity' &&
+                  !isOpen
+                ) {
+                  setSelectedOrderId(null);
+                }
+              }}
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget && isOpen) closePanel();
+              }}
+            >
+              <aside
+                className="dz-order-detail-panel dz-order-details-panel"
+                data-open={isOpen ? 'true' : 'false'}
+                role="dialog"
+                aria-modal="true"
+                aria-hidden={!isOpen}
+                aria-labelledby="order-detail-title"
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <div className="dz-order-side-panel-inner dz-order-side-panel-inner--details">
+                <div className="dz-order-detail-head">
+                  <div>
+                    <span className="dz-order-detail-kicker">تفاصيل الشحنة</span>
+                    <h2 id="order-detail-title">{selectedOrder.external_order_id}</h2>
+                    <p>{selectedOrder.customer_name || 'عميل'} · {formatOrderDate(selectedOrder.created_at)}</p>
+                  </div>
+                  <button type="button" className="dz-order-detail-close" aria-label="إغلاق التفاصيل" onClick={closePanel}><Icons.X /></button>
+                </div>
+                <div className="dz-order-detail-status">
+                  <div><small>الحالة الحالية</small><strong>{getStatusLabel(selectedOrder.current_status)}</strong></div>
+                  <span className={`dz-pill dz-pill-${getStatusBadgeStyle(selectedOrder.current_status)}`}>{isAttentionStatus(selectedOrder.current_status) ? 'تحتاج إلى متابعة' : getStatusLabel(selectedOrder.current_status)}</span>
+                </div>
+                <div className="dz-order-detail-fields">
+                  <div className="dz-order-detail-field"><span>اسم العميل</span><strong>{selectedOrder.customer_name || 'غير متوفر'}</strong></div>
+                  <div className="dz-order-detail-field"><span>رقم الهاتف</span><strong dir="ltr">{selectedOrder.customer_phone || 'غير متوفر'}</strong></div>
+                  <div className="dz-order-detail-field"><span>اسم الطرد / المنتجات</span><strong>{selectedOrder.product_name || 'غير متوفر'}</strong></div>
+                  <div className="dz-order-detail-field"><span>شركة الشحن</span><strong>{selectedOrder.carrier_name || 'غير محددة'}</strong></div>
+                  <div className="dz-order-detail-field"><span>رقم التتبع</span><strong>{selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
+                  {selectedOrder.carrier_name === 'Maystro Delivery' && selectedOrder.carrier_order_id && (
+                    <div className="dz-order-detail-field"><span>معرّف الطلب لدى Maystro</span><strong dir="ltr">{selectedOrder.carrier_order_id}</strong></div>
+                  )}
+                  {selectedOrder.carrier_name === 'Maystro Delivery' && selectedOrder.carrier_metadata && (
+                    <>
+                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.wilaya || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.communeName || selectedOrder.carrier_metadata.commune || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>العنوان</span><strong>{selectedOrder.carrier_metadata.destinationText || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>نوع التوصيل</span><strong>{Number(selectedOrder.carrier_metadata.deliveryType) === 1 ? 'توصيل إلى المنزل' : Number(selectedOrder.carrier_metadata.deliveryType) === 2 ? 'مكتب / Stopdesk' : Number(selectedOrder.carrier_metadata.deliveryType) === 3 ? 'نقطة استلام' : 'غير محدد'}</strong></div>
+                      <div className="dz-order-detail-field"><span>المبلغ الإجمالي لدى Maystro</span><strong>{selectedOrder.carrier_metadata.totalPrice != null ? `${selectedOrder.carrier_metadata.totalPrice} دج` : 'غير متوفر'}</strong></div>
+                      {selectedOrder.carrier_metadata.customerPhone2 && (
+                        <div className="dz-order-detail-field"><span>رقم الهاتف الإضافي</span><strong dir="ltr">{selectedOrder.carrier_metadata.customerPhone2}</strong></div>
+                      )}
+                      {Array.isArray(selectedOrder.carrier_metadata.products) && selectedOrder.carrier_metadata.products.length > 0 && (
+                        <div className="dz-order-detail-field" style={{ gridColumn: '1 / -1' }}>
+                          <span>تفاصيل محتويات الطرد</span>
+                          <strong style={{ display: 'grid', gap: '6px', fontWeight: 650 }}>
+                            {selectedOrder.carrier_metadata.products.map((item: any, index: number) => (
+                              <span key={index}>
+                                {item.description || item.product || 'منتج'}
+                                {item.quantity ? ` × ${item.quantity}` : ''}
+                                {item.unitPrice != null ? ` · ${item.unitPrice} دج` : ''}
+                              </span>
+                            ))}
+                          </strong>
+                        </div>
+                      )}
+
+                    </>
+                  )}
+                  {selectedOrder.carrier_name === 'Zimou Express' && selectedOrder.carrier_metadata && (
+                    <>
+                      <div className="dz-order-detail-field"><span>معرّف الطرد لدى Zimou</span><strong dir="ltr">{selectedOrder.carrier_order_id || selectedOrder.carrier_metadata.zimouPackageId || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.wilaya || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.commune || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.address || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>شركة التوصيل الشريكة</span><strong>{selectedOrder.carrier_metadata.partnerCompany || 'لم يتم تعيينها بعد'}</strong></div>
+                      <div className="dz-order-detail-field"><span>رقم تتبع الشركة الشريكة</span><strong dir="ltr">{selectedOrder.carrier_metadata.partnerTrackingCode || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>الحالة الأصلية لدى Zimou</span><strong>{selectedOrder.carrier_metadata.statusName || selectedOrder.carrier_metadata.statusId || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>نوع التوصيل</span><strong>{selectedOrder.carrier_metadata.deliveryType || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>سعر التوصيل</span><strong>{selectedOrder.carrier_metadata.deliveryPrice != null ? `${selectedOrder.carrier_metadata.deliveryPrice} دج` : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.codAmount != null ? `${selectedOrder.carrier_metadata.codAmount} دج` : 'غير متوفر'}</strong></div>
+                    </>
+                  )}
+                  {selectedOrder.carrier_name === 'E-com Delivery v2' && selectedOrder.carrier_metadata?.ecomV2 && (
+                    <>
+                      <div className="dz-order-detail-field"><span>رقم التتبع لدى E-com Delivery</span><strong dir="ltr">{selectedOrder.carrier_metadata.ecomV2.trackingNumber || selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.ecomV2.wilayaId || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.ecomV2.commune || '—'}</strong></div>
+                      <div className="dz-order-detail-field"><span>مكتب الاستلام</span><strong>{selectedOrder.carrier_metadata.ecomV2.stopDeskId || '—'}</strong></div>
+                      <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.address || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.codAmount != null ? Number(selectedOrder.carrier_metadata.ecomV2.codAmount).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>سعر التوصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.shippingFee != null ? Number(selectedOrder.carrier_metadata.ecomV2.shippingFee).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>طريقة التوصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.deliveryType === 'stopdesk' ? 'مكتب استلام' : 'توصيل إلى المنزل'}</strong></div>
+                      <div className="dz-order-detail-field"><span>آخر حالة أصلية</span><strong>{selectedOrder.carrier_metadata.rawSituation || selectedOrder.carrier_metadata.ecomV2.rawSituation || 'بانتظار أول تحديث'}</strong></div>
+                    </>
+                  )}
+                  {selectedOrder.carrier_name === 'Elogistia' && selectedOrder.carrier_metadata?.elogistia && (
+                    <>
+                      <div className="dz-order-detail-field"><span>رقم التتبع لدى Elogistia</span><strong dir="ltr">{selectedOrder.carrier_metadata.elogistia.trackingNumber || selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.elogistia.wilayaName || selectedOrder.carrier_metadata.elogistia.wilayaId || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.elogistia.commune || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.address || 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.codAmount != null ? Number(selectedOrder.carrier_metadata.elogistia.codAmount).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>سعر التوصيل لدى Elogistia</span><strong>{selectedOrder.carrier_metadata.elogistia.shippingFee != null ? Number(selectedOrder.carrier_metadata.elogistia.shippingFee).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
+                      <div className="dz-order-detail-field"><span>طريقة التوصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.deliveryType === 'stopdesk' ? 'مكتب Elogistia' : 'توصيل إلى المنزل'}</strong></div>
+                      <div className="dz-order-detail-field"><span>نوع العملية</span><strong>{selectedOrder.carrier_metadata.elogistia.deliveryMode === 'exchange' ? 'تبادل' : 'إرسال عادي'}</strong></div>
+                      <div className="dz-order-detail-field"><span>آخر حالة أصلية</span><strong>{selectedOrder.carrier_metadata.rawStatus || 'بانتظار أول تحديث'}</strong></div>
+                    </>
+                  )}
+                  <div className="dz-order-detail-field"><span>تاريخ تسجيل الطلب</span><strong>{new Date(selectedOrder.created_at).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
+                  <div className="dz-order-detail-field"><span>معرّف الطلب الداخلي</span><strong>{selectedOrder.id}</strong></div>
+                </div>
+                <p className="dz-order-detail-note">يمكنك تعديل الحالة من القائمة أدناه. سجل التحديثات التفصيلي متاح في صفحة التتبع العامة، بينما تعرض هذه اللوحة البيانات المخزنة والمتاحة في لوحة التاجر.</p>
+                <div style={{ paddingTop: '17px' }}><span className="dz-order-detail-kicker">تعديل الحالة</span><StatusSelector orderId={selectedOrder.id} currentStatus={selectedOrder.current_status} /></div>
+                <div className="dz-order-detail-actions">
+                  <a href={`/t/${selectedOrder.tracking_uuid}`} target="_blank" rel="noreferrer" className="dz-btn dz-btn-outline"><Icons.ExternalLink /> صفحة التتبع</a>
+                  {selectedOrder.customer_phone && <a href={getWhatsAppRecoveryUrl(selectedOrder)} target="_blank" rel="noreferrer" className={`dz-btn ${isAttentionStatus(selectedOrder.current_status) ? 'dz-btn-wa-urgent' : 'dz-btn-wa'}`}><Icons.MessageCircle /> التواصل عبر واتساب</a>}
+                </div>
+              </div>
+              </aside>
+            </div>
+    ), document.body);
+  }
+));
+
 type MerchantDashboardTab =
   | 'overview'
   | 'orders'
@@ -815,9 +998,7 @@ export function MerchantDashboardView({
   const [carrierFilter, setCarrierFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'risk'>('newest');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [renderedSelectedOrderId, setRenderedSelectedOrderId] = useState<string | null>(null);
-  const [isSelectedOrderPanelOpen, setIsSelectedOrderPanelOpen] = useState(false);
+  const orderDetailsPanelRef = useRef<OrderDetailsSidePanelHandle | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
   const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
@@ -842,8 +1023,6 @@ export function MerchantDashboardView({
       isCustomMappingModalOpen ||
       isAddOrderModalOpen ||
       isAddOrderPanelMounted ||
-      selectedOrderId ||
-      renderedSelectedOrderId
     ),
     onBack: () => {
       const globalDialog = typeof document !== 'undefined'
@@ -877,8 +1056,15 @@ export function MerchantDashboardView({
         if (isAddOrderModalOpen && !isCreatingOrder) setIsAddOrderModalOpen(false);
         return true;
       }
-      if (selectedOrderId || renderedSelectedOrderId) {
-        if (selectedOrderId) setSelectedOrderId(null);
+      const orderDetailsLayer = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="order-details-panel"]')
+        : null;
+      if (orderDetailsLayer) {
+        orderDetailsLayer.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
         return true;
       }
       if (mobileMenuOpen) {
@@ -1097,7 +1283,6 @@ export function MerchantDashboardView({
       }
 
       setSelectedOrderIds((current) => current.filter((id) => !ids.includes(id)));
-      setSelectedOrderId((current) => (current && ids.includes(current) ? null : current));
       showToast(`تم حذف ${result.deletedCount} طلب بنجاح.`);
     } catch (error) {
       console.error('[MerchantDashboard]: Order deletion failed:', error);
@@ -1494,20 +1679,6 @@ export function MerchantDashboardView({
     () => [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6),
     [orders]
   );
-  const selectedOrder = useMemo(
-    () => orders.find((order) => order.id === renderedSelectedOrderId) || null,
-    [orders, renderedSelectedOrderId]
-  );
-  useLayoutEffect(() => {
-    if (!selectedOrderId) {
-      setIsSelectedOrderPanelOpen(false);
-      return;
-    }
-
-    setRenderedSelectedOrderId(selectedOrderId);
-    const frame = requestAnimationFrame(() => setIsSelectedOrderPanelOpen(true));
-    return () => cancelAnimationFrame(frame);
-  }, [selectedOrderId]);
   useLayoutEffect(() => {
     if (!isAddOrderModalOpen) {
       setIsAddOrderPanelOpen(false);
@@ -1518,14 +1689,6 @@ export function MerchantDashboardView({
     const frame = requestAnimationFrame(() => setIsAddOrderPanelOpen(true));
     return () => cancelAnimationFrame(frame);
   }, [isAddOrderModalOpen]);
-  useEffect(() => {
-    if (!selectedOrderId) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelectedOrderId(null);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedOrderId]);
   useEffect(() => {
     if (!isCustomMappingModalOpen) return;
 
@@ -3819,13 +3982,72 @@ export function MerchantDashboardView({
           width: min(500px, 100vw);
           min-width: min(500px, 100vw);
         }
+
+        /* Order details animate without expanding the flex layout or blurring the whole page. */
+        .dz-order-details-backdrop {
+          background: rgba(16, 24, 19, 0.42);
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: opacity .16s ease, visibility 0s linear .18s;
+        }
+        .dz-order-details-backdrop[data-open="true"] {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          animation: dz-order-details-backdrop-in .16s ease-out both;
+          transition-delay: 0s;
+        }
+        .dz-order-details-panel {
+          --order-details-width: min(520px, 100vw);
+          flex: 0 0 var(--order-details-width);
+          width: var(--order-details-width);
+          padding: 0;
+          border-inline-start: 0;
+          overflow: hidden;
+          opacity: 0;
+          visibility: hidden;
+          transform: translateX(18px);
+          animation: none !important;
+          transition:
+            transform .2s cubic-bezier(.2,.75,.25,1),
+            opacity .16s ease,
+            visibility 0s linear .2s;
+        }
+        .dz-order-details-panel[data-open="true"] {
+          opacity: 1;
+          visibility: visible;
+          transform: translateX(0);
+          border-inline-start: 1px solid var(--border-soft);
+          overflow-x: hidden;
+          overflow-y: auto;
+          animation: dz-order-details-panel-in .2s cubic-bezier(.2,.75,.25,1) both !important;
+          transition-delay: 0s;
+        }
+        .dz-order-details-panel .dz-order-side-panel-inner--details {
+          width: min(520px, 100vw);
+          min-width: min(520px, 100vw);
+        }
+        @keyframes dz-order-details-backdrop-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes dz-order-details-panel-in {
+          from { opacity: .72; transform: translateX(18px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
         @media (max-width: 560px) {
           .dz-order-side-panel-inner { padding: 24px 18px; }
         }
         @media (prefers-reduced-motion: reduce) {
           .dz-order-side-backdrop,
-          .dz-order-side-panel {
+          .dz-order-side-panel,
+          .dz-order-details-backdrop,
+          .dz-order-details-panel {
             transition-duration: .01ms !important;
+            animation: none !important;
           }
         }
 
@@ -7764,12 +7986,12 @@ export function MerchantDashboardView({
                             onClick={(event) => {
                               const target = event.target;
                               if (target instanceof Element && target.closest('button, a, input, select, textarea, label, [role="button"], [role="img"]')) return;
-                              setSelectedOrderId(order.id);
+                              orderDetailsPanelRef.current?.open(order.id);
                             }}
                             onKeyDown={(event) => {
                               if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
                               event.preventDefault();
-                              setSelectedOrderId(order.id);
+                              orderDetailsPanelRef.current?.open(order.id);
                             }}
                           >
                             <td className="dz-order-select-cell">
@@ -7814,7 +8036,7 @@ export function MerchantDashboardView({
                                   className="dz-order-action-btn"
                                   aria-label={`تفاصيل الطلب ${order.external_order_id}`}
                                   title="تفاصيل الطلب"
-                                  onClick={() => setSelectedOrderId(order.id)}
+                                  onClick={() => orderDetailsPanelRef.current?.open(order.id)}
                                 >
                                   <Icons.Eye />
                                 </button>
@@ -7877,12 +8099,12 @@ export function MerchantDashboardView({
                        onClick={(event) => {
                          const target = event.target;
                          if (target instanceof Element && target.closest('button, a, input, select, textarea, label, [role="button"], [role="img"]')) return;
-                         setSelectedOrderId(order.id);
+                         orderDetailsPanelRef.current?.open(order.id);
                        }}
                        onKeyDown={(event) => {
                          if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
                          event.preventDefault();
-                         setSelectedOrderId(order.id);
+                         orderDetailsPanelRef.current?.open(order.id);
                        }}>
                       <label className="dz-order-mobile-select">
                         <input
@@ -7920,7 +8142,7 @@ export function MerchantDashboardView({
                           className="dz-order-action-btn"
                           aria-label={`تفاصيل الطلب ${order.external_order_id}`}
                           title="تفاصيل الطلب"
-                          onClick={() => setSelectedOrderId(order.id)}
+                          onClick={() => orderDetailsPanelRef.current?.open(order.id)}
                         >
                           <Icons.Eye />
                         </button>
@@ -7981,7 +8203,7 @@ export function MerchantDashboardView({
               siteUrl={siteUrl}
               searchTerm={searchTerm}
               onSearchTermChange={setSearchTerm}
-              onOpenOrder={setSelectedOrderId}
+              onOpenOrder={(orderId) => orderDetailsPanelRef.current?.open(orderId)}
               getStatusLabel={getStatusLabel}
             />
           )}
@@ -9374,138 +9596,13 @@ export function MerchantDashboardView({
             </div>
           ), document.body)}
 
-          {selectedOrder && typeof document !== 'undefined' && createPortal((
-            <div
-              className="dz-order-detail-backdrop dz-order-side-backdrop"
-              data-dashboard-back-dismiss="order-details-panel"
-              data-open={isSelectedOrderPanelOpen ? 'true' : 'false'}
-              aria-hidden={!isSelectedOrderPanelOpen}
-              role="presentation"
-              onMouseDown={(event) => {
-                if (event.target === event.currentTarget && isSelectedOrderPanelOpen) setSelectedOrderId(null);
-              }}
-            >
-              <aside
-                className="dz-order-detail-panel dz-order-side-panel"
-                data-open={isSelectedOrderPanelOpen ? 'true' : 'false'}
-                role="dialog"
-                aria-modal="true"
-                aria-hidden={!isSelectedOrderPanelOpen}
-                aria-labelledby="order-detail-title"
-                onMouseDown={(event) => event.stopPropagation()}
-                onTransitionEnd={(event) => {
-                  if (
-                    event.target === event.currentTarget &&
-                    event.propertyName === 'flex-basis' &&
-                    !selectedOrderId &&
-                    !isSelectedOrderPanelOpen
-                  ) {
-                    setRenderedSelectedOrderId(null);
-                  }
-                }}
-              >
-                <div className="dz-order-side-panel-inner dz-order-side-panel-inner--details">
-                <div className="dz-order-detail-head">
-                  <div>
-                    <span className="dz-order-detail-kicker">تفاصيل الشحنة</span>
-                    <h2 id="order-detail-title">{selectedOrder.external_order_id}</h2>
-                    <p>{selectedOrder.customer_name || 'عميل'} · {formatOrderDate(selectedOrder.created_at)}</p>
-                  </div>
-                  <button type="button" className="dz-order-detail-close" aria-label="إغلاق التفاصيل" onClick={() => setSelectedOrderId(null)}><Icons.X /></button>
-                </div>
-                <div className="dz-order-detail-status">
-                  <div><small>الحالة الحالية</small><strong>{getStatusLabel(selectedOrder.current_status)}</strong></div>
-                  <span className={`dz-pill dz-pill-${getStatusBadgeStyle(selectedOrder.current_status)}`}>{isAttentionStatus(selectedOrder.current_status) ? 'تحتاج إلى متابعة' : getStatusLabel(selectedOrder.current_status)}</span>
-                </div>
-                <div className="dz-order-detail-fields">
-                  <div className="dz-order-detail-field"><span>اسم العميل</span><strong>{selectedOrder.customer_name || 'غير متوفر'}</strong></div>
-                  <div className="dz-order-detail-field"><span>رقم الهاتف</span><strong dir="ltr">{selectedOrder.customer_phone || 'غير متوفر'}</strong></div>
-                  <div className="dz-order-detail-field"><span>اسم الطرد / المنتجات</span><strong>{selectedOrder.product_name || 'غير متوفر'}</strong></div>
-                  <div className="dz-order-detail-field"><span>شركة الشحن</span><strong>{selectedOrder.carrier_name || 'غير محددة'}</strong></div>
-                  <div className="dz-order-detail-field"><span>رقم التتبع</span><strong>{selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
-                  {selectedOrder.carrier_name === 'Maystro Delivery' && selectedOrder.carrier_order_id && (
-                    <div className="dz-order-detail-field"><span>معرّف الطلب لدى Maystro</span><strong dir="ltr">{selectedOrder.carrier_order_id}</strong></div>
-                  )}
-                  {selectedOrder.carrier_name === 'Maystro Delivery' && selectedOrder.carrier_metadata && (
-                    <>
-                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.wilaya || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.communeName || selectedOrder.carrier_metadata.commune || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>العنوان</span><strong>{selectedOrder.carrier_metadata.destinationText || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>نوع التوصيل</span><strong>{Number(selectedOrder.carrier_metadata.deliveryType) === 1 ? 'توصيل إلى المنزل' : Number(selectedOrder.carrier_metadata.deliveryType) === 2 ? 'مكتب / Stopdesk' : Number(selectedOrder.carrier_metadata.deliveryType) === 3 ? 'نقطة استلام' : 'غير محدد'}</strong></div>
-                      <div className="dz-order-detail-field"><span>المبلغ الإجمالي لدى Maystro</span><strong>{selectedOrder.carrier_metadata.totalPrice != null ? `${selectedOrder.carrier_metadata.totalPrice} دج` : 'غير متوفر'}</strong></div>
-                      {selectedOrder.carrier_metadata.customerPhone2 && (
-                        <div className="dz-order-detail-field"><span>رقم الهاتف الإضافي</span><strong dir="ltr">{selectedOrder.carrier_metadata.customerPhone2}</strong></div>
-                      )}
-                      {Array.isArray(selectedOrder.carrier_metadata.products) && selectedOrder.carrier_metadata.products.length > 0 && (
-                        <div className="dz-order-detail-field" style={{ gridColumn: '1 / -1' }}>
-                          <span>تفاصيل محتويات الطرد</span>
-                          <strong style={{ display: 'grid', gap: '6px', fontWeight: 650 }}>
-                            {selectedOrder.carrier_metadata.products.map((item: any, index: number) => (
-                              <span key={index}>
-                                {item.description || item.product || 'منتج'}
-                                {item.quantity ? ` × ${item.quantity}` : ''}
-                                {item.unitPrice != null ? ` · ${item.unitPrice} دج` : ''}
-                              </span>
-                            ))}
-                          </strong>
-                        </div>
-                      )}
-
-                    </>
-                  )}
-                  {selectedOrder.carrier_name === 'Zimou Express' && selectedOrder.carrier_metadata && (
-                    <>
-                      <div className="dz-order-detail-field"><span>معرّف الطرد لدى Zimou</span><strong dir="ltr">{selectedOrder.carrier_order_id || selectedOrder.carrier_metadata.zimouPackageId || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.wilaya || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.commune || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.address || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>شركة التوصيل الشريكة</span><strong>{selectedOrder.carrier_metadata.partnerCompany || 'لم يتم تعيينها بعد'}</strong></div>
-                      <div className="dz-order-detail-field"><span>رقم تتبع الشركة الشريكة</span><strong dir="ltr">{selectedOrder.carrier_metadata.partnerTrackingCode || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>الحالة الأصلية لدى Zimou</span><strong>{selectedOrder.carrier_metadata.statusName || selectedOrder.carrier_metadata.statusId || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>نوع التوصيل</span><strong>{selectedOrder.carrier_metadata.deliveryType || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>سعر التوصيل</span><strong>{selectedOrder.carrier_metadata.deliveryPrice != null ? `${selectedOrder.carrier_metadata.deliveryPrice} دج` : 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.codAmount != null ? `${selectedOrder.carrier_metadata.codAmount} دج` : 'غير متوفر'}</strong></div>
-                    </>
-                  )}
-                  {selectedOrder.carrier_name === 'E-com Delivery v2' && selectedOrder.carrier_metadata?.ecomV2 && (
-                    <>
-                      <div className="dz-order-detail-field"><span>رقم التتبع لدى E-com Delivery</span><strong dir="ltr">{selectedOrder.carrier_metadata.ecomV2.trackingNumber || selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.ecomV2.wilayaId || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.ecomV2.commune || '—'}</strong></div>
-                      <div className="dz-order-detail-field"><span>مكتب الاستلام</span><strong>{selectedOrder.carrier_metadata.ecomV2.stopDeskId || '—'}</strong></div>
-                      <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.address || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.codAmount != null ? Number(selectedOrder.carrier_metadata.ecomV2.codAmount).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>سعر التوصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.shippingFee != null ? Number(selectedOrder.carrier_metadata.ecomV2.shippingFee).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>طريقة التوصيل</span><strong>{selectedOrder.carrier_metadata.ecomV2.deliveryType === 'stopdesk' ? 'مكتب استلام' : 'توصيل إلى المنزل'}</strong></div>
-                      <div className="dz-order-detail-field"><span>آخر حالة أصلية</span><strong>{selectedOrder.carrier_metadata.rawSituation || selectedOrder.carrier_metadata.ecomV2.rawSituation || 'بانتظار أول تحديث'}</strong></div>
-                    </>
-                  )}
-                  {selectedOrder.carrier_name === 'Elogistia' && selectedOrder.carrier_metadata?.elogistia && (
-                    <>
-                      <div className="dz-order-detail-field"><span>رقم التتبع لدى Elogistia</span><strong dir="ltr">{selectedOrder.carrier_metadata.elogistia.trackingNumber || selectedOrder.carrier_tracking_number || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>الولاية</span><strong>{selectedOrder.carrier_metadata.elogistia.wilayaName || selectedOrder.carrier_metadata.elogistia.wilayaId || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>البلدية</span><strong>{selectedOrder.carrier_metadata.elogistia.commune || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>عنوان التوصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.address || 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>مبلغ التحصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.codAmount != null ? Number(selectedOrder.carrier_metadata.elogistia.codAmount).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>سعر التوصيل لدى Elogistia</span><strong>{selectedOrder.carrier_metadata.elogistia.shippingFee != null ? Number(selectedOrder.carrier_metadata.elogistia.shippingFee).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</strong></div>
-                      <div className="dz-order-detail-field"><span>طريقة التوصيل</span><strong>{selectedOrder.carrier_metadata.elogistia.deliveryType === 'stopdesk' ? 'مكتب Elogistia' : 'توصيل إلى المنزل'}</strong></div>
-                      <div className="dz-order-detail-field"><span>نوع العملية</span><strong>{selectedOrder.carrier_metadata.elogistia.deliveryMode === 'exchange' ? 'تبادل' : 'إرسال عادي'}</strong></div>
-                      <div className="dz-order-detail-field"><span>آخر حالة أصلية</span><strong>{selectedOrder.carrier_metadata.rawStatus || 'بانتظار أول تحديث'}</strong></div>
-                    </>
-                  )}
-                  <div className="dz-order-detail-field"><span>تاريخ تسجيل الطلب</span><strong>{new Date(selectedOrder.created_at).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
-                  <div className="dz-order-detail-field"><span>معرّف الطلب الداخلي</span><strong>{selectedOrder.id}</strong></div>
-                </div>
-                <p className="dz-order-detail-note">يمكنك تعديل الحالة من القائمة أدناه. سجل التحديثات التفصيلي متاح في صفحة التتبع العامة، بينما تعرض هذه اللوحة البيانات المخزنة والمتاحة في لوحة التاجر.</p>
-                <div style={{ paddingTop: '17px' }}><span className="dz-order-detail-kicker">تعديل الحالة</span><StatusSelector orderId={selectedOrder.id} currentStatus={selectedOrder.current_status} /></div>
-                <div className="dz-order-detail-actions">
-                  <a href={`/t/${selectedOrder.tracking_uuid}`} target="_blank" rel="noreferrer" className="dz-btn dz-btn-outline"><Icons.ExternalLink /> صفحة التتبع</a>
-                  {selectedOrder.customer_phone && <a href={getWhatsAppRecoveryUrl(selectedOrder)} target="_blank" rel="noreferrer" className={`dz-btn ${isAttentionStatus(selectedOrder.current_status) ? 'dz-btn-wa-urgent' : 'dz-btn-wa'}`}><Icons.MessageCircle /> التواصل عبر واتساب</a>}
-                </div>
-              </div>
-              </aside>
-            </div>
-          ), document.body)}
+          <OrderDetailsSidePanel
+            ref={orderDetailsPanelRef}
+            orders={orders}
+            getStatusLabel={getStatusLabel}
+            getStatusBadgeStyle={getStatusBadgeStyle}
+            getWhatsAppRecoveryUrl={getWhatsAppRecoveryUrl}
+          />
 
           {isAddOrderPanelMounted && typeof document !== 'undefined' && createPortal((
             <div
