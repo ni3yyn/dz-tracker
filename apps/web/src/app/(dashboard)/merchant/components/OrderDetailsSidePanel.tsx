@@ -4,21 +4,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom';
 import { OrderDetailField } from './OrderDetailField';
 import { Icons } from './DashboardIcons';
-
-interface OrderDetailsOrder {
-  id: string;
-  external_order_id: string;
-  customer_name: string | null;
-  customer_phone: string | null;
-  product_name: string | null;
-  carrier_order_id?: string | null;
-  carrier_metadata?: any | null;
-  current_status: string;
-  carrier_name: string | null;
-  carrier_tracking_number: string | null;
-  tracking_uuid: string;
-  created_at: string;
-}
+import type { OrderItem } from '../features/orders/order-types';
 
 export interface OrderDetailsSidePanelHandle {
   open: (orderId: string) => void;
@@ -26,10 +12,10 @@ export interface OrderDetailsSidePanelHandle {
 }
 
 interface OrderDetailsSidePanelProps {
-  orders: OrderDetailsOrder[];
+  orders: OrderItem[];
   getStatusLabel: (status: string) => string;
   getStatusBadgeStyle: (status: string) => string;
-  getWhatsAppRecoveryUrl: (order: OrderDetailsOrder) => string;
+  getWhatsAppRecoveryUrl: (order: OrderItem) => string;
   formatOrderDate: (value: string) => string;
   isAttentionStatus: (status: string) => boolean;
 }
