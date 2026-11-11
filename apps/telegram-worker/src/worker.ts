@@ -12,8 +12,6 @@ const RETRY_DELAYS_SECONDS = [60, 300, 900, 1800]; // 1m, 5m, 15m, 30m
 
 export class TelegramTrackingWorker {
   private isRunning = false;
-  private lastResolutionTime = 0;
-
   constructor(
     private readonly config: WorkerConfig,
     private readonly queue: TelegramQueueManager,
@@ -121,17 +119,24 @@ export class TelegramTrackingWorker {
       return;
     }
 
-    // Step D: Enforce Global Phone Resolution Rate Limiter (3.5s minimum interval)
-    await this.enforceResolutionThrottle();
+    // Step D: Reserve a distinct global slot before making the Telegram request.
+    try {
+      await this.enforceResolutionThrottle();
+    } catch (err: any) {
+      await this.handleRetry(
+        job,
+        'PHONE_SLOT_RESERVATION_FAILED',
+        err?.message || 'Could not reserve a Telegram phone-resolution slot.'
+      );
+      return;
+    }
 
     // Step E: Resolve Phone via Telegram MTProto contacts.resolvePhone
     const resStartTime = Date.now();
     let recipient;
     try {
       recipient = await this.sender.resolvePhone(normalizedPhone);
-      this.lastResolutionTime = Date.now();
     } catch (err: any) {
-      this.lastResolutionTime = Date.now();
       const classified = classifyTelegramError(err);
 
       await this.queue.recordAttempt({
@@ -296,12 +301,6 @@ export class TelegramTrackingWorker {
   }
 
   private async enforceResolutionThrottle(): Promise<void> {
-    const elapsed = Date.now() - this.lastResolutionTime;
-    if (elapsed < this.config.minResolutionIntervalMs) {
-      const waitMs = this.config.minResolutionIntervalMs - elapsed;
-      await this.sleep(waitMs);
-    }
-    // Coordinate globally across workers via database singleton state
     await this.queue.reservePhoneResolutionSlot(this.config.minResolutionIntervalMs);
   }
 

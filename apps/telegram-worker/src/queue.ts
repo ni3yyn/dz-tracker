@@ -207,13 +207,22 @@ export class TelegramQueueManager {
   }
 
   async pauseWorkerUntil(pausedUntil: Date): Promise<void> {
-    await this.supabase
-      .from('telegram_worker_state')
-      .update({
-        paused_until: pausedUntil.toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', 1);
+    const { error } = await this.supabase.rpc('pause_telegram_worker_until', {
+      p_paused_until: pausedUntil.toISOString(),
+    });
+
+    if (error) {
+      // Keep the pause visible even during a partial migration rollout.
+      // The slot reservation itself remains atomic once its RPC is installed.
+      console.error('[QueueManager]: Atomic Telegram pause update failed:', error.message);
+      await this.supabase
+        .from('telegram_worker_state')
+        .update({
+          paused_until: pausedUntil.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', 1);
+    }
   }
 
   async setWorkerEnabled(enabled: boolean): Promise<boolean> {
@@ -242,45 +251,28 @@ export class TelegramQueueManager {
    * Enforces global, multi-worker persistent rate limiting for contacts.resolvePhone
    * Spaced by at least minIntervalMs (3.5s per Telegram recommendation)
    */
+  /**
+   * Atomically reserves a globally ordered phone-resolution slot in PostgreSQL.
+   * The RPC locks the singleton worker-state row, so the tracking and
+   * confirmation loops cannot reserve the same interval concurrently.
+   */
   async reservePhoneResolutionSlot(minIntervalMs: number): Promise<void> {
-    try {
-      const { data } = await this.supabase
-        .from('telegram_worker_state')
-        .select('next_phone_resolution_at, paused_until')
-        .eq('id', 1)
-        .maybeSingle();
+    const { data, error } = await this.supabase.rpc('reserve_telegram_phone_resolution_slot', {
+      p_min_interval_ms: minIntervalMs,
+    });
 
-      const now = Date.now();
-      let waitMs = 0;
+    if (error) {
+      throw new Error(`Could not reserve Telegram phone-resolution slot: ${error.message}`);
+    }
 
-      if (data?.paused_until) {
-        const pauseEnd = new Date(data.paused_until).getTime();
-        if (pauseEnd > now) {
-          waitMs = Math.max(waitMs, pauseEnd - now);
-        }
-      }
+    const slotAt = Date.parse(String(data));
+    if (!Number.isFinite(slotAt)) {
+      throw new Error('Telegram phone-resolution reservation returned an invalid timestamp.');
+    }
 
-      if (data?.next_phone_resolution_at) {
-        const nextAllowed = new Date(data.next_phone_resolution_at).getTime();
-        if (nextAllowed > now) {
-          waitMs = Math.max(waitMs, nextAllowed - now);
-        }
-      }
-
-      if (waitMs > 0) {
-        await new Promise((r) => setTimeout(r, waitMs));
-      }
-
-      const nextSlot = new Date(Date.now() + minIntervalMs).toISOString();
-      await this.supabase
-        .from('telegram_worker_state')
-        .update({
-          next_phone_resolution_at: nextSlot,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', 1);
-    } catch (err: any) {
-      console.warn('[QueueManager]: Warning while reserving phone resolution slot:', err?.message || err);
+    const waitMs = Math.max(0, slotAt - Date.now());
+    if (waitMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
     }
   }
 

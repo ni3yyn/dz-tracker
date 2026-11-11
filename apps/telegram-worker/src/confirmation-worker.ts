@@ -21,8 +21,6 @@ function isPaidPlan(subscriptionTier?: string, subscriptionStatus?: string): boo
 
 export class TelegramConfirmationWorker {
   private isRunning = false;
-  private lastResolutionTime = 0;
-
   constructor(
     private readonly config: WorkerConfig,
     private readonly queue: TelegramQueueManager,
@@ -106,16 +104,23 @@ export class TelegramConfirmationWorker {
       return;
     }
 
-    // Rate limit phone resolution (shared with tracking worker)
-    await this.enforceResolutionThrottle();
+    // Reserve a distinct global slot before making the Telegram request.
+    try {
+      await this.enforceResolutionThrottle();
+    } catch (err: any) {
+      await this.handleRetry(
+        job,
+        'PHONE_SLOT_RESERVATION_FAILED',
+        err?.message || 'Could not reserve a Telegram phone-resolution slot.'
+      );
+      return;
+    }
 
     // Resolve phone via MTProto
     let recipient;
     try {
       recipient = await this.sender.resolvePhone(normalizedPhone);
-      this.lastResolutionTime = Date.now();
     } catch (err: any) {
-      this.lastResolutionTime = Date.now();
       const classified = classifyTelegramError(err);
 
       if (classified.category === 'flood_wait') {
@@ -255,10 +260,6 @@ export class TelegramConfirmationWorker {
   }
 
   private async enforceResolutionThrottle(): Promise<void> {
-    const elapsed = Date.now() - this.lastResolutionTime;
-    if (elapsed < this.config.minResolutionIntervalMs) {
-      await this.sleep(this.config.minResolutionIntervalMs - elapsed);
-    }
     await this.queue.reservePhoneResolutionSlot(this.config.minResolutionIntervalMs);
   }
 

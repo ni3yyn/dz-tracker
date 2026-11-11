@@ -186,9 +186,6 @@ export class TrackingOrchestrator {
           updated_at: new Date().toISOString(),
         };
 
-        if (!isSameStatus && !event.sourceOccurredAt) {
-          updatePayload.current_status = event.statusRaw;
-        }
         if (event.carrierName) {
           updatePayload.carrier_name = event.carrierName;
         }
@@ -265,14 +262,18 @@ export class TrackingOrchestrator {
 
         // إضافة سجل تاريخي فقط إذا تغيرت الحالة ذرّياً عبر RPC
         if (!isSameStatus) {
-          const { data: statusChangeData } = await this.supabase.rpc('record_order_status_change', {
+          const { data: statusChangeData, error: statusChangeError } = await this.supabase.rpc('record_order_status_change', {
             p_order_id: orderId,
             p_status_raw: event.statusRaw,
             p_status_title: displayStatus,
             p_description: event.description || null,
           });
 
-          const actuallyChanged = statusChangeData?.[0]?.changed ?? true;
+          if (statusChangeError) throw statusChangeError;
+          if (!statusChangeData?.[0]) {
+            throw new Error('Atomic order status RPC returned no result.');
+          }
+          const actuallyChanged = statusChangeData[0].changed === true;
 
           if (actuallyChanged) {
             // Historical carrier snapshots must not replay customer notifications.
