@@ -2012,43 +2012,105 @@ export function MerchantDashboardView({
         .dz-filter-btn:hover { background: var(--bg-base); color: var(--ink-main); }
         .dz-filter-btn.active { background: var(--ink-main); color: #fff; border-color: var(--ink-main); }
 
-        /* Orders tab: restrained filters and a clearly legible status control */
+        /* Shipment filters share one full-width, balanced toolbar in Orders and Exceptions. */
         .dz-shipment-filters {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          align-items: start;
-          gap: 12px;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 9px;
+          min-width: 0;
           margin-bottom: 16px;
         }
         .dz-shipment-status-tabs {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          align-items: stretch;
           gap: 7px;
+          width: 100%;
           min-width: 0;
+        }
+        .dz-shipment-status-tabs.dz-exceptions-status-tabs {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
         .dz-shipment-status-tabs .dz-filter-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 38px;
-          padding: 8px 13px;
+          width: 100%;
+          min-width: 0;
+          min-height: 40px;
+          padding: 8px 10px;
           white-space: nowrap;
           box-shadow: none;
         }
         .dz-shipment-filter-controls {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: minmax(0, 1.55fr) repeat(2, minmax(0, 1fr));
+          align-items: stretch;
           gap: 8px;
+          width: 100%;
           min-width: 0;
+        }
+        .dz-exceptions-filter-controls {
+          grid-template-columns: minmax(0, 1.55fr) minmax(220px, 1fr);
         }
         .dz-shipment-select-wrap {
           position: relative;
           display: block;
-          min-width: 174px;
-          max-width: 100%;
+          width: 100%;
+          min-width: 0;
+          max-width: none;
+        }
+        .dz-shipment-search-wrap {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          min-width: 0;
+          min-height: 42px;
+          padding: 0 12px;
+          border: 1px solid #d7e0d6;
+          border-radius: 0;
+          background: #fffefa;
+          color: #6f806f;
+          transition: border-color .16s ease, background-color .16s ease;
+        }
+        .dz-shipment-search-wrap:focus-within {
+          border-color: #718b78;
+          background: #fff;
+          outline: 2px solid rgba(65, 107, 82, .13);
+          outline-offset: 1px;
+        }
+        .dz-shipment-search-wrap > svg {
+          display: block;
+          flex: 0 0 16px;
+          width: 16px;
+          height: 16px;
+        }
+        .dz-shipment-search-wrap input {
+          display: block;
+          width: 100%;
+          min-width: 0;
+          height: 40px;
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          outline: none;
+          background: transparent;
+          color: var(--ink-main);
+          font: inherit;
+          font-size: 12px;
+          text-align: right;
+        }
+        .dz-shipment-search-wrap input::placeholder { color: #858b84; opacity: .9; }
+        .dz-orders-filter-controls .dz-filter-reset {
+          grid-column: 1 / -1;
+          justify-self: start;
+        }
+        @media (max-width: 1100px) {
+          .dz-admin-root .dz-shipment-status-tabs:not(.dz-exceptions-status-tabs) {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
         }
         .dz-shipment-select {
           appearance: none;
@@ -3198,11 +3260,13 @@ export function MerchantDashboardView({
           .dz-admin-root .dz-main { padding-bottom: 32px; }
           .dz-admin-root .dz-filter-row { gap: 8px; }
           .dz-admin-root .dz-filter-row > div { min-width: 0; }
-          .dz-admin-root .dz-shipment-filters { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 11px; }
-          .dz-admin-root .dz-shipment-status-tabs { width: 100%; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding: 2px 1px 6px; margin-inline: -1px; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-inline: contain; scroll-snap-type: inline proximity; }
+          .dz-admin-root .dz-shipment-filters { display: flex; flex-direction: column; align-items: stretch; gap: 9px; }
+          .dz-admin-root .dz-shipment-status-tabs { display: flex; width: 100%; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding: 2px 1px 6px; margin-inline: -1px; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-inline: contain; scroll-snap-type: inline proximity; }
           .dz-admin-root .dz-shipment-status-tabs::-webkit-scrollbar { display: none; }
-          .dz-admin-root .dz-shipment-status-tabs .dz-filter-btn { flex: 0 0 auto; min-height: 40px; scroll-snap-align: start; }
+          .dz-admin-root .dz-shipment-status-tabs .dz-filter-btn { flex: 0 0 auto; width: auto; min-height: 40px; scroll-snap-align: start; }
           .dz-admin-root .dz-shipment-filter-controls { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+          .dz-admin-root .dz-shipment-search-wrap { grid-column: 1 / -1; }
+          .dz-admin-root .dz-exceptions-filter-controls .dz-shipment-select-wrap { grid-column: 1 / -1; }
           .dz-admin-root .dz-shipment-select-wrap { width: 100%; min-width: 0; }
           .dz-admin-root .dz-shipment-select { min-height: 44px; font-size: 12px; }
           .dz-admin-root .dz-filter-reset { grid-column: 1 / -1; justify-self: start; }
@@ -7156,23 +7220,25 @@ export function MerchantDashboardView({
 
             {(activeTab === 'overview' || activeTab === 'orders' || activeTab === 'exceptions') && (
               <div className="dz-header-actions">
-                <div className="dz-search-box" role="search">
-                  <Icons.Search />
-                  <input
-                    type="text"
-                    aria-label="البحث في الشحنات برقم الطلب أو الهاتف أو اسم العميل"
-                    placeholder="رقم الطلب، الهاتف، العميل..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' && activeTab === 'overview') {
-                        event.preventDefault();
-                        setActiveTab('orders');
-                        setStatusFilter('all');
-                      }
-                    }}
-                  />
-                </div>
+                {activeTab === 'overview' && (
+                  <div className="dz-search-box" role="search">
+                    <Icons.Search />
+                    <input
+                      type="text"
+                      aria-label="البحث في الشحنات برقم الطلب أو الهاتف أو اسم العميل"
+                      placeholder="رقم الطلب، الهاتف، العميل..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          setActiveTab('orders');
+                          setStatusFilter('all');
+                        }
+                      }}
+                    />
+                  </div>
+                )}
                 <button
                   type="button"
                   className="dz-add-order-btn"
@@ -7459,7 +7525,18 @@ export function MerchantDashboardView({
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'delivered' ? 'active' : ''}`} aria-pressed={statusFilter === 'delivered'} onClick={() => { setActiveTab('orders'); setStatusFilter('delivered'); }}>تم التسليم</button>
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'returned' ? 'active' : ''}`} aria-pressed={statusFilter === 'returned'} onClick={() => { setActiveTab('orders'); setStatusFilter('returned'); }}>مرتجع</button>
                 </div>
-                <div className="dz-shipment-filter-controls">
+                <div className="dz-shipment-filter-controls dz-orders-filter-controls">
+                  <label className="dz-shipment-search-wrap" role="search">
+                    <span className="sr-only">البحث في الشحنات برقم الطلب أو الهاتف أو اسم العميل</span>
+                    <Icons.Search />
+                    <input
+                      type="search"
+                      aria-label="البحث في الشحنات برقم الطلب أو الهاتف أو اسم العميل"
+                      placeholder="رقم الطلب، الهاتف، العميل..."
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                    />
+                  </label>
                   <div className="dz-shipment-select-wrap">
                     <BrandedSelect
                       ariaLabel="تصفية حسب شركة الشحن"

@@ -163,7 +163,7 @@ export function ShipmentExceptionsPanel({
         <div className={styles.total}><strong>{counts.total}</strong><span>استثناء نشط</span></div>
       </div>
       <div className="dz-filter-row dz-shipment-filters">
-        <div className="dz-shipment-status-tabs" role="group" aria-label="تصفية الاستثناءات حسب الإجراء">
+        <div className="dz-shipment-status-tabs dz-exceptions-status-tabs" role="group" aria-label="تصفية الاستثناءات حسب الإجراء">
           {views.map((item) => (
             <button
               key={item.value}
@@ -176,7 +176,21 @@ export function ShipmentExceptionsPanel({
             </button>
           ))}
         </div>
-        <div className="dz-shipment-filter-controls">
+        <div className="dz-shipment-filter-controls dz-exceptions-filter-controls">
+          <label className="dz-shipment-search-wrap" role="search">
+            <span className="sr-only">البحث في الاستثناءات</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7.5" />
+              <path d="m16.5 16.5 4.2 4.2" />
+            </svg>
+            <input
+              type="search"
+              aria-label="البحث في الاستثناءات"
+              placeholder="رقم الطلب، الزبون أو شركة الشحن..."
+              value={searchTerm}
+              onChange={(event) => onSearchTermChange(event.target.value)}
+            />
+          </label>
           <div className="dz-shipment-select-wrap">
             <BrandedSelect
               ariaLabel="تصفية نوع الاستثناء"
@@ -191,17 +205,6 @@ export function ShipmentExceptionsPanel({
               ]}
             />
           </div>
-          <label className={styles.searchWrap}>
-            <span className="sr-only">البحث في الاستثناءات</span>
-            <input
-              type="search"
-              className={styles.search}
-              aria-label="البحث في الاستثناءات"
-              placeholder="رقم الطلب، الزبون أو شركة الشحن..."
-              value={searchTerm}
-              onChange={(event) => onSearchTermChange(event.target.value)}
-            />
-          </label>
         </div>
       </div>
       {errorMessage && <div className={styles.error} role="alert">{errorMessage}</div>}

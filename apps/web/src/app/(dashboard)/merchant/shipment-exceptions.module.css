@@ -3,9 +3,9 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
-  max-width: 1240px;
+  max-width: none;
   min-width: 0;
-  margin-inline: auto;
+  margin-inline: 0;
   color: var(--ink-main, #18181b);
   box-sizing: border-box;
 }
@@ -56,35 +56,6 @@
 /* Shared status button styling, with only a small inline count treatment. */
 .statusButton { gap: 7px; }
 .statusCount { font-size: 11px; font-weight: 750; font-variant-numeric: tabular-nums; opacity: .78; }
-
-.searchWrap {
-  display: block;
-  flex: 1 1 250px;
-  width: 260px;
-  min-width: 190px;
-  max-width: 320px;
-}
-.search {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  min-height: 42px;
-  padding: 9px 12px;
-  border: 1px solid var(--border-soft, #d7e0d6);
-  border-radius: 0;
-  outline: none;
-  background: var(--surface, #fffefa);
-  color: var(--ink-main, #263b30);
-  box-shadow: none;
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.5;
-  text-align: right;
-  transition: border-color .16s ease, background-color .16s ease;
-}
-.search::placeholder { color: var(--ink-muted, #858b84); opacity: .9; }
-.search:hover { border-color: var(--border-strong, #aab8aa); background: #fff; }
-.search:focus-visible { border-color: #718b78; outline: 2px solid rgba(65, 107, 82, .16); outline-offset: 2px; }
 
 .migrationNotice, .error {
   width: 100%;
@@ -192,8 +163,6 @@
   .total { min-width: 70px; padding-inline-start: 12px; }
   .total strong { font-size: 29px; }
   .total span { font-size: 10px; }
-  .searchWrap { width: 100%; min-width: 0; max-width: none; }
-  .search { min-height: 44px; }
   .item { gap: 12px; padding: 15px 12px; }
   .meta { gap: 6px 11px; }
   .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
@@ -209,5 +178,5 @@
   .primaryAction, .actionLink, .resolveAction { min-height: 38px; padding: 8px 7px; font-size: 10.5px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .search { transition: none; }
+  .root { scroll-behavior: auto; }
 }
