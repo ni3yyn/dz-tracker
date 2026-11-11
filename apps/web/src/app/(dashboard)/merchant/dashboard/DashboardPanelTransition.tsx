@@ -65,7 +65,7 @@ export function DashboardPanelTransition({
         animationFrameRef.current = null;
       }
     };
-  }, [measure, transitionKey]);
+  }, [measure, tabOrder, transitionKey]);
 
   return (
     <div

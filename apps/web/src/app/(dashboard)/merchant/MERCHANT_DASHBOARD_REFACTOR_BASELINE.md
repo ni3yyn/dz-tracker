@@ -261,7 +261,7 @@ Screenshots/recordings are a manual gate before Phase 1. Capture the same seeded
 
 Capture Overview, Orders (including filters and selected order drawer), Exceptions, Analytics, Branding Studio, Upsells, Integrations, Mappings, Settings/Billing, mobile navigation, add-order panel, dialogs and toast states.
 
-No screenshot capture is claimed in this Phase 0 record; it must be completed against the actual running app before the first CSS/component extraction.
+No screenshot capture is claimed. The user has explicitly waived this requirement for starting Phase 1. Runtime preview/build and functional regression checks remain required as available; screenshot comparison can be revisited later without blocking the architecture-only refactor.
 
 ## Required validation gates
 
@@ -269,8 +269,8 @@ No screenshot capture is claimed in this Phase 0 record; it must be completed ag
 - Web TypeScript workflow.
 - Courier/worker integration workflow (to catch accidental cross-workspace changes).
 - Vercel preview deployment status.
-- Screenshot comparison at identical viewport/data/state.
-- Browser console and hydration check.
+- Screenshot comparison at identical viewport/data/state (waived as a Phase 1 entry gate by the user; retain as later manual QA).
+- Browser console and hydration check when an interactive browser session is available.
 - Manual interaction regression checklist for every tab and modal.
 
 Do not merge to `main` while any required check is failing or pending.
@@ -282,8 +282,37 @@ Do not merge to `main` while any required check is failing or pending.
 - [x] Existing shared components and external dependencies inventoried.
 - [x] First-pass source responsibility and state ownership maps recorded.
 - [x] Existing CI/deployment baseline recorded.
-- [ ] Runtime screenshot/recording baseline captured.
-- [x] First-pass repeated visual pattern scan recorded; callsite-level DOM/props audit remains pending.
-- [ ] Final extraction manifest completed, including every handler, hook, effect, modal, portal and CSS block.
+- [x] Runtime screenshot/recording baseline explicitly waived by the user for Phase 1 entry; no screenshots are claimed.
+- [~] Repeated visual pattern scan recorded. Callsite-level audit completed for the first extracted shared primitives; remaining pattern candidates stay deferred until their own extraction.
+- [ ] Final extraction manifest remains in progress and will be maintained incrementally as each state/effect/handler/modal/portal/CSS block moves.
 
-Phase 1 must not start until the remaining three unchecked items are completed.
+The user explicitly authorized Phase 1 on 2026-11-11. The remaining visual capture and full-manifest items are tracked as open QA/documentation work, not blockers to incremental architecture extraction.
+
+
+## Phase 1 — Shared components and dashboard shell
+
+User authorization: 2026-11-11. Screenshot capture was explicitly waived as an entry gate by the user.
+
+### Completed extractions
+
+| Commit | Extracted module(s) | Preserved contract |
+|---|---|---|
+| `e23ff64201d8c33ecdf940bfb73f187e12f26f77` | `components/OrderDetailField.tsx`, `components/DashboardSectionHeading.tsx` | 43 order metadata fields and 6 Overview/Analytics section headings now use shared renderers. Existing class names, element hierarchy, conditional rendering, text, direction, and inline layout/value styles are retained. |
+| `3ea2067b3013dcc13fc919fca0ce8477da6c0c2a` | `components/DashboardIcons.tsx`, `dashboard/DashboardSidebar.tsx` | The existing inline SVG icon registry was moved unchanged. The sidebar and mobile backdrop were moved as a fragment component; navigation updates are delegated to the parent with the same tab selection, Orders/Exceptions filter reset, and mobile-menu-close behavior. |
+| `1f134c72eb1d4aad918040a63274c967afd70060` | `dashboard/DashboardPanelTransition.tsx` | The measured-height transition was moved with its ResizeObserver fallback, requestAnimationFrame scheduling/cancellation, tab-direction calculation, existing classes and inline height style. The original tab-order map is passed from the composition root. |
+
+### Current ownership boundaries
+
+- `MerchantDashboardView.tsx` remains the composition root and still owns feature state, data derivations, mutations, and cross-tab handlers.
+- `components/` owns verified reusable rendering primitives and the shared SVG icon registry.
+- `dashboard/` owns shell/navigation and panel-transition rendering.
+- Existing feature components and server actions remain in their prior locations.
+- No CSS declarations, API contracts, database logic, feature behavior, copy, responsive rules, or animation values have been intentionally changed.
+
+### Remaining Phase 1 validation
+
+- [x] Static source-level callsite review completed for the extracted components and sidebar.
+- [x] Production `main` remains unchanged; all work is isolated on `refactor/merchant-dashboard-architecture`.
+- [ ] Vercel preview build/deployment must complete successfully.
+- [ ] Review the next repeated component candidates only after checking all of their callsites (metric-card element semantics, filter controls, form-field contracts, empty states).
+- [ ] Continue the extraction manifest for hooks/effects/handlers, portals and CSS before moving those responsibilities.
