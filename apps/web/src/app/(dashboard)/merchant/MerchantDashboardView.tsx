@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import { StatusSelector } from './StatusSelector';
@@ -25,6 +25,7 @@ import { useMerchantUpsells } from './features/upsells/useMerchantUpsells';
 import { useMerchantMappings } from './features/mappings/useMerchantMappings';
 import { useBrandingEditor } from './features/branding/useBrandingEditor';
 import { useMerchantSettings } from './features/settings/useMerchantSettings';
+import { useManualOrder } from './features/orders/useManualOrder';
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
 import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
@@ -34,7 +35,6 @@ import { ImageUploadField } from './ImageUploadField';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
-  createManualOrder,
   deleteMerchantOrders,
 } from './actions';
 import {
@@ -806,75 +806,10 @@ export function MerchantDashboardView({
   const orderDetailsPanelRef = useRef<OrderDetailsSidePanelHandle | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
-  const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
-  const [isAddOrderPanelMounted, setIsAddOrderPanelMounted] = useState(false);
-  const [isAddOrderPanelOpen, setIsAddOrderPanelOpen] = useState(false);
   const [isCustomMappingModalOpen, setIsCustomMappingModalOpen] = useState(false);
   const customMappingTriggerRef = useRef<HTMLButtonElement>(null);
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
-  const [addOrderError, setAddOrderError] = useState<string | null>(null);
-  const [newOrderSuccess, setNewOrderSuccess] = useState<{ trackingUuid: string; externalOrderId: string; telegramTrackingEnabled: boolean; telegramTrackingQueued: boolean; telegramQueueCheckFailed: boolean } | null>(null);
 
-  useDashboardBackHandler({
-    scope: 'merchant',
-    activeTab,
-    setActiveTab,
-    hasActiveOverlay: Boolean(
-      mobileMenuOpen ||
-      isCustomMappingModalOpen ||
-      isAddOrderModalOpen ||
-      isAddOrderPanelMounted
-    ),
-    onBack: () => {
-      const globalDialog = typeof document !== 'undefined'
-        ? document.querySelector('[data-dashboard-back-dismiss="global-dialog"]')
-        : null;
-      if (globalDialog instanceof HTMLElement) {
-        globalDialog.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Escape',
-          bubbles: true,
-          cancelable: true,
-        }));
-        return true;
-      }
 
-      const openDropdown = typeof document !== 'undefined'
-        ? document.querySelector('[data-dashboard-back-dismiss="dropdown"]')
-        : null;
-      if (openDropdown instanceof HTMLElement) {
-        openDropdown.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Escape',
-          bubbles: true,
-          cancelable: true,
-        }));
-        return true;
-      }
-      if (isCustomMappingModalOpen) {
-        setIsCustomMappingModalOpen(false);
-        return true;
-      }
-      if (isAddOrderModalOpen || isAddOrderPanelMounted) {
-        if (isAddOrderModalOpen && !isCreatingOrder) setIsAddOrderModalOpen(false);
-        return true;
-      }
-      const orderDetailsLayer = typeof document !== 'undefined'
-        ? document.querySelector('[data-dashboard-back-dismiss="order-details-panel"]')
-        : null;
-      if (orderDetailsLayer) {
-        orderDetailsLayer.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Escape',
-          bubbles: true,
-          cancelable: true,
-        }));
-        return true;
-      }
-      if (mobileMenuOpen) {
-        setMobileMenuOpen(false);
-        return true;
-      }
-      return false;
-    },
-  });
 
   // Full Brand Customization State
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -994,6 +929,84 @@ export function MerchantDashboardView({
     showToast,
   });
 
+  const {
+    isAddOrderModalOpen,
+    isAddOrderPanelMounted,
+    isAddOrderPanelOpen,
+    isCreatingOrder,
+    addOrderError,
+    newOrderSuccess,
+    openAddOrder,
+    closeAddOrder,
+    closeAddOrderSuccess,
+    finishAddOrderPanelClose,
+    handleCreateOrder,
+  } = useManualOrder({
+    merchantId,
+    telegramEnabled,
+    showToast,
+  });
+  useDashboardBackHandler({
+    scope: 'merchant',
+    activeTab,
+    setActiveTab,
+    hasActiveOverlay: Boolean(
+      mobileMenuOpen ||
+      isCustomMappingModalOpen ||
+      isAddOrderModalOpen ||
+      isAddOrderPanelMounted
+    ),
+    onBack: () => {
+      const globalDialog = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="global-dialog"]')
+        : null;
+      if (globalDialog instanceof HTMLElement) {
+        globalDialog.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
+        return true;
+      }
+
+      const openDropdown = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="dropdown"]')
+        : null;
+      if (openDropdown instanceof HTMLElement) {
+        openDropdown.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
+        return true;
+      }
+      if (isCustomMappingModalOpen) {
+        setIsCustomMappingModalOpen(false);
+        return true;
+      }
+      if (isAddOrderModalOpen || isAddOrderPanelMounted) {
+        if (isAddOrderModalOpen && !isCreatingOrder) closeAddOrder();
+        return true;
+      }
+      const orderDetailsLayer = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="order-details-panel"]')
+        : null;
+      if (orderDetailsLayer) {
+        orderDetailsLayer.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
+        return true;
+      }
+      if (mobileMenuOpen) {
+        setMobileMenuOpen(false);
+        return true;
+      }
+      return false;
+    },
+  });
+
   const toggleOrderSelection = (orderId: string, checked: boolean) => {
     setSelectedOrderIds((current) => {
       if (checked) {
@@ -1069,53 +1082,6 @@ export function MerchantDashboardView({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const handleCreateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsCreatingOrder(true);
-    setAddOrderError(null);
-
-    const formData = new FormData(e.currentTarget);
-    formData.append('merchant_id', merchantId);
-
-    try {
-      const res = await createManualOrder(formData);
-      if (res?.error) {
-        setAddOrderError(res.error);
-      } else if (res?.success) {
-        setNewOrderSuccess({
-          trackingUuid: res.trackingUuid!,
-          externalOrderId: res.externalOrderId!,
-          telegramTrackingEnabled: telegramEnabled,
-          telegramTrackingQueued: Boolean(res.telegramTrackingQueued),
-          telegramQueueCheckFailed: Boolean(res.telegramTrackingQueueCheckFailed),
-        });
-        if (res.telegramTrackingQueueCheckFailed) {
-          showToast('تم إنشاء الطلب، لكن تعذّر التحقق من جدولة رابط التتبع عبر تيليجرام.');
-        } else if (res.confirmationQueueError && res.telegramTrackingQueued) {
-          showToast('تم إنشاء الطلب وجدولة رابط التتبع، لكن تعذرت جدولة رسالة التأكيد.');
-        } else if (res.confirmationQueueError && telegramEnabled) {
-          showToast('تم إنشاء الطلب، لكن لم تُجدول رسالة التتبع أو التأكيد. راجع إعدادات قاعدة البيانات والعامل.');
-        } else if (res.confirmationQueueError) {
-          showToast('تم إنشاء الطلب، لكن تعذرت جدولة رسالة تأكيد تيليجرام.');
-        } else if (res.telegramTrackingQueued && res.confirmationQueued) {
-          showToast('تم إنشاء الطلب وجدولة رابط التتبع ورسالة التأكيد عبر تيليجرام.');
-        } else if (res.telegramTrackingQueued) {
-          showToast('تم إنشاء الطلب وجدولة رابط التتبع عبر تيليجرام.');
-        } else if (res.confirmationQueued) {
-          showToast('تم إنشاء الطلب وجدولة رسالة التأكيد. إرسال روابط التتبع متوقف من الإعدادات.');
-        } else if (telegramEnabled) {
-          showToast('تم إنشاء الطلب، لكن لم تُدرج مهمة رابط التتبع رغم تفعيل الخدمة. تحقق من تحديث قاعدة البيانات.');
-        } else {
-          showToast('تم إنشاء الطلب. إرسال روابط التتبع عبر تيليجرام متوقف من الإعدادات.');
-        }
-      }
-    } catch (err: any) {
-      setAddOrderError(err?.message || 'حدث خطأ غير متوقع أثناء إضافة الطلب');
-    } finally {
-      setIsCreatingOrder(false);
-    }
-  };
-
   const deliveredCount = orders.filter((o) => o.current_status === 'delivered').length;
   const inTransitCount = orders.filter((o) =>
     ['in_transit', 'out_for_delivery', 'dispatched', 'shipped'].includes(o.current_status)
@@ -1145,16 +1111,6 @@ export function MerchantDashboardView({
     () => [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6),
     [orders]
   );
-  useLayoutEffect(() => {
-    if (!isAddOrderModalOpen) {
-      setIsAddOrderPanelOpen(false);
-      return;
-    }
-
-    setIsAddOrderPanelMounted(true);
-    const frame = requestAnimationFrame(() => setIsAddOrderPanelOpen(true));
-    return () => cancelAnimationFrame(frame);
-  }, [isAddOrderModalOpen]);
   useEffect(() => {
     if (!isCustomMappingModalOpen) return;
 
@@ -6903,11 +6859,7 @@ export function MerchantDashboardView({
               setActiveTab('orders');
               setStatusFilter('all');
             }}
-            onAddOrder={() => {
-              setIsAddOrderModalOpen(true);
-              setAddOrderError(null);
-              setNewOrderSuccess(null);
-            }}
+            onAddOrder={openAddOrder}
           />
 
           {/* SUBSCRIPTION WARNING BANNER */}
@@ -7062,11 +7014,7 @@ export function MerchantDashboardView({
               onToggleOrderSelection={toggleOrderSelection}
               onDeleteOrders={handleDeleteOrders}
               onClearSelection={() => setSelectedOrderIds([])}
-              onAddOrder={() => {
-                setIsAddOrderModalOpen(true);
-                setAddOrderError(null);
-                setNewOrderSuccess(null);
-              }}
+              onAddOrder={openAddOrder}
               onOpenOrder={(orderId) => orderDetailsPanelRef.current?.open(orderId)}
               onOpenShipmentList={openShipmentList}
               onCloseMobileMenu={() => setMobileMenuOpen(false)}
@@ -7295,7 +7243,7 @@ export function MerchantDashboardView({
               role="presentation"
               onMouseDown={(event) => {
                 if (event.target === event.currentTarget && isAddOrderPanelOpen && !isCreatingOrder) {
-                  setIsAddOrderModalOpen(false);
+                  closeAddOrder();
                 }
               }}
             >
@@ -7314,7 +7262,7 @@ export function MerchantDashboardView({
                     !isAddOrderModalOpen &&
                     !isAddOrderPanelOpen
                   ) {
-                    setIsAddOrderPanelMounted(false);
+                    finishAddOrderPanelClose();
                   }
                 }}
               >
@@ -7329,7 +7277,7 @@ export function MerchantDashboardView({
                     type="button"
                     className="dz-order-detail-close"
                     aria-label="إغلاق النافذة"
-                    onClick={() => setIsAddOrderModalOpen(false)}
+                    onClick={() => closeAddOrder()}
                     disabled={isCreatingOrder}
                   >
                     <Icons.X />
@@ -7403,10 +7351,7 @@ export function MerchantDashboardView({
                       type="button"
                       className="dz-btn dz-btn-outline"
                       style={{ width: '100%', marginTop: '14px', fontSize: '14px', padding: '12px', minHeight: '44px' }}
-                      onClick={() => {
-                        setNewOrderSuccess(null);
-                        setIsAddOrderModalOpen(false);
-                      }}
+                      onClick={closeAddOrderSuccess}
                     >
                       إغلاق
                     </button>
@@ -7572,7 +7517,7 @@ export function MerchantDashboardView({
                       <button
                         type="button"
                         className="dz-btn dz-btn-outline"
-                        onClick={() => setIsAddOrderModalOpen(false)}
+                        onClick={() => closeAddOrder()}
                         disabled={isCreatingOrder}
                         style={{ flex: 1, fontSize: '14px', fontWeight: 750, padding: '12px 20px', minHeight: '46px' }}
                       >

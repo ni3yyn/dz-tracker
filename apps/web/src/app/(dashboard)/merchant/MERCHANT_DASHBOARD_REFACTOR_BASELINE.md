@@ -494,3 +494,16 @@ The hook preserves the optimistic toggle and rollback paths, server action names
 - [x] Payment proof and upgrade state/handler removed from the composition root.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed fifth batch — Manual-order workflow hook
+
+| Module | Extraction contract |
+|---|---|
+| features/orders/useManualOrder.ts | Manual-order modal/panel state, requestAnimationFrame mount/open lifecycle, create action, error/success state and open/close/transition callbacks moved into a focused hook. |
+
+The portal markup itself remains in MerchantDashboardView. The hook preserves the original FormData and createManualOrder call, Telegram result flags, success/error messages, toast branches, and creating-state transitions. The original requestAnimationFrame/cancelAnimationFrame layout effect is moved verbatim. Both existing open entry points now call the same openAddOrder action; backdrop/header/cancel/back navigation and transition-end handling call focused hook actions.
+
+- [x] Manual-order form and animation state/logic removed from the composition root.
+- [x] Portal rendering and DOM structure remain in the composition root.
+- [x] Back-handler guard still prevents closing while an order is being created.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+
