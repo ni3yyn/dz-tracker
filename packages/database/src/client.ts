@@ -786,6 +786,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      merchant_legal_acceptances: {
+        Row: {
+          id: string;
+          user_id: string;
+          merchant_id: string | null;
+          terms_version: string;
+          privacy_version: string;
+          accepted_at: string;
+          acceptance_source: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          merchant_id?: string | null;
+          terms_version: string;
+          privacy_version: string;
+          accepted_at?: string;
+          acceptance_source?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          merchant_id?: string | null;
+          terms_version?: string;
+          privacy_version?: string;
+          accepted_at?: string;
+          acceptance_source?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
