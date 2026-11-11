@@ -22,6 +22,7 @@ import { OrdersTab } from './tabs/OrdersTab';
 import { BrandingTab } from './tabs/BrandingTab';
 import { UpsellsTab } from './tabs/UpsellsTab';
 import { useMerchantUpsells } from './features/upsells/useMerchantUpsells';
+import { useMerchantMappings } from './features/mappings/useMerchantMappings';
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
 import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
@@ -32,8 +33,6 @@ import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
   saveBrandSettings,
-  applyPresetMappings,
-  deleteStatusMapping,
   submitPaymentProof,
   toggleTelegramTracking,
   createManualOrder,
@@ -992,10 +991,6 @@ export function MerchantDashboardView({
   const [isSavingBrand, setIsSavingBrand] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const [editingMappingId, setEditingMappingId] = useState<string | null>(null);
-  const [editDisplayStatus, setEditDisplayStatus] = useState('');
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-
   const [isSubmittingProof, setIsSubmittingProof] = useState(false);
   const [proofImageUrl, setProofImageUrl] = useState('');
   const [selectedUpgradeTier, setSelectedUpgradeTier] = useState<'basic' | 'growth' | 'scale'>(() => subscription.tier === 'scale' ? 'scale' : subscription.tier === 'growth' ? 'growth' : 'basic');
@@ -1043,6 +1038,18 @@ export function MerchantDashboardView({
     showToast,
     confirmDialog,
   });
+
+  const {
+    editingMappingId,
+    editDisplayStatus,
+    setEditDisplayStatus,
+    isSavingEdit,
+    handleSaveInlineEdit,
+    handleCancelInlineEdit,
+    handleBeginInlineEdit,
+    handleApplyPreset,
+    handleDeleteMapping,
+  } = useMerchantMappings({ merchantId, showToast });
 
   const handleToggleTelegramTracking = async () => {
     if (isSavingTelegram) return;
@@ -1273,23 +1280,6 @@ export function MerchantDashboardView({
     } finally {
       setIsSavingBrand(false);
     }
-  };
-
-  const handleSaveInlineEdit = async (sourceStatus: string) => {
-    if (!editDisplayStatus.trim()) return;
-    setIsSavingEdit(true);
-
-    const fd = new FormData();
-    fd.append('merchant_id', merchantId);
-    fd.append('source_status', sourceStatus);
-    fd.append('display_status', editDisplayStatus);
-
-    const { saveStatusMapping } = await import('./actions');
-    await saveStatusMapping(fd);
-
-    setEditingMappingId(null);
-    setIsSavingEdit(false);
-    showToast('تم حفظ المطابقة بنجاح');
   };
 
   const deliveredCount = orders.filter((o) => o.current_status === 'delivered').length;
@@ -7374,19 +7364,10 @@ export function MerchantDashboardView({
               onEditDisplayStatusChange={setEditDisplayStatus}
               isSavingEdit={isSavingEdit}
               onSaveInlineEdit={handleSaveInlineEdit}
-              onCancelInlineEdit={() => setEditingMappingId(null)}
-              onBeginInlineEdit={(id, displayStatus) => {
-                setEditingMappingId(id);
-                setEditDisplayStatus(displayStatus);
-              }}
-              onApplyPreset={async (formData) => {
-                await applyPresetMappings(formData);
-                showToast('تم تطبيق الحزمة بنجاح');
-              }}
-              onDeleteMapping={async (formData) => {
-                await deleteStatusMapping(formData);
-                showToast('تم حذف المطابقة بنجاح');
-              }}
+              onCancelInlineEdit={handleCancelInlineEdit}
+              onBeginInlineEdit={handleBeginInlineEdit}
+              onApplyPreset={handleApplyPreset}
+              onDeleteMapping={handleDeleteMapping}
             />
           )}
 

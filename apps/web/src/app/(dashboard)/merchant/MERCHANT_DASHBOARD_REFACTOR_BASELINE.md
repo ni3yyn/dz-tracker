@@ -457,3 +457,15 @@ The hook receives merchantId and initialUpsells as its existing inputs, plus the
 - [x] No Upsells presentation state was added inside UpsellsTab.
 - [ ] Vercel preview for this first Phase 3 hook extraction must pass before moving another domain.
 
+### Completed second batch — Mappings hook
+
+| Module | Extraction contract |
+|---|---|
+| features/mappings/useMerchantMappings.ts | Inline mapping editor state, save handler and preset/delete action wrappers moved into a focused hook. |
+
+The hook receives merchantId and the existing toast callback. The inline-save handler retains its dynamic action import, FormData keys, no-op condition for an empty display value, loading-state order and success message. Preset/delete action arguments and success toasts are unchanged. The custom mapping modal, trigger ref, body scroll lock, Escape handling and focus restoration remain in MerchantDashboardView.
+
+- [x] Inline mapping state and handlers removed from the composition root.
+- [x] Custom mapping modal and focus lifecycle remain in the parent.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+
