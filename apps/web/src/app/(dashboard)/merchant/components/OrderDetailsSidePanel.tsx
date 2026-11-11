@@ -72,16 +72,6 @@ export const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSid
               data-open={isOpen ? 'true' : 'false'}
               aria-hidden={!isOpen}
               role="presentation"
-              onTransitionEnd={(event) => {
-                if (
-                  event.target === event.currentTarget &&
-                  event.propertyName === 'opacity' &&
-                  !isOpen
-                ) {
-                  selectedOrderIdRef.current = null;
-                  setSelectedOrderId(null);
-                }
-              }}
               onMouseDown={(event) => {
                 if (event.target === event.currentTarget && isOpen) closePanel();
               }}
@@ -93,6 +83,16 @@ export const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSid
                 aria-modal="true"
                 aria-hidden={!isOpen}
                 aria-labelledby="order-detail-title"
+                onTransitionEnd={(event) => {
+                  if (
+                    event.target === event.currentTarget &&
+                    (event.propertyName === 'clip-path' || event.propertyName === '-webkit-clip-path') &&
+                    !isOpen
+                  ) {
+                    selectedOrderIdRef.current = null;
+                    setSelectedOrderId(null);
+                  }
+                }}
                 onMouseDown={(event) => event.stopPropagation()}
               >
                 <div className="dz-order-side-panel-inner dz-order-side-panel-inner--details">
