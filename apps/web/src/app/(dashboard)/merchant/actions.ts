@@ -779,6 +779,7 @@ export async function createManualOrder(formData: FormData) {
   const orchestrator = new TrackingOrchestrator();
   const result = await orchestrator.processEvent({
     merchantId,
+    sourceProvider: 'manual',
     externalOrderId,
     customerName: customerName || undefined,
     customerPhone: customerPhone || undefined,
@@ -792,6 +793,21 @@ export async function createManualOrder(formData: FormData) {
   if (!result.success) {
   return { error: result.message || 'حدث خطأ أثناء إضافة الطلب' };
 }
+
+  if (result.message === 'exchange_replacement_linked' || result.message === 'exchange_replacement_needs_confirmation') {
+    revalidatePath('/merchant');
+    return {
+      success: true,
+      trackingUuid: result.trackingUuid || '',
+      externalOrderId,
+      exchangeReplacement: true,
+      exchangeReplacementNeedsConfirmation: result.message === 'exchange_replacement_needs_confirmation',
+      confirmationQueued: false,
+      confirmationQueueError: false,
+      telegramTrackingQueued: false,
+      telegramTrackingQueueCheckFailed: false,
+    };
+  }
 
   if (!result.isNewOrder || !result.orderId) {
     return {
@@ -836,6 +852,8 @@ export async function createManualOrder(formData: FormData) {
     success: true,
     trackingUuid: result.trackingUuid,
     externalOrderId,
+    exchangeReplacement: false,
+    exchangeReplacementNeedsConfirmation: false,
     confirmationQueued,
     confirmationQueueError,
     telegramTrackingQueued: Boolean(telegramTrackingJob),

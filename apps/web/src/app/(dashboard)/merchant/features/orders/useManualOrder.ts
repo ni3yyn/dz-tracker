@@ -7,6 +7,8 @@ export interface ManualOrderSuccess {
   telegramTrackingEnabled: boolean;
   telegramTrackingQueued: boolean;
   telegramQueueCheckFailed: boolean;
+  exchangeReplacement: boolean;
+  exchangeReplacementNeedsConfirmation: boolean;
 }
 
 interface UseManualOrderOptions {
@@ -51,9 +53,11 @@ export function useManualOrder({
         setAddOrderError(res.error);
       } else if (res?.success) {
         setNewOrderSuccess({
-          trackingUuid: res.trackingUuid!,
+          trackingUuid: res.trackingUuid || '',
           externalOrderId: res.externalOrderId!,
           telegramTrackingEnabled: telegramEnabled,
+          exchangeReplacement: Boolean(res.exchangeReplacement),
+          exchangeReplacementNeedsConfirmation: Boolean(res.exchangeReplacementNeedsConfirmation),
           telegramTrackingQueued: Boolean(res.telegramTrackingQueued),
           telegramQueueCheckFailed: Boolean(res.telegramTrackingQueueCheckFailed),
         });

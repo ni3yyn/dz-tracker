@@ -107,13 +107,30 @@ export function AddOrderPanel({
                       </svg>
                     </div>
                     <h3 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 800, color: 'var(--ink-main)' }}>
-                      تم تسجيل الطلب بنجاح!
+                      {newOrderSuccess.exchangeReplacement
+                        ? newOrderSuccess.exchangeReplacementNeedsConfirmation
+                          ? 'تم استلام الشحنة وتحتاج إلى تأكيد الربط'
+                          : 'تم ربط الشحنة بطلب الاستبدال'
+                        : 'تم تسجيل الطلب بنجاح!'}
                     </h3>
                     <p style={{ margin: '0 0 18px', fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.7 }}>
-                      رقم الطلب: <strong>{newOrderSuccess.externalOrderId}</strong><br />
-                      {newOrderSuccess.telegramQueueCheckFailed ? 'تم تسجيل الطلب، لكن تعذّر التحقق من حالة جدولة رابط التتبع.' : newOrderSuccess.telegramTrackingQueued ? 'تم إدراج رابط التتبع في طابور تيليجرام، وسيحاول حساب تاجر تراك إرساله إلى الحساب المرتبط برقم العميل.' : newOrderSuccess.telegramTrackingEnabled ? 'الخدمة مفعّلة، لكن لم تُدرج مهمة الإرسال. تحقق من تطبيق تحديث قاعدة البيانات وسجلات العامل.' : 'خدمة إرسال روابط التتبع عبر تيليجرام متوقفة حالياً. فعّلها من إعدادات المتجر لإرسال روابط الطلبات الجديدة.'}
+                      {newOrderSuccess.exchangeReplacement ? (
+                        <>
+                          مرجع الشحنة: <strong>{newOrderSuccess.externalOrderId}</strong><br />
+                          {newOrderSuccess.exchangeReplacementNeedsConfirmation
+                            ? 'توجد عدة طلبات استبدال مطابقة. راجع قسم طلبات الاستبدال واختر الطلب الصحيح قبل متابعة الشحنة.'
+                            : 'ستظهر تحديثات الشحنة ضمن صفحة التتبع الأصلية. لم يتم إنشاء طلب جديد أو إرسال رابط تتبع إضافي للعميل.'}
+                        </>
+                      ) : (
+                        <>
+                          رقم الطلب: <strong>{newOrderSuccess.externalOrderId}</strong><br />
+                          {newOrderSuccess.telegramQueueCheckFailed ? 'تم تسجيل الطلب، لكن تعذّر التحقق من حالة جدولة رابط التتبع.' : newOrderSuccess.telegramTrackingQueued ? 'تم إدراج رابط التتبع في طابور تيليجرام، وسيحاول حساب تاجر تراك إرساله إلى الحساب المرتبط برقم العميل.' : newOrderSuccess.telegramTrackingEnabled ? 'الخدمة مفعّلة، لكن لم تُدرج مهمة الإرسال. تحقق من تطبيق تحديث قاعدة البيانات وسجلات العامل.' : 'خدمة إرسال روابط التتبع عبر تيليجرام متوقفة حالياً. فعّلها من إعدادات المتجر لإرسال روابط الطلبات الجديدة.'}
+                        </>
+                      )}
                     </p>
 
+                    {!newOrderSuccess.exchangeReplacement && (
+                      <>
                     <div style={{
                       background: 'var(--bg-base, #f4f5f1)',
                       padding: '14px',
@@ -152,6 +169,8 @@ export function AddOrderPanel({
                         <Icons.Copy /> نسخ الرابط
                       </button>
                     </div>
+                      </>
+                    )}
 
                     <button
                       type="button"

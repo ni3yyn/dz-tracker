@@ -47,7 +47,7 @@ export interface TrackingEvent {
   /** Selected provider order fields retained for merchant-side auditing/display. */
   carrierMetadata?: Record<string, unknown>;
   /** Distinguishes provider-specific event ledgers when a webhook has no signature ID. */
-  sourceProvider?: 'procolis' | 'zrexpress' | 'maystro' | 'zimou' | 'elogistia' | 'ecom_v2' | 'yalidine' | 'guepex';
+  sourceProvider?: 'manual' | 'procolis' | 'zrexpress' | 'maystro' | 'zimou' | 'elogistia' | 'ecom_v2' | 'yalidine' | 'guepex';
   /** Import a historical provider event without firing customer notifications. */
   suppressTriggers?: boolean;
   /** Provider event time used to reject out-of-order courier status events. */
@@ -209,7 +209,7 @@ export class TrackingOrchestrator {
           orderId: exchangeResult.original_order_id || undefined,
           deduplicated: exchangeResult.status_changed !== true,
           isNewOrder: false,
-          message: exchangeResult.needs_confirmation ? 'exchange_replacement_needs_confirmation' : undefined,
+          message: exchangeResult.needs_confirmation ? 'exchange_replacement_needs_confirmation' : 'exchange_replacement_linked',
         };
       }
 
