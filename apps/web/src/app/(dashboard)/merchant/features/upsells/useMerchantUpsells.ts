@@ -262,13 +262,11 @@ export function useMerchantUpsells({
 
   return {
     upsellsList,
-    setUpsellsList,
     upsellScrapeUrl,
     setUpsellScrapeUrl,
     isScrapingUpsell,
     scrapeUpsellError,
     editingUpsellId,
-    setEditingUpsellId,
     upsellTitle,
     setUpsellTitle,
     upsellImageUrl,

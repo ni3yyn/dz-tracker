@@ -1010,13 +1010,11 @@ export function MerchantDashboardView({
 
   const {
     upsellsList,
-    setUpsellsList,
     upsellScrapeUrl,
     setUpsellScrapeUrl,
     isScrapingUpsell,
     scrapeUpsellError,
     editingUpsellId,
-    setEditingUpsellId,
     upsellTitle,
     setUpsellTitle,
     upsellImageUrl,
