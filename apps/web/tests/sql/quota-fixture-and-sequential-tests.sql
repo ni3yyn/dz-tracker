@@ -46,7 +46,7 @@ INSERT INTO public.telegram_worker_state (id) VALUES (1);
 \ir ../../src/app/migrations/20261111_telegram_phone_slot_reservation.sql
 \ir ../../src/app/migrations/20261111_atomic_order_quota.sql
 
-DO $
+DO $slot_test$
 DECLARE
   v_first_slot TIMESTAMPTZ;
   v_second_slot TIMESTAMPTZ;
@@ -75,9 +75,9 @@ BEGIN
     RAISE EXCEPTION 'A valid Telegram slot should remain stable after confirmation.';
   END IF;
 END;
-$;
+$slot_test$;
 
-DO $$
+DO $
 DECLARE
   v_result JSONB;
   v_used INTEGER;
