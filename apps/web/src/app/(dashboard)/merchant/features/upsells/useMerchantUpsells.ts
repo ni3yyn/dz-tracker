@@ -8,7 +8,7 @@ import {
   toggleMerchantUpsell,
   reorderMerchantUpsell,
 } from '../../actions';
-import type { MerchantUpsellItem } from '../../shared/upsell-types';
+import type { MerchantUpsellItem, ReorderDirection } from '../../shared/upsell-types';
 
 interface UseMerchantUpsellsOptions {
   merchantId: string;
@@ -230,7 +230,7 @@ export function useMerchantUpsells({
     }
   };
 
-  const handleReorderUpsell = async (id: string, direction: 'up' | 'down') => {
+  const handleReorderUpsell = async (id: string, direction: ReorderDirection) => {
     const currentIndex = upsellsList.findIndex((u) => u.id === id);
     if (currentIndex === -1) return;
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
