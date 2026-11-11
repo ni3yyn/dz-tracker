@@ -114,8 +114,17 @@ export function detectShipmentExceptions(
     }
     if (['returned','retourne','retournee','retournée'].includes(status)) {
       result.push(createException(order, 'returned', 'warning',
-        'تم إرجاع الشحنة',
-        'أكدت شركة الشحن أن الشحنة مرتجعة. راجع سبب الإرجاع والتكلفة قبل اتخاذ قرار إعادة الإرسال.',
+        'سجّلت الشركة حالة إرجاع',
+        'تشير بيانات شركة الشحن إلى مرحلة من مراحل الإرجاع. تحقق من آخر التفاصيل لمعرفة ما إذا كانت الشحنة في الطريق إلى المتجر أو وصلت إليه.',
+        lastEventAt));
+      continue;
+    }
+
+    // A carrier-reported hold is actionable even without a usable event time.
+    if (status === 'held_at_hub') {
+      result.push(createException(order, 'shipment_stalled', 'warning',
+        'الشحنة معلّقة لدى شركة التوصيل',
+        'تُظهر آخر حالة أن شركة التوصيل علّقت الشحنة مؤقتاً. راجع سبب التعليق مع الشركة قبل أن تتأخر أكثر.',
         lastEventAt));
       continue;
     }
@@ -124,13 +133,13 @@ export function detectShipmentExceptions(
     if (elapsed === null) continue;
 
     if (
-      ['created','label_created'].includes(status) &&
+      ['created','label_created','processing'].includes(status) &&
       Boolean(order.carrier_name && order.carrier_tracking_number) &&
       elapsed >= 48 * HOUR
     ) {
       result.push(createException(order, 'no_first_scan', 'warning',
-        'لم تُسجّل أول حركة للشحنة',
-        'مرّت 48 ساعة أو أكثر منذ آخر حالة مؤكدة وما زالت الشحنة في مرحلة التسجيل. تحقق من تسليم الطرد فعلياً إلى شركة التوصيل.',
+        'لم تؤكد الشركة استلام الشحنة',
+        'مرّت 48 ساعة أو أكثر دون انتقال من مرحلة التسجيل أو التحضير. تحقق من تسليم الطرد فعلياً إلى شركة التوصيل.',
         lastEventAt));
       continue;
     }
@@ -148,10 +157,12 @@ export function detectShipmentExceptions(
         lastEventAt));
       continue;
     }
-    if (['in_transit','dispatched','shipped'].includes(status) && elapsed >= 72 * HOUR) {
+    if (['in_transit','at_local_hub','dispatched','shipped'].includes(status) && elapsed >= 72 * HOUR) {
       result.push(createException(order, 'shipment_stalled', 'warning',
-        'توقفت تحديثات الشحنة',
-        'لم يصل تحديث مؤكد من شركة الشحن منذ 72 ساعة أو أكثر. اطلب التحقق من موقع الطرد.',
+        status === 'at_local_hub' ? 'لم تغادر الشحنة مركز الفرز' : 'توقفت تحديثات الشحنة',
+        status === 'at_local_hub'
+          ? 'مضت 72 ساعة أو أكثر منذ وصول الشحنة إلى مركز الفرز دون تحديث. تحقق من استمرار معالجتها لدى شركة التوصيل.'
+          : 'لم يصل تحديث مؤكد من شركة الشحن منذ 72 ساعة أو أكثر. اطلب التحقق من موقع الطرد.',
         lastEventAt));
     }
   }

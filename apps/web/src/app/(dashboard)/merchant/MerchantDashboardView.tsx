@@ -1552,12 +1552,11 @@ export function MerchantDashboardView({
   }, [orders]);
   const ordersCreatedLastSevenDays = lastSevenDays.reduce((sum, day) => sum + day.count, 0);
   const maxDailyOrders = Math.max(1, ...lastSevenDays.map((day) => day.count));
-  const classifiedStatusCount = inTransitCount + stopdeskCount + deliveredCount + exceptionCount + returnedCount;
+  const classifiedStatusCount = inTransitCount + stopdeskCount + deliveredCount + returnedCount;
   const statusBreakdown = [
     { key: 'moving', label: 'في الطريق', count: inTransitCount, color: '#638797' },
     { key: 'pickup', label: 'جاهزة للاستلام', count: stopdeskCount, color: '#ac8a4a' },
     { key: 'delivered', label: 'تم التسليم', count: deliveredCount, color: '#5d8968' },
-    { key: 'attention', label: 'تحتاج إلى متابعة', count: exceptionCount, color: '#b95a4a' },
     { key: 'returned', label: 'مرتجعة أو ملغاة', count: returnedCount, color: '#877b85' },
     { key: 'other', label: 'حالات أخرى أو قيد المعالجة', count: Math.max(0, orders.length - classifiedStatusCount), color: '#9a9c91' },
   ];
@@ -1659,7 +1658,9 @@ export function MerchantDashboardView({
       'order placed': 'تم استلام الطلب',
       pending: 'قيد المعالجة',
       confirmed: 'تم التأكيد',
-      processing: 'قيد التجهيز',
+      processing: 'قيد التجهيز لدى شركة التوصيل',
+      at_local_hub: 'وصلت إلى مركز الفرز',
+      held_at_hub: 'معلّقة لدى شركة التوصيل',
       shipped: 'تم الشحن',
       dispatched: 'غادرت المستودع',
       in_transit: 'في الطريق',
