@@ -519,3 +519,15 @@ The hook receives the existing filtered order IDs, global confirm/alert function
 - [x] Existing side-panel portal and imperative ref remain in the parent.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed seventh batch — Shared order filters hook
+
+| Module | Extraction contract |
+|---|---|
+| features/orders/useOrderFilters.ts | Shared search/status/carrier/sort state, unique carrier derivation, filtered/sorted order selection, visible-order paging state and page-reset effect moved into one hook. |
+
+The same search state continues to feed DashboardHeader, OrdersTab and ExceptionsTab. Status updates from Overview/Exceptions navigation continue to use the hook setter; shipment-list shortcuts continue resetting visible paging to 20. The existing status matching, risk-first ordering, date sort direction and exact effect dependencies are preserved. The shared isAttentionStatus predicate remains in the root because the order-details side panel also uses it; the hook receives it as a callback rather than creating a second status classifier.
+
+- [x] Shared filter state and derived filtered orders removed from the composition root.
+- [x] Header, Orders and Exceptions keep the same shared state and prop bindings.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+

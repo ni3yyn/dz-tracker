@@ -26,6 +26,7 @@ import { useMerchantMappings } from './features/mappings/useMerchantMappings';
 import { useBrandingEditor } from './features/branding/useBrandingEditor';
 import { useMerchantSettings } from './features/settings/useMerchantSettings';
 import { useManualOrder } from './features/orders/useManualOrder';
+import { useOrderFilters } from './features/orders/useOrderFilters';
 import { useOrderSelection } from './features/orders/useOrderSelection';
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
@@ -798,10 +799,6 @@ export function MerchantDashboardView({
     setSavedStoreName(storeName);
   }, [storeName]);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'transit' | 'stopdesk' | 'attention' | 'delivered' | 'returned'>('all');
-  const [carrierFilter, setCarrierFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'risk'>('newest');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const orderDetailsPanelRef = useRef<OrderDetailsSidePanelHandle | null>(null);
   const [isCustomMappingModalOpen, setIsCustomMappingModalOpen] = useState(false);
@@ -812,7 +809,6 @@ export function MerchantDashboardView({
   // Full Brand Customization State
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const [visibleOrders, setVisibleOrders] = useState(20);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -1082,54 +1078,25 @@ export function MerchantDashboardView({
     { key: 'other', label: 'حالات أخرى أو قيد المعالجة', count: Math.max(0, orders.length - classifiedStatusCount), color: '#9a9c91' },
   ];
 
-  const uniqueCarriers = useMemo(() => {
-    const set = new Set<string>();
-    orders.forEach((o) => {
-      if (o.carrier_name) set.add(o.carrier_name);
-    });
-    return Array.from(set);
-  }, [orders]);
-
-  const filteredOrders = useMemo(() => {
-    let list = orders.filter((order) => {
-      const matchSearch =
-        (order.external_order_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.customer_phone || '').includes(searchTerm) ||
-        (order.carrier_tracking_number || '').toLowerCase().includes(searchTerm.toLowerCase());
-
-      if (!matchSearch) return false;
-
-      if (carrierFilter !== 'all' && order.carrier_name !== carrierFilter) {
-        return false;
-      }
-
-      if (statusFilter === 'attention') {
-        return isAttentionStatus(order.current_status);
-      }
-      if (statusFilter === 'delivered') return order.current_status === 'delivered';
-      if (statusFilter === 'returned') return ['returned', 'cancelled'].includes(order.current_status);
-      if (statusFilter === 'stopdesk') return order.current_status === 'ready_for_pickup';
-      if (statusFilter === 'transit') {
-        return ['in_transit', 'out_for_delivery', 'dispatched', 'shipped'].includes(order.current_status);
-      }
-      return true;
-    });
-
-    if (sortBy === 'newest') {
-      list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else if (sortBy === 'oldest') {
-      list.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    } else if (sortBy === 'risk') {
-      list.sort((a, b) => {
-        const aRisk = exceptionOrderIds.has(a.id) ? 1 : 0;
-        const bRisk = exceptionOrderIds.has(b.id) ? 1 : 0;
-        return bRisk - aRisk;
-      });
-    }
-
-    return list;
-  }, [orders, searchTerm, statusFilter, carrierFilter, sortBy, activeTab, exceptionOrderIds]);
+  const {
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    carrierFilter,
+    setCarrierFilter,
+    sortBy,
+    setSortBy,
+    uniqueCarriers,
+    filteredOrders,
+    visibleOrders,
+    setVisibleOrders,
+  } = useOrderFilters({
+    orders,
+    exceptionOrderIds,
+    activeTab,
+    isAttentionStatus,
+  });
 
   const {
     selectedOrderIds,
@@ -1149,10 +1116,6 @@ export function MerchantDashboardView({
   const allFilteredOrdersSelected =
     filteredOrders.length > 0 &&
     filteredOrders.every((order) => selectedOrderIds.includes(order.id));
-
-  useEffect(() => {
-    setVisibleOrders(20);
-  }, [searchTerm, statusFilter, carrierFilter, sortBy, activeTab]);
 
   const getWhatsAppRecoveryUrl = (order: OrderItem) => {
     let phone = (order.customer_phone || '').replace(/[^0-9]/g, '');
