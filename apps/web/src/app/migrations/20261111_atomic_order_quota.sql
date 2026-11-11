@@ -330,3 +330,5 @@ REVOKE ALL ON FUNCTION public.create_tracked_order_with_quota(
 GRANT EXECUTE ON FUNCTION public.create_tracked_order_with_quota(
   UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ, TEXT, TEXT, TEXT, JSONB, TEXT
 ) TO service_role;
+
+NOTIFY pgrst, 'reload schema';

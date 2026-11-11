@@ -166,6 +166,7 @@ export async function POST(req: Request) {
         'account_suspended',
         'subscription_expired',
         'subscription_limit_reached',
+        'invalid_order_identity',
       ].includes(errorCode);
       return NextResponse.json({
         success: false,

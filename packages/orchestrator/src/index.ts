@@ -477,18 +477,12 @@ export class TrackingOrchestrator {
               carrier_last_event_at: event.sourceOccurredAt || null,
               carrier_name: event.carrierName || 'Yalidine Express',
               carrier_tracking_number: event.carrierTrackingNumber || null,
-              ...(
-                event.sourceProvider === 'maystro' ||
-                event.sourceProvider === 'zimou' ||
-                event.sourceProvider === 'elogistia' ||
-                event.sourceProvider === 'ecom_v2' ||
-                event.sourceProvider === 'yalidine' ||
-                event.sourceProvider === 'guepex' ||
-                event.sourceProvider === 'procolis'
-              ) ? {
+              ...(([
+                'maystro', 'zimou', 'elogistia', 'ecom_v2', 'yalidine', 'guepex', 'procolis',
+              ] as string[]).includes(event.sourceProvider || '') ? {
                 carrier_order_id: event.carrierOrderId || null,
                 carrier_metadata: event.carrierMetadata || null,
-              } : {},
+              } : {}),
             })
             .select('id, tracking_uuid')
             .single();
@@ -518,7 +512,6 @@ export class TrackingOrchestrator {
             return this.executeProcessEvent(event, options, recoveryAttempt + 1);
           }
           throw quotaError;
-        }
         } else {
         const reservation = quotaReservation as any;
         if (!reservation || typeof reservation.outcome !== 'string') {
