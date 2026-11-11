@@ -35,7 +35,47 @@ CREATE TABLE public.orders (
   UNIQUE (merchant_id, external_order_id)
 );
 
+CREATE TABLE public.telegram_worker_state (
+  id SMALLINT PRIMARY KEY CHECK (id = 1),
+  next_phone_resolution_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  paused_until TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+INSERT INTO public.telegram_worker_state (id) VALUES (1);
+
+\ir ../../src/app/migrations/20261111_telegram_phone_slot_reservation.sql
 \ir ../../src/app/migrations/20261111_atomic_order_quota.sql
+
+DO $
+DECLARE
+  v_first_slot TIMESTAMPTZ;
+  v_second_slot TIMESTAMPTZ;
+  v_pause_until TIMESTAMPTZ;
+  v_confirmed_slot TIMESTAMPTZ;
+BEGIN
+  UPDATE public.telegram_worker_state
+  SET next_phone_resolution_at = clock_timestamp(), paused_until = NULL
+  WHERE id = 1;
+
+  v_first_slot := public.reserve_telegram_phone_resolution_slot(3500);
+  v_second_slot := public.reserve_telegram_phone_resolution_slot(3500);
+  IF v_second_slot - v_first_slot < INTERVAL '3490 milliseconds' THEN
+    RAISE EXCEPTION 'Concurrent Telegram loops were allocated overlapping slots: %, %', v_first_slot, v_second_slot;
+  END IF;
+
+  -- A FloodWait recorded after a slot was booked must invalidate that slot.
+  v_pause_until := clock_timestamp() + INTERVAL '20 seconds';
+  PERFORM public.pause_telegram_worker_until(v_pause_until);
+  v_confirmed_slot := public.confirm_telegram_phone_resolution_slot(v_second_slot, 3500);
+  IF v_confirmed_slot < v_pause_until THEN
+    RAISE EXCEPTION 'Previously reserved Telegram slot bypassed a newer FloodWait: %, pause %', v_confirmed_slot, v_pause_until;
+  END IF;
+
+  IF public.confirm_telegram_phone_resolution_slot(v_confirmed_slot, 3500) <> v_confirmed_slot THEN
+    RAISE EXCEPTION 'A valid Telegram slot should remain stable after confirmation.';
+  END IF;
+END;
+$;
 
 DO $$
 DECLARE

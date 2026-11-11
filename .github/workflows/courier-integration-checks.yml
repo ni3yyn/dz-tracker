@@ -129,3 +129,41 @@ jobs:
           fi
 
           psql -X -v ON_ERROR_STOP=1 -f apps/web/tests/sql/quota-race-assert.sql
+
+      - name: Verify Telegram phone-resolution slot serialization
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: tajertrack_quota_test
+        run: |
+          set -euo pipefail
+          psql -X -A -t -q -v ON_ERROR_STOP=1 \
+            -c "SELECT public.reserve_telegram_phone_resolution_slot(3500)" > /tmp/telegram-slot-a.txt &
+          slot_a_pid=$!
+
+          psql -X -A -t -q -v ON_ERROR_STOP=1 \
+            -c "SELECT public.reserve_telegram_phone_resolution_slot(3500)" > /tmp/telegram-slot-b.txt &
+          slot_b_pid=$!
+
+          wait "$slot_a_pid"
+          wait "$slot_b_pid"
+
+          python3 - <<'PY'
+          from datetime import datetime
+          from pathlib import Path
+
+          def read_slot(path: str) -> datetime:
+              value = Path(path).read_text().strip()
+              if not value:
+                  raise SystemExit(f"No slot returned in {path}")
+              return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+          a = read_slot("/tmp/telegram-slot-a.txt")
+          b = read_slot("/tmp/telegram-slot-b.txt")
+          separation = abs((a - b).total_seconds())
+          if separation < 3.49:
+              raise SystemExit(f"Telegram slots overlapped: A={a.isoformat()} B={b.isoformat()} separation={separation}s")
+          print(f"Telegram concurrent slot reservations separated by {separation:.3f}s")
+          PY
