@@ -9,8 +9,6 @@ const RETRY_DELAYS_SECONDS = [60, 300, 900, 3600]; // 1m, 5m, 15m, 1h
 
 export class WebPushWorker {
   private isRunning = false;
-  private currentJob: PushOutboxJob | null = null;
-  private readonly lostLeaseJobIds = new Set<string>();
 
   constructor(
     private readonly config: PushWorkerConfig,
@@ -47,7 +45,6 @@ export class WebPushWorker {
           continue;
         }
 
-        this.currentJob = job;
         let renewalInFlight: Promise<boolean> | null = null;
         const renewalIntervalMs = Math.max(
           1000,
@@ -64,8 +61,7 @@ export class WebPushWorker {
         } finally {
           clearInterval(renewalTimer);
           if (renewalInFlight) await renewalInFlight;
-          this.lostLeaseJobIds.delete(job.id);
-          this.currentJob = null;
+
         }
       } catch (err: any) {
         console.error('[WebPushWorker]: Unexpected error in main loop:', err?.message || err);
@@ -208,11 +204,15 @@ export class WebPushWorker {
         durationMs,
       });
 
-      await this.queue.updateJob(job.id, {
+      const jobUpdated = await this.queue.updateJob(job.id, {
         status: 'sent',
         resultCode: 'sent_201',
         sentAt: new Date().toISOString(),
       });
+      if (!jobUpdated) {
+        console.warn(`[WebPushWorker]: Delivered push for ${job.id}, but did not update a job lease no longer owned by this process.`);
+        return;
+      }
 
       await this.queue.recordSubscriptionSuccess(ctx.deviceSubscription.id);
       this.health.recordJobProcessed('sent');
@@ -320,13 +320,7 @@ export class WebPushWorker {
   }
 
   private async renewJobLease(jobId: string): Promise<boolean> {
-    const renewed = await this.queue.renewJobLease(jobId, this.config.leaseDurationSeconds);
-    if (renewed) {
-      this.lostLeaseJobIds.delete(jobId);
-    } else {
-      this.lostLeaseJobIds.add(jobId);
-    }
-    return renewed;
+    return this.queue.renewJobLease(jobId, this.config.leaseDurationSeconds);
   }
 
   private sleep(ms: number): Promise<void> {

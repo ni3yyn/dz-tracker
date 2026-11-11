@@ -241,25 +241,30 @@ export class PushQueueManager {
   }
 
   async renewJobLease(jobId: string, leaseSeconds: number): Promise<boolean> {
-    const leaseExpiresAt = new Date(Date.now() + Math.max(10, leaseSeconds) * 1000).toISOString();
-    const { data, error } = await this.supabase
-      .from('web_push_outbox')
-      .update({
-        lease_expires_at: leaseExpiresAt,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', jobId)
-      .eq('status', 'processing')
-      .eq('locked_by', this.config.instanceId)
-      .select('id')
-      .maybeSingle();
+    try {
+      const leaseExpiresAt = new Date(Date.now() + Math.max(10, leaseSeconds) * 1000).toISOString();
+      const { data, error } = await this.supabase
+        .from('web_push_outbox')
+        .update({
+          lease_expires_at: leaseExpiresAt,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', jobId)
+        .eq('status', 'processing')
+        .eq('locked_by', this.config.instanceId)
+        .select('id')
+        .maybeSingle();
 
-    if (error) {
-      console.error(`[PushQueueManager]: Failed to renew job lease ${jobId}:`, error.message);
+      if (error) {
+        console.error(`[PushQueueManager]: Failed to renew job lease ${jobId}:`, error.message);
+        return false;
+      }
+
+      return Boolean(data);
+    } catch (err: any) {
+      console.error(`[PushQueueManager]: Lease renewal request failed for ${jobId}:`, err?.message || err);
       return false;
     }
-
-    return Boolean(data);
   }
 
   async updateJob(
