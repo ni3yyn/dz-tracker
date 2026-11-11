@@ -1,18 +1,6 @@
 import { DashboardMetricCard } from '../components/DashboardMetricCard';
 import { DashboardSectionHeading } from '../components/DashboardSectionHeading';
-
-type AnalyticsDay = {
-  label: string;
-  dateLabel: string;
-  count: number;
-};
-
-type StatusBreakdownItem = {
-  key: string;
-  label: string;
-  count: number;
-  color: string;
-};
+import type { AnalyticsDay, StatusBreakdownItem } from '../features/analytics/analytics-types';
 
 interface AnalyticsTabProps {
   orderCount: number;
