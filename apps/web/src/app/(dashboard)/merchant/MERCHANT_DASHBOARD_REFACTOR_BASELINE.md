@@ -399,3 +399,13 @@ Scraper/form draft values, loading/error states, list data, confirmation-backed 
 
 The mapping editor modal, focus/keyboard lifecycle, inline edit state, save handler and server action/toast wrappers remain in the parent. The tab receives only the required display data and callbacks.
 
+
+### Completed seventh batch — Settings and Billing
+
+| Module | Extraction contract |
+|---|---|
+| `tabs/SettingsTab.tsx` | Store profile/logo form, Telegram switches, subscription summary, upgrade plans, payment proof form/history and legal links moved into a typed tab component. The existing save/toggle/proof handlers and state values are passed through as props. |
+| `shared/subscription-types.ts` | `SubscriptionInfo` and `PaymentRecord` are centralized and re-exported from the composition module to preserve their named type exports. |
+
+Brand settings and store-name save logic remain parent-owned and continue using the same handler as the Branding tab. Telegram optimistic state/loading, active-plan checks, billing selection, renewal toggle, proof upload/submission and payment data remain in the composition root. Existing BrandedSelect, ImageUploadField and SVG icons are reused.
+
