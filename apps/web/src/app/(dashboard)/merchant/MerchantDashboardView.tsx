@@ -38,8 +38,6 @@ import { ImageUploadField } from './ImageUploadField';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
-} from './actions';
-import {
   TimelineEvent,
   BrandSettings,
   DEFAULT_BRAND_SETTINGS,
