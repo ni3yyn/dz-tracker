@@ -1,41 +1,24 @@
 import type { CSSProperties, FormEvent, ReactNode } from 'react';
-import type {
-  AnimationLevel,
-  BackgroundStyle,
-  CardRadius,
-  CardSurface,
-  FontFamily,
-  TimelineDesign,
-} from '@saas/ui';
-import type {
-  BrandPreset,
-  BrandingCategory,
-  EditableBrandSettings,
-  TimelineLineStyle,
-} from '../shared/branding-types';
-import { Icons } from '../components/DashboardIcons';
-
-type BrandingCategoryOption = {
-  id: BrandingCategory;
-  number: string;
-  label: string;
-  description: string;
-};
-type PaletteOption = { name: string; hex: string };
-type BackgroundOption = { id: BackgroundStyle; name: string; desc: string; icon: string; previewBg: string };
-type TimelineOption = { id: TimelineDesign; name: string; desc: string; icon: string };
-type TimelineLineOption = { id: TimelineLineStyle; name: string; desc: string; icon: string };
-type SurfaceOption = { id: CardSurface; name: string; desc: string; icon: string };
-type RadiusOption = { id: CardRadius; name: string; px: string };
+import type { BrandPreset, BrandingCategory, EditableBrandSettings } from '../shared/branding-types';
+import {
+  ANIMATION_LEVELS,
+  BACKGROUND_STYLES,
+  BRAND_PALETTES,
+  BRAND_PRESETS,
+  BRANDING_CATEGORIES,
+  CARD_RADII,
+  CARD_SURFACES,
+  FONT_FAMILIES,
+  TIMELINE_DESIGNS,
+  TIMELINE_LINE_STYLES,
+  getBrandCont };
 type FontOption = { id: FontFamily; name: string; sample: string };
 type AnimationOption = { id: AnimationLevel; name: string; desc: string; icon: string };
 
 interface BrandingTabProps {
   brandConfig: EditableBrandSettings;
-  brandPresets: BrandPreset[];
   activeBrandPresetId: string | null;
   onApplyBrandPreset: (preset: BrandPreset) => void;
-  brandingCategories: readonly BrandingCategoryOption[];
   brandingCategory: BrandingCategory;
   onSetBrandingCategory: (category: BrandingCategory) => void;
   brandHistoryTick: number;
@@ -44,17 +27,6 @@ interface BrandingTabProps {
   onUndo: () => void;
   onRedo: () => void;
   onResetCategory: () => void;
-  brandPalettes: PaletteOption[];
-  getBrandContrastRatio: (hex: string, backgroundHex: string) => number;
-  getReadableBrandAccent: (hex: string, themeMode: string | undefined) => string;
-  getReadableOnBrand: (hex: string) => string;
-  backgroundStyles: BackgroundOption[];
-  timelineDesigns: TimelineOption[];
-  timelineLineStyles: TimelineLineOption[];
-  cardSurfaces: SurfaceOption[];
-  cardRadii: RadiusOption[];
-  fontFamilies: FontOption[];
-  animationLevels: AnimationOption[];
   onUpdateBrandConfig: <K extends keyof EditableBrandSettings>(key: K, value: EditableBrandSettings[K]) => void;
   hasUnsavedBrandChanges: boolean;
   isSavingBrand: boolean;
@@ -64,10 +36,8 @@ interface BrandingTabProps {
 
 export function BrandingTab({
   brandConfig,
-  brandPresets,
   activeBrandPresetId,
   onApplyBrandPreset,
-  brandingCategories,
   brandingCategory,
   onSetBrandingCategory,
   brandHistoryTick,
@@ -76,17 +46,6 @@ export function BrandingTab({
   onUndo,
   onRedo,
   onResetCategory,
-  brandPalettes,
-  getBrandContrastRatio,
-  getReadableBrandAccent,
-  getReadableOnBrand,
-  backgroundStyles,
-  timelineDesigns,
-  timelineLineStyles,
-  cardSurfaces,
-  cardRadii,
-  fontFamilies,
-  animationLevels,
   onUpdateBrandConfig,
   hasUnsavedBrandChanges,
   isSavingBrand,
