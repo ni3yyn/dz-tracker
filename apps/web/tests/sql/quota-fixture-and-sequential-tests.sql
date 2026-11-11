@@ -77,7 +77,7 @@ BEGIN
 END;
 $slot_test$;
 
-DO $
+DO $quota_test$
 DECLARE
   v_result JSONB;
   v_used INTEGER;
@@ -188,4 +188,4 @@ BEGIN
   SELECT merchant_id, id, external_order_id, created_at
   FROM public.orders WHERE merchant_id = v_merchant;
 END;
-$$;
+$quota_test$;
