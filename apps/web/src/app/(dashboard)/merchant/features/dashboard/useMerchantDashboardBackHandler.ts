@@ -44,7 +44,7 @@ export function useMerchantDashboardBackHandler({
       isAddOrderModalOpen ||
       isAddOrderPanelMounted
     ),
-    onBack: {
+    onBack: () => {
       const globalDialog = typeof document !== 'undefined'
         ? document.querySelector('[data-dashboard-back-dismiss="global-dialog"]')
         : null;
