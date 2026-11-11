@@ -26,6 +26,7 @@ import { useMerchantMappings } from './features/mappings/useMerchantMappings';
 import { useBrandingEditor } from './features/branding/useBrandingEditor';
 import { useMerchantSettings } from './features/settings/useMerchantSettings';
 import { useManualOrder } from './features/orders/useManualOrder';
+import { useOrderSelection } from './features/orders/useOrderSelection';
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
 import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
@@ -35,7 +36,6 @@ import { ImageUploadField } from './ImageUploadField';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
-  deleteMerchantOrders,
 } from './actions';
 import {
   TimelineEvent,
@@ -804,8 +804,6 @@ export function MerchantDashboardView({
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'risk'>('newest');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const orderDetailsPanelRef = useRef<OrderDetailsSidePanelHandle | null>(null);
-  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
-  const [isDeletingOrders, setIsDeletingOrders] = useState(false);
   const [isCustomMappingModalOpen, setIsCustomMappingModalOpen] = useState(false);
   const customMappingTriggerRef = useRef<HTMLButtonElement>(null);
 
@@ -1007,75 +1005,6 @@ export function MerchantDashboardView({
     },
   });
 
-  const toggleOrderSelection = (orderId: string, checked: boolean) => {
-    setSelectedOrderIds((current) => {
-      if (checked) {
-        return current.includes(orderId) ? current : [...current, orderId];
-      }
-      return current.filter((id) => id !== orderId);
-    });
-  };
-
-  const toggleFilteredOrderSelection = (checked: boolean) => {
-    setSelectedOrderIds((current) => {
-      const next = new Set(current);
-      for (const order of filteredOrders) {
-        if (checked) next.add(order.id);
-        else next.delete(order.id);
-      }
-      return Array.from(next);
-    });
-  };
-
-  const handleDeleteOrders = async (orderIds: string[]) => {
-    const ids = Array.from(new Set(orderIds));
-    if (ids.length === 0 || isDeletingOrders) return;
-
-    const confirmationMessage =
-      ids.length === 1
-        ? 'سيتم حذف الطلب وسجل تحديثاته وروابط الإشعارات المرتبطة به نهائياً. لا يمكن التراجع عن هذا الإجراء.'
-        : `سيتم حذف ${ids.length} طلباً وسجلات تحديثاتها وروابط إشعاراتها نهائياً. لا يمكن التراجع عن هذا الإجراء.`;
-
-    const confirmed = await confirmDialog({
-      title: ids.length === 1 ? 'حذف الطلب' : 'حذف الطلبات المحددة',
-      message: confirmationMessage,
-      confirmLabel: ids.length === 1 ? 'حذف الطلب' : `حذف ${ids.length} طلباً`,
-      cancelLabel: 'الاحتفاظ بها',
-      tone: 'danger',
-    });
-
-    if (!confirmed) return;
-
-    setIsDeletingOrders(true);
-    try {
-      const result = await deleteMerchantOrders(ids);
-
-      if ('error' in result) {
-        await alertDialog({
-          title: 'تعذر حذف الطلبات',
-          message: result.error,
-          confirmLabel: 'حسناً',
-          tone: 'warning',
-        });
-        return;
-      }
-
-      setSelectedOrderIds((current) => current.filter((id) => !ids.includes(id)));
-      orderDetailsPanelRef.current?.closeIfDeleted(ids);
-      showToast(`تم حذف ${result.deletedCount} طلب بنجاح.`);
-    } catch (error) {
-      console.error('[MerchantDashboard]: Order deletion failed:', error);
-      await alertDialog({
-        title: 'حدث خطأ أثناء الحذف',
-        message: 'تعذر حذف الطلبات حالياً. يرجى المحاولة مجدداً.',
-        confirmLabel: 'حسناً',
-        tone: 'warning',
-      });
-    } finally {
-      setIsDeletingOrders(false);
-    }
-  };
-
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(id);
@@ -1201,6 +1130,21 @@ export function MerchantDashboardView({
 
     return list;
   }, [orders, searchTerm, statusFilter, carrierFilter, sortBy, activeTab, exceptionOrderIds]);
+
+  const {
+    selectedOrderIds,
+    isDeletingOrders,
+    toggleOrderSelection,
+    toggleFilteredOrderSelection,
+    clearSelectedOrders,
+    handleDeleteOrders,
+  } = useOrderSelection({
+    filteredOrders,
+    confirmDialog,
+    alertDialog,
+    showToast,
+    onOrdersDeleted: (ids) => orderDetailsPanelRef.current?.closeIfDeleted(ids),
+  });
 
   const allFilteredOrdersSelected =
     filteredOrders.length > 0 &&
@@ -7013,7 +6957,7 @@ export function MerchantDashboardView({
               onToggleFilteredOrderSelection={toggleFilteredOrderSelection}
               onToggleOrderSelection={toggleOrderSelection}
               onDeleteOrders={handleDeleteOrders}
-              onClearSelection={() => setSelectedOrderIds([])}
+              onClearSelection={clearSelectedOrders}
               onAddOrder={openAddOrder}
               onOpenOrder={(orderId) => orderDetailsPanelRef.current?.open(orderId)}
               onOpenShipmentList={openShipmentList}

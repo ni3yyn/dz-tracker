@@ -507,3 +507,15 @@ The portal markup itself remains in MerchantDashboardView. The hook preserves th
 - [x] Back-handler guard still prevents closing while an order is being created.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed sixth batch — Order selection and deletion hook
+
+| Module | Extraction contract |
+|---|---|
+| features/orders/useOrderSelection.ts | Selected-order IDs, deleting state, individual/bulk selection handlers, clear-selection action, confirmation-backed delete handler, error alerts and success/error toasts moved into a focused hook. |
+
+The hook receives the existing filtered order IDs, global confirm/alert functions and toast callback. The order-details side-panel ref remains in the composition root; the hook reports successfully deleted IDs through a callback so the same panel closes if its selected order was deleted. Confirmation text/tone, delete action arguments, alert copy, catch behavior and loading lifecycle are unchanged.
+
+- [x] Selection and delete state/handlers removed from the composition root.
+- [x] Existing side-panel portal and imperative ref remain in the parent.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+
