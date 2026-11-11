@@ -306,7 +306,7 @@ User authorization: 2026-11-11. Screenshot capture was explicitly waived as an e
 
 ### Build issue found and corrected
 
-The first Vercel preview for `83bc795` failed because the extracted `DashboardHeader.tsx` retained the old relative import `../../SiteHeader`. Moving the component one directory deeper required changing this to `../../../SiteHeader`. Corrected in commit `6a3d35523985992af529a6052bb7d1e665942a62`. The next Vercel preview is pending; the fix is not considered build-verified until that preview completes successfully.
+The first Vercel preview for `83bc795` failed because the extracted `DashboardHeader.tsx` retained the old relative import `../../SiteHeader`. Moving the component one directory deeper required changing this to `../../../SiteHeader`. Corrected in commit `6a3d35523985992af529a6052bb7d1e665942a62`; the corrected extraction was subsequently verified by a successful Vercel preview for `ca02fb8eacdafacb874419c89eb387741834391b`.
 
 ### Current ownership boundaries
 
@@ -320,14 +320,14 @@ The first Vercel preview for `83bc795` failed because the extracted `DashboardHe
 
 - [x] Static source-level callsite review completed for all current extractions: 43 order-detail fields, 6 section headings, 7 KPI cards (4 button / 3 div), header, sidebar, icon registry and panel transition.
 - [x] Production `main` remains unchanged; all work is isolated on `refactor/merchant-dashboard-architecture`.
-- [ ] Vercel preview build/deployment must complete successfully.
-- [ ] Review the next repeated component candidates only after checking all of their callsites (metric-card element semantics, filter controls, form-field contracts, empty states).
-- [ ] Continue the extraction manifest for hooks/effects/handlers, portals and CSS before moving those responsibilities.
+- [x] Vercel preview build/deployment completed successfully for the corrected Phase 1 extraction.
+- [x] Repeated shared-component and tab-rendering callsites were reviewed before extraction; element semantics and canonical existing controls were preserved.
+- [x] The extraction manifest was extended to track tab boundaries and the state/effect/portal/CSS work carried into Phase 3.
 
 
-## Phase 2 — Feature tab boundaries (in progress)
+## Phase 2 — Feature tab boundaries (completed)
 
-The Phase 1 baseline preview build completed successfully for commit `ca02fb8eacdafacb874419c89eb387741834391b`. Production `main` remains unchanged.
+The Phase 1 baseline preview build completed successfully for commit `ca02fb8eacdafacb874419c89eb387741834391b`. The completed Phase 2 source commit `4a2aa0462822b7ccdf36b69b4eb7417fe3320685` also has a successful Vercel preview: https://vercel.com/ni3yyns-projects/dz-tracker/5GVzsJZEJS8BSRMheqK3TFdhGxVM. Production `main` remains unchanged.
 
 Phase 2 moves tab-level rendering into dedicated modules while leaving feature state, derived data, server actions, mutations, cross-tab navigation, and existing feature modules in their current owners. Each tab is extracted only after its dependencies and event callbacks are explicit.
 
@@ -339,18 +339,19 @@ Phase 2 moves tab-level rendering into dedicated modules while leaving feature s
 | `tabs/AnalyticsTab.tsx` | Analytics JSX moved without changing its DOM/classes/copy/styles. It receives existing derived counts/series and the two original navigation callbacks; calculations remain in the composition root. |
 | `tabs/IntegrationsTab.tsx` | Thin typed adapter over the existing `CarrierIntegrationsManager`; provider state and integration actions remain in that canonical feature component. |
 
-### Remaining Phase 2 batches
+### Phase 2 completion checklist
 
-- [ ] Overview tab.
-- [ ] Orders tab and its existing order interactions.
-- [ ] Branding Studio tab.
-- [ ] Upsells tab.
-- [ ] Mappings tab.
-- [ ] Settings/Billing tab.
-- [ ] Re-map and document remaining portal ownership after tab boundaries are stable.
-- [ ] Run and pass Vercel preview plus applicable workspace CI for the completed Phase 2 changes.
+- [x] Overview tab — tabs/OverviewTab.tsx.
+- [x] Orders tab — tabs/OrdersTab.tsx; filter/selection/deletion/drawer/manual-order state remains parent-owned.
+- [x] Branding Studio — tabs/BrandingTab.tsx and shared/branding-types.ts.
+- [x] Upsells — tabs/UpsellsTab.tsx and shared/upsell-types.ts.
+- [x] Mappings — tabs/MappingsTab.tsx; custom-mapping modal remains parent-owned.
+- [x] Settings/Billing — tabs/SettingsTab.tsx and shared/subscription-types.ts.
+- [x] Exceptions, Analytics and Integrations — tabs/ExceptionsTab.tsx, tabs/AnalyticsTab.tsx and tabs/IntegrationsTab.tsx.
+- [x] Remaining portal ownership reviewed and recorded below.
+- [x] Successful Vercel preview for the completed tab-boundary source commit 4a2aa0462822b7ccdf36b69b4eb7417fe3320685.
 
-No tab receives a second copy of state. Existing feature components and CSS remain canonical; tab extraction must preserve element semantics, current classes, handlers, conditional rendering, and responsive behavior.
+No tab receives a second copy of state. Existing feature components and CSS remain canonical; tab extraction preserves the existing JSX structure, classes, element semantics, handlers, conditional rendering, and responsive behavior.
 
 
 ### Completed second batch — Overview
@@ -409,3 +410,36 @@ The mapping editor modal, focus/keyboard lifecycle, inline edit state, save hand
 
 Brand settings and store-name save logic remain parent-owned and continue using the same handler as the Branding tab. Telegram optimistic state/loading, active-plan checks, billing selection, renewal toggle, proof upload/submission and payment data remain in the composition root. Existing BrandedSelect, ImageUploadField and SVG icons are reused.
 
+### Portal and overlay ownership review
+
+The composition root still owns the three imperative overlay paths. They were intentionally not moved into the tab files because their lifecycles are tied to cross-tab state, focus restoration, or animated mount/unmount behavior.
+
+| Overlay | Current owner | Preserved lifecycle |
+|---|---|---|
+| Order details side panel | OrderDetailsSidePanel remains in MerchantDashboardView.tsx and opens through its existing imperative ref. | Local selected-order/open state and portal rendering remain self-contained; Orders invokes the same parent callback/ref. |
+| Custom status mapping modal | MerchantDashboardView.tsx. | Parent state, body-scroll lock, Escape listener, trigger focus restoration and MappingForm portal remain together. MappingsTab receives the original trigger ref and an open callback. |
+| Add-order panel | MerchantDashboardView.tsx. | Parent state and layout effect retain requestAnimationFrame opening, transition-end unmount, backdrop guard, close guard while creating, and create/success/error state. Orders invokes the existing open callback only. |
+
+No portal lifecycle, modal state or CSS was moved as part of Phase 2. Runtime interaction checks for these overlays remain part of later manual QA; Vercel build success does not claim that browser-level interaction testing was run.
+
+
+## Phase 3 — Domain state and hook extraction (in progress)
+
+Phase 3 begins only after the tab-boundary source commit passed its Vercel preview. Its goal is to reduce the composition root further by moving feature-owned state, derived selectors, effects and action orchestration into focused hooks. The tabs remain presentation components and receive values/callbacks from the composition root.
+
+### Extraction contract
+
+- Move one feature state group per commit. Do not combine unrelated domains in a single hook migration.
+- Preserve initial values, state update order, async optimistic updates/rollback, error handling, toast text, confirmation dialogs, server-action arguments, refresh behavior and effect dependencies.
+- Keep cross-tab navigation and state shared by multiple tabs at the composition root unless the shared contract is explicitly redesigned in a separate task.
+- Hooks must be called unconditionally at the top level. No action or effect may be delayed or silently discarded during extraction.
+- Avoid changing API/server action files, database behavior, CSS, tab markup, or dependencies in this phase.
+- After each migration, statically compare the original handler/state block and all hook callsites, then require a successful Vercel preview before beginning the next domain.
+
+### First candidate — Merchant Upsells
+
+- [ ] Extract the existing Upsells draft/list state and related scrape/save/edit/cancel/toggle/delete/reorder handlers into features/upsells/useMerchantUpsells.ts.
+- [ ] Keep confirmDialog and toast behavior supplied by the composition root, preserving their existing semantics.
+- [ ] Keep MerchantUpsellItem from shared/upsell-types.ts as the single item contract.
+- [ ] Keep UpsellsTab as presentation only; it should receive the hook's existing state and callbacks with no local duplicated domain state.
+- [ ] Verify the first hook extraction with Vercel before selecting the next domain.
