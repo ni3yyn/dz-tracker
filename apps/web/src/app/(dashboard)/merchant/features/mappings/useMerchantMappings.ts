@@ -20,7 +20,7 @@ export function useMerchantMappings({ merchantId, showToast }: UseMerchantMappin
     fd.append('source_status', sourceStatus);
     fd.append('display_status', editDisplayStatus);
 
-    const { saveStatusMapping } = await import('./actions');
+    const { saveStatusMapping } = await import('../../actions');
     await saveStatusMapping(fd);
 
     setEditingMappingId(null);
