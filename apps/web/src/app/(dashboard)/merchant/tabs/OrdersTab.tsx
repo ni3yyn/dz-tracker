@@ -15,6 +15,10 @@ type OrdersTabOrder = {
   customer_phone: string | null;
   current_status: string;
   carrier_name: string | null;
+  product_name: string | null;
+  carrier_order_id?: string | null;
+  carrier_metadata?: any | null;
+  carrier_last_event_at?: string | null;
   carrier_tracking_number: string | null;
   tracking_uuid: string;
   created_at: string;
@@ -39,7 +43,7 @@ interface OrdersTabProps {
   onCarrierFilterChange: (value: string) => void;
   uniqueCarriers: string[];
   sortBy: OrdersSort;
-  onSortByChange: (value: string) => void;
+  onSortByChange: (value: OrdersSort) => void;
   activeTab: MerchantDashboardTab;
   onActiveTabChange: (tab: MerchantDashboardTab) => void;
   allFilteredOrdersSelected: boolean;
