@@ -236,6 +236,26 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Do not mistake a replayed event for the original delivered parcel as a replacement.
+  -- Repeated events for already-linked replacement parcels were handled above.
+  IF EXISTS (
+    SELECT 1
+    FROM public.orders o
+    WHERE o.merchant_id = p_merchant_id
+      AND (
+        v_carrier IS NULL
+        OR lower(btrim(COALESCE(o.carrier_name, ''))) = lower(btrim(v_carrier))
+      )
+      AND (
+        (NULLIF(p_carrier_order_id, '') IS NOT NULL AND o.carrier_order_id = p_carrier_order_id)
+        OR
+        (NULLIF(p_carrier_tracking_number, '') IS NOT NULL AND o.carrier_tracking_number = p_carrier_tracking_number)
+      )
+  ) THEN
+    RETURN QUERY SELECT FALSE, NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, FALSE, FALSE;
+    RETURN;
+  END IF;
+
   -- Match only when all three customer/product identifiers are present and
   -- equal after conservative normalization, within this merchant's account.
   IF length(v_phone) < 8 OR v_name = '' OR v_product = '' THEN

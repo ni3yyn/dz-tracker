@@ -223,14 +223,27 @@ BEGIN
   VALUES (v_merchant, 'Exchange fixture merchant', 'starter', 'active', 30);
 
   -- A single exact match is linked without creating another order.
-  INSERT INTO public.orders(merchant_id, external_order_id, customer_name, customer_phone, product_name, current_status)
-  VALUES (v_merchant, 'EX-ORIGINAL-1', 'Ahmed Benali', '0555123456', 'Chemise Bleue', 'delivered')
+  INSERT INTO public.orders(merchant_id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, carrier_order_id)
+  VALUES (v_merchant, 'EX-ORIGINAL-1', 'Ahmed Benali', '0555123456', 'Chemise Bleue', 'delivered', 'Yalidine', 'TRACK-ORIGINAL-1', 'CARRIER-ORIGINAL-1')
   RETURNING id INTO v_order;
 
   INSERT INTO public.order_exchange_requests(merchant_id, order_id, reason)
   VALUES (v_merchant, v_order, 'other') RETURNING id INTO v_request;
 
   PERFORM * FROM public.review_order_exchange_request(v_request, v_merchant, 'awaiting_shipment', 'Nous préparons le remplacement.');
+
+  -- Courier replays of the original parcel must not be consumed as replacement shipments.
+  SELECT * INTO v_result
+  FROM public.process_exchange_replacement_event(
+    v_merchant, 'yalidine', 'Yalidine', 'EX-ORIGINAL-1', 'TRACK-ORIGINAL-1', 'CARRIER-ORIGINAL-1',
+    'Ahmed Benali', '0555123456', 'Chemise Bleue', 'delivered',
+    'تم التسليم', 'تأكيد تسليم الطرد الأصلي', NULL, 'original-replay-1',
+    '2026-11-11 09:30:00+00', FALSE
+  );
+  IF v_result.handled IS DISTINCT FROM FALSE THEN
+    RAISE EXCEPTION 'The original delivered parcel must never be recognized as its own replacement.';
+  END IF;
+
   SELECT * INTO v_result
   FROM public.process_exchange_replacement_event(
     v_merchant, 'yalidine', 'Yalidine', 'CARRIER-EXT-1', 'TRACK-EX-1', NULL,
