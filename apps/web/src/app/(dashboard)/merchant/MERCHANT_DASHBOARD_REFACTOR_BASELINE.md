@@ -361,3 +361,12 @@ No tab receives a second copy of state. Existing feature components and CSS rema
 
 The Overview tab receives minimal display-only order fields rather than importing the root's private order type. Its original navigation behavior is preserved: choosing Branding or Integrations changes the active tab and closes the mobile menu; shipment shortcuts use the original `openShipmentList` handler.
 
+
+### Completed third batch — Orders
+
+| Module | Extraction contract |
+|---|---|
+| `tabs/OrdersTab.tsx` | Desktop table, mobile cards, metrics, filters, bulk-selection toolbar, paging and per-order actions moved into a presentation component. The component receives the existing filtered lists, state values and callbacks as props. |
+
+All Orders state remains owned by `MerchantDashboardView.tsx`: search/status/carrier/sort filters, pagination count, selected IDs, deletion/loading state, clipboard state and the order-details ref. The existing manual-order panel lifecycle and form remain in the parent; the tab's “add order” button invokes the same callback that opens it and clears its prior error/success state. The original `StatusSelector` and `BrandedSelect` are reused.
+
