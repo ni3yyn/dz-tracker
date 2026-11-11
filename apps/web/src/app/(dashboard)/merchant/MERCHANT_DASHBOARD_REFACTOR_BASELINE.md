@@ -481,3 +481,16 @@ The hook receives the same server-provided brand defaults, merchant/store inputs
 - [x] Shared Branding/Settings save handler remains one hook callback.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed fourth batch — Settings domain hook
+
+| Module | Extraction contract |
+|---|---|
+| features/settings/useMerchantSettings.ts | Telegram tracking and confirmation state/toggle handlers, plan eligibility/limit/date derivations, upgrade selection, advance-renewal toggle, and payment-proof state/submission moved into one focused hook. |
+
+The hook preserves the optimistic toggle and rollback paths, server action names/arguments, console error messages, merchant-facing toasts, browser alert copy, payment FormData fields and amount mapping. The Settings tab remains presentation-only; the root continues to provide its same values and callbacks.
+
+- [x] Telegram and confirmation state/handlers removed from the composition root.
+- [x] Subscription eligibility/limit derivations are shared by the existing root banner and Settings tab through hook outputs.
+- [x] Payment proof and upgrade state/handler removed from the composition root.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+

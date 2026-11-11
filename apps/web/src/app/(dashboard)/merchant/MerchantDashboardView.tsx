@@ -24,6 +24,7 @@ import { UpsellsTab } from './tabs/UpsellsTab';
 import { useMerchantUpsells } from './features/upsells/useMerchantUpsells';
 import { useMerchantMappings } from './features/mappings/useMerchantMappings';
 import { useBrandingEditor } from './features/branding/useBrandingEditor';
+import { useMerchantSettings } from './features/settings/useMerchantSettings';
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
 import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
@@ -33,10 +34,7 @@ import { ImageUploadField } from './ImageUploadField';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import {
-  submitPaymentProof,
-  toggleTelegramTracking,
   createManualOrder,
-  toggleConfirmationTelegram,
   deleteMerchantOrders,
 } from './actions';
 import {
@@ -765,21 +763,6 @@ export function MerchantDashboardView({
   exceptionStateStorageAvailable = false,
 }: Props) {
   const { alert: alertDialog, confirm: confirmDialog } = useGlobalDialog();
-  const isUnlimitedPlan = subscription.tier === 'scale' || (subscription.limit !== undefined && subscription.limit >= 999999);
-  const tierDefaults: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
-  const normalizedLimit = isUnlimitedPlan 
-    ? 999999 
-    : Math.max(subscription.limit || 0, tierDefaults[subscription.tier] || 30);
-
-  const hasActivePaidPlan =
-    subscription.status === 'active' &&
-    subscription.tier !== 'starter' &&
-    Boolean(subscription.expiresAt && new Date(subscription.expiresAt).getTime() > Date.now());
-
-  const expiryDateFormatted = subscription.expiresAt
-    ? new Date(subscription.expiresAt).toLocaleDateString('ar-DZ')
-    : null;
-
   const [activeTab, setActiveTab] = useState<MerchantDashboardTab>('overview');
   const dashboardMainRef = useRef<HTMLElement | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -823,10 +806,6 @@ export function MerchantDashboardView({
   const orderDetailsPanelRef = useRef<OrderDetailsSidePanelHandle | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
-  const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
-  const [isSavingTelegram, setIsSavingTelegram] = useState(false);
-  const [confirmationEnabled, setConfirmationEnabled] = useState(confirmationTelegramEnabled);
-  const [isSavingConfirmation, setIsSavingConfirmation] = useState(false);
   const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
   const [isAddOrderPanelMounted, setIsAddOrderPanelMounted] = useState(false);
   const [isAddOrderPanelOpen, setIsAddOrderPanelOpen] = useState(false);
@@ -899,11 +878,6 @@ export function MerchantDashboardView({
 
   // Full Brand Customization State
   const [toastMsg, setToastMsg] = useState<string | null>(null);
-
-  const [isSubmittingProof, setIsSubmittingProof] = useState(false);
-  const [proofImageUrl, setProofImageUrl] = useState('');
-  const [selectedUpgradeTier, setSelectedUpgradeTier] = useState<'basic' | 'growth' | 'scale'>(() => subscription.tier === 'scale' ? 'scale' : subscription.tier === 'growth' ? 'growth' : 'basic');
-  const [showAdvanceRenewal, setShowAdvanceRenewal] = useState(false);
 
   const [visibleOrders, setVisibleOrders] = useState(20);
 
@@ -993,51 +967,32 @@ export function MerchantDashboardView({
     showToast,
   });
 
-  const handleToggleTelegramTracking = async () => {
-    if (isSavingTelegram) return;
-    const next = !telegramEnabled;
-    setIsSavingTelegram(true);
-    setTelegramEnabled(next);
-
-    try {
-      const result = await toggleTelegramTracking(merchantId, next);
-      if (result?.error) {
-        setTelegramEnabled(!next);
-        showToast(result.error);
-        return;
-      }
-      showToast(next ? 'تم تفعيل إرسال روابط التتبع.' : 'تم تعطيل إرسال روابط التتبع.');
-    } catch (error) {
-      console.error('[MerchantDashboard]: Telegram tracking setting update failed:', error);
-      setTelegramEnabled(!next);
-      showToast('تعذر تحديث إعداد تيليجرام. يرجى المحاولة مجدداً.');
-    } finally {
-      setIsSavingTelegram(false);
-    }
-  };
-
-  const handleToggleConfirmationTelegram = async () => {
-    if (!hasActivePaidPlan || isSavingConfirmation) return;
-    const next = !confirmationEnabled;
-    setIsSavingConfirmation(true);
-    setConfirmationEnabled(next);
-
-    try {
-      const result = await toggleConfirmationTelegram(next);
-      if (result?.error) {
-        setConfirmationEnabled(!next);
-        showToast(result.error);
-        return;
-      }
-      showToast(next ? 'تم تفعيل طلب تأكيد الطلب.' : 'تم تعطيل طلب تأكيد الطلب.');
-    } catch (error) {
-      console.error('[MerchantDashboard]: Telegram confirmation setting update failed:', error);
-      setConfirmationEnabled(!next);
-      showToast('تعذر تحديث إعداد تأكيد الطلب. يرجى المحاولة مجدداً.');
-    } finally {
-      setIsSavingConfirmation(false);
-    }
-  };
+  const {
+    isUnlimitedPlan,
+    normalizedLimit,
+    hasActivePaidPlan,
+    expiryDateFormatted,
+    telegramEnabled,
+    isSavingTelegram,
+    confirmationEnabled,
+    isSavingConfirmation,
+    isSubmittingProof,
+    proofImageUrl,
+    setProofImageUrl,
+    selectedUpgradeTier,
+    setSelectedUpgradeTier,
+    showAdvanceRenewal,
+    toggleAdvanceRenewal,
+    handleToggleTelegramTracking,
+    handleToggleConfirmationTelegram,
+    handleSubmitProof,
+  } = useMerchantSettings({
+    merchantId,
+    subscription,
+    telegramTrackingLinkEnabled,
+    confirmationTelegramEnabled,
+    showToast,
+  });
 
   const toggleOrderSelection = (orderId: string, checked: boolean) => {
     setSelectedOrderIds((current) => {
@@ -1158,36 +1113,6 @@ export function MerchantDashboardView({
       setAddOrderError(err?.message || 'حدث خطأ غير متوقع أثناء إضافة الطلب');
     } finally {
       setIsCreatingOrder(false);
-    }
-  };
-
-  const handleSubmitProof = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!proofImageUrl) {
-      alert('يرجى رفع صورة وصل التحويل أولاً');
-      return;
-    }
-
-    setIsSubmittingProof(true);
-
-    const fd = new FormData(e.currentTarget);
-    fd.append('merchant_id', merchantId);
-    fd.append('plan_tier', selectedUpgradeTier);
-    fd.append('amount_dzd', selectedUpgradeTier === 'scale' ? '2500' : selectedUpgradeTier === 'growth' ? '1800' : '1000');
-    fd.append('payment_method', 'baridimob');
-    // Inject the uploaded image URL (overrides any stale value)
-    fd.set('payment_proof_url', proofImageUrl);
-
-    const res = await submitPaymentProof(fd);
-    setIsSubmittingProof(false);
-
-    if (res?.error) {
-      alert(res.error);
-    } else {
-      showToast('تم إرسال وصل التحويل بنجاح. ستتم مراجعته وتفعيل الباقة بعد الموافقة.');
-      setProofImageUrl('');
-      (e.target as HTMLFormElement).reset();
     }
   };
 
@@ -7303,7 +7228,7 @@ export function MerchantDashboardView({
               isUnlimitedPlan={isUnlimitedPlan}
               expiryDateFormatted={expiryDateFormatted}
               showAdvanceRenewal={showAdvanceRenewal}
-              onToggleAdvanceRenewal={() => setShowAdvanceRenewal((previous) => !previous)}
+              onToggleAdvanceRenewal={toggleAdvanceRenewal}
               selectedUpgradeTier={selectedUpgradeTier}
               onSelectUpgradeTier={setSelectedUpgradeTier}
               onCopyToClipboard={copyToClipboard}
