@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-
-type OrderStatusFilter = 'all' | 'transit' | 'stopdesk' | 'attention' | 'delivered' | 'returned';
-type OrderSort = 'newest' | 'oldest' | 'risk';
+import type { OrderSort, OrderStatusFilter } from './order-types';
 
 interface FilterableOrder {
   id: string;
