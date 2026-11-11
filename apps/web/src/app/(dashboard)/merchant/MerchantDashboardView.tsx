@@ -42,20 +42,8 @@ import { toCachedImageUrl } from '../../../lib/imageProxy';
 import { useGlobalDialog } from '../../../components/GlobalDialogProvider';
 import type { BrandSettings } from '@saas/ui';
 import {
-  ANIMATION_LEVELS,
-  BACKGROUND_STYLES,
   BRAND_CATEGORY_DEFAULT_KEYS,
-  BRAND_PALETTES,
-  BRAND_PRESETS,
-  BRANDING_CATEGORIES,
-  CARD_RADII,
-  CARD_SURFACES,
   DEFAULT_EDITABLE_BRAND_SETTINGS,
-  FONT_FAMILIES,
-  TIMELINE_DESIGNS,
-  TIMELINE_LINE_STYLES,
-  getBrandContrastRatio,
-  getReadableBrandAccent,
   getReadableOnBrand,
 } from './features/branding/branding-options';
 import { BrandingPhonePreview } from './features/branding/BrandingPhonePreview';
@@ -742,29 +730,6 @@ export function MerchantDashboardView({
           {activeTab === 'branding' && (
             <BrandingTab
               brandConfig={brandConfig}
-              brandPresets={BRAND_PRESETS}
-              activeBrandPresetId={activeBrandPresetId}
-              onApplyBrandPreset={applyBrandPreset}
-              brandingCategories={BRANDING_CATEGORIES}
-              brandingCategory={brandingCategory}
-              onSetBrandingCategory={setBrandingCategory}
-              brandHistoryTick={brandHistoryTick}
-              canUndo={canUndo}
-              canRedo={canRedo}
-              onUndo={undoBrandChange}
-              onRedo={redoBrandChange}
-              onResetCategory={resetBrandCategory}
-              brandPalettes={BRAND_PALETTES}
-              getBrandContrastRatio={getBrandContrastRatio}
-              getReadableBrandAccent={getReadableBrandAccent}
-              getReadableOnBrand={getReadableOnBrand}
-              backgroundStyles={BACKGROUND_STYLES}
-              timelineDesigns={TIMELINE_DESIGNS}
-              timelineLineStyles={TIMELINE_LINE_STYLES}
-              cardSurfaces={CARD_SURFACES}
-              cardRadii={CARD_RADII}
-              fontFamilies={FONT_FAMILIES}
-              animationLevels={ANIMATION_LEVELS}
               onUpdateBrandConfig={updateBrandConfig}
               hasUnsavedBrandChanges={hasUnsavedBrandChanges}
               isSavingBrand={isSavingBrand}
