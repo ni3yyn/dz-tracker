@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useState } from 'react';
 import { createManualOrder } from '../../actions';
 
-interface ManualOrderSuccess {
+export interface ManualOrderSuccess {
   trackingUuid: string;
   externalOrderId: string;
   telegramTrackingEnabled: boolean;
