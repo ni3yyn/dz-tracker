@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import { toCachedImageUrl } from '../../../../lib/imageProxy';
 import { ImageUploadField } from '../ImageUploadField';
 import { Icons } from '../components/DashboardIcons';
 import type { MerchantUpsellItem, ReorderDirection } from '../shared/upsell-types';
