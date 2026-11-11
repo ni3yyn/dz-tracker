@@ -402,7 +402,7 @@ export class TrackingOrchestrator {
               event.sourceProvider === 'yalidine' ||
               event.sourceProvider === 'guepex' ||
               event.sourceProvider === 'procolis'
-            ) ? event.carrierMetadata || null : null,
+            ) ? (event.carrierMetadata as any) || null : null,
             p_source_provider: event.sourceProvider || null,
           }
         );
