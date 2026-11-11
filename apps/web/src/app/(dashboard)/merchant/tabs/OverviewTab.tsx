@@ -1,6 +1,7 @@
 import { DashboardMetricCard } from '../components/DashboardMetricCard';
 import { DashboardSectionHeading } from '../components/DashboardSectionHeading';
 import { Icons } from '../components/DashboardIcons';
+import type { ShipmentListFilter } from '../features/orders/order-types';
 
 type OverviewOrder = {
   id: string;
@@ -11,7 +12,6 @@ type OverviewOrder = {
   created_at: string;
 };
 
-type ShipmentListFilter = 'all' | 'transit' | 'stopdesk' | 'attention' | 'exceptions' | 'delivered' | 'returned';
 type OverviewTabDestination = 'branding' | 'integrations';
 
 interface OverviewTabProps {
