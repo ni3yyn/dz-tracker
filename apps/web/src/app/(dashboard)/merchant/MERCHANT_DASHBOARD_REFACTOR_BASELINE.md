@@ -455,7 +455,7 @@ The hook receives merchantId and initialUpsells as its existing inputs, plus the
 
 - [x] Upsells feature state and handlers removed from the composition root.
 - [x] No Upsells presentation state was added inside UpsellsTab.
-- [ ] Vercel preview for this first Phase 3 hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed second batch — Mappings hook
 
@@ -467,7 +467,7 @@ The hook receives merchantId and the existing toast callback. The inline-save ha
 
 - [x] Inline mapping state and handlers removed from the composition root.
 - [x] Custom mapping modal and focus lifecycle remain in the parent.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed third batch — Branding editor hook
 
@@ -479,7 +479,7 @@ The hook receives the same server-provided brand defaults, merchant/store inputs
 
 - [x] Brand state/history and save handler removed from the composition root.
 - [x] Shared Branding/Settings save handler remains one hook callback.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed fourth batch — Settings domain hook
 
@@ -492,7 +492,7 @@ The hook preserves the optimistic toggle and rollback paths, server action names
 - [x] Telegram and confirmation state/handlers removed from the composition root.
 - [x] Subscription eligibility/limit derivations are shared by the existing root banner and Settings tab through hook outputs.
 - [x] Payment proof and upgrade state/handler removed from the composition root.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed fifth batch — Manual-order workflow hook
 
@@ -505,7 +505,7 @@ The portal markup itself remains in MerchantDashboardView. The hook preserves th
 - [x] Manual-order form and animation state/logic removed from the composition root.
 - [x] Portal rendering and DOM structure remain in the composition root.
 - [x] Back-handler guard still prevents closing while an order is being created.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed sixth batch — Order selection and deletion hook
 
@@ -517,7 +517,7 @@ The hook receives the existing filtered order IDs, global confirm/alert function
 
 - [x] Selection and delete state/handlers removed from the composition root.
 - [x] Existing side-panel portal and imperative ref remain in the parent.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed seventh batch — Shared order filters hook
 
@@ -529,7 +529,7 @@ The same search state continues to feed DashboardHeader, OrdersTab and Exception
 
 - [x] Shared filter state and derived filtered orders removed from the composition root.
 - [x] Header, Orders and Exceptions keep the same shared state and prop bindings.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed eighth batch — Shipment analytics and exception selectors
 
@@ -542,7 +542,7 @@ The hook uses the existing ShipmentExceptionOrder and ShipmentExceptionState typ
 - [x] Shipment summary and analytics derivations removed from the composition root.
 - [x] Exception order rows retain the existing ShipmentExceptionOrder field contract expected by Overview.
 - [x] Existing Overview/Orders/Analytics prop contracts remain unchanged.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed ninth batch — Dashboard feedback hook
 
@@ -554,7 +554,7 @@ Toast duration (3.5 seconds), copied indicator duration (2 seconds), clipboard A
 
 - [x] Toast and clipboard state/functions removed from the composition root.
 - [x] The single shared feedback hook supplies all existing consumers.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed tenth batch — Custom mapping modal controller
 
@@ -566,7 +566,7 @@ The portal and MappingForm DOM remain in MerchantDashboardView. MappingsTab rece
 
 - [x] Custom mapping modal state/ref/effect removed from the composition root.
 - [x] Portal markup and form remain unchanged in the root.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed eleventh batch — Order details side-panel component
 
@@ -592,7 +592,7 @@ The existing browser Back history hook remains separate and receives the returne
 - [x] Active tab/mobile menu state and navigation effects removed from the composition root.
 - [x] Existing back-history hook remains the sole owner of browser history state.
 - [x] Sidebar Orders/Exceptions reset-filter behavior retained.
-- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+- [x] The cumulative Vercel preview after the completed Phase 3 hook migrations passed; see the Phase 4 validation snapshot.
 
 ### Completed thirteenth batch — Store identity state in Branding hook
 
@@ -607,3 +607,28 @@ This closes the store-identity boundary across both Branding Studio and Settings
 - [x] Settings continues to use the exact same draft, setter and dirty-state props.
 - [ ] Vercel preview for this correction must pass before another domain extraction.
 
+
+
+## Phase 4 — Presentation and stylesheet architecture (in progress)
+
+### Completed first batch — dashboard stylesheet
+
+| Module | Extraction contract |
+|---|---|
+| `merchant/merchant-dashboard.css` | The dashboard's static inline style block was moved into a route-local stylesheet and imported once by `MerchantDashboardView.tsx`. |
+
+The stylesheet content was copied from the original template literal without changing selectors, declarations, declaration order, keyframes, media queries, font imports or responsive overrides. Static-source inspection confirmed the CSS contained no runtime template interpolations. The former inline style element was removed from the composition root; its surrounding dashboard JSX remains in place.
+
+- [x] The inline style block is removed from `MerchantDashboardView.tsx`.
+- [x] The extracted stylesheet is imported by the merchant dashboard entry component.
+- [x] CSS source is preserved verbatim; no visual or responsive changes were intended.
+- [x] Composition-root line count reduced from 7,183 to 1,651 lines.
+- [x] Vercel preview completed successfully for commit `6f1a8c692bf45580d03da1c064320d28d19099eb`: https://vercel.com/ni3yyns-projects/dz-tracker/6KCA43wJyETamBX93bY8sJ2rnFLv.
+
+### Remaining presentation work
+
+- [ ] Audit shared status-filter, empty-state, action-button and form-field patterns across all tabs and existing feature components; extract only contracts with matching DOM semantics and behavior.
+- [ ] Move remaining feature-specific static configuration out of the composition root into the owning feature modules.
+- [ ] Continue extracting standalone overlay and portal presentation now that their state/controllers have dedicated owners.
+- [ ] Review the final composition root for unused imports, duplicated derivations and remaining feature-specific ownership.
+- [ ] Keep every extraction behavior-preserving and validate each integrated batch with the Vercel preview and available CI checks.
