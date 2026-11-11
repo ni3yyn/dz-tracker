@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { toCachedImageUrl } from '../../../../../lib/imageProxy';
 import type { EditableBrandSettings } from '../../shared/branding-types';
 import {
   BRANDING_MOTIFS,
