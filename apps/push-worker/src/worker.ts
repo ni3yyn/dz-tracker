@@ -9,6 +9,7 @@ const RETRY_DELAYS_SECONDS = [60, 300, 900, 3600]; // 1m, 5m, 15m, 1h
 
 export class WebPushWorker {
   private isRunning = false;
+  private readonly leaseRenewals = new Map<string, Promise<boolean>>();
 
   constructor(
     private readonly config: PushWorkerConfig,
@@ -319,8 +320,24 @@ export class WebPushWorker {
     this.health.recordJobProcessed('failed');
   }
 
-  private async renewJobLease(jobId: string): Promise<boolean> {
-    return this.queue.renewJobLease(jobId, this.config.leaseDurationSeconds);
+  private renewJobLease(jobId: string): Promise<boolean> {
+    const existing = this.leaseRenewals.get(jobId);
+    if (existing) return existing;
+
+    const renewal = this.queue
+      .renewJobLease(jobId, this.config.leaseDurationSeconds)
+      .catch((err: any) => {
+        console.error(`[WebPushWorker]: Lease renewal failed for job ${jobId}:`, err?.message || err);
+        return false;
+      })
+      .finally(() => {
+        if (this.leaseRenewals.get(jobId) === renewal) {
+          this.leaseRenewals.delete(jobId);
+        }
+      });
+
+    this.leaseRenewals.set(jobId, renewal);
+    return renewal;
   }
 
   private sleep(ms: number): Promise<void> {

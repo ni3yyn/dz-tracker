@@ -280,11 +280,19 @@ export class PushQueueManager {
   ): Promise<boolean> {
     const payload: any = {
       updated_at: new Date().toISOString(),
-      locked_by: null,
-      lease_expires_at: null,
     };
 
-    if (updates.status) payload.status = updates.status;
+    // Metadata-only updates (for example persisting the VAPID send token)
+    // must keep the current lease. Ownership is released only when the job
+    // transitions out of processing.
+    if (updates.status) {
+      payload.status = updates.status;
+      if (updates.status !== 'processing') {
+        payload.locked_by = null;
+        payload.locked_at = null;
+        payload.lease_expires_at = null;
+      }
+    }
     if (updates.resultCode) payload.result_code = updates.resultCode;
     if (updates.errorCode !== undefined) payload.last_error_code = updates.errorCode;
     if (updates.errorMessage !== undefined) {
