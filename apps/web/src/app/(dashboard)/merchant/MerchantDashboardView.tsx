@@ -45,7 +45,7 @@ import { useDashboardNavigation } from './features/dashboard/useDashboardNavigat
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
 import { ExchangeRequestsTab } from './tabs/ExchangeRequestsTab';
-import type { MerchantExchangeRequest } from '../../../lib/exchange';
+import type { ExchangeShipmentCandidate, MerchantExchangeRequest } from '../../../lib/exchange';
 import { toggleExchangeRequestsEnabled as saveExchangeRequestsSetting } from './exchange-actions';
 import { CustomMappingModal } from './features/mappings/CustomMappingModal';
 import { AddOrderPanel } from './features/orders/AddOrderPanel';
@@ -80,6 +80,7 @@ interface Props {
   exceptionStateStorageAvailable?: boolean;
   exchangeRequestsEnabled?: boolean;
   initialExchangeRequests?: MerchantExchangeRequest[];
+  initialExchangeCandidates?: ExchangeShipmentCandidate[];
   exchangeRequestsStorageAvailable?: boolean;
 }
 
@@ -122,6 +123,7 @@ export function MerchantDashboardView({
   exceptionStateStorageAvailable = false,
   exchangeRequestsEnabled: initialExchangeRequestsEnabled = false,
   initialExchangeRequests = [],
+  initialExchangeCandidates = [],
   exchangeRequestsStorageAvailable = false,
 }: Props) {
   const { alert: alertDialog, confirm: confirmDialog } = useGlobalDialog();
@@ -644,7 +646,7 @@ export function MerchantDashboardView({
             />
           )}
 
-          {activeTab === 'exchangeRequests' && <ExchangeRequestsTab initialRequests={initialExchangeRequests} storageAvailable={exchangeRequestsStorageAvailable} />}
+          {activeTab === 'exchangeRequests' && <ExchangeRequestsTab initialRequests={initialExchangeRequests} initialCandidates={initialExchangeCandidates} storageAvailable={exchangeRequestsStorageAvailable} onApproved={() => { void alertDialog({ title: 'تمت الموافقة على الاستبدال', message: 'أنشئ شحنة جديدة للمنتج البديل من لوحة شركة التوصيل. سيتعرف عليها تاجر تراك تلقائياً عند وصولها إذا تطابقت بيانات العميل ورقم الهاتف واسم المنتج.', confirmLabel: 'حسناً', tone: 'info' }); }} />}
 
           {activeTab === 'upsells' && (
             <UpsellsTab

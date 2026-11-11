@@ -13,8 +13,9 @@ export interface OrderItem {
   tracking_uuid: string;
   created_at: string;
   confirmation_status?: 'pending' | 'confirmed' | 'cancelled' | null;
+  exchange_status?: 'awaiting_shipment' | 'replacement_in_transit' | null;
 }
 
-export type OrderStatusFilter = 'all' | 'transit' | 'stopdesk' | 'attention' | 'delivered' | 'returned';
+export type OrderStatusFilter = 'all' | 'transit' | 'stopdesk' | 'attention' | 'delivered' | 'returned' | 'exchange';
 export type OrderSort = 'newest' | 'oldest' | 'risk';
 export type ShipmentListFilter = 'all' | 'transit' | 'stopdesk' | 'attention' | 'exceptions' | 'delivered' | 'returned';

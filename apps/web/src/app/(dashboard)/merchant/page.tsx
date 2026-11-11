@@ -211,13 +211,35 @@ async function MerchantDashboardContent() {
     .select('id, merchant_id, order_id, reason, customer_note, status, merchant_response, created_at, updated_at, reviewed_at')
     .eq('merchant_id', merchant.id)
     .order('created_at', { ascending: false });
-  const exchangeRequestsStorageAvailable = !exchangeRequestsError;
+  const { data: exchangeShipmentRows, error: exchangeShipmentsError } = await (supabaseAdmin as any)
+    .from('order_exchange_shipments')
+    .select('id, merchant_id, exchange_request_id, original_order_id, source_provider, carrier_name, carrier_tracking_number, carrier_order_id, customer_name, customer_phone, product_name, current_status, status_title, possible_exchange_request_ids, match_status, created_at')
+    .eq('merchant_id', merchant.id)
+    .order('created_at', { ascending: false });
+  const exchangeRequestsStorageAvailable = !exchangeRequestsError && !exchangeShipmentsError;
   if (exchangeRequestsError) console.error('[ExchangeRequests] Could not load exchange requests:', exchangeRequestsError.message);
+  if (exchangeShipmentsError) console.error('[ExchangeRequests] Could not load replacement shipments:', exchangeShipmentsError.message);
   const orderById = new Map((orders || []).map((order: any) => [order.id, order]));
+  const linkedShipmentsByRequest = new Map((exchangeShipmentRows || [])
+    .filter((shipment: any) => shipment.match_status === 'linked' && shipment.exchange_request_id)
+    .map((shipment: any) => [shipment.exchange_request_id, shipment]));
   const initialExchangeRequests = (exchangeRequestRows || []).map((request: any) => {
     const order = orderById.get(request.order_id) as any;
-    return { ...request, order: order ? { external_order_id: order.external_order_id, customer_name: order.customer_name, product_name: order.product_name } : null };
+    return {
+      ...request,
+      order: order ? { external_order_id: order.external_order_id, customer_name: order.customer_name, product_name: order.product_name } : null,
+      replacement_shipment: linkedShipmentsByRequest.get(request.id) || null,
+    };
   });
+  const initialExchangeCandidates = (exchangeShipmentRows || [])
+    .filter((shipment: any) => shipment.match_status === 'needs_confirmation');
+  const exchangeStatusByOrder = new Map((exchangeRequestRows || [])
+    .filter((request: any) => ['awaiting_shipment', 'replacement_in_transit'].includes(request.status))
+    .map((request: any) => [request.order_id, request.status]));
+  orders = (orders || []).map((order: any) => ({
+    ...order,
+    exchange_status: exchangeStatusByOrder.get(order.id) || null,
+  }));
   const cleanMappings = (mappings || []).filter((m) => !m.source_status.startsWith('__brand_') && !m.source_status.startsWith('__feature_'));
 
   // استخراج رابط الموقع الأساسي
@@ -276,6 +298,7 @@ async function MerchantDashboardContent() {
       initialUpsells={(upsells || []) as any}
       exchangeRequestsEnabled={exchangeRequestsEnabled}
       initialExchangeRequests={initialExchangeRequests as any}
+      initialExchangeCandidates={initialExchangeCandidates as any}
       exchangeRequestsStorageAvailable={exchangeRequestsStorageAvailable}
     />
   );

@@ -118,6 +118,7 @@ export function OrdersTab({
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'transit' ? 'active' : ''}`} aria-pressed={statusFilter === 'transit'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('transit'); }}>في الطريق</button>
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'stopdesk' ? 'active' : ''}`} aria-pressed={statusFilter === 'stopdesk'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('stopdesk'); }}>نقطة الاستلام</button>
                   <button type="button" className="dz-filter-btn" aria-pressed={false} onClick={() => { onActiveTabChange('exceptions'); onStatusFilterChange('all'); onCloseMobileMenu(); }}>استثناءات ({exceptionCount})</button>
+                  <button type="button" className={`dz-filter-btn ${statusFilter === 'exchange' ? 'active' : ''}`} aria-pressed={statusFilter === 'exchange'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('exchange'); }}>الاستبدال ({orders.filter((order) => order.exchange_status === 'awaiting_shipment' || order.exchange_status === 'replacement_in_transit').length})</button>
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'delivered' ? 'active' : ''}`} aria-pressed={statusFilter === 'delivered'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('delivered'); }}>تم التسليم</button>
                   <button type="button" className={`dz-filter-btn ${statusFilter === 'returned' ? 'active' : ''}`} aria-pressed={statusFilter === 'returned'} onClick={() => { onActiveTabChange('orders'); onStatusFilterChange('returned'); }}>مرتجع</button>
                 </div>
@@ -308,6 +309,8 @@ export function OrdersTab({
                                 {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600 }}>بانتظار تأكيد العميل</span>}
                                 {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600 }}>أكد العميل الطلب</span>}
                                 {order.confirmation_status === 'cancelled' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'rgba(220,38,38,0.08)', color: '#dc2626', fontWeight: 600 }}>طلب العميل إلغاء الطلب</span>}
+                                {order.exchange_status === 'awaiting_shipment' && <span style={{ color: '#a36b22', fontSize: 11, fontWeight: 800 }}>بانتظار الاستبدال</span>}
+                                {order.exchange_status === 'replacement_in_transit' && <span style={{ color: '#267548', fontSize: 11, fontWeight: 800 }}>شحنة الاستبدال في الطريق</span>}
                                 <StatusSelector orderId={order.id} currentStatus={order.current_status} />
                               </div>
                             </td>

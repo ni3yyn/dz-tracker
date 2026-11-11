@@ -42,6 +42,7 @@ export function useOrderFilters({
         return false;
       }
 
+      if (statusFilter === 'exchange') return ['awaiting_shipment', 'replacement_in_transit'].includes(order.exchange_status || '');
       if (statusFilter === 'attention') {
         return isAttentionStatus(order.current_status);
       }

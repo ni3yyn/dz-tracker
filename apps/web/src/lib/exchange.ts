@@ -7,7 +7,25 @@ export const EXCHANGE_REQUEST_REASONS = [
 ] as const;
 
 export type ExchangeRequestReason = (typeof EXCHANGE_REQUEST_REASONS)[number]['value'];
-export type ExchangeRequestStatus = 'pending' | 'approved' | 'rejected';
+export type ExchangeRequestStatus = 'pending' | 'awaiting_shipment' | 'replacement_in_transit' | 'completed' | 'rejected';
+
+export interface ExchangeReplacementShipment {
+  id: string;
+  carrier_name: string | null;
+  carrier_tracking_number: string | null;
+  carrier_order_id?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  product_name?: string | null;
+  current_status: string;
+  status_title?: string | null;
+  created_at?: string;
+}
+
+export interface ExchangeShipmentCandidate extends ExchangeReplacementShipment {
+  possible_exchange_request_ids: string[];
+  match_status: 'needs_confirmation';
+}
 
 export interface ExchangeRequestSummary {
   id: string;
@@ -16,6 +34,7 @@ export interface ExchangeRequestSummary {
   customer_note: string | null;
   merchant_response: string | null;
   created_at: string;
+  replacement_shipment?: ExchangeReplacementShipment | null;
 }
 
 export interface MerchantExchangeRequest extends ExchangeRequestSummary {
