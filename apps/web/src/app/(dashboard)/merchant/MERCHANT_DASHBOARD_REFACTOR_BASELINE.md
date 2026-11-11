@@ -352,3 +352,12 @@ Phase 2 moves tab-level rendering into dedicated modules while leaving feature s
 
 No tab receives a second copy of state. Existing feature components and CSS remain canonical; tab extraction must preserve element semantics, current classes, handlers, conditional rendering, and responsive behavior.
 
+
+### Completed second batch — Overview
+
+| Module | Extraction contract |
+|---|---|
+| `tabs/OverviewTab.tsx` | The Overview JSX is moved into a typed tab component. Existing order/exception summaries, four interactive metric buttons, empty setup state, recent/exception rows and quick actions are retained. Data remains derived in the composition root; shipment-list and tab-navigation actions are passed as callbacks. |
+
+The Overview tab receives minimal display-only order fields rather than importing the root's private order type. Its original navigation behavior is preserved: choosing Branding or Integrations changes the active tab and closes the mobile menu; shipment shortcuts use the original `openShipmentList` handler.
+
