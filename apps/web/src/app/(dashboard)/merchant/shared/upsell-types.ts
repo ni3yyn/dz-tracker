@@ -12,3 +12,5 @@ export interface MerchantUpsellItem {
   created_at: string;
   updated_at?: string;
 }
+
+export type ReorderDirection = 'up' | 'down';
