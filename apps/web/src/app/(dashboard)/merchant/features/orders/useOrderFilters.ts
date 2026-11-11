@@ -1,19 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { OrderSort, OrderStatusFilter } from './order-types';
-
-interface FilterableOrder {
-  id: string;
-  external_order_id: string | null;
-  customer_name: string | null;
-  customer_phone: string | null;
-  carrier_name: string | null;
-  carrier_tracking_number: string | null;
-  current_status: string;
-  created_at: string;
-}
+import type { OrderItem, OrderSort, OrderStatusFilter } from './order-types';
 
 interface UseOrderFiltersOptions {
-  orders: FilterableOrder[];
+  orders: OrderItem[];
   exceptionOrderIds: Set<string>;
   activeTab: string;
   isAttentionStatus: (status: string) => boolean;
