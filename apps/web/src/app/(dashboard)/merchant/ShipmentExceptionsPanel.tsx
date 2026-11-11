@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateShipmentExceptionState } from './actions';
+import { BrandedSelect } from './BrandedSelect';
 import {
   detectShipmentExceptions,
   shipmentExceptionStateKey,
@@ -161,27 +162,46 @@ export function ShipmentExceptionsPanel({
         </div>
         <div className={styles.total}><strong>{counts.total}</strong><span>استثناء نشط</span></div>
       </div>
-      <div className={styles.toolbar}>
-        <div className={styles.views} role="tablist" aria-label="حالة الاستثناء">
+      <div className="dz-filter-row dz-shipment-filters">
+        <div className="dz-shipment-status-tabs" role="group" aria-label="تصفية الاستثناءات حسب الإجراء">
           {views.map((item) => (
-            <button key={item.value} type="button" role="tab" aria-selected={viewState === item.value}
-              className={viewState === item.value ? styles.viewActive : styles.viewButton}
-              onClick={() => setViewState(item.value)}>
-              {item.label}<span>{item.count}</span>
+            <button
+              key={item.value}
+              type="button"
+              aria-pressed={viewState === item.value}
+              className={`dz-filter-btn ${viewState === item.value ? 'active' : ''} ${styles.statusButton}`}
+              onClick={() => setViewState(item.value)}
+            >
+              {item.label}<span className={styles.statusCount}>{item.count}</span>
             </button>
           ))}
         </div>
-        <div className={styles.filters}>
-          <select aria-label="تصفية نوع الاستثناء" value={category}
-            onChange={(event) => setCategory(event.target.value as CategoryFilter)}>
-            <option value="all">كل الحالات</option>
-            <option value="delivery">مشاكل التوصيل</option>
-            <option value="movement">توقف الحركة</option>
-            <option value="returns">الإرجاع</option>
-          </select>
-          <input type="search" aria-label="البحث في الاستثناءات"
-            placeholder="رقم الطلب، الزبون أو شركة الشحن..."
-            value={searchTerm} onChange={(event) => onSearchTermChange(event.target.value)} />
+        <div className="dz-shipment-filter-controls">
+          <div className="dz-shipment-select-wrap">
+            <BrandedSelect
+              ariaLabel="تصفية نوع الاستثناء"
+              value={category}
+              onChange={(value) => setCategory(value as CategoryFilter)}
+              variant="compact"
+              options={[
+                { value: 'all', label: 'كل الاستثناءات' },
+                { value: 'delivery', label: 'مشاكل التوصيل' },
+                { value: 'movement', label: 'توقف الحركة' },
+                { value: 'returns', label: 'الإرجاع' },
+              ]}
+            />
+          </div>
+          <label className={styles.searchWrap}>
+            <span className="sr-only">البحث في الاستثناءات</span>
+            <input
+              type="search"
+              className={styles.search}
+              aria-label="البحث في الاستثناءات"
+              placeholder="رقم الطلب، الزبون أو شركة الشحن..."
+              value={searchTerm}
+              onChange={(event) => onSearchTermChange(event.target.value)}
+            />
+          </label>
         </div>
       </div>
       {errorMessage && <div className={styles.error} role="alert">{errorMessage}</div>}
