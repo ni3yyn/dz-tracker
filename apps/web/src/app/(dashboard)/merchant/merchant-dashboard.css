@@ -5546,3 +5546,33 @@
 .dz-nav-subitem-disabled:hover { color: var(--ink-light); background: transparent; }
 .dz-nav-subitem-disabled small { margin-inline-start: auto; font-size: 10px; font-weight: 600; opacity: .8; }
 @media (prefers-reduced-motion: reduce) { .dz-nav-group-chevron, .dz-nav-submenu, .dz-nav-subitem { transition: none !important; } }
+
+
+/* KPI rows never wrap: compact on desktop, swipe horizontally on narrow screens. */
+.dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis),
+.dz-admin-root .dz-stats-bar.dz-orders-desktop-summary,
+.dz-admin-root .dz-analytics-kpis {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis)::-webkit-scrollbar,
+.dz-admin-root .dz-stats-bar.dz-orders-desktop-summary::-webkit-scrollbar,
+.dz-admin-root .dz-analytics-kpis::-webkit-scrollbar {
+  display: none;
+}
+.dz-admin-root .dz-overview-kpis:not(.dz-analytics-kpis) > .dz-overview-kpi,
+.dz-admin-root .dz-stats-bar.dz-orders-desktop-summary > .dz-stat-item,
+.dz-admin-root .dz-analytics-kpis > .dz-overview-kpi {
+  flex: 1 0 112px;
+  width: auto;
+  min-width: 112px;
+  max-width: none;
+}
