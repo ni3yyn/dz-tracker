@@ -31,6 +31,7 @@ import { useShipmentAnalytics } from './features/analytics/useShipmentAnalytics'
 import { useOrderSelection } from './features/orders/useOrderSelection';
 import { useDashboardFeedback } from './features/dashboard/useDashboardFeedback';
 import { useCustomMappingModal } from './features/mappings/useCustomMappingModal';
+import { useDashboardNavigation } from './features/dashboard/useDashboardNavigation';
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
 import type { ShipmentExceptionState } from './shipment-exceptions';
@@ -587,37 +588,21 @@ export function MerchantDashboardView({
     close: closeCustomMappingModal,
   } = useCustomMappingModal();
 
+  const {
+    activeTab,
+    setActiveTab,
+    dashboardMainRef,
+    mobileMenuOpen,
+    setMobileMenuOpen,
+    navigateDashboard,
+  } = useDashboardNavigation({ storeName });
 
-  const [activeTab, setActiveTab] = useState<MerchantDashboardTab>('overview');
-  const dashboardMainRef = useRef<HTMLElement | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+
   const [storeNameDraft, setStoreNameDraft] = useState(storeName);
   const [savedStoreName, setSavedStoreName] = useState(storeName);
   const displayStoreName = storeNameDraft.trim() || storeName;
-  const navigateDashboard = (tab: MerchantDashboardTab, resetOrdersFilter = false) => {
-    setActiveTab(tab);
-    if (resetOrdersFilter) setStatusFilter('all');
-    setMobileMenuOpen(false);
-  };
   const hasUnsavedStoreNameChanges = storeNameDraft.trim() !== savedStoreName;
-  useEffect(() => {
-    setMobileMenuOpen(false);
-    dashboardMainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [activeTab]);
-  useEffect(() => {
-    const tabTitles: Record<MerchantDashboardTab, string> = {
-      overview: 'نظرة عامة',
-      orders: 'الشحنات',
-      exceptions: 'استثناءات الشحن',
-      analytics: 'تحليلات الشحنات',
-      branding: 'تخصيص صفحة التتبّع',
-      upsells: 'زيادة المبيعات',
-      integrations: 'التكاملات',
-      mappings: 'مطابقة الحالات',
-      settings: 'الإعدادات',
-    };
-    document.title = tabTitles[activeTab] + ' — ' + storeName + ' | تاجر تراك';
-  }, [activeTab, storeName]);
   useEffect(() => {
     setStoreNameDraft(storeName);
     setSavedStoreName(storeName);
@@ -6505,7 +6490,9 @@ export function MerchantDashboardView({
           exceptionCount={exceptionCount}
           activeUpsellsCount={upsellsList.filter((u) => u.is_active).length}
           getReadableOnBrand={getReadableOnBrand}
-          onNavigate={navigateDashboard}
+          onNavigate={(tab, resetOrdersFilter) => {
+            navigateDashboard(tab, resetOrdersFilter ? () => setStatusFilter('all') : undefined);
+          }}
           onCloseMobileMenu={() => setMobileMenuOpen(false)}
         />
 

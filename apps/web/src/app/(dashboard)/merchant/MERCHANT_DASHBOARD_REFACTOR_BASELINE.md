@@ -581,3 +581,16 @@ The component's JSX and classes are carried over intact. It receives the same or
 - [x] Portal remains rendered in the same parent position; no CSS or animation changes.
 - [ ] Vercel preview for this component extraction must pass before moving another domain.
 
+### Completed twelfth batch — Dashboard navigation hook
+
+| Module | Extraction contract |
+|---|---|
+| features/dashboard/useDashboardNavigation.ts | Active-tab and mobile-menu state, dashboard main ref, tab navigation action, mobile-menu close-on-tab-change, scroll-to-top behavior, and document-title effect moved into a focused hook. |
+
+The existing browser Back history hook remains separate and receives the returned activeTab/setActiveTab values. The sidebar's optional Orders/Exceptions filter reset is passed as a callback so the original state-update order is preserved: change tab, reset status filter when requested, then close the mobile menu. Header, panel-transition and tab consumers keep the same props.
+
+- [x] Active tab/mobile menu state and navigation effects removed from the composition root.
+- [x] Existing back-history hook remains the sole owner of browser history state.
+- [x] Sidebar Orders/Exceptions reset-filter behavior retained.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+
