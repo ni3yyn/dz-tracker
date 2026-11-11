@@ -29,6 +29,7 @@ import { useManualOrder } from './features/orders/useManualOrder';
 import { useOrderFilters } from './features/orders/useOrderFilters';
 import { useShipmentAnalytics } from './features/analytics/useShipmentAnalytics';
 import { useOrderSelection } from './features/orders/useOrderSelection';
+import { useDashboardFeedback } from './features/dashboard/useDashboardFeedback';
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
 import type { ShipmentExceptionState } from './shipment-exceptions';
@@ -763,6 +764,9 @@ export function MerchantDashboardView({
   exceptionStateStorageAvailable = false,
 }: Props) {
   const { alert: alertDialog, confirm: confirmDialog } = useGlobalDialog();
+
+  const { toastMsg, showToast, copiedKey, copyToClipboard } = useDashboardFeedback();
+
   const [activeTab, setActiveTab] = useState<MerchantDashboardTab>('overview');
   const dashboardMainRef = useRef<HTMLElement | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -798,7 +802,6 @@ export function MerchantDashboardView({
     setSavedStoreName(storeName);
   }, [storeName]);
 
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const orderDetailsPanelRef = useRef<OrderDetailsSidePanelHandle | null>(null);
   const [isCustomMappingModalOpen, setIsCustomMappingModalOpen] = useState(false);
   const customMappingTriggerRef = useRef<HTMLButtonElement>(null);
@@ -806,13 +809,7 @@ export function MerchantDashboardView({
 
 
   // Full Brand Customization State
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3500);
-  };
 
   const {
     upsellsList,
@@ -1000,11 +997,6 @@ export function MerchantDashboardView({
     },
   });
 
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(id);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
 
   useEffect(() => {
     if (!isCustomMappingModalOpen) return;

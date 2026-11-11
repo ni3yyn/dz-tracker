@@ -544,3 +544,15 @@ The hook uses the existing ShipmentExceptionOrder and ShipmentExceptionState typ
 - [x] Existing Overview/Orders/Analytics prop contracts remain unchanged.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed ninth batch — Dashboard feedback hook
+
+| Module | Extraction contract |
+|---|---|
+| features/dashboard/useDashboardFeedback.ts | Shared toast message state/action and clipboard-copy state/action moved into a small dashboard utility hook. |
+
+Toast duration (3.5 seconds), copied indicator duration (2 seconds), clipboard API call and all existing consumer props remain unchanged. Feature hooks receive the same showToast function; existing tab, order panel and toast markup remain untouched.
+
+- [x] Toast and clipboard state/functions removed from the composition root.
+- [x] The single shared feedback hook supplies all existing consumers.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+
