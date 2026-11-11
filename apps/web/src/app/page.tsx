@@ -363,7 +363,7 @@ export default async function HomePage() {
 
       <section className={styles.hero} aria-labelledby="hero-title">
         <div className={styles.heroCopy} data-dz-reveal>
-          <div className={styles.eyebrow}><span className={styles.eyebrowIcon} aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><path d="M2 5.5h6.5c4.5 0 4.5 6 0 6H6c-4 0-4 5.5 0 5.5h11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="2" cy="5.5" r="1.4" fill="#D57955"/><circle cx="17" cy="17" r="1.4" fill="currentColor"/></svg></span> ربطات الشحن وتجربة التتبّع</div>
+          
           <h1 id="hero-title">قلّل رسائل<br /><em>«وين راه طلبي؟»</em></h1>
           <p className={styles.heroDescription}>عندما تكبر الطلبات، تتكرر أسئلة العملاء عن حالة الشحن. عند تفعيل الخدمة، يرسل حساب Telegram الخاص بتاجر تراك رابط التتبّع تلقائياً إلى حساب الزبون الذي يمكن العثور عليه عبر رقم هاتفه، مع إمكانية تفعيل تنبيهات المتصفح عند تغيّر حالة الشحنة.</p>
           <div className={styles.heroActions}>
