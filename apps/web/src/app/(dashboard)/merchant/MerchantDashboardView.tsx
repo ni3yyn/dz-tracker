@@ -3,7 +3,7 @@
 import './merchant-dashboard.css';
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { useDashboardBackHandler } from '../useDashboardBackHandler';
+import { useMerchantDashboardBackHandler } from './features/dashboard/useMerchantDashboardBackHandler';
 import { StatusSelector } from './StatusSelector';
 import { Icons } from './components/DashboardIcons';
 import { OrderDetailsSidePanel, type OrderDetailsSidePanelHandle } from './components/OrderDetailsSidePanel';
@@ -299,67 +299,18 @@ export function MerchantDashboardView({
     telegramEnabled,
     showToast,
   });
-  useDashboardBackHandler({
-    scope: 'merchant',
+  useMerchantDashboardBackHandler({
     activeTab,
     setActiveTab,
-    hasActiveOverlay: Boolean(
-      mobileMenuOpen ||
-      isCustomMappingModalOpen ||
-      isAddOrderModalOpen ||
-      isAddOrderPanelMounted
-    ),
-    onBack: () => {
-      const globalDialog = typeof document !== 'undefined'
-        ? document.querySelector('[data-dashboard-back-dismiss="global-dialog"]')
-        : null;
-      if (globalDialog instanceof HTMLElement) {
-        globalDialog.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Escape',
-          bubbles: true,
-          cancelable: true,
-        }));
-        return true;
-      }
-
-      const openDropdown = typeof document !== 'undefined'
-        ? document.querySelector('[data-dashboard-back-dismiss="dropdown"]')
-        : null;
-      if (openDropdown instanceof HTMLElement) {
-        openDropdown.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Escape',
-          bubbles: true,
-          cancelable: true,
-        }));
-        return true;
-      }
-      if (isCustomMappingModalOpen) {
-        closeCustomMappingModal();
-        return true;
-      }
-      if (isAddOrderModalOpen || isAddOrderPanelMounted) {
-        if (isAddOrderModalOpen && !isCreatingOrder) closeAddOrder();
-        return true;
-      }
-      const orderDetailsLayer = typeof document !== 'undefined'
-        ? document.querySelector('[data-dashboard-back-dismiss="order-details-panel"]')
-        : null;
-      if (orderDetailsLayer) {
-        orderDetailsLayer.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Escape',
-          bubbles: true,
-          cancelable: true,
-        }));
-        return true;
-      }
-      if (mobileMenuOpen) {
-        setMobileMenuOpen(false);
-        return true;
-      }
-      return false;
-    },
+    mobileMenuOpen,
+    setMobileMenuOpen,
+    isCustomMappingModalOpen,
+    closeCustomMappingModal,
+    isAddOrderModalOpen,
+    isAddOrderPanelMounted,
+    isCreatingOrder,
+    closeAddOrder,
   });
-
 
   const {
     deliveredCount,
