@@ -265,15 +265,41 @@ export class TelegramQueueManager {
       throw new Error(`Could not reserve Telegram phone-resolution slot: ${error.message}`);
     }
 
-    const slotAt = Date.parse(String(data));
+    let slotAt = Date.parse(String(data));
     if (!Number.isFinite(slotAt)) {
       throw new Error('Telegram phone-resolution reservation returned an invalid timestamp.');
     }
 
-    const waitMs = Math.max(0, slotAt - Date.now());
-    if (waitMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
+    // A FloodWait can begin after this slot was reserved. Revalidate after
+    // waiting so a slot booked before the pause cannot bypass the new pause.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const waitMs = Math.max(0, slotAt - Date.now());
+      if (waitMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+      }
+
+      const { data: confirmedSlot, error: confirmationError } = await this.supabase.rpc(
+        'confirm_telegram_phone_resolution_slot',
+        {
+          p_reserved_at: new Date(slotAt).toISOString(),
+          p_min_interval_ms: minIntervalMs,
+        }
+      );
+
+      if (confirmationError) {
+        throw new Error(`Could not confirm Telegram phone-resolution slot: ${confirmationError.message}`);
+      }
+
+      const confirmedAt = Date.parse(String(confirmedSlot));
+      if (!Number.isFinite(confirmedAt)) {
+        throw new Error('Telegram phone-resolution confirmation returned an invalid timestamp.');
+      }
+
+      if (confirmedAt <= slotAt) return;
+      slotAt = confirmedAt;
     }
+
+    throw new Error('Telegram phone-resolution slot kept moving; retrying this job safely.');
   }
 
   // ─── Confirmation Outbox ───────────────────────────────────────────────────

@@ -81,3 +81,62 @@ GRANT EXECUTE ON FUNCTION public.pause_telegram_worker_until(TIMESTAMPTZ)
   TO service_role;
 
 NOTIFY pgrst, 'reload schema';
+
+CREATE OR REPLACE FUNCTION public.confirm_telegram_phone_resolution_slot(
+  p_reserved_at TIMESTAMPTZ,
+  p_min_interval_ms INTEGER
+)
+RETURNS TIMESTAMPTZ
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+  v_next_phone_at TIMESTAMPTZ;
+  v_paused_until TIMESTAMPTZ;
+  v_slot_at TIMESTAMPTZ;
+  v_interval_ms INTEGER := GREATEST(COALESCE(p_min_interval_ms, 3500), 0);
+BEGIN
+  IF p_reserved_at IS NULL THEN
+    RAISE EXCEPTION 'reserved phone-resolution slot is required';
+  END IF;
+
+  SELECT next_phone_resolution_at, paused_until
+    INTO v_next_phone_at, v_paused_until
+  FROM public.telegram_worker_state
+  WHERE id = 1
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'telegram_worker_state singleton row (id=1) is missing';
+  END IF;
+
+  -- If no newer FloodWait was recorded after this slot was reserved, keep it.
+  IF p_reserved_at >= COALESCE(v_paused_until, '-infinity'::TIMESTAMPTZ) THEN
+    RETURN p_reserved_at;
+  END IF;
+
+  -- A newer pause invalidated the reservation. Allocate a new slot after
+  -- both the pause and all slots already reserved by other worker loops.
+  v_slot_at := GREATEST(
+    clock_timestamp(),
+    COALESCE(v_next_phone_at, '-infinity'::TIMESTAMPTZ),
+    COALESCE(v_paused_until, '-infinity'::TIMESTAMPTZ)
+  );
+
+  UPDATE public.telegram_worker_state
+  SET next_phone_resolution_at =
+        v_slot_at + make_interval(secs => v_interval_ms::DOUBLE PRECISION / 1000.0),
+      updated_at = clock_timestamp()
+  WHERE id = 1;
+
+  RETURN v_slot_at;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.confirm_telegram_phone_resolution_slot(TIMESTAMPTZ, INTEGER)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.confirm_telegram_phone_resolution_slot(TIMESTAMPTZ, INTEGER)
+  TO service_role;
+
+NOTIFY pgrst, 'reload schema';
