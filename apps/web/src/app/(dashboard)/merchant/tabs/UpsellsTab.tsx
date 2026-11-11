@@ -1,9 +1,7 @@
 import type { FormEvent } from 'react';
 import { ImageUploadField } from '../ImageUploadField';
 import { Icons } from '../components/DashboardIcons';
-import type { MerchantUpsellItem } from '../shared/upsell-types';
-
-type ReorderDirection = 'up' | 'down';
+import type { MerchantUpsellItem, ReorderDirection } from '../shared/upsell-types';
 
 interface UpsellsTabProps {
   merchantId: string;
