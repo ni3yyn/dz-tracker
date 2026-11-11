@@ -443,3 +443,17 @@ Phase 3 begins only after the tab-boundary source commit passed its Vercel previ
 - [ ] Keep MerchantUpsellItem from shared/upsell-types.ts as the single item contract.
 - [ ] Keep UpsellsTab as presentation only; it should receive the hook's existing state and callbacks with no local duplicated domain state.
 - [ ] Verify the first hook extraction with Vercel before selecting the next domain.
+
+
+### Completed first batch — Merchant Upsells hook
+
+| Module | Extraction contract |
+|---|---|
+| features/upsells/useMerchantUpsells.ts | The Upsells list and form state, scraper state, saving/error flags, per-item action flags, and scrape/save/edit/cancel/toggle/delete/reorder handlers were moved into one feature hook. |
+
+The hook receives merchantId and initialUpsells as its existing inputs, plus the parent-owned toast and global confirmation functions. All server action names/arguments, optimistic updates and rollback, list refresh calls, temporary fallback item construction, confirmation copy/tone, error copy, and success toasts were preserved. MerchantDashboardView destructures the returned values and continues passing the same props to UpsellsTab; the tab remains presentation-only.
+
+- [x] Upsells feature state and handlers removed from the composition root.
+- [x] No Upsells presentation state was added inside UpsellsTab.
+- [ ] Vercel preview for this first Phase 3 hook extraction must pass before moving another domain.
+
