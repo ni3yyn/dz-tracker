@@ -75,7 +75,7 @@ export function BrandingTab({
                     <span className="dz-brand-presets-note">تُعايَن قبل الحفظ</span>
                   </div>
                   <div className="dz-brand-presets-grid">
-                    {brandPresets.map((preset) => (
+                    {BRAND_PRESETS.map((preset) => (
                       <button key={preset.id} type="button" className={`dz-brand-preset ${activeBrandPresetId === preset.id ? 'active' : ''}`} onClick={() => onApplyBrandPreset(preset)} aria-pressed={activeBrandPresetId === preset.id}>
                         <span className="dz-brand-preset-art" style={{ background: `linear-gradient(135deg, ${preset.colors[1]}, ${preset.colors[2]})` }} aria-hidden="true">
                           <span className="dz-brand-preset-swatch" style={{ background: preset.colors[0] }} />
@@ -90,7 +90,7 @@ export function BrandingTab({
                 </section>
 
                 <nav className="dz-branding-categories" aria-label="فئات إعدادات الهوية">
-                  {brandingCategories.map((category) => (
+                  {BRANDING_CATEGORIES.map((category) => (
                     <button
                       key={category.id}
                       type="button"
@@ -128,7 +128,7 @@ export function BrandingTab({
                   </p>
 
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
-                    {brandPalettes.map((palette) => (
+                    {BRAND_PALETTES.map((palette) => (
                       <button
                         key={palette.hex}
                         type="button"
@@ -195,7 +195,7 @@ export function BrandingTab({
                   </p>
 
                   <div className="dz-choice-grid" style={{ marginBottom: '20px' }}>
-                    {backgroundStyles.map((bg) => (
+                    {BACKGROUND_STYLES.map((bg) => (
                       <div
                         key={bg.id}
                         className={`dz-choice-card ${brandConfig.bgStyle === bg.id ? 'active' : ''}`}
@@ -275,7 +275,7 @@ export function BrandingTab({
                   </p>
 
                   <div className="dz-choice-grid">
-                    {timelineDesigns.map((tl) => (
+                    {TIMELINE_DESIGNS.map((tl) => (
                       <div
                         key={tl.id}
                         className={`dz-choice-card ${brandConfig.timelineDesign === tl.id ? 'active' : ''}`}
@@ -301,7 +301,7 @@ export function BrandingTab({
                     <h4 style={{ margin: '0 0 8px', fontSize: '15px', fontWeight: 800 }}>شكل الخطوط بين النقاط</h4>
                     <p style={{ margin: '0 0 14px', fontSize: '12px', lineHeight: 1.7, color: 'var(--ink-muted)' }}>يتحكم هذا الخيار في خطوط الربط ضمن التصاميم التي تستخدم مساراً متصلاً.</p>
                     <div className="dz-choice-grid">
-                      {timelineLineStyles.map((lineStyle) => (
+                      {TIMELINE_LINE_STYLES.map((lineStyle) => (
                         <div
                           key={lineStyle.id}
                           className={`dz-choice-card ${((brandConfig as EditableBrandSettings).timelineLineStyle || 'straight') === lineStyle.id ? 'active' : ''}`}
@@ -334,7 +334,7 @@ export function BrandingTab({
                   <div style={{ marginBottom: '20px' }}>
                     <label className="formLabel">تأثير السطح (Surface Style)</label>
                     <div className="dz-choice-grid">
-                      {cardSurfaces.map((cs) => (
+                      {CARD_SURFACES.map((cs) => (
                         <div
                           key={cs.id}
                           className={`dz-choice-card ${brandConfig.cardSurface === cs.id ? 'active' : ''}`}
@@ -353,7 +353,7 @@ export function BrandingTab({
                   <div>
                     <label className="formLabel">استدارة الحواف</label>
                     <div className="dz-choice-grid">
-                      {cardRadii.map((cr) => (
+                      {CARD_RADII.map((cr) => (
                         <div
                           key={cr.id}
                           className={`dz-choice-card ${brandConfig.cardRadius === cr.id ? 'active' : ''}`}
@@ -382,7 +382,7 @@ export function BrandingTab({
                     اختر الخط الذي يعكس شخصية متجرك — كل خط يعطي انطباعاً مختلفاً:
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {fontFamilies.map((ff) => (
+                    {FONT_FAMILIES.map((ff) => (
                       <div
                         key={ff.id}
                         onClick={() => onUpdateBrandConfig('fontFamily', ff.id)}
@@ -425,7 +425,7 @@ export function BrandingTab({
                     <span aria-hidden="true" style={{ color: 'var(--ink-muted)', fontSize: '18px' }}>∿</span> <span>مستوى الحركة</span>
                   </h3>
                   <div className="dz-choice-grid">
-                    {animationLevels.map((al) => (
+                    {ANIMATION_LEVELS.map((al) => (
                       <div
                         key={al.id}
                         className={`dz-choice-card ${brandConfig.animationLevel === al.id ? 'active' : ''}`}
