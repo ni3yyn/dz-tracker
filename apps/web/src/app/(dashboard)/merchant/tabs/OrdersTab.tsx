@@ -3,31 +3,16 @@ import type { MerchantDashboardTab } from '../dashboard/DashboardSidebar';
 import { BrandedSelect } from '../BrandedSelect';
 import { StatusSelector } from '../StatusSelector';
 import { Icons } from '../components/DashboardIcons';
-
-type OrdersStatusFilter = 'all' | 'transit' | 'stopdesk' | 'attention' | 'delivered' | 'returned';
-type OrdersSort = 'newest' | 'oldest' | 'risk';
-type ShipmentListFilter = 'all' | 'transit' | 'stopdesk' | 'attention' | 'exceptions' | 'delivered' | 'returned';
-
-type OrdersTabOrder = {
-  id: string;
-  external_order_id: string;
-  customer_name: string | null;
-  customer_phone: string | null;
-  current_status: string;
-  carrier_name: string | null;
-  product_name: string | null;
-  carrier_order_id?: string | null;
-  carrier_metadata?: any | null;
-  carrier_last_event_at?: string | null;
-  carrier_tracking_number: string | null;
-  tracking_uuid: string;
-  created_at: string;
-  confirmation_status?: 'pending' | 'confirmed' | 'cancelled' | null;
-};
+import type {
+  OrderItem,
+  OrderSort as OrdersSort,
+  OrderStatusFilter as OrdersStatusFilter,
+  ShipmentListFilter,
+} from '../features/orders/order-types';
 
 interface OrdersTabProps {
-  orders: OrdersTabOrder[];
-  filteredOrders: OrdersTabOrder[];
+  orders: OrderItem[];
+  filteredOrders: OrderItem[];
   inTransitCount: number;
   stopdeskCount: number;
   deliveredCount: number;
@@ -63,7 +48,7 @@ interface OrdersTabProps {
   getStatusBadgeStyle: (status: string) => string;
   formatOrderDate: (value: string) => string;
   formatOrderTime: (value: string) => string;
-  getWhatsAppRecoveryUrl: (order: OrdersTabOrder) => string;
+  getWhatsAppRecoveryUrl: (order: OrderItem) => string;
 }
 
 export function OrdersTab({
