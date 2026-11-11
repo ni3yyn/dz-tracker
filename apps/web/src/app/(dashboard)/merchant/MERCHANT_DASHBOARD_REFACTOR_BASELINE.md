@@ -469,3 +469,15 @@ The hook receives merchantId and the existing toast callback. The inline-save ha
 - [x] Custom mapping modal and focus lifecycle remain in the parent.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed third batch — Branding editor hook
+
+| Module | Extraction contract |
+|---|---|
+| features/branding/useBrandingEditor.ts | Brand configuration initialization, refs, undo/redo stacks, history operations, preset application, category reset, deferred preview value, unsaved-state tracking and the shared save handler moved into a focused hook. |
+
+The hook receives the same server-provided brand defaults, merchant/store inputs, category reset map and parent-owned toast callback. The single save handler is still shared by Branding Studio and Settings, including store-name persistence, FormData fields, action call, browser alert behavior, success toast and saving-state transitions. The root continues to pass the same values and callbacks to both tabs.
+
+- [x] Brand state/history and save handler removed from the composition root.
+- [x] Shared Branding/Settings save handler remains one hook callback.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+
