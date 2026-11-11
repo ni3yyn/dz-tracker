@@ -2,6 +2,7 @@ import React from 'react';
 import styles from './home.module.css';
 import ScrollRevealObserver from './ScrollRevealObserver';
 import SiteHeader from './SiteHeader';
+import SiteFooter from './SiteFooter';
 import FaqAccordion from './FaqAccordion';
 import { createClient } from '../lib/supabase-server';
 
@@ -519,48 +520,7 @@ export default async function HomePage() {
         <svg className={styles.ctaRouteArt} viewBox="0 0 240 180" fill="none" aria-hidden="true"><path className={styles.ctaRoutePath} d="M5 22h65c45 0 45 48 0 48H42c-38 0-38 45 0 45h64c39 0 39 43 77 43h52" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 7" strokeLinecap="round"/><circle className={styles.ctaRouteNode} cx="5" cy="22" r="4" fill="#D57955"/><circle className={styles.ctaRouteNode} cx="70" cy="70" r="4" fill="currentColor"/><circle className={styles.ctaRouteNode} cx="106" cy="115" r="4" fill="#D57955"/><circle className={styles.ctaRouteNode} cx="235" cy="158" r="4" fill="currentColor"/></svg>
       </section>
 
-      <footer className={styles.footer}>
-        <div className={styles.footerTop}>
-          <div className={styles.footerIdentity}>
-            <a href="/" className={styles.footerBrand} aria-label="تاجر تراك - الصفحة الرئيسية">
-              <span className={styles.footerAnimatedMark} aria-hidden="true">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tajertrack-animated.svg" alt="" width={42} height={42} decoding="async" />
-            </span>
-              <span className={styles.footerWordmark}><strong>تاجر تراك</strong><small>TAJERTRACK</small></span>
-            </a>
-            <p>منصة تربط طلبات متجرك بتجربة تتبّع واضحة، وتجمع تحديثات الشحن في مكان واحد.</p>
-            <span className={styles.footerSignature}><i aria-hidden="true" /> ربط الطلبات · تتبّع الشحنات · متابعة الزبائن</span>
-          </div>
-          <nav className={styles.footerNav} aria-label="روابط المنصة">
-            <h2>المنصة</h2>
-            <a href="#how-it-works">كيف يعمل</a>
-            <a href="#features">المزايا</a>
-            <a href="#pricing">الخطط والأسعار</a>
-            <a href="#faq">الأسئلة الشائعة</a>
-          </nav>
-          <nav className={styles.footerNav} aria-label="روابط حساب التاجر">
-            <h2>حساب التاجر</h2>
-            <a href={isAuthenticated ? "/merchant" : "/login"}>{isAuthenticated ? "لوحة التاجر" : "تسجيل الدخول"}</a>
-            <a href="/register">إنشاء حساب</a>
-          </nav>
-          <nav className={styles.footerNav} aria-label="الوثائق القانونية">
-            <h2>الوثائق القانونية</h2>
-            <a href="/privacy">سياسة الخصوصية</a>
-            <a href="/terms">شروط الاستخدام</a>
-          </nav>
-          <div className={styles.footerStart}>
-            <span className={styles.footerOverline}>جاهز للانطلاق؟</span>
-            <p>ابدأ بربط متجرك، ودع زبائنك يتابعون طلباتهم بسهولة.</p>
-            <a href="/register" className={styles.footerStartButton}>ابدأ الآن <span aria-hidden="true">↗</span></a>
-          </div>
-        </div>
-        <div className={styles.footerBottom}>
-          <span className={styles.footerCopyright}>© {new Date().getFullYear()} تاجر تراك. جميع الحقوق محفوظة.</span>
-          <span className={styles.footerBottomNote}>من الطلب إلى التوصيل، في مسار أوضح.</span>
-          <a className={styles.footerTopLink} href="#top" aria-label="العودة إلى أعلى الصفحة">العودة للأعلى <span aria-hidden="true">↑</span></a>
-        </div>
-      </footer>
+      <SiteFooter isAuthenticated={isAuthenticated} />
     </main>
   );
 }

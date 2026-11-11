@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import LegalDocument from '../LegalDocument';
-import { LEGAL_PRIVACY_VERSION } from '../../lib/legal';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +13,7 @@ export default function PrivacyPage() {
     <LegalDocument
       title="سياسة الخصوصية"
       intro="توضح هذه السياسة أنواع البيانات التي يتعامل معها تاجر تراك، وأغراض استخدامها، والجهات التي قد تتلقاها، والخيارات والحقوق المتاحة لأصحاب البيانات."
-      version={LEGAL_PRIVACY_VERSION}
+      currentDocument="privacy"
       showOperatorDetails
       sections={[
         {

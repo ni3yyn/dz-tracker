@@ -1,14 +1,14 @@
 import React, { type ReactNode } from 'react';
 import SiteHeader from './SiteHeader';
 import styles from './legal.module.css';
-import { LEGAL_EFFECTIVE_DATE, LEGAL_PRIVACY_VERSION, LEGAL_TERMS_VERSION } from '../lib/legal';
+import SiteFooter from './SiteFooter';
 
 type LegalSection = { title: string; body: ReactNode };
 
 type Props = {
   title: string;
   intro: string;
-  version: string;
+  currentDocument: 'privacy' | 'terms';
   sections: LegalSection[];
   showOperatorDetails?: boolean;
 };
@@ -16,7 +16,7 @@ type Props = {
 export default function LegalDocument({
   title,
   intro,
-  version,
+  currentDocument,
   sections,
   showOperatorDetails = false,
 }: Props) {
@@ -29,15 +29,9 @@ export default function LegalDocument({
     <main className={styles.legalPage}>
       <div className={styles.siteHeader}><SiteHeader compact /></div>
       <div className={styles.legalWrap}>
-        <a className={styles.backLink} href="/">العودة إلى الصفحة الرئيسية <span aria-hidden="true">↗</span></a>
         <header className={styles.hero}>
-          <span className={styles.eyebrow}>تاجر تراك · الوثائق القانونية</span>
           <h1>{title}</h1>
           <p className={styles.intro}>{intro}</p>
-          <div className={styles.meta}>
-            <span>تاريخ السريان: {LEGAL_EFFECTIVE_DATE}</span>
-            <span>الإصدار: {version}</span>
-          </div>
         </header>
 
         <article className={styles.article}>
@@ -64,14 +58,8 @@ export default function LegalDocument({
           ))}
         </article>
 
-        <footer className={styles.footer}>
-          <span>© {new Date().getFullYear()} {operatorName}</span>
-          <nav aria-label="الوثائق القانونية">
-            <a href="/privacy" aria-current={version === LEGAL_PRIVACY_VERSION ? 'page' : undefined}>سياسة الخصوصية</a>
-            <a href="/terms" aria-current={version === LEGAL_TERMS_VERSION ? 'page' : undefined}>شروط الاستخدام</a>
-          </nav>
-        </footer>
       </div>
+      <SiteFooter homeHref="/" currentDocument={currentDocument} />
     </main>
   );
 }

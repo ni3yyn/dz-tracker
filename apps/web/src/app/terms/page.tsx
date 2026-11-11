@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import LegalDocument from '../LegalDocument';
-import { LEGAL_TERMS_VERSION } from '../../lib/legal';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +13,7 @@ export default function TermsPage() {
     <LegalDocument
       title="شروط الاستخدام"
       intro="تنظم هذه الشروط إنشاء حساب التاجر واستخدام لوحة تاجر تراك وخدمات تتبع الطلبات والتكاملات وواجهات API والإشعارات."
-      version={LEGAL_TERMS_VERSION}
+      currentDocument="terms"
       sections={[
         {
           title: '1. قبول الشروط والأهلية',
