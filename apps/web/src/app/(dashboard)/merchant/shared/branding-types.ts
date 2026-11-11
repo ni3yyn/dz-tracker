@@ -1,13 +1,4 @@
-import type {
-  BrandSettings,
-  BackgroundStyle,
-  CardRadius,
-  CardSurface,
-  FontFamily,
-  ThemeMode,
-  AnimationLevel,
-  TimelineDesign,
-} from '@saas/ui';
+import type { BrandSettings } from '@saas/ui';
 
 export type TimelineLineStyle = 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none';
 

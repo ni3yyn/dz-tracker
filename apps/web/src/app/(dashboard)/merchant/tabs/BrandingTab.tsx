@@ -2,7 +2,6 @@ import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import type {
   AnimationLevel,
   BackgroundStyle,
-  BrandSettings,
   CardRadius,
   CardSurface,
   FontFamily,
