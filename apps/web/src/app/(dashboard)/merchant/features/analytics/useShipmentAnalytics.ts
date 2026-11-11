@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { AnalyticsDay, StatusBreakdownItem } from './analytics-types';
 import {
   detectShipmentExceptions,
   isShipmentExceptionResolved,
@@ -51,7 +52,7 @@ export function useShipmentAnalytics({
     [orders]
   );
 
-  const lastSevenDays = useMemo(() => {
+  const lastSevenDays = useMemo<AnalyticsDay[]>(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return Array.from({ length: 7 }, (_, index) => {
@@ -69,7 +70,7 @@ export function useShipmentAnalytics({
   const ordersCreatedLastSevenDays = lastSevenDays.reduce((sum, day) => sum + day.count, 0);
   const maxDailyOrders = Math.max(1, ...lastSevenDays.map((day) => day.count));
   const classifiedStatusCount = inTransitCount + stopdeskCount + deliveredCount + returnedCount;
-  const statusBreakdown = [
+  const statusBreakdown: StatusBreakdownItem[] = [
     { key: 'moving', label: 'في الطريق', count: inTransitCount, color: '#638797' },
     { key: 'pickup', label: 'جاهزة للاستلام', count: stopdeskCount, color: '#ac8a4a' },
     { key: 'delivered', label: 'تم التسليم', count: deliveredCount, color: '#5d8968' },
