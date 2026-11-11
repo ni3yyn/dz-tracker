@@ -55,8 +55,8 @@ The following line ranges are from the immutable baseline blob. They are initial
 | 622–841 | Order details side panel and its imperative handle | `features/orders/OrderDetailsSidePanel.tsx` |
 | 842–921 | Dashboard panel transition | `dashboard/DashboardPanelTransition.tsx` |
 | 922–1,868 | Main component state, derived values, effects and event handlers | Feature hooks plus composition root, extracted incrementally |
-| 1,869–7,417 | Embedded dashboard CSS | `merchant-dashboard.css`, preserving declaration and selector order |
-| 7,418–7,681 | Dashboard shell, background, sidebar, navigation and header | `dashboard/` |
+| 1,869–7,409 | Embedded dashboard CSS | `merchant-dashboard.css`, preserving declaration and selector order |
+| 7,410–7,681 | Dashboard shell, background (starts at line 7,412), sidebar, navigation and header | `dashboard/` |
 | 7,682–7,818 | Overview tab | `tabs/OverviewTab.tsx` |
 | 7,819–8,206 | Orders tab | `tabs/OrdersTab.tsx` and order subcomponents |
 | 8,207–8,264 | Exceptions and analytics tab content | `tabs/ExceptionsTab.tsx`, `tabs/AnalyticsTab.tsx` |
@@ -157,6 +157,99 @@ At the time this baseline was recorded for commit `a9cec3087935fe95cc28d9bea4070
 
 These checks establish the pre-refactor baseline only. Every refactor commit must run the applicable checks again.
 
+## Detailed source inventory (verified against the baseline blob)
+
+### React state and hooks
+
+The source contains **56 state declarations** across the dashboard, transition component and order details panel. The main dashboard owns the majority; the order drawer and transition component have their own local state and should stay isolated.
+
+Hook-call inventory from the baseline source:
+- `useState`: 56 state declarations (generic type arguments mean a simple textual call count undercounts these).
+- `useMemo`: 9
+- `useCallback`: 10
+- `useEffect`: 7
+- `useLayoutEffect`: 3
+- `useRef`: 2
+- `useDeferredValue`: 1
+- `useImperativeHandle`: 1
+
+The main dashboard's state groups are:
+- Navigation/store identity: active tab, mobile menu, store-name draft and saved name.
+- Upsells: list, scraper URL/loading/error, editing ID, product fields, active flag, save/toggle/delete/reorder progress.
+- Branding: selected category, unsaved-change flag, brand configuration, history tick and active preset.
+- Orders: search, status and carrier filters, sort order, copied key, selected IDs, deletion state and visible-order count.
+- Messaging/settings: Telegram tracking and confirmation enabled/saving states.
+- Manual order: modal/panel mounted/open state, creation state, error and success payload.
+- Mapping editor: modal open, editing mapping ID, display status and save state.
+- Billing: proof submission, proof image URL, selected upgrade tier and advance renewal.
+- Shared presentation: toast message.
+
+The two state-owning child components are:
+- `OrderDetailsSidePanel`: selected order ID and open state; exposes `open` and `closeIfDeleted` through an imperative ref.
+- `DashboardPanelTransition`: measured height and transition direction.
+
+### Effects, derived data and callbacks
+
+The main component includes:
+- Effects for synchronizing store identity and initial state.
+- Branding history/configuration callbacks, deferred preview state and preset/reset operations.
+- Shipment-exception detection and derived visible exception/order ID collections.
+- Recent-order and seven-day analytics derivations.
+- Carrier collection and filtered-order derivation.
+- Layout/resize measurement and keyboard/back-dismiss behavior.
+- Event handlers for Telegram settings, confirmation settings, selection/deletion, clipboard, manual order creation, product scraping, upsell CRUD/reordering, payment proof, branding save, inline mapping edits and cross-tab shipment navigation.
+
+The baseline has **three portal render paths**: order details, custom status mapping modal and add-order panel. Dialog accessibility attributes and dismissal behavior must be preserved when these are extracted. The custom mapping and add-order portals are not interchangeable: they have different form state, close guards, transitions and lifecycle.
+
+### Repeated visual patterns observed
+
+A source scan found the following repeated class families (counts are occurrences in static className literals, not a claim that every occurrence has identical markup):
+
+| Pattern | Occurrences | Initial shared-component audit |
+|---|---:|---|
+| `.dz-order-detail-field` | 43 | Order detail field renderer / field row |
+| `.dz-btn` | 18 | Button variants; audit semantics and inline style differences before abstraction |
+| `.dz-btn-outline` | 9 | Secondary action variant |
+| `.dz-nav-icon` | 9 | Navigation icon wrapper |
+| `.formLabel` | 9 | Form label |
+| `.dz-order-action-btn` | 8 | Order drawer actions |
+| `.dz-card-box` | 8 | Card surface; check structural differences |
+| `.dz-overview-kpi-label` / `.dz-overview-kpi-value` | 7 each | Metric card typography |
+| `.dz-overview-section-head` / title / subtitle | 6 each | Section heading |
+| `.dz-overview-kpi` | 6 | Metric card; Overview uses buttons, Analytics uses non-button divs |
+| `.dz-stat-item` / title / value | 6 each | Orders summary metric, distinct class family |
+| `.dz-choice-grid` / title / desc | 6 each | Branding choice-card groups |
+| `.dz-overview-item` | 5 | Repeated overview row |
+| `.dz-upsell-action-btn` | 5 | Upsell-specific actions |
+| `.dz-input-field` | 5 | Form control wrapper |
+| `.dz-sub-alert-banner` / action | 4 each | Subscription alert |
+| `.dz-mapping-preset` / action | 4 each | Mapping-specific UI |
+| `.dz-billing-plan-benefit` | 4 | Plan benefit row |
+| `.dz-overview-action` | 4 | Overview shortcut |
+| `.dz-settings-section` | 3 | Settings section |
+
+This scan is a shortlist, not automatic permission to merge markup. For example, Overview KPI cards are interactive buttons while Analytics KPI cards are static divs; a shared metric component must preserve the exact element semantics through an explicit element mode. Orders' `.dz-stat-item` is visually related but has a different class family and must not be silently restyled.
+
+### Shared components already in use
+
+- `BrandedSelect.tsx`: used in Orders and the Exceptions panel; keep it canonical.
+- `StatusSelector.tsx`: existing status selector used in the order detail surface; keep it canonical.
+- `ImageUploadField.tsx`: reused by existing upload flows; do not duplicate it in Branding or Billing.
+- `ShipmentExceptionsPanel.tsx`: already separate and imports the canonical `BrandedSelect`.
+- `CarrierIntegrationsManager.tsx`, `MappingForm.tsx` and `GlobalDialogProvider`: retain their current ownership and contracts.
+
+The new shared UI layer should be added under `components/` only for verified repeated contracts. Initial candidate files:
+- `DashboardMetricCard.tsx` (supports the existing button/static semantics without changing DOM structure).
+- `DashboardSectionHeading.tsx` (only where the current heading DOM and spacing are identical).
+- `DashboardStatusFilterGroup.tsx` (Orders and Exceptions may share a renderer while receiving different state/action options).
+- `DashboardEmptyState.tsx` (only where the same empty-state DOM is actually repeated).
+- `DashboardActionButton.tsx` and `DashboardIconButton.tsx` (preserve current element, class, icon size, disabled/loading behavior and per-instance style).
+- `DashboardFormField.tsx` (only where label/control/error structure is identical).
+- `OrderDetailField.tsx` (for the repeated order detail field contract).
+- `BrandingChoiceCard.tsx` (for the repeated branding option cards).
+
+Each candidate must be checked against all callsites before implementation. If a pattern differs, retain separate components or explicit variants rather than forcing a common visual result.
+
 ## Visual and behavioral baseline capture checklist
 
 Screenshots/recordings are a manual gate before Phase 1. Capture the same seeded merchant/account data and viewport dimensions before and after extraction:
@@ -190,7 +283,7 @@ Do not merge to `main` while any required check is failing or pending.
 - [x] First-pass source responsibility and state ownership maps recorded.
 - [x] Existing CI/deployment baseline recorded.
 - [ ] Runtime screenshot/recording baseline captured.
-- [ ] Repeated visual patterns audited against their actual callsites and props.
+- [x] First-pass repeated visual pattern scan recorded; callsite-level DOM/props audit remains pending.
 - [ ] Final extraction manifest completed, including every handler, hook, effect, modal, portal and CSS block.
 
 Phase 1 must not start until the remaining three unchecked items are completed.
