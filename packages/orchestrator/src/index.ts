@@ -170,7 +170,7 @@ export class TrackingOrchestrator {
 
       // Replacement parcels must be recognized before normal order resolution/creation.
       // The database function links one exact match or holds ambiguous candidates for the merchant.
-      const { data: exchangeData, error: exchangeError } = await this.supabase.rpc('process_exchange_replacement_event', {
+      const { data: exchangeData, error: exchangeError } = await (this.supabase as any).rpc('process_exchange_replacement_event', {
         p_merchant_id: event.merchantId,
         p_source_provider: event.sourceProvider || event.carrierName || 'unknown',
         p_carrier_name: event.carrierName || null,

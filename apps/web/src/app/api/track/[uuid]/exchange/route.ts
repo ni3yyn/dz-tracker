@@ -25,7 +25,7 @@ export async function POST(request: Request, { params }: RouteProps) {
     if (settingError) return NextResponse.json({ error: 'تعذر التحقق من إعدادات المتجر حالياً.' }, { status: 503 });
     if (setting?.display_status !== 'true') return NextResponse.json({ error: 'طلبات الاستبدال غير متاحة لدى هذا المتجر.' }, { status: 403 });
 
-    const { data: active, error: activeError } = await (supabase as any).from('order_exchange_requests').select('id').eq('order_id', order.id).in('status', ['pending', 'approved']).limit(1).maybeSingle();
+    const { data: active, error: activeError } = await (supabase as any).from('order_exchange_requests').select('id').eq('order_id', order.id).in('status', ['pending', 'awaiting_shipment', 'replacement_in_transit']).limit(1).maybeSingle();
     if (activeError) {
       console.error('[ExchangeRequests] Active request lookup failed:', activeError.message);
       return NextResponse.json({ error: 'خدمة الاستبدال غير جاهزة حالياً. حاول لاحقاً.' }, { status: 503 });

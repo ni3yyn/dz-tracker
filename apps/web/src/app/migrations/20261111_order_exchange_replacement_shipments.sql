@@ -171,8 +171,7 @@ BEGIN
     AND (
       (NULLIF(p_carrier_order_id, '') IS NOT NULL AND s.carrier_order_id = p_carrier_order_id)
       OR
-      (NULLIF(p_carrier_order_id, '') IS NULL AND NULLIF(p_carrier_tracking_number, '') IS NOT NULL
-       AND s.carrier_tracking_number = p_carrier_tracking_number)
+      (NULLIF(p_carrier_tracking_number, '') IS NOT NULL AND s.carrier_tracking_number = p_carrier_tracking_number)
     )
   LIMIT 1
   FOR UPDATE;
@@ -338,7 +337,7 @@ BEGIN
       AND COALESCE(s.carrier_name, '') = COALESCE(v_carrier, '')
       AND (
         (NULLIF(p_carrier_order_id, '') IS NOT NULL AND s.carrier_order_id = p_carrier_order_id)
-        OR (NULLIF(p_carrier_order_id, '') IS NULL AND s.carrier_tracking_number = p_carrier_tracking_number)
+        OR (NULLIF(p_carrier_tracking_number, '') IS NOT NULL AND s.carrier_tracking_number = p_carrier_tracking_number)
       )
     LIMIT 1;
   END IF;
@@ -479,6 +478,13 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.exchange_normalize_text(TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.exchange_normalize_phone(TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.process_exchange_replacement_event(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, TEXT, TIMESTAMPTZ, BOOLEAN) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.review_order_exchange_request(UUID, UUID, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.confirm_order_exchange_shipment_match(UUID, UUID, UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.exchange_normalize_text(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION public.exchange_normalize_phone(TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.process_exchange_replacement_event(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, TEXT, TIMESTAMPTZ, BOOLEAN) TO service_role;
 GRANT EXECUTE ON FUNCTION public.review_order_exchange_request(UUID, UUID, TEXT, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.confirm_order_exchange_shipment_match(UUID, UUID, UUID) TO service_role;
