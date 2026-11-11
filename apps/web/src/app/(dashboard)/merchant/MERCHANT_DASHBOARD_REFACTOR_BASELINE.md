@@ -370,3 +370,13 @@ The Overview tab receives minimal display-only order fields rather than importin
 
 All Orders state remains owned by `MerchantDashboardView.tsx`: search/status/carrier/sort filters, pagination count, selected IDs, deletion/loading state, clipboard state and the order-details ref. The existing manual-order panel lifecycle and form remain in the parent; the tab's “add order” button invokes the same callback that opens it and clears its prior error/success state. The original `StatusSelector` and `BrandedSelect` are reused.
 
+
+### Completed fourth batch — Branding Studio
+
+| Module | Extraction contract |
+|---|---|
+| `tabs/BrandingTab.tsx` | Branding controls, preset picker, category navigation, undo/redo/reset controls, option selectors, save bar and preview placement moved into a typed tab component. The existing memoized phone preview is supplied as a React node so its renderer and deferred configuration remain untouched. |
+| `shared/branding-types.ts` | Shared branded configuration, preset, category and timeline-line-style types now have one importable definition for the composition root and Branding tab. |
+
+Brand configuration/history, save behavior, selected category, active preset, deferred preview calculation and all option/preset constants remain owned by the composition root. The extracted tab invokes the same callbacks and retains the original JSX/classes/inline styles.
+
