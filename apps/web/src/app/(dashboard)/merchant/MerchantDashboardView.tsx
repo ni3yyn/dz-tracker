@@ -7091,17 +7091,23 @@ export function MerchantDashboardView({
           .dz-admin-root .dz-shipment-filters { padding: 8px; }
         }
 
-        /* Orders table: keep selection narrow and give operational columns predictable room. */
+        /* Orders table: constrain text columns and reserve room for the live status control. */
         .dz-admin-root .dz-orders-desktop .dz-orders-table {
           width: 100%;
           min-width: 960px;
+          max-width: 1100px;
+          margin-inline: auto;
           table-layout: fixed;
+        }
+        .dz-admin-root .dz-orders-desktop .dz-orders-table th,
+        .dz-admin-root .dz-orders-desktop .dz-orders-table td {
+          padding-inline: 10px;
         }
         .dz-admin-root .dz-orders-desktop .dz-order-select-cell {
           width: 32px;
           min-width: 32px;
           max-width: 32px;
-          padding-inline: 4px !important;
+          padding-inline: 3px !important;
           text-align: center;
           vertical-align: middle;
         }
@@ -7111,12 +7117,60 @@ export function MerchantDashboardView({
           height: 15px;
           margin: 0 auto;
         }
-        .dz-admin-root .dz-orders-desktop .dz-order-date-cell {
+        .dz-admin-root .dz-orders-desktop .dz-order-date-cell { white-space: nowrap; }
+        .dz-order-date-value {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 3px;
+          line-height: 1.35;
           white-space: nowrap;
         }
-        .dz-admin-root .dz-orders-desktop .dz-orders-table th:not(.dz-order-select-cell),
-        .dz-admin-root .dz-orders-desktop .dz-orders-table td:not(.dz-order-select-cell) {
+        .dz-order-date-value strong { color: var(--ink-main); font-size: 11px; font-weight: 750; }
+        .dz-order-date-value span {
+          color: var(--ink-muted);
+          font-size: 10px;
+          font-variant-numeric: tabular-nums;
+          direction: ltr;
+        }
+        .dz-order-carrier-cell { min-width: 0; }
+        .dz-order-reference {
+          display: block;
+          margin-bottom: 4px;
+          color: #405849;
+          font-size: 10.5px;
+          font-weight: 800;
+          line-height: 1.4;
+          direction: ltr;
+          unicode-bidi: isolate;
           overflow-wrap: anywhere;
+        }
+        .dz-order-carrier-name {
+          margin-bottom: 3px;
+          color: var(--ink-main);
+          font-size: 10.5px;
+          font-weight: 700;
+          line-height: 1.45;
+          overflow-wrap: anywhere;
+        }
+        .dz-order-tracking-number {
+          display: block;
+          color: var(--ink-muted);
+          font-size: 9.5px;
+          line-height: 1.45;
+          direction: ltr;
+          unicode-bidi: isolate;
+          overflow-wrap: anywhere;
+        }
+        .dz-admin-root .dz-orders-table tbody .dz-order-clickable-row { cursor: pointer; }
+        .dz-admin-root .dz-orders-table tbody .dz-order-clickable-row:focus-visible {
+          outline: 2px solid rgba(65, 107, 82, .42);
+          outline-offset: -2px;
+        }
+        .dz-admin-root .dz-orders-mobile .dz-order-clickable-card { cursor: pointer; }
+        .dz-admin-root .dz-orders-mobile .dz-order-clickable-card:focus-visible {
+          outline: 2px solid rgba(65, 107, 82, .42);
+          outline-offset: 2px;
         }
 
 
@@ -7817,7 +7871,19 @@ export function MerchantDashboardView({
                   const isAlert = exceptionOrderIds.has(order.id);
                   const badgeStyle = getStatusBadgeStyle(order.current_status);
                   return (
-                    <article key={`mobile-${order.id}`} className="dz-order-mobile-card">
+                    <article key={`mobile-${order.id}`} className="dz-order-mobile-card dz-order-clickable-card"
+                       tabIndex={0}
+                       aria-label={'فتح تفاصيل الشحنة ' + order.external_order_id}
+                       onClick={(event) => {
+                         const target = event.target;
+                         if (target instanceof Element && target.closest('button, a, input, select, textarea, label, [role="button"], [role="img"]')) return;
+                         setSelectedOrderId(order.id);
+                       }}
+                       onKeyDown={(event) => {
+                         if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
+                         event.preventDefault();
+                         setSelectedOrderId(order.id);
+                       }}>
                       <label className="dz-order-mobile-select">
                         <input
                           type="checkbox"
@@ -7829,7 +7895,7 @@ export function MerchantDashboardView({
                         تحديد الطلب
                       </label>
                       <div className="dz-order-mobile-top">
-                        <div className="dz-order-mobile-number"><strong>{formatOrderDate(order.created_at)}</strong><small>التاريخ</small></div>
+                        <div className="dz-order-mobile-number"><strong>{formatOrderDate(order.created_at)}</strong><small>{formatOrderTime(order.created_at)}</small></div>
                         <div className="dz-order-mobile-badges">
                           {order.confirmation_status === 'pending' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(234,179,8,0.1)', color: '#92400e', fontWeight: 600, whiteSpace: 'nowrap' }}>بانتظار تأكيد العميل</span>}
                           {order.confirmation_status === 'confirmed' && <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(21,128,61,0.1)', color: '#15803d', fontWeight: 600, whiteSpace: 'nowrap' }}>أكد العميل الطلب</span>}
@@ -7842,7 +7908,11 @@ export function MerchantDashboardView({
                         <span>{order.customer_phone || 'لا يوجد رقم هاتف'}</span>
                         {order.customer_phone && <button type="button" aria-label="نسخ رقم العميل" className="dz-icon-btn" onClick={() => copyToClipboard(order.customer_phone!, `mobile-ph_${order.id}`)}>{copiedKey === `mobile-ph_${order.id}` ? <Icons.Check /> : <Icons.Copy />}</button>}
                       </div>
-                      <div className="dz-order-mobile-meta"><span>{order.carrier_name || 'شركة الشحن غير محددة'}</span><span>{order.carrier_tracking_number || 'لا يوجد رقم تتبع'}</span></div>
+                      <div className="dz-order-mobile-meta">
+                         <span>{order.carrier_name || 'شركة الشحن غير محددة'}</span>
+                         <span>رقم الطلب: <bdi dir="ltr">{order.external_order_id}</bdi></span>
+                         <span>{order.carrier_tracking_number || 'لا يوجد رقم تتبع'}</span>
+                       </div>
                       <div className="dz-order-mobile-status"><StatusSelector orderId={order.id} currentStatus={order.current_status} /></div>
                       <div className="dz-order-action-grid" role="group" aria-label={`إجراءات الطلب ${order.external_order_id}`}>
                         <button
