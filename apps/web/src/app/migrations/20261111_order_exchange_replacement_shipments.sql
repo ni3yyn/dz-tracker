@@ -77,11 +77,11 @@ CREATE TABLE IF NOT EXISTS public.order_exchange_shipments (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS order_exchange_shipments_provider_order_unique
-  ON public.order_exchange_shipments(merchant_id, source_provider, COALESCE(carrier_name, ''), carrier_order_id)
+  ON public.order_exchange_shipments(merchant_id, source_provider, carrier_order_id)
   WHERE carrier_order_id IS NOT NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS order_exchange_shipments_provider_tracking_unique
-  ON public.order_exchange_shipments(merchant_id, source_provider, COALESCE(carrier_name, ''), carrier_tracking_number)
+  ON public.order_exchange_shipments(merchant_id, source_provider, carrier_tracking_number)
   WHERE carrier_tracking_number IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_order_exchange_shipments_confirmation
@@ -156,7 +156,7 @@ BEGIN
 
   -- Serialize duplicate provider events for the same incoming parcel.
   PERFORM pg_advisory_xact_lock(hashtextextended(
-    p_merchant_id::TEXT || ':' || v_provider || ':' || COALESCE(v_carrier, '') || ':' ||
+    p_merchant_id::TEXT || ':' || v_provider || ':' ||
     COALESCE(NULLIF(p_carrier_order_id, ''), p_carrier_tracking_number, ''),
     0
   ));
@@ -167,12 +167,12 @@ BEGIN
   FROM public.order_exchange_shipments s
   WHERE s.merchant_id = p_merchant_id
     AND s.source_provider = v_provider
-    AND COALESCE(s.carrier_name, '') = COALESCE(v_carrier, '')
     AND (
       (NULLIF(p_carrier_order_id, '') IS NOT NULL AND s.carrier_order_id = p_carrier_order_id)
       OR
       (NULLIF(p_carrier_tracking_number, '') IS NOT NULL AND s.carrier_tracking_number = p_carrier_tracking_number)
     )
+  ORDER BY CASE WHEN NULLIF(p_carrier_order_id, '') IS NOT NULL AND s.carrier_order_id = p_carrier_order_id THEN 0 ELSE 1 END
   LIMIT 1
   FOR UPDATE;
 
@@ -334,7 +334,6 @@ BEGIN
     SELECT s.id INTO v_shipment_id
     FROM public.order_exchange_shipments s
     WHERE s.merchant_id = p_merchant_id AND s.source_provider = v_provider
-      AND COALESCE(s.carrier_name, '') = COALESCE(v_carrier, '')
       AND (
         (NULLIF(p_carrier_order_id, '') IS NOT NULL AND s.carrier_order_id = p_carrier_order_id)
         OR (NULLIF(p_carrier_tracking_number, '') IS NOT NULL AND s.carrier_tracking_number = p_carrier_tracking_number)
