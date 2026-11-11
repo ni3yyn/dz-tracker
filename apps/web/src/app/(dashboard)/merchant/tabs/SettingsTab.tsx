@@ -4,8 +4,7 @@ import { ImageUploadField } from '../ImageUploadField';
 import { Icons } from '../components/DashboardIcons';
 import type { EditableBrandSettings } from '../shared/branding-types';
 import type { PaymentRecord, SubscriptionInfo } from '../shared/subscription-types';
-
-type UpgradeTier = 'basic' | 'growth' | 'scale';
+import type { UpgradeTier } from '../features/settings/settings-types';
 
 interface SettingsTabProps {
   merchantId: string;
