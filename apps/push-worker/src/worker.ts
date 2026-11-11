@@ -10,6 +10,7 @@ const RETRY_DELAYS_SECONDS = [60, 300, 900, 3600]; // 1m, 5m, 15m, 1h
 export class WebPushWorker {
   private isRunning = false;
   private currentJob: PushOutboxJob | null = null;
+  private readonly lostLeaseJobIds = new Set<string>();
 
   constructor(
     private readonly config: PushWorkerConfig,
@@ -29,14 +30,14 @@ export class WebPushWorker {
       try {
         // 1. Maintain worker heartbeat / lease in DB
         await this.queue.updateHeartbeat(
-          this.config.workerId,
+          this.config.instanceId,
           this.config.leaseDurationSeconds
         );
         this.health.setLeaseStatus(true);
 
         // 2. Claim next available job atomically (SKIP LOCKED)
         const job = await this.queue.claimNextJob(
-          this.config.workerId,
+          this.config.instanceId,
           this.config.leaseDurationSeconds
         );
 
@@ -47,8 +48,25 @@ export class WebPushWorker {
         }
 
         this.currentJob = job;
-        await this.processJob(job);
-        this.currentJob = null;
+        let renewalInFlight: Promise<boolean> | null = null;
+        const renewalIntervalMs = Math.max(
+          1000,
+          Math.floor((this.config.leaseDurationSeconds * 1000) / 3)
+        );
+        const renewalTimer = setInterval(() => {
+          if (renewalInFlight) return;
+          renewalInFlight = this.renewJobLease(job.id)
+            .finally(() => { renewalInFlight = null; });
+        }, renewalIntervalMs);
+
+        try {
+          await this.processJob(job);
+        } finally {
+          clearInterval(renewalTimer);
+          if (renewalInFlight) await renewalInFlight;
+          this.lostLeaseJobIds.delete(job.id);
+          this.currentJob = null;
+        }
       } catch (err: any) {
         console.error('[WebPushWorker]: Unexpected error in main loop:', err?.message || err);
         await this.sleep(this.config.pollIntervalMs);
@@ -59,15 +77,11 @@ export class WebPushWorker {
   }
 
   async stop(): Promise<void> {
-    console.log('[WebPushWorker]: Signal received. Shutting down worker gracefully...');
+    console.log('[WebPushWorker]: Signal received. Stopping after the in-flight job finishes...');
+    // Do not release a job while processJob may still be sending it. The main
+    // shutdown path awaits the worker loop; the job is then committed or its
+    // lease expires naturally if the process is terminated unexpectedly.
     this.isRunning = false;
-
-    // If there is an in-flight job currently claimed, release lock
-    if (this.currentJob) {
-      console.log(`[WebPushWorker]: Releasing in-flight job ${this.currentJob.id}...`);
-      await this.queue.releaseJob(this.currentJob.id);
-      this.currentJob = null;
-    }
   }
 
   private async processJob(job: PushOutboxJob): Promise<void> {
@@ -155,6 +169,12 @@ export class WebPushWorker {
       orderHistoryId: ctx.orderHistory.id,
     });
 
+    // Confirm ownership immediately before the external side effect.
+    if (!(await this.renewJobLease(job.id))) {
+      console.warn(`[WebPushWorker]: Skipping send for job ${job.id}; its lease is no longer owned by this process.`);
+      return;
+    }
+
     // Step E: Send Push Notification via VAPID Web Push
     const result = await this.pushClient.sendPush(
       {
@@ -169,6 +189,12 @@ export class WebPushWorker {
     );
 
     const durationMs = Date.now() - startTime;
+
+    // A response from a stale worker must not alter subscription state or job state.
+    if (!(await this.renewJobLease(job.id))) {
+      console.warn(`[WebPushWorker]: Ignoring result for job ${job.id}; its lease was taken over by another worker.`);
+      return;
+    }
 
     // Step F: Handle Result
     if (result.success) {
@@ -291,6 +317,16 @@ export class WebPushWorker {
     });
 
     this.health.recordJobProcessed('failed');
+  }
+
+  private async renewJobLease(jobId: string): Promise<boolean> {
+    const renewed = await this.queue.renewJobLease(jobId, this.config.leaseDurationSeconds);
+    if (renewed) {
+      this.lostLeaseJobIds.delete(jobId);
+    } else {
+      this.lostLeaseJobIds.add(jobId);
+    }
+    return renewed;
   }
 
   private sleep(ms: number): Promise<void> {

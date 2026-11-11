@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import { randomUUID } from 'node:crypto';
 
 export interface PushWorkerConfig {
   vapidPublicKey: string;
@@ -8,6 +9,8 @@ export interface PushWorkerConfig {
   vapidSubject: string;
   isEnabled: boolean;
   workerId: string;
+  /** Unique per-process fencing token; never shared by Railway replicas. */
+  instanceId: string;
   supabaseUrl: string;
   supabaseSecretKey: string;
   trackingPublicBaseUrl: string;
@@ -59,7 +62,8 @@ export function loadConfig(): PushWorkerConfig {
     vapidPrivateKey,
     vapidSubject,
     isEnabled,
-    workerId: process.env.WEB_PUSH_WORKER_ID || `push-worker-${Math.random().toString(36).substring(2, 7)}`,
+    workerId: process.env.WEB_PUSH_WORKER_ID || 'push-worker',
+    instanceId: randomUUID(),
     supabaseUrl,
     supabaseSecretKey,
     trackingPublicBaseUrl: process.env.TRACKING_PUBLIC_BASE_URL || 'https://tajertrack.vercel.app',

@@ -94,9 +94,9 @@ export class PushQueueManager {
       .eq('id', 1);
   }
 
-  async claimNextJob(workerId: string, leaseSeconds: number): Promise<PushOutboxJob | null> {
+  async claimNextJob(instanceId: string, leaseSeconds: number): Promise<PushOutboxJob | null> {
     const { data, error } = await this.supabase.rpc('claim_next_web_push_job', {
-      p_worker_id: workerId,
+      p_worker_id: instanceId,
       p_lease_seconds: leaseSeconds,
     });
 
@@ -240,6 +240,28 @@ export class PushQueueManager {
     }
   }
 
+  async renewJobLease(jobId: string, leaseSeconds: number): Promise<boolean> {
+    const leaseExpiresAt = new Date(Date.now() + Math.max(10, leaseSeconds) * 1000).toISOString();
+    const { data, error } = await this.supabase
+      .from('web_push_outbox')
+      .update({
+        lease_expires_at: leaseExpiresAt,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', jobId)
+      .eq('status', 'processing')
+      .eq('locked_by', this.config.instanceId)
+      .select('id')
+      .maybeSingle();
+
+    if (error) {
+      console.error(`[PushQueueManager]: Failed to renew job lease ${jobId}:`, error.message);
+      return false;
+    }
+
+    return Boolean(data);
+  }
+
   async updateJob(
     jobId: string,
     updates: {
@@ -250,7 +272,7 @@ export class PushQueueManager {
       availableAt?: string;
       sentAt?: string;
     }
-  ): Promise<void> {
+  ): Promise<boolean> {
     const payload: any = {
       updated_at: new Date().toISOString(),
       locked_by: null,
@@ -266,14 +288,26 @@ export class PushQueueManager {
     if (updates.availableAt) payload.available_at = updates.availableAt;
     if (updates.sentAt) payload.sent_at = updates.sentAt;
 
-    const { error } = await this.supabase
+    const { data, error } = await this.supabase
       .from('web_push_outbox')
       .update(payload)
-      .eq('id', jobId);
+      .eq('id', jobId)
+      .eq('status', 'processing')
+      .eq('locked_by', this.config.instanceId)
+      .select('id')
+      .maybeSingle();
 
     if (error) {
       console.error(`[PushQueueManager]: Error updating outbox job ${jobId}:`, error.message);
+      return false;
     }
+
+    if (!data) {
+      console.warn(`[PushQueueManager]: Refused stale update for job ${jobId}; this process no longer owns its lease.`);
+      return false;
+    }
+
+    return true;
   }
 
   async deactivateSubscription(subscriptionId: string, reason: string): Promise<void> {
@@ -318,7 +352,9 @@ export class PushQueueManager {
           lease_expires_at: null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', jobId);
+        .eq('id', jobId)
+        .eq('status', 'processing')
+        .eq('locked_by', this.config.instanceId);
     } catch (err: any) {
       console.warn(`[PushQueueManager]: Failed to release job lock for ${jobId}:`, err?.message);
     }
