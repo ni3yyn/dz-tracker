@@ -1,15 +1,10 @@
 import type { Ref } from 'react';
 import { Icons } from '../components/DashboardIcons';
-
-type MappingRow = {
-  id: string;
-  source_status: string;
-  display_status: string;
-};
+import type { MappingItem } from '../features/mappings/mapping-types';
 
 interface MappingsTabProps {
   merchantId: string;
-  mappings: MappingRow[];
+  mappings: MappingItem[];
   triggerRef: Ref<HTMLButtonElement>;
   onOpenCustomMapping: () => void;
   editingMappingId: string | null;
