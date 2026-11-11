@@ -14,8 +14,11 @@ import { ExceptionsTab } from './tabs/ExceptionsTab';
 import { IntegrationsTab } from './tabs/IntegrationsTab';
 import { OverviewTab } from './tabs/OverviewTab';
 import type { BrandPreset, BrandingCategory, EditableBrandSettings, TimelineLineStyle } from './shared/branding-types';
+import type { MerchantUpsellItem } from './shared/upsell-types';
+export type { MerchantUpsellItem } from './shared/upsell-types';
 import { OrdersTab } from './tabs/OrdersTab';
 import { BrandingTab } from './tabs/BrandingTab';
+import { UpsellsTab } from './tabs/UpsellsTab';
 import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
 import { BrandedSelect } from './BrandedSelect';
 import { MappingForm } from './MappingForm';
@@ -122,21 +125,6 @@ const DEFAULT_EDITABLE_BRAND_SETTINGS: EditableBrandSettings = {
   backgroundBlur: true,
   timelineLineStyle: 'straight',
 };
-
-export interface MerchantUpsellItem {
-  id: string;
-  merchant_id: string;
-  title: string;
-  image_url: string;
-  product_url: string;
-  price: string | null;
-  currency?: string | null;
-  is_active: boolean;
-  display_order?: number;
-  clicks_count?: number;
-  created_at: string;
-  updated_at?: string;
-}
 
 interface Props {
   storeName: string;
@@ -7554,333 +7542,41 @@ export function MerchantDashboardView({
           )}
 
           {activeTab === 'upsells' && (
-            <div className="dz-upsell-container" aria-label="زيادة المبيعات وعرض المنتجات التكميلية">
-              {/* HERO BANNER */}
-              <div className="dz-upsell-hero-banner">
-                <div className="dz-upsell-hero-text">
-                  <h3>
-                    <Icons.ShoppingBag /> زيادة المبيعات (قد يعجبك أيضاً)
-                  </h3>
-                  <p>
-                    تظهر هذه المنتجات في أسفل صفحة التتبع لزبائنك عندما يتابعون مسار شحنتهم. الصق رابط أي منتج من متجرك (Shopify، YouCan، WooCommerce، WordPress، أو متجر مبرمج) لجلبه تلقائياً بنقرة واحدة!
-                  </p>
-                </div>
-                {orders.length > 0 && orders[0].tracking_uuid && (
-                  <a
-                    href={`${siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/${orders[0].tracking_uuid}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="dz-upsell-hero-badge"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <Icons.ExternalLink /> معاينة صفحة التتبع الحية
-                  </a>
-                )}
-              </div>
-
-              {/* FORM CARD: SMART SCRAPER & MANUAL EDIT */}
-              <div id="dz-upsell-form-anchor" className="dz-upsell-form-card">
-                <div className="dz-upsell-form-head">
-                  <div>
-                    <h3>
-                      {editingUpsellId ? <Icons.Edit /> : <Icons.Plus />}
-                      {editingUpsellId ? 'تعديل بيانات المنتج' : 'إضافة منتج جديد'}
-                    </h3>
-                    <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                      {editingUpsellId ? 'قم بتعديل بيانات المنتج ثم اضغط على حفظ التعديلات' : 'يمكنك جلب المنتج تلقائياً بالرابط أو كتابة تفاصيله يدوياً'}
-                    </span>
-                  </div>
-                  {editingUpsellId && (
-                    <button
-                      type="button"
-                      onClick={handleCancelEditUpsell}
-                      className="dz-btn dz-btn-outline"
-                      style={{ padding: '6px 12px', fontSize: '12px' }}
-                    >
-                      إلغاء التعديل
-                    </button>
-                  )}
-                </div>
-
-                {/* SMART SCRAPER BAR */}
-                <div className="dz-smart-fetch-box">
-                  <label className="dz-smart-fetch-label">
-                   جلب تلقائي بالرابط (Shopify, YouCan, WooCommerce, متجر خاص)
-                  </label>
-                  <div className="dz-smart-fetch-row">
-                    <input
-                      type="url"
-                      className="dz-smart-fetch-input"
-                      placeholder="https://mystore.com/products/example-product"
-                      value={upsellScrapeUrl}
-                      onChange={(e) => setUpsellScrapeUrl(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleScrapeProductUrl();
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="dz-smart-fetch-btn"
-                      onClick={handleScrapeProductUrl}
-                      disabled={isScrapingUpsell || !upsellScrapeUrl.trim()}
-                    >
-                      <Icons.Sparkles />
-                      {isScrapingUpsell ? 'جاري الاستخراج...' : 'جلب تلقائي'}
-                    </button>
-                  </div>
-                  {scrapeUpsellError && (
-                    <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Icons.AlertTriangle /> {scrapeUpsellError}
-                    </div>
-                  )}
-                </div>
-
-                {/* PRODUCT FORM */}
-                <form onSubmit={handleSaveUpsellSubmit}>
-                  {saveUpsellError && (
-                    <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '12px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Icons.AlertTriangle /> {saveUpsellError}
-                    </div>
-                  )}
-
-                  <div className="dz-upsell-inputs-grid">
-                    <div className="dz-upsell-field">
-                      <label>عنوان المنتج *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="مثال: حقيبة ظهر كلاسيكية مضادة للماء"
-                        value={upsellTitle}
-                        onChange={(e) => setUpsellTitle(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="dz-upsell-field">
-                      <label>رابط صفحة المنتج (Destination URL) *</label>
-                      <input
-                        type="url"
-                        required
-                        dir="ltr"
-                        placeholder="https://mystore.com/products/bag"
-                        value={upsellProductUrl}
-                        onChange={(e) => setUpsellProductUrl(e.target.value)}
-                      />
-                      <small>الرابط الذي سيفتح للعميل في نافذة جديدة عند النقر على المنتج</small>
-                    </div>
-
-                    <div className="dz-upsell-field">
-                      <ImageUploadField
-                        label="صورة المنتج"
-                        required
-                        value={upsellImageUrl}
-                        onChange={setUpsellImageUrl}
-                        merchantId={merchantId}
-                        folder="upsell-products"
-                        quality={0.68}
-                      />
-                    </div>
-
-                    <div className="dz-upsell-field">
-                      <label>السعر (اختياري)</label>
-                      <input
-                        type="text"
-                        placeholder="مثال: 3,500 د.ج (اتركه فارغاً إذا كنت لا ترغب بعرض السعر)"
-                        value={upsellPrice}
-                        onChange={(e) => setUpsellPrice(e.target.value)}
-                      />
-                      <small>إذا تركته فارغاً سيظهر المنتج بصورته وعنوانه فقط دون سعر</small>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', paddingTop: '10px', borderTop: '1px solid rgba(9, 9, 11, 0.06)' }}>
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: '#374151' }}>
-                      <input
-                        type="checkbox"
-                        checked={upsellIsActive}
-                        onChange={(e) => setUpsellIsActive(e.target.checked)}
-                        style={{ width: '18px', height: '18px', accentColor: '#27342d', cursor: 'pointer' }}
-                      />
-                      تفعيل ظهور هذا المنتج في صفحة التتبع (نشط)
-                    </label>
-
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      {editingUpsellId && (
-                        <button
-                          type="button"
-                          onClick={handleCancelEditUpsell}
-                          className="dz-btn dz-btn-outline"
-                        >
-                          إلغاء
-                        </button>
-                      )}
-                      <button
-                        type="submit"
-                        disabled={isSavingUpsell}
-                        className="dz-btn"
-                        style={{ background: '#27342d', color: '#fff', padding: '10px 22px' }}
-                      >
-                        {isSavingUpsell
-                          ? 'جاري الحفظ...'
-                          : editingUpsellId
-                          ? '✓ حفظ التعديلات'
-                          : '✓ إضافة المنتج وعرضه للزبائن'}
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-
-              {/* PRODUCTS LIST */}
-              <div className="dz-upsell-list-card">
-                <div className="dz-upsell-list-head">
-                  <div>
-                    <h3>
-                      منتجاتك المضافة ({upsellsList.length})
-                    </h3>
-                    <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                      النشط حالياً: {upsellsList.filter((u) => u.is_active).length} منتج · تحكم بترتيب الظهور بالأسهم
-                    </span>
-                  </div>
-
-                  <div className="dz-upsell-stats-pills">
-                    <div className="dz-upsell-stat-pill" title="إجمالي عدد نقرات الزبائن على المنتجات المقترحة">
-                      <Icons.MousePointer />
-                      <span>إجمالي النقرات: <b>{upsellsList.reduce((acc, u) => acc + (Number(u.clicks_count) || 0), 0)}</b></span>
-                    </div>
-                    <div className="dz-upsell-stat-pill active" title="عدد المنتجات النشطة والمعروضة في صفحة التتبع">
-                      <span>المعروضة: <b>{upsellsList.filter((u) => u.is_active).length}</b></span>
-                    </div>
-                  </div>
-                </div>
-
-                {upsellsList.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6b7280' }}>
-                    <div style={{ width: '56px', height: '56px', margin: '0 auto 14px', borderRadius: '50%', background: '#f3f4f6', display: 'grid', placeItems: 'center', color: '#9ca3af' }}>
-                      <Icons.ShoppingBag />
-                    </div>
-                    <strong style={{ display: 'block', fontSize: '15px', color: '#111827', marginBottom: '6px' }}>
-                      لا توجد منتجات مضافة بعد
-                    </strong>
-                    <p style={{ margin: '0 auto', maxWidth: '440px', fontSize: '13px', lineHeight: 1.6 }}>
-                      الصق رابط أي منتج من متجرك في الحقل أعلاه واضغط على «جلب تلقائي ⚡» لتظهر اقتراحات الشراء لزبائنك في صفحة التتبع فوراً!
-                    </p>
-                  </div>
-                ) : (
-                  <div className="dz-upsell-cards-grid">
-                    {upsellsList.map((item, index) => (
-                      <div
-                        key={item.id}
-                        className={`dz-upsell-item-card ${!item.is_active ? 'is-inactive' : ''}`}
-                      >
-                        <div className="dz-upsell-item-card-top">
-                          <img
-                            src={toCachedImageUrl(item.image_url)}
-                            alt={item.title}
-                            className="dz-upsell-item-card-img"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src =
-                                'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="%239ca3af" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
-                            }}
-                          />
-                          <div className="dz-upsell-item-card-meta">
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                              <span className="dz-upsell-order-badge" title="ترتيب ظهور المنتج للزبون">
-                                #{index + 1}
-                              </span>
-                              <span className="dz-upsell-clicks-badge" title={`تم النقر على هذا المنتج ${item.clicks_count || 0} مرة من قبل الزبائن`}>
-                                <Icons.MousePointer /> {item.clicks_count || 0} نقرة
-                              </span>
-                            </div>
-                            <h4 className="dz-upsell-item-card-title" title={item.title}>
-                              {item.title}
-                            </h4>
-                            {item.price ? (
-                              <span className="dz-upsell-item-card-price">{item.price}</span>
-                            ) : (
-                              <span className="dz-upsell-item-card-noprice">بدون سعر</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="dz-upsell-item-card-bottom">
-                          <div className="dz-upsell-order-controls" aria-label="ترتيب ظهور المنتج">
-                            <button
-                              type="button"
-                              className="dz-upsell-action-btn reorder-btn"
-                              disabled={index === 0 || reorderingUpsellId !== null}
-                              onClick={() => handleReorderUpsell(item.id, 'up')}
-                              title={index === 0 ? 'هذا أول منتج' : 'تقديم ترتيب المنتج للأعلى'}
-                              aria-label="تقديم ترتيب المنتج للأعلى"
-                            >
-                              <Icons.ArrowUp />
-                            </button>
-                            <button
-                              type="button"
-                              className="dz-upsell-action-btn reorder-btn"
-                              disabled={index === upsellsList.length - 1 || reorderingUpsellId !== null}
-                              onClick={() => handleReorderUpsell(item.id, 'down')}
-                              title={index === upsellsList.length - 1 ? 'هذا آخر منتج' : 'تأخير ترتيب المنتج للأسفل'}
-                              aria-label="تأخير ترتيب المنتج للأسفل"
-                            >
-                              <Icons.ArrowDown />
-                            </button>
-                          </div>
-
-                          <button
-                            type="button"
-                            className={`dz-upsell-toggle-btn ${item.is_active ? 'active' : 'inactive'}`}
-                            onClick={() => handleToggleUpsell(item)}
-                            disabled={togglingUpsellId === item.id}
-                            title={item.is_active ? 'اضغط لإخفائه من صفحة التتبع' : 'اضغط لإظهاره في صفحة التتبع'}
-                          >
-                            {togglingUpsellId === item.id
-                              ? '...'
-                              : item.is_active
-                              ? '✓ معروض'
-                              : 'مخفي'}
-                          </button>
-
-                          <div className="dz-upsell-action-btns">
-                            <a
-                              href={item.product_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="dz-upsell-action-btn"
-                              title="فتح رابط المنتج في نافذة جديدة"
-                            >
-                              <Icons.ExternalLink />
-                            </a>
-                            <button
-                              type="button"
-                              className="dz-upsell-action-btn"
-                              onClick={() => handleEditUpsell(item)}
-                              title="تعديل بيانات المنتج"
-                            >
-                              <Icons.Edit />
-                            </button>
-                            <button
-                              type="button"
-                              className="dz-upsell-action-btn danger"
-                              onClick={() => handleDeleteUpsell(item.id)}
-                              disabled={deletingUpsellId === item.id}
-                              title="حذف المنتج"
-                            >
-                              <Icons.Trash />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <UpsellsTab
+              merchantId={merchantId}
+              siteUrl={siteUrl}
+              orders={orders}
+              upsells={upsellsList}
+              editingUpsellId={editingUpsellId}
+              onCancelEdit={handleCancelEditUpsell}
+              scrapeUrl={upsellScrapeUrl}
+              onScrapeUrlChange={setUpsellScrapeUrl}
+              isScraping={isScrapingUpsell}
+              scrapeError={scrapeUpsellError}
+              onScrapeProductUrl={handleScrapeProductUrl}
+              onSaveUpsellSubmit={handleSaveUpsellSubmit}
+              title={upsellTitle}
+              onTitleChange={setUpsellTitle}
+              productUrl={upsellProductUrl}
+              onProductUrlChange={setUpsellProductUrl}
+              imageUrl={upsellImageUrl}
+              onImageUrlChange={setUpsellImageUrl}
+              price={upsellPrice}
+              onPriceChange={setUpsellPrice}
+              isActive={upsellIsActive}
+              onActiveChange={setUpsellIsActive}
+              isSaving={isSavingUpsell}
+              saveError={saveUpsellError}
+              reorderingId={reorderingUpsellId}
+              togglingId={togglingUpsellId}
+              deletingId={deletingUpsellId}
+              onReorder={handleReorderUpsell}
+              onToggle={handleToggleUpsell}
+              onEdit={handleEditUpsell}
+              onDelete={handleDeleteUpsell}
+            />
           )}
 
-          {/* TAB: MULTI-CARRIER INTEGRATIONS */}
           {activeTab === 'integrations' && (
             <IntegrationsTab
               merchantId={merchantId}

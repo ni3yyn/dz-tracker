@@ -380,3 +380,13 @@ All Orders state remains owned by `MerchantDashboardView.tsx`: search/status/car
 
 Brand configuration/history, save behavior, selected category, active preset, deferred preview calculation and all option/preset constants remain owned by the composition root. The extracted tab invokes the same callbacks and retains the original JSX/classes/inline styles.
 
+
+### Completed fifth batch — Upsells
+
+| Module | Extraction contract |
+|---|---|
+| `tabs/UpsellsTab.tsx` | Product recommendation hero, scraper, editor form, image upload, list, metrics, reordering controls, active toggle and CRUD actions moved into a typed presentation boundary. |
+| `shared/upsell-types.ts` | The existing `MerchantUpsellItem` interface is centralized and re-exported from the composition module to preserve its named type export. |
+
+Scraper/form draft values, loading/error states, list data, confirmation-backed delete/toggle/reorder/save handlers and optimistic updates remain in the parent. The existing `ImageUploadField` and SVG icon registry are reused unchanged.
+
