@@ -9,10 +9,10 @@ import { DashboardSectionHeading } from './components/DashboardSectionHeading';
 import { Icons } from './components/DashboardIcons';
 import { DashboardSidebar, type MerchantDashboardTab } from './dashboard/DashboardSidebar';
 import { DashboardPanelTransition } from './dashboard/DashboardPanelTransition';
+import { DashboardHeader } from './dashboard/DashboardHeader';
 import { ShipmentExceptionsPanel } from './ShipmentExceptionsPanel';
 import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
 import { BrandedSelect } from './BrandedSelect';
-import SiteHeader from '../../SiteHeader';
 import { MappingForm } from './MappingForm';
 import { ImageUploadField } from './ImageUploadField';
 import { CarrierIntegrationsManager } from './CarrierIntegrationsManager';
@@ -7310,75 +7310,23 @@ export function MerchantDashboardView({
         <main ref={dashboardMainRef} className={`dz-main dz-scrollable ${activeTab === 'branding' ? 'dz-main-branding' : ''}`}>
           
 
-          <SiteHeader
-            variant="dashboard"
-            className="dz-header"
+          <DashboardHeader
+            activeTab={activeTab}
+            displayStoreName={displayStoreName}
             menuOpen={mobileMenuOpen}
+            searchTerm={searchTerm}
             onMenuToggle={() => setMobileMenuOpen((open) => !open)}
-            menuId="dz-merchant-sidebar"
-          >
-            <div key={activeTab} className="dz-header-titles dz-header-titles-enter">
-              <h1>
-                {activeTab === 'overview' && 'نظرة عامة'}
-                {activeTab === 'orders' && 'الشحنات'}
-                {activeTab === 'exceptions' && 'مركز استثناءات الشحن'}
-                {activeTab === 'analytics' && 'تحليلات الشحنات'}
-                {activeTab === 'branding' && 'تخصيص صفحة الزبون'}
-                {activeTab === 'upsells' && 'زيادة المبيعات (قد يعجبك أيضاً)'}
-                {activeTab === 'integrations' && 'التكاملات'}
-                {activeTab === 'mappings' && 'مطابقة الحالات والترجمة'}
-                {activeTab === 'settings' && 'الإعدادات'}
-              </h1>
-              <p>
-                {activeTab === 'overview' && `مرحباً ${displayStoreName}، إليك ملخص الشحنات وما يحتاج إلى متابعة.`}
-                {activeTab === 'orders' && 'ابحث عن شحنة، حدّد الحالة، واتخذ الإجراء من مكان واحد.'}
-                {activeTab === 'exceptions' && 'الشحنات التي خرجت عن المسار المتوقع وتحتاج إلى تدخلك.'}
-                {activeTab === 'analytics' && 'مؤشرات مبنية على الشحنات المسجلة والحالات الحالية، دون تقديرات غير متاحة.'}
-                {activeTab === 'branding' && 'عزز ولاء زبائنك بصفحة تتبع تحمل هويتك البصرية.'}
-                {activeTab === 'upsells' && 'اعرض منتجات إضافية للزبون في أسفل صفحة التتبع لزيادة متوسط قيمة الطلب بدون إعلانات مدفوعة.'}
-                {activeTab === 'integrations' && 'إدارة مصدر الطلبات وشركات التوصيل من مكان واحد. يمكنك ربط عدة شركات دون إعادة الإعداد.'}
-                {activeTab === 'mappings' && 'حدد ما يراه الزبون لكل حالة برمجية معقدة.'}
-                {activeTab === 'settings' && 'إدارة معلومات المتجر وخدمات تيليجرام والاشتراك من مكان واحد.'}
-              </p>
-            </div>
-
-            {(activeTab === 'overview' || activeTab === 'orders' || activeTab === 'exceptions') && (
-              <div className="dz-header-actions">
-                {activeTab === 'overview' && (
-                  <div className="dz-search-box" role="search">
-                    <Icons.Search />
-                    <input
-                      type="text"
-                      aria-label="البحث في الشحنات برقم الطلب أو الهاتف أو اسم العميل"
-                      placeholder="رقم الطلب، الهاتف، العميل..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault();
-                          setActiveTab('orders');
-                          setStatusFilter('all');
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-                <button
-                  type="button"
-                  className="dz-add-order-btn"
-                  onClick={() => {
-                    setIsAddOrderModalOpen(true);
-                    setAddOrderError(null);
-                    setNewOrderSuccess(null);
-                  }}
-                  title="إضافة طلب يدوي لاختبار التتبع وتيليجرام"
-                >
-                  <Icons.Plus />
-                  <span>طلب جديد</span>
-                </button>
-              </div>
-            )}
-          </SiteHeader>
+            onSearchChange={setSearchTerm}
+            onSearchSubmit={() => {
+              setActiveTab('orders');
+              setStatusFilter('all');
+            }}
+            onAddOrder={() => {
+              setIsAddOrderModalOpen(true);
+              setAddOrderError(null);
+              setNewOrderSuccess(null);
+            }}
+          />
 
           {/* SUBSCRIPTION WARNING BANNER */}
           {(() => {
