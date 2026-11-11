@@ -7980,7 +7980,7 @@ export function MerchantDashboardView({
                     title="حجم تسجيل الطلبات"
                     description="عدد الطلبات التي تم تسجيلها في كل يوم من آخر 7 أيام"
                     action={<span className="dz-analytics-total">{ordersCreatedLastSevenDays} طلباً</span>}
-                  /><span className="dz-analytics-total">{ordersCreatedLastSevenDays} طلباً</span></div>
+                  />
                   <div className="dz-analytics-bars">
                     {lastSevenDays.map((day) => (
                       <div className="dz-analytics-bar-row" key={`${day.label}-${day.dateLabel}`}>
@@ -7996,7 +7996,7 @@ export function MerchantDashboardView({
                     id="analytics-status-title"
                     title="توزيع الحالات"
                     description="حسب الحالة الحالية لكل شحنة"
-                  /></div>
+                  />
                   <div className="dz-analytics-status-list">
                     {statusBreakdown.map((item) => {
                       const percent = orders.length ? Math.round((item.count / orders.length) * 100) : 0;
