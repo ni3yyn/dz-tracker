@@ -117,7 +117,19 @@ export default async function TrackingPage({ params }: PageProps) {
       .select('id, status, reason, customer_note, merchant_response, created_at')
       .eq('order_id', order.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (exchangeRequestError) { exchangeRequestsStorageAvailable = false; console.error('[TrackingPage] Could not load exchange request:', exchangeRequestError.message); }
-    else initialExchangeRequest = latestRequest;
+    else if (latestRequest) {
+      const { data: replacementShipment, error: replacementShipmentError } = await (supabase as any)
+        .from('order_exchange_shipments')
+        .select('id, carrier_name, carrier_tracking_number, carrier_order_id, customer_name, customer_phone, product_name, current_status, status_title, created_at')
+        .eq('exchange_request_id', latestRequest.id)
+        .eq('match_status', 'linked')
+        .maybeSingle();
+      if (replacementShipmentError) {
+        exchangeRequestsStorageAvailable = false;
+        console.error('[TrackingPage] Could not load replacement shipment:', replacementShipmentError.message);
+      }
+      initialExchangeRequest = { ...latestRequest, replacement_shipment: replacementShipment || null };
+    }
   }
 
   return (
