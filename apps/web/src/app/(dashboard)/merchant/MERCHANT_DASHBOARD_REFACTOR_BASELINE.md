@@ -594,3 +594,16 @@ The existing browser Back history hook remains separate and receives the returne
 - [x] Sidebar Orders/Exceptions reset-filter behavior retained.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed thirteenth batch — Store identity state in Branding hook
+
+| Module | Extraction contract |
+|---|---|
+| features/branding/useBrandingEditor.ts | Store-name draft/saved values, unsaved-name derivation and prop-synchronization effect moved beside the shared Branding/Settings save handler. The hook also now explicitly owns its Branding category and unsaved-branding state. |
+
+This closes the store-identity boundary across both Branding Studio and Settings. MerchantDashboardView receives the same draft/setter/dirty values from the hook and continues passing them into SettingsTab; displayStoreName is still derived once in the root for the header/sidebar/preview. The save action, FormData shape and server-prop synchronization behavior are preserved.
+
+- [x] Store-name draft/saved state and synchronization removed from the composition root.
+- [x] Branding category and dirty state are explicitly initialized in the hook.
+- [x] Settings continues to use the exact same draft, setter and dirty-state props.
+- [ ] Vercel preview for this correction must pass before another domain extraction.
+

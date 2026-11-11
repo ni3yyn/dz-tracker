@@ -599,14 +599,6 @@ export function MerchantDashboardView({
 
 
 
-  const [storeNameDraft, setStoreNameDraft] = useState(storeName);
-  const [savedStoreName, setSavedStoreName] = useState(storeName);
-  const displayStoreName = storeNameDraft.trim() || storeName;
-  const hasUnsavedStoreNameChanges = storeNameDraft.trim() !== savedStoreName;
-  useEffect(() => {
-    setStoreNameDraft(storeName);
-    setSavedStoreName(storeName);
-  }, [storeName]);
 
   const orderDetailsPanelRef = useRef<OrderDetailsSidePanelHandle | null>(null);
 
@@ -670,6 +662,9 @@ export function MerchantDashboardView({
     brandingCategory,
     setBrandingCategory,
     hasUnsavedBrandChanges,
+    storeNameDraft,
+    setStoreNameDraft,
+    hasUnsavedStoreNameChanges,
     isSavingBrand,
     canUndo,
     canRedo,
@@ -687,13 +682,10 @@ export function MerchantDashboardView({
     logoUrl,
     defaultEditableBrandSettings: DEFAULT_EDITABLE_BRAND_SETTINGS,
     categoryDefaultKeys: BRAND_CATEGORY_DEFAULT_KEYS,
-    storeNameDraft,
-    savedStoreName,
-    hasUnsavedStoreNameChanges,
-    setStoreNameDraft,
-    setSavedStoreName,
+    storeName,
     showToast,
   });
+  const displayStoreName = storeNameDraft.trim() || storeName;
 
   const {
     isUnlimitedPlan,

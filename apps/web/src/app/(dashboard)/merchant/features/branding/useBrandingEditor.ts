@@ -1,4 +1,4 @@
-import React, { useCallback, useDeferredValue, useRef, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { DEFAULT_BRAND_SETTINGS, type BrandSettings } from '@saas/ui';
 import { saveBrandSettings } from '../../actions';
 import type { BrandingCategory, BrandPreset, EditableBrandSettings } from '../../shared/branding-types';
@@ -11,11 +11,7 @@ interface UseBrandingEditorOptions {
   logoUrl?: string | null;
   defaultEditableBrandSettings: EditableBrandSettings;
   categoryDefaultKeys: Record<BrandingCategory, (keyof EditableBrandSettings)[]>;
-  storeNameDraft: string;
-  savedStoreName: string;
-  hasUnsavedStoreNameChanges: boolean;
-  setStoreNameDraft: (value: string) => void;
-  setSavedStoreName: (value: string) => void;
+  storeName: string;
   showToast: (message: string) => void;
 }
 
@@ -27,13 +23,20 @@ export function useBrandingEditor({
   logoUrl,
   defaultEditableBrandSettings,
   categoryDefaultKeys,
-  storeNameDraft,
-  savedStoreName,
-  hasUnsavedStoreNameChanges,
-  setStoreNameDraft,
-  setSavedStoreName,
+  storeName,
   showToast,
 }: UseBrandingEditorOptions) {
+  const [brandingCategory, setBrandingCategory] = useState<BrandingCategory>('identity');
+  const [hasUnsavedBrandChanges, setHasUnsavedBrandChanges] = useState(false);
+  const [storeNameDraft, setStoreNameDraft] = useState(storeName);
+  const [savedStoreName, setSavedStoreName] = useState(storeName);
+  const hasUnsavedStoreNameChanges = storeNameDraft.trim() !== savedStoreName;
+
+  useEffect(() => {
+    setStoreNameDraft(storeName);
+    setSavedStoreName(storeName);
+  }, [storeName]);
+
   const [brandConfig, setBrandConfig] = useState<EditableBrandSettings>(() => ({
     ...DEFAULT_BRAND_SETTINGS,
     ...(brandSettings || {}),
