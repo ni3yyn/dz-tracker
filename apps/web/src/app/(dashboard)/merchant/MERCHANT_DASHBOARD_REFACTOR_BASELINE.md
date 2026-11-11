@@ -531,3 +531,16 @@ The same search state continues to feed DashboardHeader, OrdersTab and Exception
 - [x] Header, Orders and Exceptions keep the same shared state and prop bindings.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed eighth batch — Shipment analytics and exception selectors
+
+| Module | Extraction contract |
+|---|---|
+| features/analytics/useShipmentAnalytics.ts | Delivery-status counts, exception detection/resolution filtering, unresolved exception IDs and rows, success rate, recent orders, seven-day activity, maximum daily count and status breakdown moved into one data hook. |
+
+The hook uses the existing ShipmentExceptionOrder and ShipmentExceptionState types/functions. The shared date formatter is passed through for seven-day labels. Dashboard and tab consumers continue receiving the same values; the custom mapping modal's body-scroll/Escape/focus effect remains in the root and was not included in the extraction.
+
+- [x] Shipment summary and analytics derivations removed from the composition root.
+- [x] Exception order rows retain the existing ShipmentExceptionOrder field contract expected by Overview.
+- [x] Existing Overview/Orders/Analytics prop contracts remain unchanged.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+
