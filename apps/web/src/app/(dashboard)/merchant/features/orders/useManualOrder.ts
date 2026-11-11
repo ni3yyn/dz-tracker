@@ -25,7 +25,7 @@ export function useManualOrder({
   const [isAddOrderPanelOpen, setIsAddOrderPanelOpen] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [addOrderError, setAddOrderError] = useState<string | null>(null);
-  const [newOrderSuccess, setNewOrderSuccess] = useState<{ trackingUuid: string; externalOrderId: string; telegramTrackingEnabled: boolean; telegramTrackingQueued: boolean; telegramQueueCheckFailed: boolean } | null>(null);
+  const [newOrderSuccess, setNewOrderSuccess] = useState<ManualOrderSuccess | null>(null);
 
   useLayoutEffect(() => {
     if (!isAddOrderModalOpen) {
