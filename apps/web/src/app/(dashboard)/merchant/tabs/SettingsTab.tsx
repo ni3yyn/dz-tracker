@@ -156,7 +156,7 @@ export function SettingsTab({
 
               <section className="dz-settings-billing">
               <div className="dz-settings-billing-heading" style={{ margin: '0 0 13px' }}>
-                <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>03 / SUBSCRIPTION</span>
+                <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>04 / SUBSCRIPTION</span>
                 <h2 style={{ margin: '3px 0 0', fontSize: '19px', fontWeight: 800, color: 'var(--ink-main)' }}>الاشتراك والاستهلاك</h2>
               </div>
 
@@ -427,7 +427,7 @@ export function SettingsTab({
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
                   <div>
-                    <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>03 / LEGAL & PRIVACY</span>
+                    <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>05 / LEGAL & PRIVACY</span>
                     <h2 id="dz-settings-legal-title" style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>الوثائق القانونية</h2>
                     <p style={{ margin: '5px 0 0', fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.8 }}>راجع شروط استخدام المنصة وكيفية التعامل مع بيانات متجرك وزبائنك.</p>
                   </div>

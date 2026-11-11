@@ -31,7 +31,7 @@ export interface MerchantExchangeRequest extends ExchangeRequestSummary {
 }
 
 export function isDeliveredStatus(status: string | null | undefined): boolean {
-  const normalized = (status || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim().toLowerCase();
+  const normalized = (status || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
   if (!normalized) return false;
   if (normalized.includes('تم التسليم') || normalized.includes('تم التوصيل') || normalized.includes('تم تسليم')) return true;
   if (normalized === 'delivered' || normalized === 'livre' || normalized === 'livree') return true;
