@@ -300,18 +300,21 @@ User authorization: 2026-11-11. Screenshot capture was explicitly waived as an e
 | `e23ff64201d8c33ecdf940bfb73f187e12f26f77` | `components/OrderDetailField.tsx`, `components/DashboardSectionHeading.tsx` | 43 order metadata fields and 6 Overview/Analytics section headings now use shared renderers. Existing class names, element hierarchy, conditional rendering, text, direction, and inline layout/value styles are retained. |
 | `3ea2067b3013dcc13fc919fca0ce8477da6c0c2a` | `components/DashboardIcons.tsx`, `dashboard/DashboardSidebar.tsx` | The existing inline SVG icon registry was moved unchanged. The sidebar and mobile backdrop were moved as a fragment component; navigation updates are delegated to the parent with the same tab selection, Orders/Exceptions filter reset, and mobile-menu-close behavior. |
 | `1f134c72eb1d4aad918040a63274c967afd70060` | `dashboard/DashboardPanelTransition.tsx` | The measured-height transition was moved with its ResizeObserver fallback, requestAnimationFrame scheduling/cancellation, tab-direction calculation, existing classes and inline height style. The original tab-order map is passed from the composition root. |
+| `43ad065ad85a2fabfe9719f1cac0d31a85cfc872` | `dashboard/DashboardHeader.tsx` | Header title/description, mobile-menu toggle, Overview search, search-submit navigation and manual-order action were moved. State changes remain callbacks owned by the composition root. |
+| `8c2a8136a36dab5b8b88125254cbc55cfd1acaa4` | Analytics heading correction | Preserved the Analytics total label inside the shared heading's action slot and removed duplicate closing markup after the first static review caught it. |
+| `27c0d7580b1983223aa60dc7e59322faebe032fc` | `components/DashboardMetricCard.tsx` | Seven KPI cards now share one renderer: four Overview cards remain `button` elements with their original callbacks; three Analytics cards remain static `div` elements, including the conditional alert class. |
 
 ### Current ownership boundaries
 
 - `MerchantDashboardView.tsx` remains the composition root and still owns feature state, data derivations, mutations, and cross-tab handlers.
-- `components/` owns verified reusable rendering primitives and the shared SVG icon registry.
-- `dashboard/` owns shell/navigation and panel-transition rendering.
+- `components/` owns verified reusable rendering primitives (order-detail fields, section headings, KPI cards) and the shared SVG icon registry.
+- `dashboard/` owns shell/navigation (header and sidebar) and panel-transition rendering.
 - Existing feature components and server actions remain in their prior locations.
 - No CSS declarations, API contracts, database logic, feature behavior, copy, responsive rules, or animation values have been intentionally changed.
 
 ### Remaining Phase 1 validation
 
-- [x] Static source-level callsite review completed for the extracted components and sidebar.
+- [x] Static source-level callsite review completed for all current extractions: 43 order-detail fields, 6 section headings, 7 KPI cards (4 button / 3 div), header, sidebar, icon registry and panel transition.
 - [x] Production `main` remains unchanged; all work is isolated on `refactor/merchant-dashboard-architecture`.
 - [ ] Vercel preview build/deployment must complete successfully.
 - [ ] Review the next repeated component candidates only after checking all of their callsites (metric-card element semantics, filter controls, form-field contracts, empty states).
