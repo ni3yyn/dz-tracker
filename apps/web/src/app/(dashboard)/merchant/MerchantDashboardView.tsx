@@ -6,6 +6,8 @@ import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import { StatusSelector } from './StatusSelector';
 import { OrderDetailField } from './components/OrderDetailField';
 import { DashboardSectionHeading } from './components/DashboardSectionHeading';
+import { Icons } from './components/DashboardIcons';
+import { DashboardSidebar, type MerchantDashboardTab } from './dashboard/DashboardSidebar';
 import { ShipmentExceptionsPanel } from './ShipmentExceptionsPanel';
 import { detectShipmentExceptions, isShipmentExceptionResolved, type ShipmentExceptionState } from './shipment-exceptions';
 import { BrandedSelect } from './BrandedSelect';
@@ -21,7 +23,6 @@ import {
   deleteStatusMapping,
   submitPaymentProof,
   toggleTelegramTracking,
-  logout,
   createManualOrder,
   fetchProductUrlMetadata,
   getMerchantUpsells,
@@ -575,49 +576,7 @@ const BRAND_CATEGORY_DEFAULT_KEYS: Record<BrandingCategory, (keyof EditableBrand
   customer: ['showWhatsAppButton', 'supportPhone', 'announcementText', 'showCarrierBadge', 'showProductSection', 'showOrderNumberBadge'],
 };
 
-const Icons = {
-  Plus: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
-  Dashboard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="14" y="10" width="7" height="11" rx="1"/><rect x="3" y="13" width="7" height="8" rx="1"/></svg>,
-  Chart: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 3 5-7"/></svg>,
-  Box: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>,
-  AlertTriangle: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
-  Palette: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>,
-  Plug: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22v-5"></path><path d="M9 8V2"></path><path d="M15 8V2"></path><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"></path></svg>,
-  Tag: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>,
-  CreditCard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>,
-  Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.02a1.7 1.7 0 0 0-1.8.55l-.05.07h-3.4l-.04-.08a1.7 1.7 0 0 0-1.55-1.04 1.7 1.7 0 0 0-.45.06l-.08.02-2.94-1.7.02-.08a1.7 1.7 0 0 0-.55-1.8l-.07-.05v-3.4l.08-.04a1.7 1.7 0 0 0 .98-2l-.02-.08 1.7-2.94.08.02a1.7 1.7 0 0 0 1.8-.55l.05-.07h3.4l.04.08a1.7 1.7 0 0 0 2 .98l.08-.02 2.94 1.7-.02.08a1.7 1.7 0 0 0 .55 1.8l.07.05v3.4l-.08.04a1.7 1.7 0 0 0-.56.78Z"/></svg>,
-  Store: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5 4.6 4h14.8L21 9.5"/><path d="M3 9.5c0 1.7 1.2 2.8 2.7 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.6 2.8s2.7-1.1 2.7-2.8c0 1.7 1.2 2.8 2.7 2.8S19 11.2 19 9.5"/><path d="M5.2 12.2V20h13.6v-7.8M9 20v-5h6v5"/></svg>,
-  Clipboard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 9h6M9 13h6M9 17h4"/></svg>,
-  Refresh: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.7-2L20 12M4 12l2.7 5a7 7 0 0 0 11.7-2"/></svg>,
-  ArrowLeft: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
-  Search: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
-  Code: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
-  Truck: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/></svg>,
-  Edit: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>,
-  HelpCircle: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>,
-  Copy: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
-  Check: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-  MessageCircle: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>,
-  WhatsApp: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.5 11.5a8.4 8.4 0 0 1-1 4 8.5 8.5 0 0 1-7.5 4.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.2a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5h.5a8.5 8.5 0 0 1 7.5 7.5v.5Z"/><path d="M8.8 8.2c.2-.4.4-.4.7-.4h.4c.2 0 .3.1.4.4l.7 1.7c.1.2 0 .4-.1.6l-.5.6c-.2.2-.2.4 0 .6.4.7 1.1 1.4 1.8 1.8.2.1.4.1.6-.1l.7-.7c.2-.2.4-.2.6-.1l1.6.8c.3.1.4.3.3.6-.1.5-.4 1-1 1.2-.5.2-1.2.2-1.8 0-1-.3-2.3-1.2-3.2-2.2-.8-.9-1.5-2.1-1.5-2.9 0-.6.1-1.2.3-1.9Z"/></svg>,
-  ExternalLink: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>,
-  LogOut: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>,
-  X: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-  Eye: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
-  EyeOff: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>,
-  Terminal: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>,
-  BookOpen: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
-  Zap: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
-  Shield: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-  Key: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>,
-  Send: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>,
-  ShoppingBag: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
-  Trash: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-  Sparkles: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>,
-  Link: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
-  ArrowUp: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>,
-  ArrowDown: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
-  MousePointer: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg>,
-};
+
 
 
 
@@ -809,17 +768,6 @@ const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSidePanelH
   }
 ));
 
-type MerchantDashboardTab =
-  | 'overview'
-  | 'orders'
-  | 'exceptions'
-  | 'analytics'
-  | 'branding'
-  | 'upsells'
-  | 'integrations'
-  | 'mappings'
-  | 'settings';
-
 const MERCHANT_DASHBOARD_TAB_ORDER: Record<MerchantDashboardTab, number> = {
   overview: 0,
   orders: 1,
@@ -958,6 +906,11 @@ export function MerchantDashboardView({
   const [storeNameDraft, setStoreNameDraft] = useState(storeName);
   const [savedStoreName, setSavedStoreName] = useState(storeName);
   const displayStoreName = storeNameDraft.trim() || storeName;
+  const navigateDashboard = (tab: MerchantDashboardTab, resetOrdersFilter = false) => {
+    setActiveTab(tab);
+    if (resetOrdersFilter) setStatusFilter('all');
+    setMobileMenuOpen(false);
+  };
   const hasUnsavedStoreNameChanges = storeNameDraft.trim() !== savedStoreName;
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -7417,90 +7370,18 @@ export function MerchantDashboardView({
         </div>
 
         {/* SIDEBAR */}
-        <aside id="dz-merchant-sidebar" className={`dz-sidebar ${mobileMenuOpen ? 'dz-mobile-nav-open' : ''}`}>
-          <div className="dz-product-brand">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tajertrack-animated.svg" alt="" aria-hidden="true" width="38" height="38" />
-            <div className="dz-product-brand-copy">
-              <strong>تاجر تراك</strong>
-              <span>إدارة الشحنات بوضوح</span>
-            </div>
-          </div>
-
-          <div className="dz-brand">
-            <div className="dz-avatar-box" style={{ background: brandConfig.brandColor, color: getReadableOnBrand(brandConfig.brandColor), overflow: 'hidden', padding: brandConfig.logoUrl ? '0' : undefined }}>
-              {brandConfig.logoUrl ? (
-                <img
-                  src={toCachedImageUrl(brandConfig.logoUrl)}
-                  alt={displayStoreName}
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = 'none';
-                    (e.currentTarget.parentElement as HTMLElement).textContent = displayStoreName.charAt(0);
-                  }}
-                />
-              ) : (
-                displayStoreName.charAt(0)
-              )}
-            </div>
-            <div className="dz-brand-text">
-              <span className="dz-brand-title">{displayStoreName}</span>
-              <span className="dz-brand-badge">المتجر الحالي</span>
-            </div>
-          </div>
-
-          <nav className="dz-nav" aria-label="أقسام لوحة التاجر">
-            <div className="dz-nav-caption">المتابعة</div>
-            <button className={`dz-nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => { setActiveTab('overview'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Dashboard /></span> نظرة عامة</span>
-            </button>
-            <button className={`dz-nav-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => { setActiveTab('orders'); setStatusFilter('all'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Box /></span> الطلبات</span>
-            </button>
-            <button className={`dz-nav-item ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => { setActiveTab('analytics'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Chart /></span> التحليلات</span>
-            </button>
-            <button className={`dz-nav-item ${activeTab === 'exceptions' ? 'active' : ''}`} onClick={() => { setActiveTab('exceptions'); setStatusFilter('all'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.AlertTriangle /></span> استثناءات الشحن</span>
-              {exceptionCount > 0 && <span className="dz-alert-badge">{exceptionCount}</span>}
-            </button>
-            <div className="dz-nav-caption dz-nav-caption-secondary">إدارة المتجر</div>
-            <button className={`dz-nav-item ${activeTab === 'branding' ? 'active' : ''}`} onClick={() => { setActiveTab('branding'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Palette /></span> تصميم صفحة التتبع</span>
-            </button>
-            <button className={`dz-nav-item ${activeTab === 'upsells' ? 'active' : ''}`} onClick={() => { setActiveTab('upsells'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.ShoppingBag /></span> زيادة المبيعات (Upsells)</span>
-              {upsellsList.filter((u) => u.is_active).length > 0 && (
-                <span className="dz-alert-badge" style={{ background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0' }}>
-                  {upsellsList.filter((u) => u.is_active).length}
-                </span>
-              )}
-            </button>
-            <button className={`dz-nav-item ${activeTab === 'integrations' ? 'active' : ''}`} onClick={() => { setActiveTab('integrations'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Plug /></span> بوابات الربط</span>
-            </button>
-            <button className={`dz-nav-item ${activeTab === 'mappings' ? 'active' : ''}`} onClick={() => { setActiveTab('mappings'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Tag /></span> مسميات الحالات</span>
-            </button>
-            <button className={`dz-nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Settings /></span> الإعدادات</span>
-            </button>
-          </nav>
-
-          <div className="dz-sidebar-footer">
-            <form action={logout}>
-              <button type="submit" className="dz-nav-item" style={{ width: '100%', justifyContent: 'center', background: 'var(--bg-base)' }}>
-                <Icons.LogOut /> <span style={{ marginRight: '8px' }}>تسجيل الخروج</span>
-              </button>
-            </form>
-          </div>
-        </aside>
-
-        {/* MOBILE MENU BACKDROP */}
-        <div
-          className={`dz-mobile-backdrop ${mobileMenuOpen ? 'is-visible' : ''}`}
-          onClick={() => setMobileMenuOpen(false)}
-          aria-hidden={!mobileMenuOpen}
+        <DashboardSidebar
+          activeTab={activeTab}
+          mobileMenuOpen={mobileMenuOpen}
+          brandColor={brandConfig.brandColor}
+          brandLogoUrl={brandConfig.logoUrl}
+          logoSrc={brandConfig.logoUrl ? toCachedImageUrl(brandConfig.logoUrl) : ''}
+          displayStoreName={displayStoreName}
+          exceptionCount={exceptionCount}
+          activeUpsellsCount={upsellsList.filter((u) => u.is_active).length}
+          getReadableOnBrand={getReadableOnBrand}
+          onNavigate={navigateDashboard}
+          onCloseMobileMenu={() => setMobileMenuOpen(false)}
         />
 
         {/* MAIN */}
