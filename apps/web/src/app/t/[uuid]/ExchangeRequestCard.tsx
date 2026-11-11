@@ -16,7 +16,7 @@ const statusCopy = {
 
 export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequest }: Props) {
   const [request, setRequest] = useState<ExchangeRequestSummary | null>(initialRequest);
-  const [formOpen, setFormOpen] = useState(!initialRequest || initialRequest.status === 'rejected');
+  const [formOpen, setFormOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,11 +39,16 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
   return <section className={styles.section} aria-labelledby="exchange-request-title">
     <div className={styles.headingRow}><div><span className={styles.eyebrow}>خدمات ما بعد البيع</span><h2 id="exchange-request-title" className={styles.title}>طلب استبدال المنتج</h2><p className={styles.description}>لديك مشكلة في المنتج الذي استلمته؟ أرسل طلبك إلى المتجر مع توضيح السبب.</p></div><span className={styles.orderRef} dir="ltr">#{externalOrderId}</span></div>
     {request && <div className={`${styles.requestStatus} ${styles[`status_${request.status}`] || ''}`} role="status"><strong>{statusCopy[request.status].title}</strong><p>{statusCopy[request.status].description}</p><div className={styles.requestReason}>السبب: {reasonLabel(request.reason)}</div>{request.customer_note && <p className={styles.requestNote}>{request.customer_note}</p>}{request.replacement_shipment && <div className={styles.merchantResponse}><span>شحنة الاستبدال</span><p>{request.replacement_shipment.carrier_name || 'شركة التوصيل'} · {request.replacement_shipment.status_title || request.replacement_shipment.current_status}</p>{request.replacement_shipment.carrier_tracking_number && <p dir="ltr">{request.replacement_shipment.carrier_tracking_number}</p>}</div>}{request.merchant_response && <div className={styles.merchantResponse}><span>رد المتجر</span><p>{request.merchant_response}</p></div>}</div>}
-    {(!request || request.status === 'rejected') && <>{!formOpen ? <button type="button" className={styles.secondaryButton} onClick={() => setFormOpen(true)}>تقديم طلب استبدال جديد</button> : <form className={styles.form} onSubmit={submitRequest}>
-      <fieldset className={styles.fieldset}><legend>ما سبب رغبتك في الاستبدال؟</legend><div className={styles.reasonGrid}>{EXCHANGE_REQUEST_REASONS.map((item) => <button key={item.value} type="button" className={`${styles.reasonOption} ${reason === item.value ? styles.reasonSelected : ''}`} aria-pressed={reason === item.value} onClick={() => { setReason(item.value); setError(''); }}><span className={styles.radioMark} aria-hidden="true" />{item.label}</button>)}</div></fieldset>
+    {(!request || request.status === 'rejected') && <>{!formOpen ? <button type="button" className={styles.secondaryButton} onClick={() => { setFormOpen(true); setError(''); }}>{request ? 'تقديم طلب استبدال جديد' : 'أرغب في استبدال المنتج'}</button> : <form className={styles.form} onSubmit={submitRequest}>
+      <label className={styles.reasonLabel}>ما سبب رغبتك في الاستبدال؟
+        <select className={styles.reasonSelect} value={reason} onChange={(event) => { setReason(event.target.value); setError(''); }} required>
+          <option value="" disabled>اختر سبب الاستبدال</option>
+          {EXCHANGE_REQUEST_REASONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+        </select>
+      </label>
       <label className={styles.noteLabel}>تفاصيل إضافية <span>اختياري</span><textarea value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} rows={3} placeholder="أضف توضيحاً يساعد المتجر على معالجة طلبك..." /><small>{note.length}/500</small></label>
       {error && <p className={styles.error} role="alert">{error}</p>}
-      <div className={styles.formActions}>{request && <button type="button" className={styles.textButton} onClick={() => setFormOpen(false)}>إلغاء</button>}<button type="submit" className={styles.submitButton} disabled={isSubmitting || !reason}>{isSubmitting ? 'جارٍ إرسال الطلب...' : 'إرسال طلب الاستبدال'}</button></div>
+      <div className={styles.formActions}><button type="button" className={styles.textButton} onClick={() => { setFormOpen(false); setError(''); }}>إلغاء</button><button type="submit" className={styles.submitButton} disabled={isSubmitting || !reason}>{isSubmitting ? 'جارٍ إرسال الطلب...' : 'إرسال طلب الاستبدال'}</button></div>
     </form>}</>}
   </section>;
 }
