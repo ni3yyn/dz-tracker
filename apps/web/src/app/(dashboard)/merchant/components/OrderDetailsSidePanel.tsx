@@ -30,6 +30,7 @@ export const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSid
   function OrderDetailsSidePanel({ orders, getStatusLabel, getStatusBadgeStyle, getWhatsAppRecoveryUrl, formatOrderDate, isAttentionStatus }, ref) {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const selectedOrderIdRef = useRef<string | null>(null);
+    const openAnimationPendingRef = useRef(false);
     const [isOpen, setIsOpen] = useState(false);
     const selectedOrder = useMemo(
       () => orders.find((order) => order.id === selectedOrderId) || null,
@@ -37,11 +38,17 @@ export const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSid
     );
 
     const openPanel = useCallback((orderId: string) => {
+      openAnimationPendingRef.current = true;
       selectedOrderIdRef.current = orderId;
       setSelectedOrderId(orderId);
-      setIsOpen(true);
+      // Mount the drawer in its closed state first. The opening effect below
+      // advances it only after the browser has painted that starting frame.
+      setIsOpen(false);
     }, []);
-    const closePanel = useCallback(() => setIsOpen(false), []);
+    const closePanel = useCallback(() => {
+      openAnimationPendingRef.current = false;
+      setIsOpen(false);
+    }, []);
     const closeIfDeleted = useCallback((orderIds: string[]) => {
       if (selectedOrderIdRef.current && orderIds.includes(selectedOrderIdRef.current)) {
         closePanel();
@@ -53,6 +60,25 @@ export const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSid
     useEffect(() => {
       window.dispatchEvent(new Event('tajer-dashboard-back-layer-change'));
     }, [isOpen, selectedOrderId]);
+
+    useEffect(() => {
+      if (!selectedOrder || isOpen || !openAnimationPendingRef.current) return;
+
+      let secondFrame = 0;
+      const firstFrame = window.requestAnimationFrame(() => {
+        // A second frame guarantees the closed clip-path has been committed
+        // before switching to the open state, including on first mount.
+        secondFrame = window.requestAnimationFrame(() => {
+          openAnimationPendingRef.current = false;
+          setIsOpen(true);
+        });
+      });
+
+      return () => {
+        window.cancelAnimationFrame(firstFrame);
+        if (secondFrame) window.cancelAnimationFrame(secondFrame);
+      };
+    }, [selectedOrder, isOpen]);
 
     useEffect(() => {
       if (!selectedOrderId || !isOpen) return;
