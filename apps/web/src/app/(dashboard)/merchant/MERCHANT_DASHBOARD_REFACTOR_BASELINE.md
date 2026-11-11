@@ -605,7 +605,7 @@ This closes the store-identity boundary across both Branding Studio and Settings
 - [x] Store-name draft/saved state and synchronization removed from the composition root.
 - [x] Branding category and dirty state are explicitly initialized in the hook.
 - [x] Settings continues to use the exact same draft, setter and dirty-state props.
-- [ ] Vercel preview for this correction must pass before another domain extraction.
+- [x] Cumulative Vercel preview passed for the branding extraction and Settings/Branding contract update at commit `1f7eccfa4e29672ccf94d3a2ea0709fcf3d9a2b1`: https://vercel.com/ni3yyns-projects/dz-tracker/9RW7wWkEDMxkxzHW2FJekdUUzhxe.
 
 
 
@@ -628,7 +628,60 @@ The stylesheet content was copied from the original template literal without cha
 ### Remaining presentation work
 
 - [ ] Audit shared status-filter, empty-state, action-button and form-field patterns across all tabs and existing feature components; extract only contracts with matching DOM semantics and behavior.
-- [ ] Move remaining feature-specific static configuration out of the composition root into the owning feature modules.
-- [ ] Continue extracting standalone overlay and portal presentation now that their state/controllers have dedicated owners.
+- [x] Branding options, presets, background motifs, color-contrast helpers and the isolated phone preview are now owned by `features/branding/`; `BrandingTab` imports its own option catalog instead of receiving 13 static option/helper props from the root.
+- [ ] Audit any remaining feature-specific static configuration outside Branding Studio.
+- [x] The custom status-mapping portal is now `features/mappings/CustomMappingModal.tsx`.
+- [x] The manual-order portal is now `features/orders/AddOrderPanel.tsx`; the success payload contract is exported by `useManualOrder.ts`.
+- [ ] Revalidate the merchant Back-dismissal policy hook after Vercel build capacity is available.
 - [ ] Review the final composition root for unused imports, duplicated derivations and remaining feature-specific ownership.
 - [ ] Keep every extraction behavior-preserving and validate each integrated batch with the Vercel preview and available CI checks.
+
+
+### Completed second batch — Branding Studio feature boundary
+
+| Module | Extraction contract |
+|---|---|
+| `features/branding/branding-options.ts` | Branding defaults, preview events, motif catalog, style choices, preset catalog, category reset keys and contrast helpers moved out of the dashboard root. |
+| `features/branding/BrandingPhonePreview.tsx` | The memoized customer tracking-page phone preview moved beside the Branding feature. |
+| `tabs/BrandingTab.tsx` | The tab now imports its own static option catalog rather than requiring the composition root to pass 13 options/helpers as props. |
+
+The Branding tab's editable values, save handler, undo/redo actions, preview input and JSX remain unchanged. The extracted preview continues to use the same deferred brand configuration and store-name inputs.
+
+- [x] Branding data/options removed from `MerchantDashboardView.tsx`.
+- [x] Phone preview component removed from the composition root.
+- [x] BrandingTab option/helper props removed; option ownership sits with the tab's feature module.
+- [x] Cumulative Vercel preview passed for commit `1f7eccfa4e29672ccf94d3a2ea0709fcf3d9a2b1`: https://vercel.com/ni3yyns-projects/dz-tracker/9RW7wWkEDMxkxzHW2FJekdUUzhxe.
+
+### Completed third batch — Overlay presentation components
+
+| Module | Extraction contract |
+|---|---|
+| `features/mappings/CustomMappingModal.tsx` | The existing mapping modal portal, backdrop dismissal, dialog semantics and MappingForm rendering moved into a focused component. |
+| `features/orders/AddOrderPanel.tsx` | The existing manual-order portal, success view, form fields, carrier/status selects, Telegram messaging copy and transition-end cleanup moved into a feature component. |
+| `features/orders/useManualOrder.ts` | The manual-order success payload type is exported for the view component contract. |
+
+The root keeps the same hook state and callbacks and renders each component at the same position. No field names, option values, copy, CSS classes, success handling or transition guards were intentionally changed.
+
+- [x] Custom mapping portal removed from the composition root.
+- [x] Manual-order portal removed from the composition root.
+- [x] Vercel preview passed for cumulative overlay extraction commit `d1d4fa411bb9f02e3d04ff4290fbeb69e4680010`: https://vercel.com/ni3yyns-projects/dz-tracker/4TS2oXKD1UvaWUtMhSvRYvyebjQA.
+
+### In-progress fourth batch — Merchant Back-dismissal policy
+
+| Module | Extraction contract |
+|---|---|
+| `features/dashboard/useMerchantDashboardBackHandler.ts` | Merchant-specific Back priority and overlay-dismissal actions moved into a feature hook; shared history-stack mechanics remain in `useDashboardBackHandler`. |
+
+The callback order remains global dialog → dropdown → custom-mapping modal → add-order panel → order-details panel → mobile menu. The root supplies the existing state and close callbacks.
+
+- [x] Back-dismissal policy moved out of the composition root.
+- [x] Callback shape and original Escape-dispatch branches statically checked after extraction.
+- [ ] Vercel validation pending: the latest status for commit `6935afd059390b54bfa961bc0ee9852dbc6171bb` returned the Vercel `build-rate-limit` upgrade blocker. This is not a passing build and must be rerun before merging or starting another extraction batch.
+
+### Composition-root checkpoint
+
+- Original inline dashboard entry: approximately 7,183 lines.
+- After stylesheet extraction: 1,651 lines.
+- After Branding and overlay extractions: 887 lines.
+- After Back-dismissal policy extraction: 838 lines.
+- Current architecture still intentionally keeps tab composition, shared cross-tab data wiring and navigation in the root; the next work should focus on repeated shared UI contracts and remaining pure order-presentation helpers rather than creating one oversized "dashboard" hook.
