@@ -52,6 +52,9 @@ BEGIN
   INSERT INTO public.orders (merchant_id, external_order_id, created_at)
   SELECT v_merchant, 'starter-existing-' || n, NOW() - INTERVAL '1 day'
   FROM generate_series(1, 29) AS n;
+  INSERT INTO public.merchant_order_usage_events (merchant_id, order_id, external_order_id, created_at)
+  SELECT merchant_id, id, external_order_id, created_at
+  FROM public.orders WHERE merchant_id = v_merchant;
 
   v_result := public.create_tracked_order_with_quota(
     v_merchant, 'starter-30', NULL, NULL, NULL, NULL, 'order_placed',
@@ -95,6 +98,9 @@ BEGIN
   INSERT INTO public.orders (merchant_id, external_order_id, created_at)
   SELECT v_merchant, 'starter-old-' || n, NOW() - INTERVAL '31 days'
   FROM generate_series(1, 40) AS n;
+  INSERT INTO public.merchant_order_usage_events (merchant_id, order_id, external_order_id, created_at)
+  SELECT merchant_id, id, external_order_id, created_at
+  FROM public.orders WHERE merchant_id = v_merchant;
 
   v_result := public.create_tracked_order_with_quota(
     v_merchant, 'starter-new-period', NULL, NULL, NULL, NULL, 'order_placed',
@@ -111,6 +117,9 @@ BEGIN
   INSERT INTO public.orders (merchant_id, external_order_id, created_at)
   SELECT v_merchant, 'basic-existing-' || n, NOW() - INTERVAL '1 day'
   FROM generate_series(1, 99) AS n;
+  INSERT INTO public.merchant_order_usage_events (merchant_id, order_id, external_order_id, created_at)
+  SELECT merchant_id, id, external_order_id, created_at
+  FROM public.orders WHERE merchant_id = v_merchant;
 
   v_result := public.create_tracked_order_with_quota(
     v_merchant, 'basic-100', NULL, NULL, NULL, NULL, 'order_placed',
@@ -135,5 +144,8 @@ BEGIN
   INSERT INTO public.orders (merchant_id, external_order_id, created_at)
   SELECT v_merchant, 'race-existing-' || n, NOW() - INTERVAL '1 day'
   FROM generate_series(1, 29) AS n;
+  INSERT INTO public.merchant_order_usage_events (merchant_id, order_id, external_order_id, created_at)
+  SELECT merchant_id, id, external_order_id, created_at
+  FROM public.orders WHERE merchant_id = v_merchant;
 END;
 $$;

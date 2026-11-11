@@ -495,6 +495,19 @@ export class TrackingOrchestrator {
             throw legacyCreateError || new Error('Legacy order creation returned no order.');
           }
 
+          const { error: legacyLedgerError } = await (this.supabase as any)
+            .from('merchant_order_usage_events')
+            .insert({
+              merchant_id: merchant.id,
+              order_id: legacyOrder.id,
+              external_order_id: event.externalOrderId,
+              source_provider: event.sourceProvider || null,
+              created_at: new Date().toISOString(),
+            });
+          if (legacyLedgerError && !['PGRST205', '42P01'].includes(legacyLedgerError.code || '')) {
+            console.warn('[Quota]: Legacy fallback could not persist its usage event:', legacyLedgerError.message);
+          }
+
           const { error: legacyUsageError } = await this.supabase
             .from('merchants')
             .update({ monthly_orders_used: legacyUsed + 1 })
