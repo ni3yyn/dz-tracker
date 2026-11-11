@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { toggleTelegramTracking, toggleConfirmationTelegram, submitPaymentProof } from '../../actions';
 import type { SubscriptionInfo } from '../../shared/subscription-types';
-
-type UpgradeTier = 'basic' | 'growth' | 'scale';
+import type { UpgradeTier } from './settings-types';
 
 interface UseMerchantSettingsOptions {
   merchantId: string;
