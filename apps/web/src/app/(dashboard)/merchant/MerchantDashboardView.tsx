@@ -6,6 +6,7 @@ import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import { StatusSelector } from './StatusSelector';
 import { OrderDetailField } from './components/OrderDetailField';
 import { DashboardSectionHeading } from './components/DashboardSectionHeading';
+import { DashboardMetricCard } from './components/DashboardMetricCard';
 import { Icons } from './components/DashboardIcons';
 import { DashboardSidebar, type MerchantDashboardTab } from './dashboard/DashboardSidebar';
 import { DashboardPanelTransition } from './dashboard/DashboardPanelTransition';
@@ -7433,22 +7434,10 @@ export function MerchantDashboardView({
           {activeTab === 'overview' && (
             <section className="dz-overview" aria-label="نظرة عامة على الشحنات">
               <div className="dz-overview-kpis" aria-label="ملخص الشحنات">
-                <button type="button" className="dz-overview-kpi" onClick={() => openShipmentList('all')}>
-                  <span className="dz-overview-kpi-label">إجمالي الشحنات</span>
-                  <strong className="dz-overview-kpi-value">{orders.length}</strong>
-                </button>
-                <button type="button" className="dz-overview-kpi" onClick={() => openShipmentList('transit')}>
-                  <span className="dz-overview-kpi-label">في الطريق</span>
-                  <strong className="dz-overview-kpi-value">{inTransitCount}</strong>
-                </button>
-                <button type="button" className="dz-overview-kpi" onClick={() => openShipmentList('stopdesk')}>
-                  <span className="dz-overview-kpi-label">نقطة الاستلام</span>
-                  <strong className="dz-overview-kpi-value">{stopdeskCount}</strong>
-                </button>
-                <button type="button" className="dz-overview-kpi" onClick={() => openShipmentList('delivered')}>
-                  <span className="dz-overview-kpi-label">تم التسليم</span>
-                  <strong className="dz-overview-kpi-value">{deliveredCount}</strong>
-                </button>
+                <DashboardMetricCard as="button" label="إجمالي الشحنات" value={orders.length} onClick={() => openShipmentList('all')} />
+                <DashboardMetricCard as="button" label="في الطريق" value={inTransitCount} onClick={() => openShipmentList('transit')} />
+                <DashboardMetricCard as="button" label="نقطة الاستلام" value={stopdeskCount} onClick={() => openShipmentList('stopdesk')} />
+                <DashboardMetricCard as="button" label="تم التسليم" value={deliveredCount} onClick={() => openShipmentList('delivered')} />
               </div>
 
               {orders.length === 0 && (
@@ -7969,9 +7958,9 @@ export function MerchantDashboardView({
           {activeTab === 'analytics' && (
             <section className="dz-analytics" aria-label="تحليلات الشحنات">
               <div className="dz-overview-kpis dz-analytics-kpis">
-                <div className="dz-overview-kpi"><span className="dz-overview-kpi-label">إجمالي الشحنات</span><strong className="dz-overview-kpi-value">{orders.length}</strong></div>
-                <div className="dz-overview-kpi"><span className="dz-overview-kpi-label">نسبة التسليم</span><strong className="dz-overview-kpi-value">{successRate}%</strong></div>
-                <div className={`dz-overview-kpi ${exceptionCount ? 'is-alert' : ''}`}><span className="dz-overview-kpi-label">تحتاج إلى متابعة</span><strong className="dz-overview-kpi-value">{exceptionCount}</strong></div>
+                <DashboardMetricCard as="div" label="إجمالي الشحنات" value={orders.length} />
+                <DashboardMetricCard as="div" label="نسبة التسليم" value={<>{successRate}%</>} />
+                <DashboardMetricCard as="div" className={`dz-overview-kpi ${exceptionCount ? 'is-alert' : ''}`} label="تحتاج إلى متابعة" value={exceptionCount} />
               </div>
               <div className="dz-analytics-grid">
                 <section className="dz-overview-section dz-analytics-section" aria-labelledby="analytics-volume-title">
