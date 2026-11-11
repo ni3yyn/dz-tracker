@@ -621,6 +621,7 @@ const Icons = {
 
 interface OrderDetailsSidePanelHandle {
   open: (orderId: string) => void;
+  closeIfDeleted: (orderIds: string[]) => void;
 }
 
 interface OrderDetailsSidePanelProps {
@@ -638,6 +639,7 @@ interface OrderDetailsSidePanelProps {
 const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSidePanelHandle, OrderDetailsSidePanelProps>(
   function OrderDetailsSidePanel({ orders, getStatusLabel, getStatusBadgeStyle, getWhatsAppRecoveryUrl }, ref) {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const selectedOrderIdRef = useRef<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const selectedOrder = useMemo(
       () => orders.find((order) => order.id === selectedOrderId) || null,
@@ -645,12 +647,18 @@ const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSidePanelH
     );
 
     const openPanel = useCallback((orderId: string) => {
+      selectedOrderIdRef.current = orderId;
       setSelectedOrderId(orderId);
       setIsOpen(true);
     }, []);
     const closePanel = useCallback(() => setIsOpen(false), []);
+    const closeIfDeleted = useCallback((orderIds: string[]) => {
+      if (selectedOrderIdRef.current && orderIds.includes(selectedOrderIdRef.current)) {
+        closePanel();
+      }
+    }, [closePanel]);
 
-    React.useImperativeHandle(ref, () => ({ open: openPanel }), [openPanel]);
+    React.useImperativeHandle(ref, () => ({ open: openPanel, closeIfDeleted }), [openPanel, closeIfDeleted]);
 
     useEffect(() => {
       window.dispatchEvent(new Event('tajer-dashboard-back-layer-change'));
@@ -680,6 +688,7 @@ const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSidePanelH
                   event.propertyName === 'opacity' &&
                   !isOpen
                 ) {
+                  selectedOrderIdRef.current = null;
                   setSelectedOrderId(null);
                 }
               }}
@@ -1022,7 +1031,7 @@ export function MerchantDashboardView({
       mobileMenuOpen ||
       isCustomMappingModalOpen ||
       isAddOrderModalOpen ||
-      isAddOrderPanelMounted ||
+      isAddOrderPanelMounted
     ),
     onBack: () => {
       const globalDialog = typeof document !== 'undefined'
@@ -1283,6 +1292,7 @@ export function MerchantDashboardView({
       }
 
       setSelectedOrderIds((current) => current.filter((id) => !ids.includes(id)));
+      orderDetailsPanelRef.current?.closeIfDeleted(ids);
       showToast(`تم حذف ${result.deletedCount} طلب بنجاح.`);
     } catch (error) {
       console.error('[MerchantDashboard]: Order deletion failed:', error);
