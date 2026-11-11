@@ -168,6 +168,51 @@ export class TrackingOrchestrator {
 
       const displayStatus = event.statusTitle || mapping?.display_status || this.formatFallbackStatus(event.statusRaw);
 
+      // Replacement parcels must be recognized before normal order resolution/creation.
+      // The database function links one exact match or holds ambiguous candidates for the merchant.
+      const { data: exchangeData, error: exchangeError } = await this.supabase.rpc('process_exchange_replacement_event', {
+        p_merchant_id: event.merchantId,
+        p_source_provider: event.sourceProvider || event.carrierName || 'unknown',
+        p_carrier_name: event.carrierName || null,
+        p_external_order_id: event.externalOrderId || null,
+        p_carrier_tracking_number: event.carrierTrackingNumber || null,
+        p_carrier_order_id: event.carrierOrderId || null,
+        p_customer_name: event.customerName || null,
+        p_customer_phone: event.customerPhone || null,
+        p_product_name: event.productName || null,
+        p_status_raw: event.statusRaw,
+        p_status_title: displayStatus,
+        p_description: event.description || null,
+        p_carrier_metadata: event.carrierMetadata || null,
+        p_source_event_id: event.sourceEventId || null,
+        p_source_occurred_at: event.sourceOccurredAt || null,
+        p_suppress_triggers: event.suppressTriggers === true,
+      } as any);
+
+      const exchangeFunctionMissing = Boolean(
+        exchangeError && (
+          exchangeError.code === 'PGRST202' ||
+          exchangeError.code === '42883' ||
+          /could not find the function|function .* does not exist/i.test(exchangeError.message || '')
+        )
+      );
+      if (exchangeError && !exchangeFunctionMissing) throw exchangeError;
+      if (exchangeFunctionMissing) {
+        console.warn('[Exchange]: Replacement shipment migration is not installed yet; continuing with normal order processing.');
+      }
+
+      const exchangeResult = Array.isArray(exchangeData) ? exchangeData[0] : exchangeData;
+      if (exchangeResult?.handled) {
+        return {
+          success: true,
+          trackingUuid: exchangeResult.tracking_uuid || undefined,
+          orderId: exchangeResult.original_order_id || undefined,
+          deduplicated: exchangeResult.status_changed !== true,
+          isNewOrder: false,
+          message: exchangeResult.needs_confirmation ? 'exchange_replacement_needs_confirmation' : undefined,
+        };
+      }
+
       // 2. البحث الذكي عن الطلب (Smart Multi-Key Resolution: رقم الطلب -> بوليصة الشحن -> هاتف الزبون)
       const existingOrder = await this.findExistingOrder(event);
 

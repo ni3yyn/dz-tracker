@@ -42,21 +42,44 @@ export async function reviewExchangeRequest(requestId: string, status: 'approved
     if (response.length > 500) return { error: 'يجب ألا يتجاوز الرد 500 حرف.' };
     const merchantId = await getAuthenticatedMerchantId();
     const supabase = getSupabaseAdminClient();
-    const { data: pending, error: lookupError } = await (supabase as any).from('order_exchange_requests').select('id').eq('id', requestId).eq('merchant_id', merchantId).eq('status', 'pending').maybeSingle();
-    if (lookupError) throw new Error('تعذر تحميل طلب الاستبدال.');
-    if (!pending) return { error: 'تمت مراجعة هذا الطلب مسبقاً أو لا يتبع متجرك.' };
-    const now = new Date().toISOString();
-    const { data: updated, error: updateError } = await (supabase as any).from('order_exchange_requests')
-      .update({ status, merchant_response: response || null, reviewed_at: now, updated_at: now })
-      .eq('id', requestId).eq('merchant_id', merchantId).eq('status', 'pending')
-      .select('id, merchant_id, order_id, reason, customer_note, status, merchant_response, created_at, updated_at, reviewed_at').maybeSingle();
-    if (updateError || !updated) {
-      console.error('[ExchangeRequests] Could not review request:', updateError?.message);
-      return { error: 'تعذر حفظ قرار طلب الاستبدال. حدّث الصفحة ثم حاول مجدداً.' };
+    const { data, error } = await (supabase as any).rpc('review_order_exchange_request', {
+      p_request_id: requestId,
+      p_merchant_id: merchantId,
+      p_status: status === 'approved' ? 'awaiting_shipment' : 'rejected',
+      p_merchant_response: response || null,
+    });
+    const updated = Array.isArray(data) ? data[0] : data;
+    if (error || !updated) {
+      console.error('[ExchangeRequests] Could not review request:', error?.message);
+      return { error: 'تعذر حفظ قرار طلب الاستبدال. تأكد من تطبيق تحديث قاعدة البيانات ثم حاول مجدداً.' };
     }
     revalidatePath('/merchant');
     return { success: true, request: updated };
   } catch (error: any) {
     return { error: error?.message || 'تعذر حفظ قرار طلب الاستبدال.' };
+  }
+}
+
+
+export async function confirmExchangeShipmentMatch(shipmentId: string, exchangeRequestId: string): Promise<{ success?: boolean; shipment?: any; error?: string }> {
+  try {
+    if (!UUID_PATTERN.test(shipmentId) || !UUID_PATTERN.test(exchangeRequestId)) {
+      return { error: 'معرّف الشحنة أو طلب الاستبدال غير صالح.' };
+    }
+    const merchantId = await getAuthenticatedMerchantId();
+    const { data, error } = await (getSupabaseAdminClient() as any).rpc('confirm_order_exchange_shipment_match', {
+      p_shipment_id: shipmentId,
+      p_exchange_request_id: exchangeRequestId,
+      p_merchant_id: merchantId,
+    });
+    const shipment = Array.isArray(data) ? data[0] : data;
+    if (error || !shipment) {
+      console.error('[ExchangeRequests] Could not confirm replacement match:', error?.message);
+      return { error: 'تعذر ربط الشحنة بطلب الاستبدال. ربما تمت معالجة الشحنة مسبقاً.' };
+    }
+    revalidatePath('/merchant');
+    return { success: true, shipment };
+  } catch (error: any) {
+    return { error: error?.message || 'تعذر تأكيد ربط شحنة الاستبدال.' };
   }
 }
