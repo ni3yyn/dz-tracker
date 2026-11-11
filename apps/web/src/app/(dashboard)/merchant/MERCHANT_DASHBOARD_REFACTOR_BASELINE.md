@@ -556,3 +556,15 @@ Toast duration (3.5 seconds), copied indicator duration (2 seconds), clipboard A
 - [x] The single shared feedback hook supplies all existing consumers.
 - [ ] Vercel preview for this hook extraction must pass before moving another domain.
 
+### Completed tenth batch — Custom mapping modal controller
+
+| Module | Extraction contract |
+|---|---|
+| features/mappings/useCustomMappingModal.ts | Custom mapping modal open state, trigger ref, Escape listener, body scroll lock and RAF focus restoration moved into a focused hook. |
+
+The portal and MappingForm DOM remain in MerchantDashboardView. MappingsTab receives the same trigger ref and open callback; back handling, backdrop click and close button use the hook's close action. The effect's cleanup order and focus-restoration scheduling are preserved.
+
+- [x] Custom mapping modal state/ref/effect removed from the composition root.
+- [x] Portal markup and form remain unchanged in the root.
+- [ ] Vercel preview for this hook extraction must pass before moving another domain.
+

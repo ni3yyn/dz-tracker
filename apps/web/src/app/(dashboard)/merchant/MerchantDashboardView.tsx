@@ -30,6 +30,7 @@ import { useOrderFilters } from './features/orders/useOrderFilters';
 import { useShipmentAnalytics } from './features/analytics/useShipmentAnalytics';
 import { useOrderSelection } from './features/orders/useOrderSelection';
 import { useDashboardFeedback } from './features/dashboard/useDashboardFeedback';
+import { useCustomMappingModal } from './features/mappings/useCustomMappingModal';
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
 import type { ShipmentExceptionState } from './shipment-exceptions';
@@ -767,6 +768,14 @@ export function MerchantDashboardView({
 
   const { toastMsg, showToast, copiedKey, copyToClipboard } = useDashboardFeedback();
 
+  const {
+    isOpen: isCustomMappingModalOpen,
+    triggerRef: customMappingTriggerRef,
+    open: openCustomMappingModal,
+    close: closeCustomMappingModal,
+  } = useCustomMappingModal();
+
+
   const [activeTab, setActiveTab] = useState<MerchantDashboardTab>('overview');
   const dashboardMainRef = useRef<HTMLElement | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -803,9 +812,6 @@ export function MerchantDashboardView({
   }, [storeName]);
 
   const orderDetailsPanelRef = useRef<OrderDetailsSidePanelHandle | null>(null);
-  const [isCustomMappingModalOpen, setIsCustomMappingModalOpen] = useState(false);
-  const customMappingTriggerRef = useRef<HTMLButtonElement>(null);
-
 
 
   // Full Brand Customization State
@@ -971,7 +977,7 @@ export function MerchantDashboardView({
         return true;
       }
       if (isCustomMappingModalOpen) {
-        setIsCustomMappingModalOpen(false);
+        closeCustomMappingModal();
         return true;
       }
       if (isAddOrderModalOpen || isAddOrderPanelMounted) {
@@ -998,22 +1004,6 @@ export function MerchantDashboardView({
   });
 
 
-  useEffect(() => {
-    if (!isCustomMappingModalOpen) return;
-
-    const previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsCustomMappingModalOpen(false);
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      window.removeEventListener('keydown', onKeyDown);
-      window.requestAnimationFrame(() => customMappingTriggerRef.current?.focus());
-    };
-  }, [isCustomMappingModalOpen]);
   const {
     deliveredCount,
     inTransitCount,
@@ -7003,7 +6993,7 @@ export function MerchantDashboardView({
               merchantId={merchantId}
               mappings={mappings}
               triggerRef={customMappingTriggerRef}
-              onOpenCustomMapping={() => setIsCustomMappingModalOpen(true)}
+              onOpenCustomMapping={openCustomMappingModal}
               editingMappingId={editingMappingId}
               editDisplayStatus={editDisplayStatus}
               onEditDisplayStatusChange={setEditDisplayStatus}
@@ -7059,7 +7049,7 @@ export function MerchantDashboardView({
               data-dashboard-back-dismiss="custom-status-modal"
               role="presentation"
               onMouseDown={(event) => {
-                if (event.target === event.currentTarget) setIsCustomMappingModalOpen(false);
+                if (event.target === event.currentTarget) closeCustomMappingModal();
               }}
             >
               <section
@@ -7079,7 +7069,7 @@ export function MerchantDashboardView({
                     type="button"
                     className="dz-mapping-modal-close"
                     aria-label="إغلاق النافذة"
-                    onClick={() => setIsCustomMappingModalOpen(false)}
+                    onClick={() => closeCustomMappingModal()}
                   >
                     <Icons.X />
                   </button>
