@@ -12,7 +12,7 @@ const getTrackingOrder = cache(async (uuid: string) => {
   const supabase = getSupabaseAdminClient();
   return supabase
     .from('orders')
-    .select('id, merchant_id, external_order_id, customer_name, product_name, product_image, carrier_name, carrier_tracking_number, confirmation_status, merchants(store_name, logo_url)')
+    .select('id, merchant_id, external_order_id, customer_name, product_name, product_image, current_status, carrier_name, carrier_tracking_number, confirmation_status, merchants(store_name, logo_url)')
     .eq('tracking_uuid', uuid)
     .maybeSingle();
 });
@@ -109,9 +109,24 @@ export default async function TrackingPage({ params }: PageProps) {
     .order('created_at', { ascending: false })
     .limit(8);
 
+  const exchangeRequestsEnabled = Boolean(brandMappings?.some((mapping) => mapping.source_status === '__feature_exchange_requests_enabled__' && mapping.display_status === 'true'));
+  let exchangeRequestsStorageAvailable = true;
+  let initialExchangeRequest: any = null;
+  if (exchangeRequestsEnabled) {
+    const { data: latestRequest, error: exchangeRequestError } = await (supabase as any).from('order_exchange_requests')
+      .select('id, status, reason, customer_note, merchant_response, created_at')
+      .eq('order_id', order.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (exchangeRequestError) { exchangeRequestsStorageAvailable = false; console.error('[TrackingPage] Could not load exchange request:', exchangeRequestError.message); }
+    else initialExchangeRequest = latestRequest;
+  }
+
   return (
     <TrackingLiveView
       orderId={order.id}
+      currentStatus={order.current_status}
+      exchangeRequestsEnabled={exchangeRequestsEnabled}
+      initialExchangeRequest={initialExchangeRequest}
+      exchangeRequestsStorageAvailable={exchangeRequestsStorageAvailable}
       trackingUuid={uuid}
       externalOrderId={order.external_order_id}
       customerName={order.customer_name}

@@ -44,6 +44,9 @@ import { useCustomMappingModal } from './features/mappings/useCustomMappingModal
 import { useDashboardNavigation } from './features/dashboard/useDashboardNavigation';
 import { MappingsTab } from './tabs/MappingsTab';
 import { SettingsTab } from './tabs/SettingsTab';
+import { ExchangeRequestsTab } from './tabs/ExchangeRequestsTab';
+import type { MerchantExchangeRequest } from '../../../lib/exchange';
+import { toggleExchangeRequestsEnabled as saveExchangeRequestsSetting } from './exchange-actions';
 import { CustomMappingModal } from './features/mappings/CustomMappingModal';
 import { AddOrderPanel } from './features/orders/AddOrderPanel';
 import type { ShipmentExceptionState } from './shipment-exceptions';
@@ -75,6 +78,9 @@ interface Props {
   initialUpsells?: MerchantUpsellItem[];
   exceptionStates?: ShipmentExceptionState[];
   exceptionStateStorageAvailable?: boolean;
+  exchangeRequestsEnabled?: boolean;
+  initialExchangeRequests?: MerchantExchangeRequest[];
+  exchangeRequestsStorageAvailable?: boolean;
 }
 
 const MERCHANT_DASHBOARD_TAB_ORDER: Record<MerchantDashboardTab, number> = {
@@ -83,10 +89,11 @@ const MERCHANT_DASHBOARD_TAB_ORDER: Record<MerchantDashboardTab, number> = {
   analytics: 2,
   exceptions: 3,
   branding: 4,
-  upsells: 5,
-  integrations: 6,
-  mappings: 7,
-  settings: 8,
+  exchangeRequests: 5,
+  upsells: 6,
+  integrations: 7,
+  mappings: 8,
+  settings: 9,
 };
 
 /**
@@ -113,10 +120,33 @@ export function MerchantDashboardView({
   initialUpsells = [],
   exceptionStates = [],
   exceptionStateStorageAvailable = false,
+  exchangeRequestsEnabled: initialExchangeRequestsEnabled = false,
+  initialExchangeRequests = [],
+  exchangeRequestsStorageAvailable = false,
 }: Props) {
   const { alert: alertDialog, confirm: confirmDialog } = useGlobalDialog();
 
   const { toastMsg, showToast, copiedKey, copyToClipboard } = useDashboardFeedback();
+  const [exchangeRequestsEnabled, setExchangeRequestsEnabled] = useState(initialExchangeRequestsEnabled);
+  const [isSavingExchangeRequests, setIsSavingExchangeRequests] = useState(false);
+
+  useEffect(() => setExchangeRequestsEnabled(initialExchangeRequestsEnabled), [initialExchangeRequestsEnabled]);
+
+  const handleToggleExchangeRequests = async () => {
+    if (isSavingExchangeRequests || !exchangeRequestsStorageAvailable) return;
+    const next = !exchangeRequestsEnabled;
+    setIsSavingExchangeRequests(true);
+    setExchangeRequestsEnabled(next);
+    try {
+      const result = await saveExchangeRequestsSetting(next);
+      if (result?.error) { setExchangeRequestsEnabled(!next); showToast(result.error); return; }
+      showToast(next ? 'تم تفعيل طلبات الاستبدال.' : 'تم تعطيل طلبات الاستبدال.');
+    } catch (error) {
+      console.error('[MerchantDashboard]: Exchange requests setting update failed:', error);
+      setExchangeRequestsEnabled(!next);
+      showToast('تعذر تحديث إعداد طلبات الاستبدال. حاول مجدداً.');
+    } finally { setIsSavingExchangeRequests(false); }
+  };
 
   const {
     isOpen: isCustomMappingModalOpen,
@@ -614,6 +644,8 @@ export function MerchantDashboardView({
             />
           )}
 
+          {activeTab === 'exchangeRequests' && <ExchangeRequestsTab initialRequests={initialExchangeRequests} storageAvailable={exchangeRequestsStorageAvailable} />}
+
           {activeTab === 'upsells' && (
             <UpsellsTab
               merchantId={merchantId}
@@ -695,6 +727,10 @@ export function MerchantDashboardView({
               isSavingConfirmation={isSavingConfirmation}
               hasActivePaidPlan={hasActivePaidPlan}
               onToggleConfirmationTelegram={handleToggleConfirmationTelegram}
+              exchangeRequestsEnabled={exchangeRequestsEnabled}
+              isSavingExchangeRequests={isSavingExchangeRequests}
+              exchangeRequestsStorageAvailable={exchangeRequestsStorageAvailable}
+              onToggleExchangeRequests={handleToggleExchangeRequests}
               subscription={subscription}
               normalizedLimit={normalizedLimit}
               isUnlimitedPlan={isUnlimitedPlan}

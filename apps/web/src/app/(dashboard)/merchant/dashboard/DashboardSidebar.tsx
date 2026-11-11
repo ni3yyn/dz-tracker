@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { logout } from '../actions';
 import { Icons } from '../components/DashboardIcons';
 
@@ -9,6 +10,7 @@ export type MerchantDashboardTab =
   | 'exceptions'
   | 'analytics'
   | 'branding'
+  | 'exchangeRequests'
   | 'upsells'
   | 'integrations'
   | 'mappings'
@@ -41,6 +43,11 @@ export function DashboardSidebar({
   onNavigate,
   onCloseMobileMenu,
 }: DashboardSidebarProps) {
+  const [afterSalesOpen, setAfterSalesOpen] = useState(activeTab === 'branding' || activeTab === 'exchangeRequests');
+  useEffect(() => {
+    if (activeTab === 'branding' || activeTab === 'exchangeRequests') setAfterSalesOpen(true);
+  }, [activeTab]);
+
   return (
     <>
         <aside id="dz-merchant-sidebar" className={`dz-sidebar ${mobileMenuOpen ? 'dz-mobile-nav-open' : ''}`}>
@@ -91,9 +98,19 @@ export function DashboardSidebar({
               {exceptionCount > 0 && <span className="dz-alert-badge">{exceptionCount}</span>}
             </button>
             <div className="dz-nav-caption dz-nav-caption-secondary">إدارة المتجر</div>
-            <button className={`dz-nav-item ${activeTab === 'branding' ? 'active' : ''}`} onClick={() => onNavigate('branding')}>
-              <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Palette /></span> تصميم صفحة التتبع</span>
-            </button>
+            <div className="dz-nav-group">
+              <button type="button" className={`dz-nav-item dz-nav-group-trigger ${activeTab === 'branding' || activeTab === 'exchangeRequests' ? 'active' : ''}`} aria-expanded={afterSalesOpen} aria-controls="dz-after-sales-submenu" onClick={() => setAfterSalesOpen((open) => !open)}>
+                <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.Palette /></span> خدمات ما بعد البيع</span>
+                <svg className={`dz-nav-group-chevron ${afterSalesOpen ? 'is-open' : ''}`} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              <div id="dz-after-sales-submenu" className={`dz-nav-submenu ${afterSalesOpen ? 'is-open' : ''}`} aria-hidden={!afterSalesOpen}>
+                <div className="dz-nav-submenu-inner">
+                  <button type="button" tabIndex={afterSalesOpen ? 0 : -1} className={`dz-nav-item dz-nav-subitem ${activeTab === 'branding' ? 'active' : ''}`} onClick={() => onNavigate('branding')}><span className="dz-nav-subitem-mark" aria-hidden="true" /> محرر الهوية</button>
+                  <button type="button" tabIndex={afterSalesOpen ? 0 : -1} className={`dz-nav-item dz-nav-subitem ${activeTab === 'exchangeRequests' ? 'active' : ''}`} onClick={() => onNavigate('exchangeRequests')}><span className="dz-nav-subitem-mark" aria-hidden="true" /> طلبات الاستبدال</button>
+                  <button type="button" tabIndex={afterSalesOpen ? 0 : -1} className="dz-nav-item dz-nav-subitem dz-nav-subitem-disabled" disabled title="ستتوفر لاحقاً"><span className="dz-nav-subitem-mark" aria-hidden="true" /><span>إرشادات المنتجات</span><small>لاحقاً</small></button>
+                </div>
+              </div>
+            </div>
             <button className={`dz-nav-item ${activeTab === 'upsells' ? 'active' : ''}`} onClick={() => onNavigate('upsells')}>
               <span style={{ display: 'flex', alignItems: 'center' }}><span className="dz-nav-icon"><Icons.ShoppingBag /></span> زيادة المبيعات (Upsells)</span>
               {activeUpsellsCount > 0 && (

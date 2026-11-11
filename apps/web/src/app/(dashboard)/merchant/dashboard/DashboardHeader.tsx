@@ -40,6 +40,7 @@ export function DashboardHeader({
                 {activeTab === 'exceptions' && 'مركز استثناءات الشحن'}
                 {activeTab === 'analytics' && 'تحليلات الشحنات'}
                 {activeTab === 'branding' && 'تخصيص صفحة الزبون'}
+                {activeTab === 'exchangeRequests' && 'طلبات الاستبدال'}
                 {activeTab === 'upsells' && 'زيادة المبيعات (قد يعجبك أيضاً)'}
                 {activeTab === 'integrations' && 'التكاملات'}
                 {activeTab === 'mappings' && 'مطابقة الحالات والترجمة'}
@@ -51,6 +52,7 @@ export function DashboardHeader({
                 {activeTab === 'exceptions' && 'الشحنات التي خرجت عن المسار المتوقع وتحتاج إلى تدخلك.'}
                 {activeTab === 'analytics' && 'مؤشرات مبنية على الشحنات المسجلة والحالات الحالية، دون تقديرات غير متاحة.'}
                 {activeTab === 'branding' && 'عزز ولاء زبائنك بصفحة تتبع تحمل هويتك البصرية.'}
+                {activeTab === 'exchangeRequests' && 'راجع طلبات الاستبدال الواردة من زبائن متجرك واتخذ القرار المناسب.'}
                 {activeTab === 'upsells' && 'اعرض منتجات إضافية للزبون في أسفل صفحة التتبع لزيادة متوسط قيمة الطلب بدون إعلانات مدفوعة.'}
                 {activeTab === 'integrations' && 'إدارة مصدر الطلبات وشركات التوصيل من مكان واحد. يمكنك ربط عدة شركات دون إعادة الإعداد.'}
                 {activeTab === 'mappings' && 'حدد ما يراه الزبون لكل حالة برمجية معقدة.'}

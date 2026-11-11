@@ -205,7 +205,20 @@ async function MerchantDashboardContent() {
   // merchants.logo_url is canonical; retain the JSON fallback for pre-migration data.
   const logoUrl: string | null = (merchant as any)?.logo_url || brandSettings?.logoUrl || null;
 
-  const cleanMappings = (mappings || []).filter((m) => !m.source_status.startsWith('__brand_'));
+  const exchangeRequestsEnabled = Boolean(mappings?.some((mapping) => mapping.source_status === '__feature_exchange_requests_enabled__' && mapping.display_status === 'true'));
+  const { data: exchangeRequestRows, error: exchangeRequestsError } = await (supabaseAdmin as any)
+    .from('order_exchange_requests')
+    .select('id, merchant_id, order_id, reason, customer_note, status, merchant_response, created_at, updated_at, reviewed_at')
+    .eq('merchant_id', merchant.id)
+    .order('created_at', { ascending: false });
+  const exchangeRequestsStorageAvailable = !exchangeRequestsError;
+  if (exchangeRequestsError) console.error('[ExchangeRequests] Could not load exchange requests:', exchangeRequestsError.message);
+  const orderById = new Map((orders || []).map((order: any) => [order.id, order]));
+  const initialExchangeRequests = (exchangeRequestRows || []).map((request: any) => {
+    const order = orderById.get(request.order_id) as any;
+    return { ...request, order: order ? { external_order_id: order.external_order_id, customer_name: order.customer_name, product_name: order.product_name } : null };
+  });
+  const cleanMappings = (mappings || []).filter((m) => !m.source_status.startsWith('__brand_') && !m.source_status.startsWith('__feature_'));
 
   // استخراج رابط الموقع الأساسي
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tajertrack.vercel.app';
@@ -261,6 +274,9 @@ async function MerchantDashboardContent() {
       telegramTrackingLinkEnabled={merchant.telegram_tracking_link_enabled ?? false}
       confirmationTelegramEnabled={(merchant as any).confirmation_telegram_enabled ?? false}
       initialUpsells={(upsells || []) as any}
+      exchangeRequestsEnabled={exchangeRequestsEnabled}
+      initialExchangeRequests={initialExchangeRequests as any}
+      exchangeRequestsStorageAvailable={exchangeRequestsStorageAvailable}
     />
   );
 }

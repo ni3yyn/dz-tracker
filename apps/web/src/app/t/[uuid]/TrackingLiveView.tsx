@@ -6,6 +6,8 @@ import { TimelineEvent, BrandSettings, DEFAULT_BRAND_SETTINGS } from '@saas/ui';
 import { PushNotificationControl } from './PushNotificationControl';
 import styles from './t.module.css';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
+import { isDeliveredStatus, type ExchangeRequestSummary } from '../../../lib/exchange';
+import { ExchangeRequestCard } from './ExchangeRequestCard';
 
 type TimelineLineStyle = 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none';
 type TrackingBrandSettings = BrandSettings & { showWhatsAppButton?: boolean; animateBackgroundBlobs?: boolean; backgroundBlur?: boolean; timelineLineStyle?: TimelineLineStyle };
@@ -21,6 +23,10 @@ export interface UpsellItem {
 
 interface Props {
   orderId: string;
+  currentStatus: string;
+  exchangeRequestsEnabled?: boolean;
+  initialExchangeRequest?: ExchangeRequestSummary | null;
+  exchangeRequestsStorageAvailable?: boolean;
   trackingUuid?: string;
   externalOrderId: string;
   customerName: string | null;
@@ -140,6 +146,10 @@ function statusTone(title: string | undefined): string {
 
 export function TrackingLiveView({
   orderId,
+  currentStatus,
+  exchangeRequestsEnabled = false,
+  initialExchangeRequest = null,
+  exchangeRequestsStorageAvailable = true,
   trackingUuid,
   externalOrderId,
   customerName,
@@ -157,6 +167,7 @@ export function TrackingLiveView({
   upsells = [],
 }: Props) {
   const [events, setEvents] = useState<TimelineEvent[]>(initialEvents);
+  const [currentOrderStatus, setCurrentOrderStatus] = useState(currentStatus);
   const [confirmationStatus, setConfirmationStatus] = useState<
     'pending' | 'confirmed' | 'cancelled' | null
   >(initialConfirmationStatus ?? null);
@@ -301,8 +312,10 @@ export function TrackingLiveView({
         (payload) => {
           const updatedOrder = payload.new as {
             confirmation_status?: 'pending' | 'confirmed' | 'cancelled' | null;
+            current_status?: string;
           };
           setConfirmationStatus(updatedOrder.confirmation_status ?? null);
+          if (updatedOrder.current_status) setCurrentOrderStatus(updatedOrder.current_status);
         }
       )
       .subscribe();
@@ -684,6 +697,10 @@ export function TrackingLiveView({
               </p>
             )}
           </section>
+
+          {exchangeRequestsEnabled && exchangeRequestsStorageAvailable && isDeliveredStatus(currentOrderStatus) && (
+            <ExchangeRequestCard trackingUuid={trackingUuid || ''} externalOrderId={externalOrderId} initialRequest={initialExchangeRequest} />
+          )}
 
           {upsells && upsells.length > 0 && (
             <section className={styles.upsellSection} aria-label="منتجات قد تعجبك">

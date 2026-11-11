@@ -23,6 +23,10 @@ interface SettingsTabProps {
   isSavingConfirmation: boolean;
   hasActivePaidPlan: boolean;
   onToggleConfirmationTelegram: () => Promise<void>;
+  exchangeRequestsEnabled: boolean;
+  isSavingExchangeRequests: boolean;
+  exchangeRequestsStorageAvailable: boolean;
+  onToggleExchangeRequests: () => Promise<void>;
   subscription: SubscriptionInfo;
   normalizedLimit: number;
   isUnlimitedPlan: boolean;
@@ -56,6 +60,10 @@ export function SettingsTab({
   isSavingConfirmation,
   hasActivePaidPlan,
   onToggleConfirmationTelegram,
+  exchangeRequestsEnabled,
+  isSavingExchangeRequests,
+  exchangeRequestsStorageAvailable,
+  onToggleExchangeRequests,
   subscription,
   normalizedLimit,
   isUnlimitedPlan,
@@ -138,6 +146,14 @@ export function SettingsTab({
                 </div>
                 {!hasActivePaidPlan && <p style={{ margin: '8px 0 0', paddingTop: '9px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '11px' }}>ميزة تأكيد الطلب متاحة في الباقات المدفوعة Basic وGrowth وScale.</p>}
               </div>
+              <div className="dz-settings-section dz-settings-exchange" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 0, padding: '18px 20px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <div style={{ minWidth: 0 }}><span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>03 / AFTER-SALES</span><h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>خدمات ما بعد البيع</h2><p style={{ margin: '5px 0 0', fontSize: '12px', lineHeight: 1.7, color: 'var(--ink-muted)' }}>اسمح للزبائن بطلب استبدال المنتجات بعد استلامها، وتابع الطلبات من لوحة التحكم.</p></div>
+                  <button type="button" role="switch" aria-checked={exchangeRequestsEnabled} aria-busy={isSavingExchangeRequests} data-checked={exchangeRequestsEnabled ? 'true' : 'false'} aria-label="تفعيل طلبات الاستبدال" disabled={!exchangeRequestsStorageAvailable || isSavingExchangeRequests} onClick={() => void onToggleExchangeRequests()} style={{ width: '48px', height: '27px', flex: '0 0 48px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: exchangeRequestsEnabled ? '#273b30' : '#cbd1ca', cursor: !exchangeRequestsStorageAvailable || isSavingExchangeRequests ? 'not-allowed' : 'pointer', opacity: !exchangeRequestsStorageAvailable || isSavingExchangeRequests ? .62 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}><span className="dz-settings-switch-thumb">{isSavingExchangeRequests && <span className="dz-settings-switch-spinner" aria-hidden="true" />}</span></button>
+                </div>
+                <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}><span style={{ fontSize: '12px', color: exchangeRequestsEnabled ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{exchangeRequestsEnabled ? 'طلبات الاستبدال مفعّلة' : 'طلبات الاستبدال معطّلة'}</span>{!exchangeRequestsStorageAvailable && <p role="status" style={{ width: '100%', margin: 0, paddingTop: '10px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '12px', lineHeight: 1.7 }}>يلزم تطبيق تحديث قاعدة البيانات الخاص بطلبات الاستبدال أولاً لتفعيل هذه الميزة.</p>}</div>
+              </div>
+
               <section className="dz-settings-billing">
               <div className="dz-settings-billing-heading" style={{ margin: '0 0 13px' }}>
                 <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>03 / SUBSCRIPTION</span>
