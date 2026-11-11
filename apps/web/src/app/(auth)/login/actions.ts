@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase-server';
 import { getSupabaseAdminClient } from '@saas/database';
+import { isAuthorizedAdmin } from '../../../lib/admin-auth';
+import { LEGAL_TERMS_VERSION, LEGAL_PRIVACY_VERSION } from '../../../lib/legal';
 
 export async function login(formData: FormData) {
   const email = (formData.get('email') as string)?.trim().toLowerCase();
@@ -14,7 +16,7 @@ export async function login(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     let msg = error.message;
@@ -32,10 +34,9 @@ export async function login(formData: FormData) {
     return { error: msg };
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   revalidatePath('/', 'layout');
 
-  if (adminEmail && email === adminEmail) {
+  if (isAuthorizedAdmin(signInData.user)) {
     redirect('/admin');
   } else {
     redirect('/merchant');
@@ -50,6 +51,9 @@ export async function signup(formData: FormData) {
 
   if (!email || !password) {
     return { error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور' };
+  }
+  if (formData.get('acceptLegal') !== 'yes') {
+    return { error: 'يجب الموافقة على شروط الاستخدام وسياسة الخصوصية لإكمال إنشاء الحساب.' };
   }
   if (!storeName || storeName.length < 2) {
     return { error: 'يرجى إدخال اسم المتجر أو العلامة التجارية' };
@@ -91,25 +95,51 @@ export async function signup(formData: FormData) {
     return { error: userMessage };
   }
 
-  if (data.user) {
-    // إنشاء ملف التاجر فوراً في النظام بصلاحيات الأدمن
-    await adminClient.from('merchants').upsert(
+  if (!data.user) {
+    return { error: 'لم يتم إنشاء حساب المستخدم. حاول مرة أخرى.' };
+  }
+
+  // Create the merchant record and immutable acceptance audit row server-side.
+  const { data: merchant, error: merchantError } = await adminClient
+    .from('merchants')
+    .upsert(
       {
         auth_user_id: data.user.id,
-        store_name: storeName || email.split('@')[0],
+        store_name: storeName,
         subscription_tier: 'starter',
         subscription_status: 'active',
         max_orders_limit: 30,
       },
       { onConflict: 'auth_user_id' }
-    );
+    )
+    .select('id')
+    .single();
+
+  if (merchantError || !merchant) {
+    await adminClient.auth.admin.deleteUser(data.user.id);
+    return { error: 'تعذر تهيئة مساحة متجرك. لم يكتمل إنشاء الحساب؛ حاول مرة أخرى.' };
+  }
+
+  const { error: acceptanceError } = await adminClient
+    .from('merchant_legal_acceptances')
+    .insert({
+      user_id: data.user.id,
+      merchant_id: merchant.id,
+      terms_version: LEGAL_TERMS_VERSION,
+      privacy_version: LEGAL_PRIVACY_VERSION,
+      acceptance_source: 'merchant_signup',
+    });
+
+  if (acceptanceError) {
+    await adminClient.from('merchants').delete().eq('id', merchant.id);
+    await adminClient.auth.admin.deleteUser(data.user.id);
+    return { error: 'تعذر حفظ موافقتك القانونية بشكل آمن؛ لم يكتمل التسجيل. حاول مرة أخرى.' };
   }
 
   // إذا تم الدخول المباشر (عند تعطيل تأكيد البريد)
   if (data.session) {
-    const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
     revalidatePath('/', 'layout');
-    if (adminEmail && email === adminEmail) {
+    if (isAuthorizedAdmin(data.user)) {
       redirect('/admin');
     } else {
       redirect('/merchant');

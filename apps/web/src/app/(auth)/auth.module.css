@@ -295,3 +295,41 @@
 /* Arabic page labels stay readable and don't inherit the former English tracking style. */
 .visualEyebrow { direction: rtl; font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif; font-size: 10px; letter-spacing: 0; }
 .visualFooter > span:last-child { font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif; letter-spacing: 0; }
+
+
+/* Required signup agreement: compact and keyboard accessible. */
+.legalAcceptance {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 1px;
+  color: #647166;
+  font-size: 11px;
+  line-height: 1.9;
+}
+.legalAcceptance label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+.legalAcceptance input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 4px 0 0;
+  accent-color: #294b37;
+  cursor: pointer;
+}
+.legalAcceptance input:disabled { cursor: wait; opacity: .6; }
+.legalAcceptance a {
+  color: #294b37;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.legalAcceptance a:hover { color: #1d3427; }
+.legalAcceptance input:focus-visible {
+  outline: 3px solid rgba(77,113,81,.3);
+  outline-offset: 3px;
+}

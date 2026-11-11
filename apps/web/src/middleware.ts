@@ -29,7 +29,28 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // إذا كان يحاول دخول لوحة التاجر أو الإدارة وهو غير مسجل دخول
+  const configuredAdminId = process.env.ADMIN_USER_ID?.trim();
+  const configuredAdminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminAllowlistConfigured = Boolean(configuredAdminId || configuredAdminEmail);
+  const isAdmin = Boolean(user && (
+    configuredAdminId
+      ? user.id === configuredAdminId
+      : configuredAdminEmail && user.email?.trim().toLowerCase() === configuredAdminEmail
+  ));
+
+  if (
+    user &&
+    request.nextUrl.pathname.startsWith('/admin') &&
+    adminAllowlistConfigured &&
+    !isAdmin
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/merchant';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
+
+  // Middleware is defense-in-depth; protected server pages/actions re-authorize.
   if (!user && (request.nextUrl.pathname.startsWith('/merchant') || request.nextUrl.pathname.startsWith('/admin'))) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
@@ -38,9 +59,8 @@ export async function middleware(request: NextRequest) {
 
   // إذا كان مسجل دخول ويحاول فتح صفحة تسجيل الدخول، نوجهه للوحة المناسبة
   if (user && request.nextUrl.pathname === '/login') {
-    const adminEmail = process.env.ADMIN_EMAIL;
     const url = request.nextUrl.clone();
-    if (adminEmail && user.email?.toLowerCase() === adminEmail.toLowerCase()) {
+    if (isAdmin) {
       url.pathname = '/admin';
     } else {
       url.pathname = '/merchant';

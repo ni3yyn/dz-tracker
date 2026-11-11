@@ -4,6 +4,8 @@ import { getSupabaseAdminClient } from '@saas/database';
 import { AdminDashboardView } from './AdminDashboardView';
 import { logout } from './actions';
 import styles from './admin.module.css';
+import { isAdminConfigured, isAuthorizedAdmin } from '../../../lib/admin-auth';
+import { redirect } from 'next/navigation';
 
 export const metadata = {
   title: 'إدارة المنصة',
@@ -11,35 +13,28 @@ export const metadata = {
 };
 
 export default async function AdminDashboardPage() {
-  // 1. التحقق من هوية السوبر أدمن
+  // Server-side authentication and administrator authorization.
   const supabaseAuth = await createClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
 
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  const userEmail = user?.email?.trim().toLowerCase();
+  if (!user) redirect('/login');
 
-  // إذا لم يكن مسجل دخول أو كان البريد لا يطابق بريد الأدمن
-  if (!user || (adminEmail && userEmail !== adminEmail)) {
+  // Fail closed: a missing allowlist must never expose service-role data.
+  if (!isAdminConfigured()) {
     return (
       <div className={styles.deniedContainer}>
         <div className={styles.deniedCard}>
-          <h1>403 — غير مصرح لك بالوصول</h1>
-          <p>هذه الصفحة مخصصة فقط لمدير المنصة (Super Admin).</p>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            حسابك الحالي: <code>{user?.email || 'غير مسجل'}</code>
-          </p>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-            <a href="/merchant" className={styles.backBtn}>العودة للوحة التاجر</a>
-            <form action={logout}>
-              <button type="submit" className={styles.railLogoutBtn} style={{ padding: '0.6rem 1.25rem' }}>
-                تسجيل الخروج
-              </button>
-            </form>
-          </div>
+          <h1>لوحة الإدارة غير مهيّأة</h1>
+          <p>لم يتم ضبط هوية المدير المصرّح بها على الخادم. أضف ADMIN_USER_ID أو ADMIN_EMAIL في إعدادات الإنتاج.</p>
+          <form action={logout}>
+            <button type="submit" className={styles.railLogoutBtn}>تسجيل الخروج</button>
+          </form>
         </div>
       </div>
     );
   }
+
+  if (!isAuthorizedAdmin(user)) redirect('/merchant');
 
   const supabase = getSupabaseAdminClient();
 

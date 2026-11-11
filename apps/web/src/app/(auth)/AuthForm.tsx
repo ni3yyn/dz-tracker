@@ -137,6 +137,17 @@ export default function AuthForm({ mode, isAuthenticated = false }: { mode: Auth
                 </div>
               </div>
             )}
+            {!isLogin && (
+              <div className={styles.legalAcceptance}>
+                <label>
+                  <input type="checkbox" name="acceptLegal" value="yes" required disabled={loading} />
+                  <span>
+                    أوافق على <a href="/terms" target="_blank" rel="noopener noreferrer">شروط الاستخدام</a>
+                    {' '}وأقر باطلاعي على <a href="/privacy" target="_blank" rel="noopener noreferrer">سياسة الخصوصية</a>.
+                  </span>
+                </label>
+              </div>
+            )}
             <button type="submit" disabled={loading} className={styles.submitButton}>
               {loading ? <><span className={styles.spinner} aria-hidden="true" /><span>{isLogin ? 'جارٍ تسجيل الدخول…' : 'جارٍ إنشاء الحساب…'}</span></> : <><span>{isLogin ? 'تسجيل الدخول' : 'إنشاء حساب التاجر'}</span><ArrowIcon /></>}
             </button>

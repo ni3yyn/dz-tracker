@@ -1,0 +1,76 @@
+/* TajerTrack public legal documents — readable, responsive, and visually quiet. */
+.legalPage {
+  min-height: 100svh;
+  padding: 0 clamp(18px, 5vw, 72px) 40px;
+  background: #f7f6f0;
+  color: #202a23;
+  direction: rtl;
+  font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+}
+.siteHeader { width: min(100%, 1280px); margin: 0 auto; }
+.legalWrap { width: min(100%, 900px); margin: 18px auto 0; }
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 28px;
+  color: #6d796e;
+  font-size: 12px;
+  text-decoration: none;
+}
+.backLink:hover { color: #294b37; }
+.hero { padding: 12px 0 28px; border-bottom: 1px solid #dfe4db; }
+.eyebrow {
+  display: block;
+  margin-bottom: 13px;
+  color: #758374;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .03em;
+}
+.hero h1 {
+  margin: 0;
+  color: #202a23;
+  font-size: clamp(30px, 5vw, 46px);
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -.06em;
+}
+.intro { max-width: 760px; margin: 13px 0 0; color: #657267; font-size: 14px; line-height: 2; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; color: #879287; font-size: 10px; }
+.article { padding: 8px 0 0; }
+.section, .operatorDetails { padding: 24px 0; border-bottom: 1px solid #e4e8e0; }
+.section h2, .operatorDetails h2 { margin: 0 0 12px; color: #294b37; font-size: 16px; font-weight: 700; line-height: 1.7; }
+.sectionBody { color: #465349; font-size: 12px; line-height: 2.15; }
+.sectionBody p, .operatorDetails p { margin: 0 0 11px; }
+.sectionBody p:last-child, .operatorDetails p:last-child { margin-bottom: 0; }
+.sectionBody ul, .sectionBody ol { margin: 8px 0 12px; padding-inline-start: 23px; }
+.sectionBody li { margin: 4px 0; padding-inline-start: 3px; }
+.sectionBody strong, .operatorDetails strong { color: #273b2e; font-weight: 700; }
+.sectionBody a, .operatorDetails a { color: #294b37; text-decoration: underline; text-underline-offset: 3px; }
+.operatorDetails { padding: 22px 0; color: #465349; font-size: 12px; line-height: 2; }
+.contactSetupNotice { margin-top: 9px !important; padding-inline-start: 12px; border-inline-start: 2px solid #c9825e; color: #87553e; }
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 22px 0 8px;
+  color: #8a9589;
+  font-size: 10px;
+}
+.footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.footer a { color: #526653; text-decoration: none; }
+.footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 640px) {
+  .legalPage { padding-inline: 16px; }
+  .legalWrap { margin-top: 8px; }
+  .backLink { margin-bottom: 20px; }
+  .hero { padding-bottom: 22px; }
+  .intro { font-size: 12px; }
+  .section, .operatorDetails { padding: 19px 0; }
+  .section h2, .operatorDetails h2 { font-size: 14px; }
+  .sectionBody, .operatorDetails { font-size: 11px; }
+  .footer { align-items: flex-start; flex-direction: column; }
+}

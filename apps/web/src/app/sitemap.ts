@@ -1,5 +1,10 @@
-// src/app/sitemap.ts
 import type { MetadataRoute } from 'next';
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [{ url: 'https://tajertrack.vercel.app', lastModified: new Date() }];
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://tajertrack.vercel.app';
+  return [
+    { url: base, lastModified: new Date() },
+    { url: `${base}/privacy`, lastModified: new Date() },
+    { url: `${base}/terms`, lastModified: new Date() },
+  ];
 }

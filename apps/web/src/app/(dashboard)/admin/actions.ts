@@ -5,9 +5,18 @@ import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
 import { createClient } from '../../../lib/supabase-server';
 import crypto from 'node:crypto';
+import { isCurrentUserAdmin } from '../../../lib/admin-auth';
+
+async function denyUnlessAdmin() {
+  return await isCurrentUserAdmin()
+    ? null
+    : { error: 'غير مصرح لك بتنفيذ هذا الإجراء.' };
+}
 
 // 1. قبول وتفعيل اشتراك BaridiMob / Chargily
 export async function approvePayment(formData: FormData) {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
   const paymentId = formData.get('payment_id') as string;
   const adminNotes = (formData.get('admin_notes') as string) || 'تم التحقق من الوصل والموافقة عليه بنجاح';
 
@@ -70,6 +79,8 @@ export async function approvePayment(formData: FormData) {
 
 // 2. رفض وصل الدفع
 export async function rejectPayment(formData: FormData) {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
   const paymentId = formData.get('payment_id') as string;
   const adminNotes = (formData.get('admin_notes') as string) || 'تعذر تأكيد عملية التحويل، يرجى إعادة إرسال وصل واضح';
 
@@ -92,6 +103,8 @@ export async function rejectPayment(formData: FormData) {
 
 // 3. تعديل وتمديد اشتراك المتجر يدوياً (Manual Subscription Override)
 export async function manualUpdateSubscription(formData: FormData) {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
   const merchantId = formData.get('merchant_id') as string;
   const tier = (formData.get('tier') as string) || 'growth';
   const additionalDays = parseInt((formData.get('days') as string) || '30', 10);
@@ -150,6 +163,8 @@ export async function manualUpdateSubscription(formData: FormData) {
 
 // 4. تجميد / تفعيل حساب المتجر (Suspend / Activate)
 export async function toggleMerchantStatus(formData: FormData) {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
   const merchantId = formData.get('merchant_id') as string;
   const currentStatus = formData.get('current_status') as string;
 
@@ -169,6 +184,8 @@ export async function toggleMerchantStatus(formData: FormData) {
 
 // 5. تجديد مفتاح الـ API
 export async function regenerateApiKey(formData: FormData) {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
   const merchantId = formData.get('merchant_id') as string;
   if (!merchantId) return { error: 'معرّف المتجر مطلوب' };
 
