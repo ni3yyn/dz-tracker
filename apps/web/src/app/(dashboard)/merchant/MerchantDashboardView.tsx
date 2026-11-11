@@ -76,6 +76,13 @@ const formatOrderDate = (value: string) => {
     : date.toLocaleDateString('ar-DZ', { day: 'numeric', month: 'short' });
 };
 
+const formatOrderTime = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? '—'
+    : date.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+};
+
 export interface SubscriptionInfo {
   tier: string;
   status: string;
