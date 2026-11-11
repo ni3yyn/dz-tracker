@@ -94,7 +94,7 @@ async function MerchantDashboardContent() {
   let orders: any = extendedOrdersQuery.data;
   if (
     extendedOrdersQuery.error &&
-    /carrier_order_id|carrier_metadata/i.test(extendedOrdersQuery.error.message || '')
+    /carrier_order_id|carrier_metadata|carrier_last_event_at/i.test(extendedOrdersQuery.error.message || '')
   ) {
     const fallbackOrdersQuery = await supabaseAdmin
       .from('orders')
