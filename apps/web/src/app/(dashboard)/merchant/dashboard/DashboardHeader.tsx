@@ -1,6 +1,6 @@
 'use client';
 
-import SiteHeader from '../../SiteHeader';
+import SiteHeader from '../../../SiteHeader';
 import { Icons } from '../components/DashboardIcons';
 import type { MerchantDashboardTab } from './DashboardSidebar';
 
