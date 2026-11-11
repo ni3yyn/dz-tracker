@@ -2122,7 +2122,9 @@
           min-width: min(500px, 100vw);
         }
 
-        /* Order details animate without expanding the flex layout or blurring the whole page. */
+        /* Order details reveal from the RTL drawer's right edge.
+           Keep this separate from the legacy drawer keyframes above so closing
+           only reverses the reveal and never replays an entrance animation. */
         .dz-order-details-backdrop {
           background: rgba(16, 24, 19, 0.42);
           backdrop-filter: none;
@@ -2130,13 +2132,15 @@
           opacity: 0;
           visibility: hidden;
           pointer-events: none;
-          transition: opacity .16s ease, visibility 0s linear .18s;
+          animation: none !important;
+          transition:
+            opacity .3s cubic-bezier(.2,.65,.25,1),
+            visibility 0s linear .32s;
         }
         .dz-order-details-backdrop[data-open="true"] {
           opacity: 1;
           visibility: visible;
           pointer-events: auto;
-          animation: dz-order-details-backdrop-in .16s ease-out both;
           transition-delay: 0s;
         }
         .dz-order-details-panel {
@@ -2146,36 +2150,26 @@
           padding: 0;
           border-inline-start: 0;
           overflow: hidden;
-          opacity: 0;
+          opacity: 1;
           visibility: hidden;
-          transform: translateX(18px);
+          clip-path: inset(0 0 0 100%);
           animation: none !important;
+          transform: none !important;
           transition:
-            transform .2s cubic-bezier(.2,.75,.25,1),
-            opacity .16s ease,
-            visibility 0s linear .2s;
+            clip-path .32s cubic-bezier(.2,.75,.25,1),
+            visibility 0s linear .32s;
         }
         .dz-order-details-panel[data-open="true"] {
-          opacity: 1;
           visibility: visible;
-          transform: translateX(0);
+          clip-path: inset(0);
           border-inline-start: 1px solid var(--border-soft);
           overflow-x: hidden;
           overflow-y: auto;
-          animation: dz-order-details-panel-in .2s cubic-bezier(.2,.75,.25,1) both !important;
           transition-delay: 0s;
         }
         .dz-order-details-panel .dz-order-side-panel-inner--details {
           width: min(520px, 100vw);
           min-width: min(520px, 100vw);
-        }
-        @keyframes dz-order-details-backdrop-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes dz-order-details-panel-in {
-          from { opacity: .72; transform: translateX(18px); }
-          to { opacity: 1; transform: translateX(0); }
         }
         @media (max-width: 560px) {
           .dz-order-side-panel-inner { padding: 24px 18px; }
