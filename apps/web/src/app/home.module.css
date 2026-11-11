@@ -1195,7 +1195,7 @@
 }
 .footerTop {
   position: relative; z-index: 1; display: grid;
-  grid-template-columns: minmax(230px,1.45fr) minmax(120px,.7fr) minmax(120px,.7fr) minmax(190px,1fr);
+  grid-template-columns: minmax(230px,1.45fr) repeat(3,minmax(105px,.62fr)) minmax(175px,1fr);
   gap: clamp(26px,4vw,58px); padding-bottom: 44px;
 }
 .footerIdentity { max-width: 350px; }
@@ -1240,7 +1240,7 @@
 .footerTopLink:hover { color: #fffefa; }
 .footerTopLink span { color: #d57955; font-size: 16px; }
 @media (max-width: 1080px) {
-  .footerTop { grid-template-columns: minmax(220px,1.2fr) minmax(110px,.7fr) minmax(110px,.7fr); }
+  .footerTop { grid-template-columns: minmax(220px,1.2fr) repeat(3,minmax(100px,.7fr)); }
   .footerStart {
     grid-column: 1 / -1; display: flex; align-items: center; gap: 18px; padding: 18px 0 0;
     border-inline-start: 0; border-top: 1px solid rgba(230,237,226,.16);

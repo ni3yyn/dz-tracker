@@ -7,7 +7,7 @@
   direction: rtl;
   font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
 }
-.siteHeader { width: min(100%, 1280px); margin: 0 auto; }
+.siteHeader { width: min(100%, 1280px); height: 82px; margin: 0 auto; }
 .legalWrap { width: min(100%, 900px); margin: 18px auto 0; }
 .backLink {
   display: inline-flex;
@@ -63,7 +63,11 @@
 .footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
 .footer a { color: #526653; text-decoration: none; }
 .footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 980px) {
+  .siteHeader { height: 74px; }
+}
 @media (max-width: 640px) {
+  .siteHeader { height: 70px; }
   .legalPage { padding-inline: 16px; }
   .legalWrap { margin-top: 8px; }
   .backLink { margin-bottom: 20px; }

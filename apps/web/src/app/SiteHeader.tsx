@@ -146,6 +146,8 @@ export default function SiteHeader({
         <a href="/#features">المزايا</a>
         <a href="/#pricing">الأسعار</a>
         <a href="/#faq">الأسئلة الشائعة</a>
+        <a href="/privacy">سياسة الخصوصية</a>
+        <a href="/terms">شروط الاستخدام</a>
         {!isAuthenticated && <a className={styles.loginLink} href={accountHref}>تسجيل الدخول</a>}
       </nav>
 
@@ -178,6 +180,8 @@ export default function SiteHeader({
                   <a href="/#features" onClick={closeSiteMenu}>المزايا</a>
                   <a href="/#pricing" onClick={closeSiteMenu}>الأسعار</a>
                   <a href="/#faq" onClick={closeSiteMenu}>الأسئلة الشائعة</a>
+                  <a href="/privacy" onClick={closeSiteMenu}>سياسة الخصوصية</a>
+                  <a href="/terms" onClick={closeSiteMenu}>شروط الاستخدام</a>
                 </nav>
                 <div className={styles.mobileActions}>
                   {!isAuthenticated && <a href={accountHref} onClick={closeSiteMenu}>تسجيل الدخول</a>}

@@ -544,6 +544,11 @@ export default async function HomePage() {
             <a href={isAuthenticated ? "/merchant" : "/login"}>{isAuthenticated ? "لوحة التاجر" : "تسجيل الدخول"}</a>
             <a href="/register">إنشاء حساب</a>
           </nav>
+          <nav className={styles.footerNav} aria-label="الوثائق القانونية">
+            <h2>الوثائق القانونية</h2>
+            <a href="/privacy">سياسة الخصوصية</a>
+            <a href="/terms">شروط الاستخدام</a>
+          </nav>
           <div className={styles.footerStart}>
             <span className={styles.footerOverline}>جاهز للانطلاق؟</span>
             <p>ابدأ بربط متجرك، ودع زبائنك يتابعون طلباتهم بسهولة.</p>

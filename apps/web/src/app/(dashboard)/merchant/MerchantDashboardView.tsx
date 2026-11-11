@@ -9070,6 +9070,29 @@ export function MerchantDashboardView({
               </>
               )}
               </section>
+
+              <section
+                className="dz-settings-section dz-settings-legal"
+                aria-labelledby="dz-settings-legal-title"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px', marginBottom: '14px', boxShadow: 'var(--shadow-sm)' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+                  <div>
+                    <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>03 / LEGAL & PRIVACY</span>
+                    <h2 id="dz-settings-legal-title" style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>الوثائق القانونية</h2>
+                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.8 }}>راجع شروط استخدام المنصة وكيفية التعامل مع بيانات متجرك وزبائنك.</p>
+                  </div>
+                  <Icons.Shield />
+                </div>
+                <nav aria-label="الوثائق القانونية" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 26px', paddingTop: '8px' }}>
+                  <a href="/privacy" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 0', color: 'var(--green, #294b37)', fontSize: '12px', fontWeight: 750, textDecoration: 'none', borderBottom: '1px solid var(--border-soft)' }}>
+                    سياسة الخصوصية <span aria-hidden="true">↗</span>
+                  </a>
+                  <a href="/terms" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 0', color: 'var(--green, #294b37)', fontSize: '12px', fontWeight: 750, textDecoration: 'none', borderBottom: '1px solid var(--border-soft)' }}>
+                    شروط الاستخدام <span aria-hidden="true">↗</span>
+                  </a>
+                </nav>
+              </section>
             </div>
           )}
 
