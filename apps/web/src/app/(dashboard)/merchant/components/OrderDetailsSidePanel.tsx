@@ -20,7 +20,7 @@ interface OrderDetailsOrder {
   created_at: string;
 }
 
-interface OrderDetailsSidePanelHandle {
+export interface OrderDetailsSidePanelHandle {
   open: (orderId: string) => void;
   closeIfDeleted: (orderIds: string[]) => void;
 }
@@ -39,7 +39,7 @@ interface OrderDetailsSidePanelProps {
  * Opening the side panel must not synchronously rerender the orders table and
  * every dashboard tab.
  */
-const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSidePanelHandle, OrderDetailsSidePanelProps>(
+export const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSidePanelHandle, OrderDetailsSidePanelProps>(
   function OrderDetailsSidePanel({ orders, getStatusLabel, getStatusBadgeStyle, getWhatsAppRecoveryUrl, formatOrderDate, isAttentionStatus }, ref) {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const selectedOrderIdRef = useRef<string | null>(null);
