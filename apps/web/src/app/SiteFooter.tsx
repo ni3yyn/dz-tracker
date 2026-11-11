@@ -7,17 +7,19 @@ type Props = {
   isAuthenticated?: boolean;
   homeHref?: string;
   currentDocument?: LegalDocument;
+  className?: string;
 };
 
 export default function SiteFooter({
   isAuthenticated = false,
   homeHref = '',
   currentDocument,
+  className = '',
 }: Props) {
   const sectionHref = (id: string) => `${homeHref}#${id}`;
 
   return (
-    <footer className={styles.footer}>
+    <footer className={[styles.footer, className].filter(Boolean).join(' ')}>
       <div className={styles.footerTop}>
         <div className={styles.footerIdentity}>
           <a href="/" className={styles.footerBrand} aria-label="تاجر تراك - الصفحة الرئيسية">
