@@ -69,6 +69,11 @@ BEGIN
     RAISE EXCEPTION 'Duplicate order should resolve to existing without consuming quota; got %', v_result;
   END IF;
 
+  -- Deleting the order record must not delete its quota event or refund usage.
+  DELETE FROM public.orders
+  WHERE merchant_id = v_merchant
+    AND external_order_id = 'starter-existing-1';
+
   v_result := public.create_tracked_order_with_quota(
     v_merchant, 'starter-31', NULL, NULL, NULL, NULL, 'order_placed',
     NULL, NULL, NULL, NULL, NULL, 'direct'

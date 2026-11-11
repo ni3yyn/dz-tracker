@@ -407,7 +407,109 @@ export class TrackingOrchestrator {
           }
         );
 
-        if (quotaError) {
+        const quotaFunctionMissing = Boolean(
+          quotaError && (
+            quotaError.code === 'PGRST202' ||
+            quotaError.code === '42883' ||
+            /could not find the function|function .* does not exist/i.test(quotaError.message || '')
+          )
+        );
+
+        if (quotaFunctionMissing) {
+          // Safe rollout compatibility: the old order flow remains available
+          // until the accompanying SQL migration has been applied. This path
+          // is intentionally temporary; the atomic RPC takes over immediately
+          // once PostgREST can resolve the new function.
+          console.warn('[Quota]: Atomic quota RPC is not installed yet; using legacy quota handling until the SQL migration is applied.');
+
+          const legacyTier = merchant.subscription_tier || 'starter';
+          const legacyExpired = Boolean(
+            merchant.subscription_expires_at &&
+            new Date(merchant.subscription_expires_at).getTime() < Date.now() &&
+            legacyTier !== 'starter'
+          );
+          if (legacyExpired || merchant.subscription_status === 'expired') {
+            if (legacyExpired && merchant.subscription_status !== 'expired') {
+              await this.supabase
+                .from('merchants')
+                .update({ subscription_status: 'expired' })
+                .eq('id', merchant.id);
+            }
+            return {
+              success: false,
+              error: 'subscription_expired',
+              message: 'انتهت صلاحية اشتراك المتجر. يرجى تجديد الاشتراك لمتابعة تسجيل طلبات جديدة.',
+            };
+          }
+
+          const legacyLimits: Record<string, number> = {
+            starter: 30,
+            basic: 100,
+            growth: 200,
+            scale: 999999,
+          };
+          const legacyDefaultLimit = legacyLimits[legacyTier] || 30;
+          const legacyLimit = legacyTier === 'scale'
+            ? 999999
+            : (merchant.max_orders_limit && merchant.max_orders_limit >= legacyDefaultLimit
+                ? merchant.max_orders_limit
+                : legacyDefaultLimit);
+          const legacyUsed = merchant.monthly_orders_used ?? 0;
+
+          if (legacyTier !== 'scale' && legacyUsed >= legacyLimit) {
+            return {
+              success: false,
+              error: 'subscription_limit_reached',
+              message: `لقد استنفدت الحد الأقصى للطلبات المسموحة في باقتك الحالية (${legacyLimit} طلب). يرجى ترقية باقتك للاستمرار في استقبال طلبات جديدة.`,
+            };
+          }
+
+          const { data: legacyOrder, error: legacyCreateError } = await (this.supabase as any)
+            .from('orders')
+            .insert({
+              merchant_id: event.merchantId,
+              external_order_id: event.externalOrderId,
+              customer_name: event.customerName || null,
+              customer_phone: event.customerPhone || null,
+              product_name: event.productName || null,
+              product_image: event.productImage || null,
+              current_status: event.statusRaw,
+              carrier_last_event_at: event.sourceOccurredAt || null,
+              carrier_name: event.carrierName || 'Yalidine Express',
+              carrier_tracking_number: event.carrierTrackingNumber || null,
+              ...(
+                event.sourceProvider === 'maystro' ||
+                event.sourceProvider === 'zimou' ||
+                event.sourceProvider === 'elogistia' ||
+                event.sourceProvider === 'ecom_v2' ||
+                event.sourceProvider === 'yalidine' ||
+                event.sourceProvider === 'guepex' ||
+                event.sourceProvider === 'procolis'
+              ) ? {
+                carrier_order_id: event.carrierOrderId || null,
+                carrier_metadata: event.carrierMetadata || null,
+              } : {},
+            })
+            .select('id, tracking_uuid')
+            .single();
+
+          if (legacyCreateError || !legacyOrder) {
+            const racedOrder = await this.findExistingOrder(event);
+            if (racedOrder && recoveryAttempt < 1) {
+              return this.executeProcessEvent(event, options, recoveryAttempt + 1);
+            }
+            throw legacyCreateError || new Error('Legacy order creation returned no order.');
+          }
+
+          const { error: legacyUsageError } = await this.supabase
+            .from('merchants')
+            .update({ monthly_orders_used: legacyUsed + 1 })
+            .eq('id', merchant.id);
+          if (legacyUsageError) throw legacyUsageError;
+
+          orderId = legacyOrder.id;
+          trackingUuid = legacyOrder.tracking_uuid;
+        } else if (quotaError) {
           // A conflicting insert from an older/parallel application instance
           // may still win the race. Recover through the normal existing-order
           // path; otherwise preserve the database error for observability.
@@ -417,7 +519,7 @@ export class TrackingOrchestrator {
           }
           throw quotaError;
         }
-
+        } else {
         const reservation = quotaReservation as any;
         if (!reservation || typeof reservation.outcome !== 'string') {
           throw new Error('Quota reservation returned an invalid response.');
@@ -479,6 +581,7 @@ export class TrackingOrchestrator {
 
         orderId = reservation.order_id;
         trackingUuid = reservation.tracking_uuid;
+        }
 
         // Explicitly classify initial history as order_created (bypasses push notification fanout)
         await this.insertHistory(orderId, event.statusRaw, displayStatus, event.description, 'order_created', event.sourceOccurredAt, Boolean(event.sourceEventId));

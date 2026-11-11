@@ -69,7 +69,7 @@ SELECT m.id, m.store_name, m.subscription_tier,
 FROM public.merchants AS m
 CROSS JOIN LATERAL (
   SELECT COUNT(*)::INTEGER AS expected_usage
-  FROM public.orders AS o
+  FROM public.merchant_order_usage_events AS o
   WHERE o.merchant_id = m.id
     AND o.created_at >= CASE
       WHEN COALESCE(m.subscription_tier, 'starter') = 'starter'
@@ -81,7 +81,7 @@ CROSS JOIN LATERAL (
 WHERE m.monthly_orders_used IS DISTINCT FROM usage.expected_usage;
 ```
 
-After the atomic quota migration is deployed, this query should normally return no rows. It is a diagnostic check; do not manually update counters to hide a mismatch.
+After the atomic quota migration is deployed, this query should normally return no rows. Usage events remain counted if an order is later deleted. It is a diagnostic check; do not manually update counters to hide a mismatch.
 
 ## 2. A lightweight operating rhythm
 

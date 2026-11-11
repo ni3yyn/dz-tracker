@@ -1,6 +1,36 @@
 -- TajerTrack: atomic order quota enforcement and exact usage reconciliation.
 -- Apply after the existing merchant/orders schema and the current integration migrations.
 
+-- One row for every accepted new order. The row survives order deletion so
+-- deleting old orders cannot be used to repeatedly refill a monthly quota.
+CREATE TABLE IF NOT EXISTS public.merchant_order_usage_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+  order_id UUID REFERENCES public.orders(id) ON DELETE SET NULL,
+  external_order_id TEXT NOT NULL,
+  source_provider TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS merchant_order_usage_events_order_unique
+  ON public.merchant_order_usage_events (order_id)
+  WHERE order_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS merchant_order_usage_events_merchant_created_idx
+  ON public.merchant_order_usage_events (merchant_id, created_at);
+
+ALTER TABLE public.merchant_order_usage_events ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.merchant_order_usage_events FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE public.merchant_order_usage_events TO service_role;
+
+-- Existing orders are the historical source of truth for usage at cutover.
+INSERT INTO public.merchant_order_usage_events (
+  merchant_id, order_id, external_order_id, created_at
+)
+SELECT merchant_id, id, external_order_id, created_at
+FROM public.orders
+ON CONFLICT (order_id) WHERE order_id IS NOT NULL DO NOTHING;
+
 CREATE OR REPLACE FUNCTION public.reconcile_merchant_order_usage(
   p_merchant_id UUID
 )
@@ -35,7 +65,7 @@ BEGIN
 
   SELECT COUNT(*)::INTEGER
   INTO v_used
-  FROM public.orders
+  FROM public.merchant_order_usage_events
   WHERE merchant_id = p_merchant_id
     AND created_at >= v_period_start;
 
@@ -212,7 +242,7 @@ BEGIN
 
   SELECT COUNT(*)::INTEGER
   INTO v_used
-  FROM public.orders
+  FROM public.merchant_order_usage_events
   WHERE merchant_id = p_merchant_id
     AND created_at >= v_period_start;
 
@@ -259,6 +289,21 @@ BEGIN
     p_carrier_metadata
   )
   RETURNING * INTO v_order;
+
+  INSERT INTO public.merchant_order_usage_events (
+    merchant_id,
+    order_id,
+    external_order_id,
+    source_provider,
+    created_at
+  )
+  VALUES (
+    p_merchant_id,
+    v_order.id,
+    p_external_order_id,
+    p_source_provider,
+    v_order.created_at
+  );
 
   v_used := v_used + 1;
   UPDATE public.merchants
