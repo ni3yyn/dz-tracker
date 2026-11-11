@@ -105,6 +105,7 @@ jobs:
         run: |
           set -euo pipefail
           psql -X -v ON_ERROR_STOP=1 -f apps/web/tests/sql/quota-fixture-and-sequential-tests.sql
+          psql -X -v ON_ERROR_STOP=1 -f apps/web/tests/sql/shipment-exceptions-fixture.sql
 
           psql -X -A -t -q -v ON_ERROR_STOP=1 \
             -v merchant_id=10000000-0000-4000-8000-000000000004 \

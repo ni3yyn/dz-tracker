@@ -123,7 +123,7 @@ export function detectShipmentExceptions(
     if (elapsed === null) continue;
 
     if (
-      ['created','label_created','label-created'].includes(status) &&
+      ['created','label_created'].includes(status) &&
       Boolean(order.carrier_name && order.carrier_tracking_number) &&
       elapsed >= 48 * HOUR
     ) {
