@@ -7679,12 +7679,12 @@ export function MerchantDashboardView({
                 <div className="dz-table-scroll">
                   <table className="dz-orders-table">
                     <colgroup>
-                      <col style={{ width: '32px' }} />
-                      <col style={{ width: '140px' }} />
-                      <col style={{ width: '24%' }} />
-                      <col style={{ width: '24%' }} />
-                      <col style={{ width: '24%' }} />
-                      <col style={{ width: '124px' }} />
+                      <col style={{ width: '3%' }} />
+                      <col style={{ width: '16%' }} />
+                      <col style={{ width: '17%' }} />
+                      <col style={{ width: '17%' }} />
+                      <col style={{ width: '35%' }} />
+                      <col style={{ width: '12%' }} />
                     </colgroup>
                     <thead>
                       <tr>
@@ -7702,7 +7702,22 @@ export function MerchantDashboardView({
                       ) : filteredOrders.slice(0, visibleOrders).map((order) => {
                         const isAlert = exceptionOrderIds.has(order.id);
                         return (
-                          <tr key={order.id} className={isAlert ? 'row-alert' : ''}>
+                          <tr
+                            key={order.id}
+                            className={isAlert ? 'row-alert dz-order-clickable-row' : 'dz-order-clickable-row'}
+                            tabIndex={0}
+                            aria-label={'فتح تفاصيل الشحنة ' + order.external_order_id}
+                            onClick={(event) => {
+                              const target = event.target;
+                              if (target instanceof Element && target.closest('button, a, input, select, textarea, label, [role="button"], [role="img"]')) return;
+                              setSelectedOrderId(order.id);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
+                              event.preventDefault();
+                              setSelectedOrderId(order.id);
+                            }}
+                          >
                             <td className="dz-order-select-cell">
                               <input
                                 type="checkbox"
@@ -7713,7 +7728,10 @@ export function MerchantDashboardView({
                               />
                             </td>
                             <td className="dz-order-date-cell">
-                              <span style={{ color: 'var(--ink-muted)', fontSize: '11px', fontWeight: 650, whiteSpace: 'nowrap' }}>{formatOrderDate(order.created_at)}</span>
+                              <div className="dz-order-date-value">
+                                <strong>{formatOrderDate(order.created_at)}</strong>
+                                <span>{formatOrderTime(order.created_at)}</span>
+                              </div>
                             </td>
                             <td>
                               <strong style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>{order.customer_name || 'عميل'}</strong>
@@ -7722,9 +7740,10 @@ export function MerchantDashboardView({
                                 {order.customer_phone && <button type="button" aria-label="نسخ رقم العميل" className="dz-icon-btn" onClick={() => copyToClipboard(order.customer_phone!, `ph_${order.id}`)}>{copiedKey === `ph_${order.id}` ? <Icons.Check /> : <Icons.Copy />}</button>}
                               </div>
                             </td>
-                            <td>
-                              <div style={{ fontSize: '11px', fontWeight: 700, marginBottom: '5px' }}>{order.carrier_name || 'غير محدد'}</div>
-                              <span style={{ fontSize: '10px', color: 'var(--ink-muted)', overflowWrap: 'anywhere' }}>{order.carrier_tracking_number || 'لا يوجد رقم تتبع'}</span>
+                            <td className="dz-order-carrier-cell">
+                              <strong className="dz-order-reference">{order.external_order_id}</strong>
+                              <div className="dz-order-carrier-name">{order.carrier_name || 'غير محدد'}</div>
+                              <span className="dz-order-tracking-number">{order.carrier_tracking_number || 'لا يوجد رقم تتبع'}</span>
                             </td>
                             <td>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
