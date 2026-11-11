@@ -25,6 +25,12 @@
 }
 
 .sectionInner { position: relative; z-index: 1; padding: clamp(19px, 3vw, 30px); }
+.section svg { display: block; flex: 0 0 auto; }
+.sectionIcon svg { width: 24px; height: 24px; max-width: 24px; max-height: 24px; }
+.statusIcon svg { width: 22px; height: 22px; max-width: 22px; max-height: 22px; }
+.progressMarker svg { width: 14px; height: 14px; max-width: 14px; max-height: 14px; }
+.shipmentIcon svg { width: 18px; height: 18px; max-width: 18px; max-height: 18px; }
+.actionButton svg, .closeForm svg { width: 17px; height: 17px; max-width: 17px; max-height: 17px; }
 .sectionIntro { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .introIdentity { display: flex; align-items: center; gap: 15px; min-width: 0; }
 

@@ -23,18 +23,18 @@ const progressStages = [
 ] as const;
 
 function CheckIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
-function ExchangeIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h11l-2.8-2.8M18 7l-2.8 2.8M17 17H6l2.8 2.8M6 17l2.8-2.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><path d="M18 7a7 7 0 0 1 1.2 8M6 17a7 7 0 0 1-1.2-8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>;
+function ExchangeIcon({ size = 24 }: { size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h11l-2.8-2.8M18 7l-2.8 2.8M17 17H6l2.8 2.8M6 17l2.8-2.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><path d="M18 7a7 7 0 0 1 1.2 8M6 17a7 7 0 0 1-1.2-8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>;
 }
 
 function StatusIcon({ status }: { status: ExchangeRequestSummary['status'] }) {
-  if (status === 'rejected') return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 21 19H3l9-15.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M12 9v4.5m0 2.5h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
+  if (status === 'rejected') return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 21 19H3l9-15.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M12 9v4.5m0 2.5h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
   if (status === 'completed') return <CheckIcon />;
-  if (status === 'replacement_in_transit') return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><circle cx="7" cy="18" r="1.7" stroke="currentColor" strokeWidth="1.7" /><circle cx="18" cy="18" r="1.7" stroke="currentColor" strokeWidth="1.7" /></svg>;
-  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.7" /><path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+  if (status === 'replacement_in_transit') return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><circle cx="7" cy="18" r="1.7" stroke="currentColor" strokeWidth="1.7" /><circle cx="18" cy="18" r="1.7" stroke="currentColor" strokeWidth="1.7" /></svg>;
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.7" /><path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
 export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequest }: Props) {
@@ -89,7 +89,7 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
       <div className={styles.sectionInner}>
         <div className={styles.sectionIntro}>
           <div className={styles.introIdentity}>
-            <span className={styles.sectionIcon} aria-hidden="true"><ExchangeIcon /></span>
+            <span className={styles.sectionIcon} aria-hidden="true"><ExchangeIcon size={24} /></span>
             <div className={styles.introCopy}>
               <span className={styles.eyebrow}>خدمات ما بعد البيع</span>
               <h2 id="exchange-request-title" className={styles.title}>استبدال المنتج</h2>
@@ -133,7 +133,7 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
             {request.replacement_shipment && (
               <div className={styles.shipmentDetails}>
                 <div className={styles.shipmentHeading}>
-                  <span className={styles.shipmentIcon} aria-hidden="true"><ExchangeIcon /></span>
+                  <span className={styles.shipmentIcon} aria-hidden="true"><ExchangeIcon size={18} /></span>
                   <div><span>شحنة المنتج البديل</span><strong>{request.replacement_shipment.carrier_name || 'شركة التوصيل'}</strong></div>
                 </div>
                 <div className={styles.shipmentStatus}>
@@ -155,7 +155,7 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
             </div>
             <button type="button" className={styles.actionButton} onClick={() => { setFormOpen(true); setError(''); }}>
               <span>{request ? 'تقديم طلب جديد' : 'أرغب في استبدال المنتج'}</span>
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
           </div>
         )}
@@ -165,7 +165,7 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
             <div className={styles.formHeading}>
               <div><span className={styles.formStep}>طلب استبدال جديد</span><h3>أخبرنا كيف يمكننا مساعدتك</h3></div>
               <button type="button" className={styles.closeForm} onClick={() => { setFormOpen(false); setError(''); }} aria-label="إغلاق نموذج الاستبدال">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
               </button>
             </div>
             <div className={styles.formFields}>
