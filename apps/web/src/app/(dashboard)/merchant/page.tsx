@@ -88,12 +88,13 @@ async function MerchantDashboardContent() {
     .eq('merchant_id', merchant.id)
     .order('created_at', { ascending: false });
 
-  // Keep the existing merchant dashboard usable during the short deploy/migration
-  // window. Maystro-specific columns become available after its SQL is applied.
+  // Keep the dashboard available when optional carrier snapshot columns differ
+  // during a rolling migration. Without carrier_last_event_at, time-based rules
+  // stay silent instead of guessing from updated_at.
   let orders: any = extendedOrdersQuery.data;
   if (
     extendedOrdersQuery.error &&
-    /carrier_order_id|carrier_metadata|carrier_last_event_at/i.test(extendedOrdersQuery.error.message || '')
+    /carrier_order_id|carrier_metadata/i.test(extendedOrdersQuery.error.message || '')
   ) {
     const fallbackOrdersQuery = await supabaseAdmin
       .from('orders')
@@ -101,6 +102,21 @@ async function MerchantDashboardContent() {
       .eq('merchant_id', merchant.id)
       .order('created_at', { ascending: false });
     orders = fallbackOrdersQuery.data;
+
+    if (
+      fallbackOrdersQuery.error &&
+      /carrier_last_event_at/i.test(fallbackOrdersQuery.error.message || '')
+    ) {
+      const minimalOrdersQuery = await supabaseAdmin
+        .from('orders')
+        .select('id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, tracking_uuid, created_at, confirmation_status')
+        .eq('merchant_id', merchant.id)
+        .order('created_at', { ascending: false });
+      orders = minimalOrdersQuery.data;
+      if (minimalOrdersQuery.error) {
+        console.error('[MerchantDashboard] Could not load fallback orders:', minimalOrdersQuery.error.message);
+      }
+    }
   }
 
   const { data: exceptionStatesData, error: exceptionStatesError } = await (supabaseAdmin as any)

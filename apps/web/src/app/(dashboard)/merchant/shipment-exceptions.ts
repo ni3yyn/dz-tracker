@@ -55,6 +55,7 @@ function createException(
   const eventFingerprint = [
     (order.current_status || '').trim().toLowerCase(),
     lastEventAt || order.created_at,
+    order.carrier_name || '',
     order.carrier_tracking_number || '',
   ].join('|');
   return {
