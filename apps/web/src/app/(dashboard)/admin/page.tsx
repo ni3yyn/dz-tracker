@@ -8,6 +8,8 @@ import styles from './admin.module.css';
 import { isAdminConfigured, isAuthorizedAdmin } from '../../../lib/admin-auth';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'إدارة المنصة',
   description: 'إدارة متاجر تاجر تراك واشتراكاتها وبيانات الشحن.',
