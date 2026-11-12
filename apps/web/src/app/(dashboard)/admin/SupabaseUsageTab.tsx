@@ -193,7 +193,7 @@ export default function SupabaseUsageTab() {
     return sum;
   }, { rest: 0, auth: 0, realtime: 0, storage: 0 }), [buckets]);
   const allRequests = totals.rest + totals.auth + totals.realtime + totals.storage;
-  const maxDailyRequests = Math.max(1, ...buckets.map((bucket) =>
+  const maxSampleRequests = Math.max(1, ...buckets.map((bucket) =>
     bucket.total_rest_requests + bucket.total_auth_requests + bucket.total_realtime_requests + bucket.total_storage_requests
   ));
   const tier = normalizeTier(snapshot?.planTier);
@@ -231,14 +231,14 @@ export default function SupabaseUsageTab() {
       '',
       '3) API REQUEST COUNTS — SUPABASE MANAGEMENT API',
       `Returned samples: ${buckets.length}`,
-      `Bucket range: ${requestStart} to ${requestEnd}`,
+      `Sample range: ${requestStart} to ${requestEnd}`,
       `REST / Database requests: ${totals.rest}`,
       `Auth requests: ${totals.auth}`,
       `Realtime requests: ${totals.realtime}`,
       `Storage requests: ${totals.storage}`,
       `Total of returned request categories: ${allRequests}`,
       `API data fetched at (UTC): ${snapshot?.fetchedAt || 'not available'}`,
-      'Note: the request-count buckets are not egress bytes and are not a complete billing-cycle usage report.',
+      'Note: the request-count samples are not egress bytes and are not a complete billing-cycle usage report.',
       '',
       '4) PUBLISHED PLAN ALLOWANCES (REFERENCE ONLY)',
       ...(quotaRows.length ? quotaRows.map((quota) => `${quota.label}: ${quota.amount} — ${quota.scope}`) : ['Plan allowance not configured or Enterprise contract-specific.']),
@@ -390,7 +390,7 @@ export default function SupabaseUsageTab() {
             <article className={styles.metric}>
               <span>إجمالي طلبات الخدمات</span>
               <strong>{formatNumber(allRequests)}</strong>
-              <small>مجموع الفترات اليومية المعادة من Supabase</small>
+              <small>مجموع العينات المعادة من Supabase</small>
             </article>
             {SERVICES.map((service) => (
               <article className={styles.metric} key={service.key}>
@@ -405,14 +405,14 @@ export default function SupabaseUsageTab() {
 
           <div className={styles.panel}>
             <div className={styles.panelHeader}>
-              <h3>نشاط الطلبات حسب اليوم</h3>
-              <span>آخر {buckets.length} فترة يومية متاحة</span>
+              <h3>نشاط الطلبات حسب فترة القياس</h3>
+              <span>{buckets.length} عينة ضمن النطاق المتاح</span>
             </div>
             {buckets.length ? (
               <div className={styles.dailyRows}>
                 {buckets.map((bucket) => {
                   const total = bucket.total_rest_requests + bucket.total_auth_requests + bucket.total_realtime_requests + bucket.total_storage_requests;
-                  const width = Math.max(total > 0 ? 1 : 0, (total / maxDailyRequests) * 100);
+                  const width = Math.max(total > 0 ? 1 : 0, (total / maxSampleRequests) * 100);
                   return (
                     <div className={styles.dailyRow} key={bucket.timestamp}>
                       <time>{formatDate(bucket.timestamp)}</time>
@@ -423,7 +423,7 @@ export default function SupabaseUsageTab() {
                 })}
               </div>
             ) : (
-              <p className={styles.empty}>لم تُرجع Supabase فترات استخدام بعد.</p>
+              <p className={styles.empty}>لم تُرجع Supabase عينات استخدام بعد.</p>
             )}
             <p className={styles.footnote}>هذه أعداد طلبات API وليست قياساً لحجم البيانات المنقولة أو التكلفة. وقد تختلف فترات الإحصاء عن دورة الفوترة.</p>
           </div>
