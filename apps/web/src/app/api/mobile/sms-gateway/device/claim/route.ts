@@ -30,6 +30,24 @@ async function skipJob(supabase: any, jobId: string, deviceId: string, reason: s
     .eq('locked_by', deviceId);
 }
 
+async function releaseClaimedJobForRetry(supabase: any, jobId: string, deviceId: string, reason: string) {
+  await supabase
+    .from('sms_tracking_outbox')
+    .update({
+      status: 'retry',
+      available_at: new Date(Date.now() + 60_000).toISOString(),
+      result_code: 'pre_send_backend_error',
+      last_error: reason.slice(0, 500),
+      locked_by: null,
+      locked_at: null,
+      lease_expires_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', jobId)
+    .eq('status', 'processing')
+    .eq('locked_by', deviceId);
+}
+
 export async function POST(request: Request) {
   let body: any = {};
   try {
@@ -109,6 +127,7 @@ export async function POST(request: Request) {
 
     if (orderError) {
       console.error('[NativeSmsGateway] Claimed order lookup failed:', orderError.message);
+      await releaseClaimedJobForRetry(supabase, job.id, device.device_id, orderError.message);
       return NextResponse.json({ error: 'Could not read the new order.' }, { status: 503 });
     }
 
