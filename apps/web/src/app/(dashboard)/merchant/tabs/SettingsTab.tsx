@@ -196,10 +196,16 @@ export function SettingsTab({
                   <p role="status" style={{ margin: '12px 0 0', paddingTop: '11px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '12px', lineHeight: 1.7 }}>سيظهر الربط بعد نشر تحديث خدمة الهاتف وتطبيق ترحيل قاعدة البيانات.</p>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--border-soft)', marginTop: '13px', paddingTop: '12px' }}>
-                    <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: '11px', lineHeight: 1.7 }}>افتح هذه الصفحة من الهاتف الذي ثبّت عليه التطبيق، ثم وافق على ربطه بمتجرك.</p>
-                    <a href="/mobile/sms-gateway/connect?redirect_uri=tajertrack-sms%3A%2F%2Fpair" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: '42px', padding: '0 16px', background: 'var(--ink-main)', color: 'var(--surface)', textDecoration: 'none', fontSize: '12px', fontWeight: 700, borderRadius: 0, whiteSpace: 'nowrap' }}>
-                      {nativeSmsDevice ? 'إعادة ربط الهاتف' : 'ربط الهاتف'}
-                    </a>
+                    {nativeSmsDevice && !nativeSmsDevice.enabled ? (
+                      <p role="status" style={{ margin: 0, color: '#946b2d', fontSize: '11px', lineHeight: 1.7 }}>تم إيقاف هذا الهاتف من إدارة تاجر تراك. تواصل مع الدعم لإعادة تفعيله.</p>
+                    ) : (
+                      <>
+                        <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: '11px', lineHeight: 1.7 }}>افتح هذه الصفحة من الهاتف الذي ثبّت عليه التطبيق، ثم وافق على ربطه بمتجرك.</p>
+                        <a href="/mobile/sms-gateway/connect?redirect_uri=tajertrack-sms%3A%2F%2Fpair" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: '42px', padding: '0 16px', background: 'var(--ink-main)', color: 'var(--surface)', textDecoration: 'none', fontSize: '12px', fontWeight: 700, borderRadius: 0, whiteSpace: 'nowrap' }}>
+                          {nativeSmsDevice ? 'إعادة ربط الهاتف' : 'ربط الهاتف'}
+                        </a>
+                      </>
+                    )}
                   </div>
                 )}
                 {nativeSmsDownloadUrl ? (
