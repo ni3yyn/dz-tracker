@@ -114,6 +114,20 @@ export async function POST(request: Request) {
       error_message: errorMessage,
     }, { onConflict: 'job_id,attempt_number,outcome', ignoreDuplicates: true });
 
+    const { error: deviceUpdateError } = await (supabase as any)
+      .from('sms_gateway_devices')
+      .update({
+        last_result_at: now.toISOString(),
+        last_status: status,
+        last_error: errorMessage,
+        updated_at: now.toISOString(),
+      })
+      .eq('device_id', SMS_GATEWAY_WORKER_ID);
+
+    if (deviceUpdateError) {
+      console.error('[SmsGateway] Could not update device result telemetry:', deviceUpdateError.message);
+    }
+
     return NextResponse.json({ success: true, resultingStatus: updates.status });
   } catch (error: any) {
     console.error('[SmsGateway] Report endpoint failed:', error?.message || error);
