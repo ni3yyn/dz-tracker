@@ -50,10 +50,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Middleware is defense-in-depth; protected server pages/actions re-authorize.
-  if (!user && (request.nextUrl.pathname.startsWith('/merchant') || request.nextUrl.pathname.startsWith('/admin'))) {
+  // Preserve the native-phone approval URL through sign-in so the merchant
+  // returns directly to the pairing confirmation after authenticating.
+  const needsDashboardLogin =
+    request.nextUrl.pathname.startsWith('/merchant') ||
+    request.nextUrl.pathname.startsWith('/admin');
+  const needsNativeSmsLogin = request.nextUrl.pathname === '/mobile/sms-gateway/connect';
+
+  if (!user && (needsDashboardLogin || needsNativeSmsLogin)) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    url.search = '';
+    if (needsNativeSmsLogin) {
+      url.searchParams.set('next', `${request.nextUrl.pathname}${request.nextUrl.search}`);
+    }
     return NextResponse.redirect(url);
   }
 
