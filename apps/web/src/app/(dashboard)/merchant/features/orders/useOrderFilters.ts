@@ -18,7 +18,7 @@ export function useOrderFilters({
   const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>('all');
   const [carrierFilter, setCarrierFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<OrderSort>('newest');
-  const [visibleOrders, setVisibleOrders] = useState(20);
+  const [visibleOrders, setVisibleOrders] = useState(1);
 
   const uniqueCarriers = useMemo(() => {
     const set = new Set<string>();
@@ -71,7 +71,7 @@ export function useOrderFilters({
   }, [orders, searchTerm, statusFilter, carrierFilter, sortBy, activeTab, exceptionOrderIds, isAttentionStatus]);
 
   useEffect(() => {
-    setVisibleOrders(20);
+    setVisibleOrders(1);
   }, [searchTerm, statusFilter, carrierFilter, sortBy, activeTab]);
 
   return {
