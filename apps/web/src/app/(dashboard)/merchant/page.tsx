@@ -28,7 +28,7 @@ async function MerchantDashboardContent() {
   // جلب ملف التاجر الحالي مع تفاصيل الاشتراك
   let { data: merchant } = await supabaseAdmin
     .from('merchants')
-    .select('id, store_name, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url, confirmation_telegram_enabled')
+    .select('id, store_name, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, sms_tracking_enabled, logo_url, confirmation_telegram_enabled')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
@@ -48,7 +48,7 @@ async function MerchantDashboardContent() {
         subscription_status: 'active',
         max_orders_limit: isAdmin ? 999999 : 30,
       })
-      .select('id, store_name, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url, confirmation_telegram_enabled')
+      .select('id, store_name, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, sms_tracking_enabled, logo_url, confirmation_telegram_enabled')
       .single();
 
     if (newMerchant) {
@@ -294,6 +294,7 @@ async function MerchantDashboardContent() {
       }}
       payments={(payments || []) as any}
       telegramTrackingLinkEnabled={merchant.telegram_tracking_link_enabled ?? false}
+      smsTrackingLinkEnabled={Boolean((merchant as any).sms_tracking_enabled ?? false)}
       confirmationTelegramEnabled={(merchant as any).confirmation_telegram_enabled ?? false}
       initialUpsells={(upsells || []) as any}
       exchangeRequestsEnabled={exchangeRequestsEnabled}

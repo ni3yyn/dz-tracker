@@ -74,6 +74,7 @@ interface Props {
   subscription?: SubscriptionInfo;
   payments?: PaymentRecord[];
   telegramTrackingLinkEnabled?: boolean;
+  smsTrackingLinkEnabled?: boolean;
   confirmationTelegramEnabled?: boolean;
   initialUpsells?: MerchantUpsellItem[];
   exceptionStates?: ShipmentExceptionState[];
@@ -117,6 +118,7 @@ export function MerchantDashboardView({
   subscription = { tier: 'starter', status: 'active', limit: 30, used: 0, expiresAt: null },
   payments = [],
   telegramTrackingLinkEnabled = false,
+  smsTrackingLinkEnabled = false,
   confirmationTelegramEnabled = false,
   initialUpsells = [],
   exceptionStates = [],
@@ -263,6 +265,8 @@ export function MerchantDashboardView({
     expiryDateFormatted,
     telegramEnabled,
     isSavingTelegram,
+    smsEnabled,
+    isSavingSms,
     confirmationEnabled,
     isSavingConfirmation,
     isSubmittingProof,
@@ -273,12 +277,14 @@ export function MerchantDashboardView({
     showAdvanceRenewal,
     toggleAdvanceRenewal,
     handleToggleTelegramTracking,
+    handleToggleSmsTracking,
     handleToggleConfirmationTelegram,
     handleSubmitProof,
   } = useMerchantSettings({
     merchantId,
     subscription,
     telegramTrackingLinkEnabled,
+    smsTrackingLinkEnabled,
     confirmationTelegramEnabled,
     showToast,
   });
@@ -725,6 +731,9 @@ export function MerchantDashboardView({
               telegramEnabled={telegramEnabled}
               isSavingTelegram={isSavingTelegram}
               onToggleTelegramTracking={handleToggleTelegramTracking}
+              smsEnabled={smsEnabled}
+              isSavingSms={isSavingSms}
+              onToggleSmsTracking={handleToggleSmsTracking}
               confirmationEnabled={confirmationEnabled}
               isSavingConfirmation={isSavingConfirmation}
               hasActivePaidPlan={hasActivePaidPlan}

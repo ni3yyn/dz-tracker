@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { toggleTelegramTracking, toggleConfirmationTelegram, submitPaymentProof } from '../../actions';
+import { toggleTelegramTracking, toggleSmsTracking, toggleConfirmationTelegram, submitPaymentProof } from '../../actions';
 import type { SubscriptionInfo } from '../../shared/subscription-types';
 import type { UpgradeTier } from './settings-types';
 
@@ -7,6 +7,7 @@ interface UseMerchantSettingsOptions {
   merchantId: string;
   subscription: SubscriptionInfo;
   telegramTrackingLinkEnabled: boolean;
+  smsTrackingLinkEnabled: boolean;
   confirmationTelegramEnabled: boolean;
   showToast: (message: string) => void;
 }
@@ -15,6 +16,7 @@ export function useMerchantSettings({
   merchantId,
   subscription,
   telegramTrackingLinkEnabled,
+  smsTrackingLinkEnabled,
   confirmationTelegramEnabled,
   showToast,
 }: UseMerchantSettingsOptions) {
@@ -35,6 +37,8 @@ export function useMerchantSettings({
 
   const [telegramEnabled, setTelegramEnabled] = useState(telegramTrackingLinkEnabled);
   const [isSavingTelegram, setIsSavingTelegram] = useState(false);
+  const [smsEnabled, setSmsEnabled] = useState(smsTrackingLinkEnabled);
+  const [isSavingSms, setIsSavingSms] = useState(false);
   const [confirmationEnabled, setConfirmationEnabled] = useState(confirmationTelegramEnabled);
   const [isSavingConfirmation, setIsSavingConfirmation] = useState(false);
   const [isSubmittingProof, setIsSubmittingProof] = useState(false);
@@ -62,6 +66,31 @@ export function useMerchantSettings({
       showToast('تعذر تحديث إعداد تيليجرام. يرجى المحاولة مجدداً.');
     } finally {
       setIsSavingTelegram(false);
+    }
+  };
+
+  const handleToggleSmsTracking = async () => {
+    if (isSavingSms) return;
+    const next = !smsEnabled;
+    setIsSavingSms(true);
+    setSmsEnabled(next);
+
+    try {
+      const result = await toggleSmsTracking(next);
+      if (result?.error) {
+        setSmsEnabled(!next);
+        showToast(result.error);
+        return;
+      }
+      showToast(next
+        ? 'تم تفعيل إرسال رابط التتبع برسالة SMS واحدة لكل طلب جديد.'
+        : 'تم تعطيل إرسال روابط التتبع عبر SMS.');
+    } catch (error) {
+      console.error('[MerchantDashboard]: SMS tracking setting update failed:', error);
+      setSmsEnabled(!next);
+      showToast('تعذر تحديث إعداد رسائل SMS. يرجى المحاولة مجدداً.');
+    } finally {
+      setIsSavingSms(false);
     }
   };
 
@@ -128,6 +157,8 @@ export function useMerchantSettings({
     expiryDateFormatted,
     telegramEnabled,
     isSavingTelegram,
+    smsEnabled,
+    isSavingSms,
     confirmationEnabled,
     isSavingConfirmation,
     isSubmittingProof,
@@ -138,6 +169,7 @@ export function useMerchantSettings({
     showAdvanceRenewal,
     toggleAdvanceRenewal,
     handleToggleTelegramTracking,
+    handleToggleSmsTracking,
     handleToggleConfirmationTelegram,
     handleSubmitProof,
   };

@@ -749,6 +749,29 @@ export async function toggleTelegramTracking(merchantId: string, enabled: boolea
   return { success: true };
 }
 
+// SMS tracking is a merchant preference, but the sender device is platform-managed.
+// Resolve the merchant from the authenticated session; never trust a client-supplied merchant ID.
+export async function toggleSmsTracking(enabled: boolean) {
+  try {
+    const merchantId = await getAuthenticatedMerchantId();
+    const supabase = getSupabaseAdminClient();
+    const { error } = await (supabase as any)
+      .from('merchants')
+      .update({ sms_tracking_enabled: Boolean(enabled) })
+      .eq('id', merchantId);
+
+    if (error) {
+      console.error('[SmsTracking] Could not update merchant preference:', error.message);
+      return { error: 'تعذر تحديث إعداد رسائل SMS. يرجى المحاولة مجدداً.' };
+    }
+
+    revalidatePath('/merchant');
+    return { success: true };
+  } catch (error: any) {
+    return { error: error?.message || 'تعذر تحديث إعداد رسائل SMS.' };
+  }
+}
+
 // 6. تسجيل الخروج من لوحة التاجر
 export async function logout() {
   const supabase = await createClient();
