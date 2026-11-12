@@ -33,7 +33,7 @@ async function skipJob(supabase: any, jobId: string, reason: string): Promise<vo
 
 export async function POST(request: Request) {
   const auth = authorizeSmsGatewayRequest(request);
-  if (!auth.ok) {
+  if (auth.ok === false) {
     return NextResponse.json(
       { error: auth.reason === 'not_configured' ? 'SMS gateway is not configured.' : 'Unauthorized.' },
       { status: auth.reason === 'not_configured' ? 503 : 401 }
