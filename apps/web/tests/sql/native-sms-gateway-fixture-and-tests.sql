@@ -91,6 +91,21 @@ BEGIN
     RAISE EXCEPTION 'In-flight legacy SMS job was not converted to unknown at pairing';
   END IF;
 
+  -- Pairing codes are single-use and cannot mint a second credential.
+  SELECT * INTO v_pairing
+    FROM public.complete_native_sms_gateway_pairing(
+      encode(digest('native-pair-code-1', 'sha256'), 'hex'),
+      'native-device-replay',
+      repeat('d', 64),
+      'dddd',
+      'Replay phone',
+      'android',
+      '0.1.0'
+    );
+  IF FOUND OR EXISTS (SELECT 1 FROM public.sms_gateway_devices WHERE device_id = 'native-device-replay') THEN
+    RAISE EXCEPTION 'A consumed pairing code was accepted more than once';
+  END IF;
+
   -- The global Termux worker must skip the paired merchant but continue serving other merchants.
   SELECT * INTO v_job
     FROM public.claim_next_sms_tracking_job('android-sms-gateway', 180)
@@ -178,6 +193,14 @@ BEGIN
        AND enabled IS FALSE
   ) THEN
     RAISE EXCEPTION 'Previous phone was not revoked during replacement';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.sms_tracking_outbox
+     WHERE order_id = '30000000-0000-4000-8000-000000000011'
+       AND status = 'unknown'
+       AND locked_by IS NULL
+  ) THEN
+    RAISE EXCEPTION 'In-flight job claimed by the replaced native phone was not marked unknown';
   END IF;
 END $$;
 
