@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
 import { createClient } from '../../../../lib/supabase-server';
+import { isAuthorizedAdmin } from '../../../../lib/admin-auth';
 import { approveNativeSmsDevice } from './actions';
 import styles from './connect.module.css';
 
@@ -26,7 +27,7 @@ export default async function ConnectNativeSmsPage({
           <p className={styles.eyebrow}>تاجر تراك</p>
           <h1>تعذر بدء ربط الهاتف</h1>
           <p className={styles.description}>افتح صفحة الربط من تطبيق TajerTrack Phone حتى نتمكن من إكمال الاتصال بأمان.</p>
-          <a className={styles.action} href="https://tajertrack.vercel.app/merchant">العودة إلى لوحة التاجر</a>
+          <a className={styles.action} href="/merchant">العودة إلى لوحة التاجر</a>
         </section>
       </main>
     );
@@ -38,6 +39,7 @@ export default async function ConnectNativeSmsPage({
     const next = `/mobile/sms-gateway/connect?redirect_uri=${encodeURIComponent(APP_REDIRECT)}`;
     redirect(`/login?next=${encodeURIComponent(next)}`);
   }
+  if (isAuthorizedAdmin(user)) redirect('/admin');
 
   const supabase = getSupabaseAdminClient() as any;
   const { data: merchant, error: merchantError } = await supabase
@@ -59,7 +61,7 @@ export default async function ConnectNativeSmsPage({
           <p className={styles.eyebrow}>تاجر تراك</p>
           <h1>لا يوجد متجر مرتبط</h1>
           <p className={styles.description}>سجّل الدخول بالحساب المرتبط بمتجرك، ثم أعد فتح الربط من التطبيق.</p>
-          <a className={styles.action} href="https://tajertrack.vercel.app/login">تسجيل الدخول</a>
+          <a className={styles.action} href="/login">تسجيل الدخول</a>
         </section>
       </main>
     );
