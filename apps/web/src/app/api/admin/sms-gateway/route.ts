@@ -19,6 +19,7 @@ export async function GET() {
       attemptsResult,
       controlResult,
       deviceResult,
+      nativeDevicesResult,
       eventsResult,
       ...countResults
     ] = await Promise.all([
@@ -43,6 +44,12 @@ export async function GET() {
         .eq('device_id', 'android-sms-gateway')
         .maybeSingle(),
       supabase
+        .from('sms_gateway_devices')
+        .select('device_id, display_name, merchant_id, enabled, platform, app_version, device_model, revoked_at, last_seen_at, last_claim_at, last_result_at, last_status, last_error, merchants(store_name)')
+        .not('merchant_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(200),
+      supabase
         .from('sms_tracking_admin_events')
         .select('id, job_id, action, previous_status, new_status, details, created_at')
         .order('created_at', { ascending: false })
@@ -64,6 +71,12 @@ export async function GET() {
       ...countResults.map((result: any) => result.error),
     ].find(Boolean);
 
+    if (nativeDevicesResult.error) {
+      // Keep the legacy Termux operations view available until the native
+      // device migration has been applied in the production database.
+      console.warn('[SmsGatewayAdmin] Native phone inventory is not available yet:', nativeDevicesResult.error.message);
+    }
+
     if (firstError || !controlResult.data || !deviceResult.data) {
       console.error('[SmsGatewayAdmin] Snapshot query failed:', firstError?.message || 'Missing gateway configuration.');
       return NextResponse.json({ error: 'SMS manager data is not ready. Apply the SMS admin migration.' }, { status: 503 });
@@ -76,6 +89,7 @@ export async function GET() {
         updated_at: controlResult.data.updated_at || null,
       },
       device: deviceResult.data,
+      nativeDevices: nativeDevicesResult.error ? [] : (nativeDevicesResult.data || []),
       jobs: jobsResult.data || [],
       attempts: attemptsResult.data || [],
       events: eventsResult.data || [],

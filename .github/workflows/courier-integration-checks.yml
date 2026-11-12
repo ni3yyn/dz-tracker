@@ -95,6 +95,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
 
+      - name: Verify native SMS gateway migrations and merchant isolation
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          createdb tajertrack_native_sms_test
+          PGDATABASE=tajertrack_native_sms_test psql -X -v ON_ERROR_STOP=1 \
+            -f apps/web/tests/sql/native-sms-gateway-fixture-and-tests.sql
+
       - name: Verify SQL quota rules and concurrent reservations
         env:
           PGHOST: 127.0.0.1

@@ -284,23 +284,30 @@ export async function setSmsGatewayDeviceEnabled(formData: FormData): Promise<Ad
 
   const deviceId = String(formData.get('device_id') || '');
   const raw = formData.get('enabled');
-  if (deviceId !== 'android-sms-gateway' || (raw !== 'true' && raw !== 'false')) {
+  const isLegacyDevice = deviceId === 'android-sms-gateway';
+  const isNativeDevice = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(deviceId);
+  if ((!isLegacyDevice && !isNativeDevice) || (raw !== 'true' && raw !== 'false')) {
     return { error: 'بيانات جهاز SMS غير صالحة.' };
   }
 
   const enabled = raw === 'true';
   const supabase = getSupabaseAdminClient();
-  const { data: device, error: readError } = await (supabase as any)
+  const deviceQuery = (supabase as any)
     .from('sms_gateway_devices')
-    .select('enabled')
-    .eq('device_id', deviceId)
-    .maybeSingle();
+    .select(isNativeDevice ? 'device_id, enabled, merchant_id, revoked_at' : 'device_id, enabled')
+    .eq('device_id', deviceId);
+  const { data: device, error: readError } = await deviceQuery.maybeSingle();
   if (readError || !device) return { error: 'تعذر العثور على جهاز SMS.' };
+  if (isNativeDevice && device.revoked_at) {
+    return { error: 'تم استبدال هذا الهاتف. أعد ربط الهاتف الحالي من تطبيق التاجر بدلاً من تفعيله يدوياً.' };
+  }
 
-  const { error } = await (supabase as any)
+  let updateQuery = (supabase as any)
     .from('sms_gateway_devices')
     .update({ enabled, updated_at: new Date().toISOString() })
     .eq('device_id', deviceId);
+  if (isNativeDevice) updateQuery = updateQuery.is('revoked_at', null);
+  const { error } = await updateQuery;
   if (error) return { error: 'تعذر تحديث حالة جهاز SMS.' };
 
   if (device.enabled !== enabled) {
