@@ -75,6 +75,18 @@ The first version registers one device ID: `android-sms-gateway`. The device reg
 
 The boot script starts the gateway after Android finishes booting. A powered-off phone still cannot send SMS; queued jobs resume when it is back online.
 
+## Idle polling behavior
+
+`TAJERTRACK_POLL_SECONDS` remains the starting interval (10 seconds by default). When the queue stays empty, the agent gradually backs off up to 30 seconds; claiming a job resets it to the configured starting interval. The backend also reads the device-enabled flag while updating its heartbeat in one database round-trip. This reduces idle database traffic without disabling the gateway. A newly queued SMS may therefore wait up to 30 seconds while the phone is idle.
+
+To update an existing Termux installation after a gateway release, stop the running agent with `Ctrl+C`, then run:
+
+```bash
+curl -fL https://raw.githubusercontent.com/ni3yyn/dz-tracker/main/tools/android-sms-gateway/agent.py -o ~/tajertrack-sms/agent.py
+```
+
+Load the existing environment file and restart the agent using the normal start command below. Do not change or display the device token during this update.
+
 ## Phone settings
 
 - Set Termux battery usage to **Unrestricted**.
