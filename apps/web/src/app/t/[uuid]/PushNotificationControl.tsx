@@ -344,7 +344,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
           gap: '8px',
           marginTop: '10px',
           padding: '8px 12px',
-          borderRadius: 'var(--radius-button)',
+          borderRadius: 'var(--radius-notice)',
           background: '#fef2f2',
           border: '1px solid #fecaca',
           color: '#991b1b',

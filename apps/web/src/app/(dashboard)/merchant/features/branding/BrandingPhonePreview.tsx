@@ -109,6 +109,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
           ['--preview-surface' as string]: raisedSurface,
           ['--preview-tint' as string]: brandTint,
           ['--preview-radius-timeline' as string]: radiusTokens.timeline,
+          ['--preview-radius-control' as string]: radiusTokens.control,
           ['--preview-radius-marker' as string]: radiusTokens.marker,
           transition: 'background-color .2s ease, color .2s ease',
         } as React.CSSProperties}
