@@ -94,6 +94,21 @@ BEGIN
    WHERE code_hash = p_code_hash
      AND consumed_at IS NULL;
 
+  -- The legacy global Termux worker may already hold a job for this
+  -- merchant. Convert that in-flight legacy lease to unknown before enabling
+  -- the native phone; never let the new phone blindly resend it.
+  UPDATE public.sms_tracking_outbox
+     SET status = 'unknown',
+         result_code = 'merchant_switched_to_native_sms_device',
+         last_error = 'The merchant connected a native phone while the legacy gateway held this job. The outcome must be checked before any manual resend.',
+         locked_by = NULL,
+         locked_at = NULL,
+         lease_expires_at = NULL,
+         updated_at = NOW()
+   WHERE merchant_id = v_merchant_id
+     AND status = 'processing'
+     AND locked_by = 'android-sms-gateway';
+
   -- There is one active sending phone per merchant in the first release.
   UPDATE public.sms_gateway_devices
      SET enabled = FALSE,
@@ -370,4 +385,84 @@ $$;
 REVOKE ALL ON FUNCTION public.poll_native_sms_gateway(TEXT, TEXT, INTEGER)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.poll_native_sms_gateway(TEXT, TEXT, INTEGER)
+  TO service_role;
+
+
+-- Preserve the original Termux gateway for merchants who have not paired a
+-- native phone. Once any unrevoked native device is registered for a merchant,
+-- the global legacy worker must not claim or expire that merchant's jobs.
+CREATE OR REPLACE FUNCTION public.claim_next_sms_tracking_job(
+  p_worker_id TEXT,
+  p_lease_seconds INTEGER DEFAULT 180
+)
+RETURNS SETOF public.sms_tracking_outbox
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_job_id UUID;
+BEGIN
+  UPDATE public.sms_tracking_outbox AS job
+     SET status = 'unknown',
+         result_code = 'device_lease_expired',
+         last_error = COALESCE(
+           job.last_error,
+           'The Android gateway did not report the result before its lease expired. No automatic resend was attempted.'
+         ),
+         locked_by = NULL,
+         locked_at = NULL,
+         lease_expires_at = NULL,
+         updated_at = NOW()
+   WHERE job.status = 'processing'
+     AND job.lease_expires_at IS NOT NULL
+     AND job.lease_expires_at <= NOW()
+     AND NOT EXISTS (
+       SELECT 1
+         FROM public.sms_gateway_devices AS device
+        WHERE device.merchant_id = job.merchant_id
+          AND device.revoked_at IS NULL
+     );
+
+  SELECT job.id
+    INTO v_job_id
+    FROM public.sms_tracking_outbox AS job
+   WHERE job.status IN ('pending', 'retry')
+     AND job.available_at <= NOW()
+     AND NOT EXISTS (
+       SELECT 1
+         FROM public.sms_gateway_devices AS device
+        WHERE device.merchant_id = job.merchant_id
+          AND device.revoked_at IS NULL
+     )
+   ORDER BY job.available_at ASC, job.created_at ASC
+   LIMIT 1
+   FOR UPDATE SKIP LOCKED;
+
+  IF v_job_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  UPDATE public.sms_tracking_outbox AS job
+     SET status = 'processing',
+         locked_by = p_worker_id,
+         locked_at = NOW(),
+         lease_expires_at = NOW() + make_interval(secs => GREATEST(30, LEAST(p_lease_seconds, 900))),
+         attempt_count = attempt_count + 1,
+         updated_at = NOW()
+   WHERE job.id = v_job_id
+     AND NOT EXISTS (
+       SELECT 1
+         FROM public.sms_gateway_devices AS device
+        WHERE device.merchant_id = job.merchant_id
+          AND device.revoked_at IS NULL
+     )
+  RETURNING job.*;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.claim_next_sms_tracking_job(TEXT, INTEGER)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_next_sms_tracking_job(TEXT, INTEGER)
   TO service_role;
