@@ -163,13 +163,20 @@ export default function SmsManagerTab({ data: initialData }: Props) {
 
   useEffect(() => {
     if (!retryTarget) return;
+    const notifyBackLayerChange = () => {
+      window.dispatchEvent(new Event('tajer-dashboard-back-layer-change'));
+    };
     const dismissOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
       setRetryTarget(null);
     };
+    notifyBackLayerChange();
     document.addEventListener('keydown', dismissOnEscape, true);
-    return () => document.removeEventListener('keydown', dismissOnEscape, true);
+    return () => {
+      document.removeEventListener('keydown', dismissOnEscape, true);
+      notifyBackLayerChange();
+    };
   }, [retryTarget]);
 
   useEffect(() => {
