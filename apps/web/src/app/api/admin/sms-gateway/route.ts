@@ -40,6 +40,11 @@ export async function GET() {
         .maybeSingle(),
       supabase
         .from('sms_gateway_devices')
+        .select('device_id, display_name, enabled, last_seen_at, last_claim_at, last_result_at, last_status, last_error')
+        .eq('device_id', 'android-sms-gateway')
+        .maybeSingle(),
+      supabase
+        .from('sms_gateway_devices')
         .select('device_id, display_name, merchant_id, enabled, platform, app_version, device_model, revoked_at, last_seen_at, last_claim_at, last_result_at, last_status, last_error, merchants(store_name)')
         .not('merchant_id', 'is', null)
         .order('created_at', { ascending: false })
