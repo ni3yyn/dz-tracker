@@ -12,6 +12,8 @@ import {
 import styles from './admin.module.css';
 import SiteHeader from '../../SiteHeader';
 import { useDashboardBackHandler } from '../useDashboardBackHandler';
+import SmsManagerTab from './SmsManagerTab';
+import type { SmsManagerData } from './SmsManagerTab';
 
 interface MerchantItem {
   id: string;
@@ -58,6 +60,7 @@ interface Props {
   merchants: MerchantItem[];
   orders: OrderItem[];
   payments: PaymentItem[];
+  smsManager: SmsManagerData;
 }
 
 const Icons = {
@@ -65,6 +68,7 @@ const Icons = {
   CreditCard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>,
   Store: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
   Activity: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
+  Message: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.7 8.7 0 0 1-4-.98L3 21l1.98-5.5a8.7 8.7 0 0 1-.98-4A8.5 8.5 0 0 1 12.5 3h.5a8.5 8.5 0 0 1 8 8v.5z"></path><path d="M8 12h8M8 8h5"></path></svg>,
   Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
   Search: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
   LogOut: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>,
@@ -77,16 +81,18 @@ export function AdminDashboardView({
   merchants,
   orders,
   payments,
+  smsManager,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'merchants' | 'telemetry' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'merchants' | 'telemetry' | 'sms' | 'settings'>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
   useEffect(() => {
-    const tabTitles: Record<'overview' | 'payments' | 'merchants' | 'telemetry' | 'settings', string> = {
+    const tabTitles: Record<'overview' | 'payments' | 'merchants' | 'telemetry' | 'sms' | 'settings', string> = {
       overview: 'مركز القيادة والإحصائيات',
       payments: 'الاشتراكات والدفعات',
       merchants: 'دليل المتاجر',
       telemetry: 'تيار الشحن والبيانات',
+      sms: 'إدارة الرسائل النصية',
       settings: 'إعدادات المنصة',
     };
     document.title = tabTitles[activeTab] + ' | إدارة تاجر تراك';
@@ -391,6 +397,16 @@ export function AdminDashboardView({
             </button>
 
             <button
+              onClick={() => { setActiveTab('sms'); setMobileMenuOpen(false); }}
+              className={`${styles.railItem} ${activeTab === 'sms' ? styles.railItemActive : ''}`}
+            >
+              <div className={styles.railItemInner}>
+                <span className={styles.railIcon}><Icons.Message /></span>
+                <span>إدارة رسائل SMS</span>
+              </div>
+            </button>
+
+            <button
               onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }}
               className={`${styles.railItem} ${activeTab === 'settings' ? styles.railItemActive : ''}`}
             >
@@ -440,6 +456,7 @@ export function AdminDashboardView({
               {activeTab === 'payments' && 'إدارة الاشتراكات وتأكيد الدفع'}
               {activeTab === 'merchants' && 'دليل المتاجر وحصص الشحن'}
               {activeTab === 'telemetry' && 'مراقبة تيار الشحن المباشر'}
+              {activeTab === 'sms' && 'إدارة ومراقبة رسائل SMS'}
               {activeTab === 'settings' && 'إعدادات المنصة والباقات'}
             </h1>
             <p>
@@ -447,6 +464,7 @@ export function AdminDashboardView({
               {activeTab === 'payments' && 'مراجعة وتأكيد طلبات الترقية وتجديد الباقات.'}
               {activeTab === 'merchants' && 'إدارة المتاجر، المفاتيح، والتحكم בסقف الطلبات.'}
               {activeTab === 'telemetry' && 'تدفق لجميع تحديثات التتبع من مختلف شركات الشحن.'}
+              {activeTab === 'sms' && 'مراقبة جهاز الإرسال، طابور الرسائل، المحاولات، والأخطاء.'}
               {activeTab === 'settings' && 'تكوين بوابات الدفع الجزائرية وتسعير الباقات.'}
             </p>
           </div>
@@ -786,6 +804,9 @@ export function AdminDashboardView({
             </div>
           </div>
         )}
+
+        {/* SMS OPERATIONS */}
+        {activeTab === 'sms' && <SmsManagerTab data={smsManager} />}
 
         {/* TAB 5: SETTINGS */}
         {activeTab === 'settings' && (
