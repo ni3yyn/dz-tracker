@@ -46,6 +46,8 @@ GRANT ALL ON public.sms_gateway_pairing_codes TO service_role;
 
 -- A pairing code is consumed and the previous active phone is revoked in the
 -- same transaction. The plaintext device token is never stored in PostgreSQL.
+DROP FUNCTION IF EXISTS public.complete_native_sms_gateway_pairing(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.complete_native_sms_gateway_pairing(
   p_code_hash TEXT,
   p_device_id TEXT,
@@ -58,7 +60,8 @@ CREATE OR REPLACE FUNCTION public.complete_native_sms_gateway_pairing(
 RETURNS TABLE (
   device_id TEXT,
   merchant_id UUID,
-  store_name TEXT
+  store_name TEXT,
+  blocked BOOLEAN
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -86,6 +89,20 @@ BEGIN
    WHERE merchant.id = v_merchant_id;
 
   IF v_store_name IS NULL THEN
+    RETURN;
+  END IF;
+
+  -- A platform-disabled native device is an administrative hold, not a
+  -- normal replacement. Do not let merchants bypass that hold by pairing
+  -- a fresh device; an admin must re-enable or revoke the held device.
+  IF EXISTS (
+    SELECT 1
+      FROM public.sms_gateway_devices AS device
+     WHERE device.merchant_id = v_merchant_id
+       AND device.revoked_at IS NULL
+       AND device.enabled IS FALSE
+  ) THEN
+    RETURN QUERY SELECT NULL::TEXT, v_merchant_id, v_store_name, TRUE;
     RETURN;
   END IF;
 
@@ -148,7 +165,7 @@ BEGIN
     NOW()
   );
 
-  RETURN QUERY SELECT p_device_id, v_merchant_id, v_store_name;
+  RETURN QUERY SELECT p_device_id, v_merchant_id, v_store_name, FALSE;
 END;
 $$;
 
