@@ -7,6 +7,7 @@ import {
   setSmsGatewayDeviceEnabled,
 } from './actions';
 import styles from './sms-manager.module.css';
+import { DashboardFilterTabs } from '../merchant/components/DashboardFilterTabs';
 
 type Related<T> = T | T[] | null | undefined;
 
@@ -331,13 +332,17 @@ export default function SmsManagerTab({ data: initialData }: Props) {
           <div><span className={styles.eyebrow}>OUTBOX / DELIVERY LOG</span><h3>قائمة الرسائل وسجل الإرسال</h3></div>
           <span className={styles.sectionMeta} data-live={liveState}><i />{liveState === 'live' ? 'مزامنة مباشرة' : liveState === 'connecting' ? 'جارٍ الاتصال…' : 'إعادة الاتصال…'} · آخر تحديث {lastRefreshAt ? lastRefreshAt.toLocaleTimeString('ar-DZ') : '—'}</span>
         </div>
-        <div className={styles.filters} role="tablist" aria-label="تصفية رسائل SMS">
-          {STATUS_FILTERS.map(([value, label]) => (
-            <button key={value} type="button" role="tab" aria-selected={filter === value} data-active={filter === value} onClick={() => setFilter(value)}>
-              {label}{value !== 'all' && <small>{(data.counts[value] || 0).toLocaleString('ar-DZ')}</small>}
-            </button>
-          ))}
-        </div>
+        <DashboardFilterTabs
+          className={styles.filters}
+          ariaLabel="تصفية رسائل SMS"
+          items={STATUS_FILTERS.map(([value, label]) => ({
+            value,
+            label,
+            count: value !== 'all' ? (data.counts[value] || 0).toLocaleString('ar-DZ') : undefined,
+            active: filter === value,
+            onSelect: () => setFilter(value),
+          }))}
+        />
 
         <div className={styles.tableWrap}>
           <table className={styles.table}>
