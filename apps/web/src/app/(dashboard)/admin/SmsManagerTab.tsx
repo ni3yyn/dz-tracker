@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   retrySmsTrackingJob,
@@ -134,6 +134,11 @@ export default function SmsManagerTab({ data }: Props) {
   const [retryTarget, setRetryTarget] = useState<SmsJob | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    const refreshTimer = window.setInterval(() => router.refresh(), 10_000);
+    return () => window.clearInterval(refreshTimer);
+  }, [router]);
 
   const filteredJobs = useMemo(
     () => filter === 'all' ? data.jobs : data.jobs.filter((job) => job.status === filter),
@@ -306,53 +311,57 @@ export default function SmsManagerTab({ data }: Props) {
                 const attempts = attemptsByJob.get(job.id) || [];
                 const canRetry = ['failed', 'dead_letter', 'unknown'].includes(job.status);
                 return (
-                  <tr key={job.id} className={expandedJob === job.id ? styles.expandedRow : undefined}>
-                    <td>
-                      <button type="button" className={styles.orderButton} onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}>
-                        {order?.external_order_id || job.order_id.slice(0, 8)}
-                        <small>{order?.customer_name || 'طلب'}</small>
-                      </button>
-                    </td>
-                    <td>{merchant?.store_name || '—'}</td>
-                    <td className={styles.phone}>{maskPhone(order?.customer_phone)}</td>
-                    <td><span className={styles.status} data-tone={statusTone(job.status)}>{STATUS_LABELS[job.status] || job.status}</span></td>
-                    <td className={styles.number}>{job.attempt_count} / {job.max_attempts}</td>
-                    <td>{formatDate(job.updated_at)}</td>
-                    <td>
-                      {canRetry ? (
-                        <button type="button" className={styles.retryButton} disabled={busy !== null} onClick={() => setRetryTarget(job)}>
-                          إعادة المعالجة
+                  <Fragment key={job.id}>
+                    <tr className={expandedJob === job.id ? styles.expandedRow : undefined}>
+                      <td>
+                        <button type="button" className={styles.orderButton} onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}>
+                          {order?.external_order_id || job.order_id.slice(0, 8)}
+                          <small>{order?.customer_name || 'طلب'}</small>
                         </button>
-                      ) : (
-                        <button type="button" className={styles.detailButton} onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}>
-                          {expandedJob === job.id ? 'إخفاء التفاصيل' : 'التفاصيل'}
-                        </button>
-                      )}
-                    </td>
-                    {expandedJob === job.id && (
-                      <td colSpan={7} className={styles.detailsCell}>
-                        <div className={styles.detailsGrid}>
-                          <div><span>معرّف الطلب</span><code>{job.order_id}</code></div>
-                          <div><span>وقت الإنشاء</span><strong>{formatDate(job.created_at)}</strong></div>
-                          <div><span>وقت الإرسال</span><strong>{formatDate(job.submitted_at)}</strong></div>
-                          <div><span>رمز النتيجة</span><code>{job.result_code || '—'}</code></div>
-                          <div><span>الخطأ الأخير</span><strong>{job.last_error || '—'}</strong></div>
-                          <div><span>انتهاء الحجز</span><strong>{formatDate(job.lease_expires_at)}</strong></div>
-                        </div>
-                        <div className={styles.attempts}>
-                          <strong>سجل المحاولات</strong>
-                          {attempts.length ? attempts.map((attempt) => (
-                            <div key={attempt.id} className={styles.attemptRow}>
-                              <span>المحاولة {attempt.attempt_number}</span>
-                              <span className={styles.status} data-tone={statusTone(attempt.outcome)}>{STATUS_LABELS[attempt.outcome] || attempt.outcome}</span>
-                              <span>{formatDate(attempt.created_at)}</span>
-                              {attempt.error_message && <small>{attempt.error_message}</small>}
-                            </div>
-                          )) : <p>لا توجد نتائج مُسجلة للمحاولات حتى الآن.</p>}
-                        </div>
                       </td>
+                      <td>{merchant?.store_name || '—'}</td>
+                      <td className={styles.phone}>{maskPhone(order?.customer_phone)}</td>
+                      <td><span className={styles.status} data-tone={statusTone(job.status)}>{STATUS_LABELS[job.status] || job.status}</span></td>
+                      <td className={styles.number}>{job.attempt_count} / {job.max_attempts}</td>
+                      <td>{formatDate(job.updated_at)}</td>
+                      <td>
+                        {canRetry ? (
+                          <button type="button" className={styles.retryButton} disabled={busy !== null} onClick={() => setRetryTarget(job)}>
+                            إعادة المعالجة
+                          </button>
+                        ) : (
+                          <button type="button" className={styles.detailButton} onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}>
+                            {expandedJob === job.id ? 'إخفاء التفاصيل' : 'التفاصيل'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                    {expandedJob === job.id && (
+                      <tr>
+                        <td colSpan={7} className={styles.detailsCell}>
+                          <div className={styles.detailsGrid}>
+                            <div><span>معرّف الطلب</span><code>{job.order_id}</code></div>
+                            <div><span>وقت الإنشاء</span><strong>{formatDate(job.created_at)}</strong></div>
+                            <div><span>وقت الإرسال</span><strong>{formatDate(job.submitted_at)}</strong></div>
+                            <div><span>رمز النتيجة</span><code>{job.result_code || '—'}</code></div>
+                            <div><span>الخطأ الأخير</span><strong>{job.last_error || '—'}</strong></div>
+                            <div><span>انتهاء الحجز</span><strong>{formatDate(job.lease_expires_at)}</strong></div>
+                          </div>
+                          <div className={styles.attempts}>
+                            <strong>سجل المحاولات</strong>
+                            {attempts.length ? attempts.map((attempt) => (
+                              <div key={attempt.id} className={styles.attemptRow}>
+                                <span>المحاولة {attempt.attempt_number}</span>
+                                <span className={styles.status} data-tone={statusTone(attempt.outcome)}>{STATUS_LABELS[attempt.outcome] || attempt.outcome}</span>
+                                <span>{formatDate(attempt.created_at)}</span>
+                                {attempt.error_message && <small>{attempt.error_message}</small>}
+                              </div>
+                            )) : <p>لا توجد نتائج مُسجلة للمحاولات حتى الآن.</p>}
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </tr>
+                  </Fragment>
                 );
               })}
             </tbody>
