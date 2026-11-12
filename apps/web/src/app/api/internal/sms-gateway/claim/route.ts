@@ -14,6 +14,24 @@ function normalizeAlgerianMobilePhone(input: string | null): string | null {
   return /^\+213[5-7]\d{8}$/.test(value) ? value : null;
 }
 
+async function releaseJobForRetry(supabase: any, jobId: string, reason: string): Promise<void> {
+  await supabase
+    .from('sms_tracking_outbox')
+    .update({
+      status: 'retry',
+      available_at: new Date(Date.now() + 60_000).toISOString(),
+      result_code: 'pre_send_backend_error',
+      last_error: reason.slice(0, 500),
+      locked_by: null,
+      locked_at: null,
+      lease_expires_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', jobId)
+    .eq('status', 'processing')
+    .eq('locked_by', SMS_GATEWAY_WORKER_ID);
+}
+
 async function skipJob(supabase: any, jobId: string, reason: string): Promise<void> {
   await supabase
     .from('sms_tracking_outbox')
@@ -61,7 +79,12 @@ export async function POST(request: Request) {
       .eq('id', job.order_id)
       .maybeSingle();
 
-    if (orderError || !order?.tracking_uuid) {
+    if (orderError) {
+      console.error('[SmsGateway] Could not read the claimed order:', orderError.message);
+      await releaseJobForRetry(supabase, job.id, orderError.message);
+      return NextResponse.json({ error: 'Could not read the claimed order.' }, { status: 503 });
+    }
+    if (!order?.tracking_uuid) {
       await skipJob(supabase, job.id, 'order_or_tracking_link_missing');
       return NextResponse.json({ job: null }, { headers: { 'Cache-Control': 'no-store' } });
     }
@@ -72,7 +95,12 @@ export async function POST(request: Request) {
       .eq('id', order.merchant_id)
       .maybeSingle();
 
-    if (merchantError || !merchant || merchant.sms_tracking_enabled !== true) {
+    if (merchantError) {
+      console.error('[SmsGateway] Could not read merchant SMS settings:', merchantError.message);
+      await releaseJobForRetry(supabase, job.id, merchantError.message);
+      return NextResponse.json({ error: 'Could not read merchant settings.' }, { status: 503 });
+    }
+    if (!merchant || merchant.sms_tracking_enabled !== true) {
       await skipJob(supabase, job.id, 'merchant_sms_disabled');
       return NextResponse.json({ job: null }, { headers: { 'Cache-Control': 'no-store' } });
     }
