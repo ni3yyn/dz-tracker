@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   const authorization = request.headers.get('authorization') || '';
-  const token = authorization.match(/^Bearer\\s+(.+)$/i)?.[1]?.trim() || '';
+  const token = authorization.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || '';
   if (!/^[A-Za-z0-9_-]{40,100}$/.test(token)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
