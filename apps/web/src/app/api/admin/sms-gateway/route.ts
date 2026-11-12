@@ -67,10 +67,15 @@ export async function GET() {
       attemptsResult.error,
       controlResult.error,
       deviceResult.error,
-      nativeDevicesResult.error,
       eventsResult.error,
       ...countResults.map((result: any) => result.error),
     ].find(Boolean);
+
+    if (nativeDevicesResult.error) {
+      // Keep the legacy Termux operations view available until the native
+      // device migration has been applied in the production database.
+      console.warn('[SmsGatewayAdmin] Native phone inventory is not available yet:', nativeDevicesResult.error.message);
+    }
 
     if (firstError || !controlResult.data || !deviceResult.data) {
       console.error('[SmsGatewayAdmin] Snapshot query failed:', firstError?.message || 'Missing gateway configuration.');
@@ -84,7 +89,7 @@ export async function GET() {
         updated_at: controlResult.data.updated_at || null,
       },
       device: deviceResult.data,
-      nativeDevices: nativeDevicesResult.data || [],
+      nativeDevices: nativeDevicesResult.error ? [] : (nativeDevicesResult.data || []),
       jobs: jobsResult.data || [],
       attempts: attemptsResult.data || [],
       events: eventsResult.data || [],
