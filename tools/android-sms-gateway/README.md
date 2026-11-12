@@ -24,21 +24,43 @@ The secret is a device credential, not a Supabase key. Never put a Supabase serv
    ```
 3. Open the separate **Termux:API** Android app once, grant its SMS permission, and allow Termux notifications.
 4. Copy `agent.py` to the phone, for example into `~/tajertrack-sms/agent.py`.
-5. Add the environment values to `~/.bashrc` (replace the example token):
+5. Store the environment values in a private file (replace the example token):
    ```bash
+   cat > ~/.tajertrack-sms.env <<'EOF'
    export TAJERTRACK_BASE_URL="https://tajertrack.vercel.app"
    export TAJERTRACK_DEVICE_TOKEN="PASTE_THE_VERCEL_SECRET_HERE"
    export TAJERTRACK_POLL_SECONDS="10"
+   EOF
+   chmod 600 ~/.tajertrack-sms.env
    ```
-6. Reload the shell and test the Android SMS command with your own number first:
+6. Load the settings and test the Android SMS command with your own number first:
    ```bash
-   source ~/.bashrc
+   source ~/.tajertrack-sms.env
    termux-sms-send -n +213XXXXXXXXX "TajerTrack gateway test"
    ```
 7. Start the agent:
    ```bash
    python ~/tajertrack-sms/agent.py
    ```
+
+### Optional: start automatically after phone reboot
+
+1. Install **Termux:Boot** from the same source/signature as Termux, then open Termux:Boot once.
+2. Create the boot script:
+   ```bash
+   mkdir -p ~/.termux/boot
+   cat > ~/.termux/boot/start-tajertrack-sms <<'EOF'
+   #!/data/data/com.termux/files/usr/bin/sh
+   termux-wake-lock
+   . "$HOME/.tajertrack-sms.env"
+   mkdir -p "$HOME/tajertrack-sms"
+   exec python "$HOME/tajertrack-sms/agent.py" >> "$HOME/tajertrack-sms/gateway.log" 2>&1
+   EOF
+   chmod +x ~/.termux/boot/start-tajertrack-sms
+   ```
+3. Restart the phone once to verify the agent starts. Keep Termux and Termux:Boot battery usage unrestricted.
+
+The boot script starts the gateway after Android finishes booting. A powered-off phone still cannot send SMS; queued jobs resume when it is back online.
 
 ## Phone settings
 

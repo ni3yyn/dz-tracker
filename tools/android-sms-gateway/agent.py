@@ -144,7 +144,7 @@ def send_job(db, job):
             check=False,
         )
         if result.returncode == 0:
-            print("[gateway] Android accepted SMS submission for %s (job %s)." % (phone, job_id))
+            print("[gateway] Android accepted SMS submission for job %s." % job_id)
             report_state(db, job_id, attempt_count, "submitted")
         else:
             detail = (result.stderr or result.stdout or "termux-sms-send exited with code %s" % result.returncode).strip()
