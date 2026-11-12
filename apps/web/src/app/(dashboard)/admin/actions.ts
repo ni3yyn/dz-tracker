@@ -214,3 +214,174 @@ export async function logout() {
   redirect('/login');
 }
 
+
+// SMS gateway operations — all actions are restricted to the authorized platform admin.
+async function getSmsAdminActorId(): Promise<string | null> {
+  const authClient = await createClient();
+  const { data } = await authClient.auth.getUser();
+  return data.user?.id || null;
+}
+
+async function recordSmsAdminEvent(input: {
+  job_id?: string | null;
+  action: string;
+  previous_status?: string | null;
+  new_status?: string | null;
+  details?: Record<string, unknown>;
+}): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+  const actorId = await getSmsAdminActorId();
+  const { error } = await (supabase as any).from('sms_tracking_admin_events').insert({
+    job_id: input.job_id || null,
+    actor_id: actorId,
+    action: input.action,
+    previous_status: input.previous_status || null,
+    new_status: input.new_status || null,
+    details: input.details || {},
+  });
+  if (error) console.error('[SmsGatewayAdmin] Could not write audit event:', error.message);
+}
+
+export async function setSmsGatewayEnabled(formData: FormData): Promise<AdminActionResult> {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
+
+  const raw = formData.get('enabled');
+  if (raw !== 'true' && raw !== 'false') return { error: 'قيمة حالة بوابة SMS غير صالحة.' };
+  const enabled = raw === 'true';
+  const supabase = getSupabaseAdminClient();
+  const { data: current, error: readError } = await (supabase as any)
+    .from('sms_gateway_control')
+    .select('enabled')
+    .eq('id', 'primary')
+    .maybeSingle();
+  if (readError) return { error: 'تعذر قراءة إعداد بوابة SMS.' };
+
+  const { error } = await (supabase as any)
+    .from('sms_gateway_control')
+    .upsert({
+      id: 'primary',
+      enabled,
+      updated_at: new Date().toISOString(),
+      updated_by: await getSmsAdminActorId(),
+    }, { onConflict: 'id' });
+  if (error) return { error: 'تعذر تحديث حالة بوابة SMS.' };
+
+  if (current?.enabled !== enabled) {
+    await recordSmsAdminEvent({
+      action: enabled ? 'resume_gateway' : 'pause_gateway',
+      previous_status: current?.enabled ? 'enabled' : 'disabled',
+      new_status: enabled ? 'enabled' : 'disabled',
+    });
+  }
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+export async function setSmsGatewayDeviceEnabled(formData: FormData): Promise<AdminActionResult> {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
+
+  const deviceId = String(formData.get('device_id') || '');
+  const raw = formData.get('enabled');
+  if (deviceId !== 'android-sms-gateway' || (raw !== 'true' && raw !== 'false')) {
+    return { error: 'بيانات جهاز SMS غير صالحة.' };
+  }
+
+  const enabled = raw === 'true';
+  const supabase = getSupabaseAdminClient();
+  const { data: device, error: readError } = await (supabase as any)
+    .from('sms_gateway_devices')
+    .select('enabled')
+    .eq('device_id', deviceId)
+    .maybeSingle();
+  if (readError || !device) return { error: 'تعذر العثور على جهاز SMS.' };
+
+  const { error } = await (supabase as any)
+    .from('sms_gateway_devices')
+    .update({ enabled, updated_at: new Date().toISOString() })
+    .eq('device_id', deviceId);
+  if (error) return { error: 'تعذر تحديث حالة جهاز SMS.' };
+
+  if (device.enabled !== enabled) {
+    await recordSmsAdminEvent({
+      action: enabled ? 'enable_device' : 'disable_device',
+      previous_status: device.enabled ? 'enabled' : 'disabled',
+      new_status: enabled ? 'enabled' : 'disabled',
+      details: { device_id: deviceId },
+    });
+  }
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+export async function retrySmsTrackingJob(formData: FormData): Promise<AdminActionResult> {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
+
+  const jobId = String(formData.get('job_id') || '');
+  const forceUnknown = formData.get('force_unknown') === 'true';
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(jobId)) {
+    return { error: 'معرّف رسالة SMS غير صالح.' };
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data: job, error: readError } = await (supabase as any)
+    .from('sms_tracking_outbox')
+    .select('id, status, attempt_count, max_attempts')
+    .eq('id', jobId)
+    .maybeSingle();
+
+  if (readError || !job) return { error: 'تعذر العثور على رسالة SMS.' };
+  const allowed = ['failed', 'dead_letter'].includes(job.status) ||
+    (job.status === 'unknown' && forceUnknown);
+  if (!allowed) {
+    return {
+      error: job.status === 'unknown'
+        ? 'تأكيد المراجعة مطلوب قبل إعادة رسالة ذات نتيجة مجهولة.'
+        : 'يمكن إعادة معالجة الرسائل الفاشلة أو التي استنفدت المحاولات فقط.',
+    };
+  }
+
+  const now = new Date().toISOString();
+  const nextMaxAttempts = Math.max(Number(job.max_attempts) || 3, Number(job.attempt_count) + 3);
+  const { data: updated, error: updateError } = await (supabase as any)
+    .from('sms_tracking_outbox')
+    .update({
+      status: 'retry',
+      available_at: now,
+      max_attempts: nextMaxAttempts,
+      result_code: 'admin_manual_retry',
+      last_error: job.status === 'unknown'
+        ? 'Admin authorized a manual resend after reviewing the unknown outcome; a duplicate SMS is possible.'
+        : 'Admin manually re-queued this SMS after reviewing the failed attempts.',
+      locked_by: null,
+      locked_at: null,
+      lease_expires_at: null,
+      updated_at: now,
+    })
+    .eq('id', jobId)
+    .eq('status', job.status)
+    .select('id')
+    .maybeSingle();
+
+  if (updateError || !updated) {
+    return { error: 'تغيرت حالة الرسالة أثناء تنفيذ الإجراء. حدّث الصفحة ثم أعد التحقق.' };
+  }
+
+  await recordSmsAdminEvent({
+    job_id: jobId,
+    action: job.status === 'unknown' ? 'force_retry_unknown' : 'retry_job',
+    previous_status: job.status,
+    new_status: 'retry',
+    details: {
+      previous_attempt_count: job.attempt_count,
+      previous_max_attempts: job.max_attempts,
+      new_max_attempts: nextMaxAttempts,
+      duplicate_risk_acknowledged: job.status === 'unknown',
+    },
+  });
+
+  revalidatePath('/admin');
+  return { success: true };
+}
