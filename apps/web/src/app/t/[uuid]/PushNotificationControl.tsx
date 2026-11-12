@@ -312,7 +312,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981', 
                 fontSize: '12.5px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
+                boxShadow: 'none',
                 transition: '0.2s',
               }}
             >
