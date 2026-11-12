@@ -162,6 +162,17 @@ export default function SmsManagerTab({ data: initialData }: Props) {
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
+    if (!retryTarget) return;
+    const dismissOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setRetryTarget(null);
+    };
+    document.addEventListener('keydown', dismissOnEscape, true);
+    return () => document.removeEventListener('keydown', dismissOnEscape, true);
+  }, [retryTarget]);
+
+  useEffect(() => {
     void refreshData();
 
     // Near-live updates: poll every 3 seconds while this tab is visible.
@@ -426,7 +437,7 @@ export default function SmsManagerTab({ data: initialData }: Props) {
       </div>
 
       {retryTarget && (
-        <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setRetryTarget(null); }}>
+        <div data-dashboard-back-dismiss="admin-sms-retry" className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setRetryTarget(null); }}>
           <section className={styles.confirmModal} role="dialog" aria-modal="true" aria-labelledby="sms-retry-title">
             <span className={styles.eyebrow}>MANUAL RETRY</span>
             <h3 id="sms-retry-title">{retryTarget.status === 'unknown' ? 'إعادة إرسال نتيجة غير معروفة؟' : 'إعادة إدراج الرسالة؟'}</h3>
