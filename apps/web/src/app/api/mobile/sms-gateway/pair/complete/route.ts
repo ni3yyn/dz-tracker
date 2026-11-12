@@ -47,6 +47,11 @@ export async function POST(request: Request) {
     }
 
     const pairing = Array.isArray(data) ? data[0] : data;
+    if (pairing?.blocked === true) {
+      return NextResponse.json({
+        error: 'تم إيقاف هذا الهاتف من إدارة تاجر تراك. تواصل مع الدعم قبل ربط هاتف بديل.',
+      }, { status: 403 });
+    }
     if (!pairing?.device_id || !pairing?.merchant_id) {
       return NextResponse.json({ error: 'This pairing link has expired or has already been used. Start again from TajerTrack.' }, { status: 400 });
     }
