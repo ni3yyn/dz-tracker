@@ -93,6 +93,13 @@ export function OrdersTab({
   formatOrderTime,
   getWhatsAppRecoveryUrl,
 }: OrdersTabProps) {
+  const pageSize = 20;
+  const pageCount = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const currentPage = Math.min(Math.max(1, visibleOrders), pageCount);
+  const pageOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const firstVisibleOrder = filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const lastVisibleOrder = Math.min(currentPage * pageSize, filteredOrders.length);
+
   return (
             <div>
               <div className="dz-stats-bar dz-orders-desktop-summary" aria-label="ملخص الشحنات">
@@ -252,7 +259,7 @@ export function OrdersTab({
                     <tbody>
                       {filteredOrders.length === 0 ? (
                         <tr><td colSpan={6} style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--ink-muted)' }}>{orders.length === 0 ? 'لا توجد شحنات مسجلة بعد.' : 'لا توجد نتائج تطابق البحث والفلاتر الحالية.'}</td></tr>
-                      ) : filteredOrders.slice(0, visibleOrders).map((order) => {
+                      ) : pageOrders.map((order) => {
                         const isAlert = exceptionOrderIds.has(order.id);
                         return (
                           <tr
@@ -368,7 +375,7 @@ export function OrdersTab({
               <div className="dz-orders-mobile" aria-label="قائمة الشحنات على الهاتف">
                 {filteredOrders.length === 0 ? (
                   <div className="dz-overview-empty">{orders.length === 0 ? 'لا توجد شحنات مسجلة بعد.' : 'لا توجد نتائج تطابق البحث والفلاتر الحالية.'}</div>
-                ) : filteredOrders.slice(0, visibleOrders).map((order) => {
+                ) : pageOrders.map((order) => {
                   const isAlert = exceptionOrderIds.has(order.id);
                   const badgeStyle = getStatusBadgeStyle(order.current_status);
                   return (
@@ -466,8 +473,28 @@ export function OrdersTab({
                   );
                 })}
               </div>
-              {visibleOrders < filteredOrders.length && (
-                <div className="dz-orders-load-more"><button type="button" onClick={() => onVisibleOrdersChange((count) => Math.min(count + 20, filteredOrders.length))}>عرض 20 شحنة أخرى ({filteredOrders.length - visibleOrders} متبقية)</button></div>
+              {pageCount > 1 && (
+                <nav className="dz-orders-load-more" aria-label="التنقل بين صفحات الشحنات" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => onVisibleOrdersChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage <= 1}
+                    aria-label="الصفحة السابقة"
+                  >
+                    السابقة
+                  </button>
+                  <span aria-live="polite" style={{ color: 'var(--ink-muted)', fontSize: 12, fontWeight: 700 }}>
+                    {firstVisibleOrder}–{lastVisibleOrder} من {filteredOrders.length} · صفحة {currentPage} من {pageCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onVisibleOrdersChange(Math.min(pageCount, currentPage + 1))}
+                    disabled={currentPage >= pageCount}
+                    aria-label="الصفحة التالية"
+                  >
+                    التالية
+                  </button>
+                </nav>
               )}
 
             </div>
