@@ -31,9 +31,9 @@ CREATE TABLE public.orders (
   customer_phone TEXT
 );
 
-\\ir ../../src/app/migrations/20261112_android_sms_gateway.sql
-\\ir ../../src/app/migrations/20261112_sms_gateway_admin_manager.sql
-\\ir ../../src/app/migrations/20261112_native_sms_gateway.sql
+\ir ../../src/app/migrations/20261112_android_sms_gateway.sql
+\ir ../../src/app/migrations/20261112_sms_gateway_admin_manager.sql
+\ir ../../src/app/migrations/20261112_native_sms_gateway.sql
 
 INSERT INTO public.merchants (id, store_name, sms_tracking_enabled) VALUES
   ('10000000-0000-4000-8000-000000000010', 'Native merchant', TRUE),
