@@ -20,6 +20,7 @@ export type Database = {
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
           telegram_tracking_link_enabled: boolean;
+          sms_tracking_enabled?: boolean;
           confirmation_telegram_enabled?: boolean;
           logo_url?: string | null;
         };
@@ -35,6 +36,7 @@ export type Database = {
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
           telegram_tracking_link_enabled?: boolean;
+          sms_tracking_enabled?: boolean;
           confirmation_telegram_enabled?: boolean;
           logo_url?: string | null;
         };
@@ -50,6 +52,7 @@ export type Database = {
           monthly_orders_used?: number | null;
           subscription_expires_at?: string | null;
           telegram_tracking_link_enabled?: boolean;
+          sms_tracking_enabled?: boolean;
           confirmation_telegram_enabled?: boolean;
           logo_url?: string | null;
         };
