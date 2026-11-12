@@ -60,6 +60,50 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getSupabaseAdminClient();
+    const now = new Date().toISOString();
+
+    // Every authenticated poll acts as a heartbeat, including while the
+    // platform gateway or this device is paused.
+    const { data: device, error: deviceReadError } = await (supabase as any)
+      .from('sms_gateway_devices')
+      .select('device_id, enabled')
+      .eq('device_id', SMS_GATEWAY_WORKER_ID)
+      .maybeSingle();
+
+    if (deviceReadError || !device) {
+      console.error('[SmsGateway] Device registry is unavailable:', deviceReadError?.message || 'Device not registered.');
+      return NextResponse.json({ error: 'SMS gateway device is not registered.' }, { status: 503 });
+    }
+
+    const { error: heartbeatError } = await (supabase as any)
+      .from('sms_gateway_devices')
+      .update({ last_seen_at: now, updated_at: now })
+      .eq('device_id', SMS_GATEWAY_WORKER_ID);
+
+    if (heartbeatError) {
+      console.error('[SmsGateway] Could not record device heartbeat:', heartbeatError.message);
+      return NextResponse.json({ error: 'Could not record SMS gateway heartbeat.' }, { status: 503 });
+    }
+
+    if (device.enabled !== true) {
+      return NextResponse.json({ job: null, deviceDisabled: true }, { headers: { 'Cache-Control': 'no-store' } });
+    }
+
+    const { data: control, error: controlError } = await (supabase as any)
+      .from('sms_gateway_control')
+      .select('enabled')
+      .eq('id', 'primary')
+      .maybeSingle();
+
+    if (controlError || !control) {
+      console.error('[SmsGateway] Platform control is unavailable:', controlError?.message || 'Control row missing.');
+      return NextResponse.json({ error: 'SMS gateway control is not configured.' }, { status: 503 });
+    }
+
+    if (control.enabled !== true) {
+      return NextResponse.json({ job: null, gatewayPaused: true }, { headers: { 'Cache-Control': 'no-store' } });
+    }
+
     const { data, error } = await (supabase as any).rpc('claim_next_sms_tracking_job', {
       p_worker_id: SMS_GATEWAY_WORKER_ID,
       p_lease_seconds: 180,
@@ -72,6 +116,11 @@ export async function POST(request: Request) {
 
     const job = Array.isArray(data) ? data[0] : data;
     if (!job) return NextResponse.json({ job: null }, { headers: { 'Cache-Control': 'no-store' } });
+
+    await (supabase as any)
+      .from('sms_gateway_devices')
+      .update({ last_claim_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('device_id', SMS_GATEWAY_WORKER_ID);
 
     const { data: order, error: orderError } = await (supabase as any)
       .from('orders')
