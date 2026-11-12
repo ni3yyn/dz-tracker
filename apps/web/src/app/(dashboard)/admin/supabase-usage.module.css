@@ -76,3 +76,121 @@
   .dailyRow { grid-template-columns: 58px minmax(0, 1fr) 66px; gap: 8px; }
   .panel, .setupPanel, .disclaimer { padding: 15px; }
 }
+
+
+/* Usage audit additions */
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.copyButton {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink-main);
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.copyButton:hover { background: var(--surface-hover); }
+.copyFeedback {
+  margin: -8px 0 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.databaseSizeMetric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 6px 0 2px;
+}
+.databaseSizeMetric strong {
+  font-size: clamp(28px, 5vw, 42px);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.databaseSizeMetric span,
+.databaseSizeMetric small {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.migrationHint {
+  margin: 12px 0 0;
+  color: #a16207;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.migrationHint code {
+  font-family: ui-monospace, monospace;
+  direction: ltr;
+  display: inline-block;
+}
+.panelIntro {
+  margin: -6px 0 12px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.egressGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.field span {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: var(--bg-base);
+  color: var(--ink-main);
+  font: inherit;
+  font-size: 14px;
+  direction: ltr;
+  text-align: left;
+}
+.field input:focus {
+  outline: 1px solid var(--ink-main);
+  outline-offset: 1px;
+}
+.egressSummary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.egressSummary strong {
+  color: var(--ink-main);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 560px) {
+  .topActions { width: 100%; }
+  .topActions button { flex: 1; }
+  .egressGrid { grid-template-columns: 1fr; gap: 12px; }
+  .egressSummary { gap: 10px 14px; }
+}
