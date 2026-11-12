@@ -1,7 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   retrySmsTrackingJob,
   setSmsGatewayEnabled,
@@ -127,8 +126,18 @@ function statusTone(status: string): string {
   return 'muted';
 }
 
-export default function SmsManagerTab({ data }: Props) {
-  const router = useRouter();
+export default function SmsManagerTab({ data: initialData }: Props) {
+  const [data, setData] = useState(initialData);
+  const refreshData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/sms-gateway', { method: 'GET', cache: 'no-store' });
+      if (!response.ok) return;
+      const nextData = await response.json() as SmsManagerData;
+      if (nextData?.ready) setData(nextData);
+    } catch {
+      // Keep the last good snapshot visible during a temporary network failure.
+    }
+  }, []);
   const [filter, setFilter] = useState<string>('all');
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [retryTarget, setRetryTarget] = useState<SmsJob | null>(null);
@@ -136,9 +145,10 @@ export default function SmsManagerTab({ data }: Props) {
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    const refreshTimer = window.setInterval(() => router.refresh(), 10_000);
+    void refreshData();
+    const refreshTimer = window.setInterval(() => void refreshData(), 10_000);
     return () => window.clearInterval(refreshTimer);
-  }, [router]);
+  }, [refreshData]);
 
   const filteredJobs = useMemo(
     () => filter === 'all' ? data.jobs : data.jobs.filter((job) => job.status === filter),
@@ -168,7 +178,7 @@ export default function SmsManagerTab({ data }: Props) {
         setNotice({ type: 'error', text: result.error });
       } else {
         setNotice({ type: 'success', text: successText });
-        router.refresh();
+        await refreshData();
       }
     } catch {
       setNotice({ type: 'error', text: 'تعذر تنفيذ الإجراء. تحقق من الاتصال ثم أعد المحاولة.' });
@@ -289,7 +299,7 @@ export default function SmsManagerTab({ data }: Props) {
       <div className={styles.queuePanel}>
         <div className={styles.sectionHeader}>
           <div><span className={styles.eyebrow}>OUTBOX / DELIVERY LOG</span><h3>قائمة الرسائل وسجل الإرسال</h3></div>
-          <span className={styles.sectionMeta}>آخر {data.jobs.length} رسالة · تحديث الصفحة لقراءة أحدث النتائج</span>
+          <span className={styles.sectionMeta}>آخر {data.jobs.length} رسالة · تحديث تلقائي كل 10 ثوانٍ</span>
         </div>
         <div className={styles.filters} role="tablist" aria-label="تصفية رسائل SMS">
           {STATUS_FILTERS.map(([value, label]) => (
