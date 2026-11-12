@@ -81,21 +81,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ job: null, gatewayPaused: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
-    const { data: merchant, error: merchantError } = await supabase
-      .from('merchants')
-      .select('store_name, sms_tracking_enabled')
-      .eq('id', device.merchant_id)
-      .maybeSingle();
-
-    if (merchantError || !merchant) {
-      console.error('[NativeSmsGateway] Merchant lookup failed:', merchantError?.message || 'Merchant missing.');
-      return NextResponse.json({ error: 'The connected store is unavailable.' }, { status: 503 });
-    }
-
-    if (merchant.sms_tracking_enabled !== true) {
-      return NextResponse.json({ job: null, merchantDisabled: true }, { headers: { 'Cache-Control': 'no-store' } });
-    }
-
+    // The tenant-scoped claim RPC also checks the merchant SMS switch and
+    // marks any queued jobs skipped when the merchant disables the feature.
     const { data, error } = await supabase.rpc('claim_next_sms_tracking_job_for_device', {
       p_device_id: device.device_id,
       p_merchant_id: device.merchant_id,
