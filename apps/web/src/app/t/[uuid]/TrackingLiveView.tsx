@@ -421,7 +421,7 @@ export function TrackingLiveView({
 
   return (
     <main
-      className={`${styles.pageContainer} ${backgroundClass} ${darkMode ? styles.themeDark : ''} ${fontClass} ${animationClass} ${waSupportUrl ? styles.hasFloatingSupport : ''} ${blobAnimationClass} ${backgroundBlurClass}`}
+      className={`${styles.pageContainer} ${backgroundClass} ${darkMode ? styles.themeDark : ''} ${fontClass} ${radiusClass} ${animationClass} ${waSupportUrl ? styles.hasFloatingSupport : ''} ${blobAnimationClass} ${backgroundBlurClass}`}
       style={dynamicStyle}
       aria-busy={introPhase !== 'done'}
     >
