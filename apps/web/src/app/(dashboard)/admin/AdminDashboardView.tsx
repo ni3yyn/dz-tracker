@@ -126,6 +126,24 @@ export function AdminDashboardView({
         }));
         return true;
       }
+
+      // Dismiss the topmost local control before closing its containing editor
+      // or navigating to the previous dashboard tab.
+      const smsRetryDialog = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="admin-sms-retry"]')
+        : null;
+      const openDropdown = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="dropdown"]')
+        : null;
+      if (smsRetryDialog || openDropdown) {
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
+        return true;
+      }
+
       if (editingMerchant) {
         setEditingMerchant(null);
         return true;
