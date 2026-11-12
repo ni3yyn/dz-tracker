@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
   const appVersion = typeof body?.appVersion === 'string' ? body.appVersion : null;
   const auth = await authenticateNativeSmsDevice(request, { appVersion });
-  if (!auth.ok) {
+  if (auth.ok === false) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
