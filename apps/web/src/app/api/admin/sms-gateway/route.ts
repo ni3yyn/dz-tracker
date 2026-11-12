@@ -19,6 +19,7 @@ export async function GET() {
       attemptsResult,
       controlResult,
       deviceResult,
+      nativeDevicesResult,
       eventsResult,
       ...countResults
     ] = await Promise.all([
@@ -39,10 +40,12 @@ export async function GET() {
         .maybeSingle(),
       supabase
         .from('sms_gateway_devices')
-        .select('device_id, display_name, enabled, last_seen_at, last_claim_at, last_result_at, last_status, last_error')
-        .eq('device_id', 'android-sms-gateway')
-        .maybeSingle(),
+        .select('device_id, display_name, merchant_id, enabled, platform, app_version, device_model, revoked_at, last_seen_at, last_claim_at, last_result_at, last_status, last_error, merchants(store_name)')
+        .not('merchant_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(200),
       supabase
+        .from('sms_tracking_admin_events')
         .from('sms_tracking_admin_events')
         .select('id, job_id, action, previous_status, new_status, details, created_at')
         .order('created_at', { ascending: false })
@@ -60,6 +63,7 @@ export async function GET() {
       attemptsResult.error,
       controlResult.error,
       deviceResult.error,
+      nativeDevicesResult.error,
       eventsResult.error,
       ...countResults.map((result: any) => result.error),
     ].find(Boolean);
@@ -76,6 +80,7 @@ export async function GET() {
         updated_at: controlResult.data.updated_at || null,
       },
       device: deviceResult.data,
+      nativeDevices: nativeDevicesResult.data || [],
       jobs: jobsResult.data || [],
       attempts: attemptsResult.data || [],
       events: eventsResult.data || [],
