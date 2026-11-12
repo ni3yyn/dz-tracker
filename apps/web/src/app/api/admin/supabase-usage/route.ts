@@ -119,7 +119,7 @@ async function getDatabaseSize(): Promise<{
       },
       error: null,
     };
-    cachedDatabaseSize = { expiresAt: Date.now() + 60_000, ...result };
+    cachedDatabaseSize = { expiresAt: Date.now() + DATABASE_SIZE_CACHE_MS, ...result };
     return result;
   } catch (error: any) {
     console.error('[SupabaseUsage] Database-size query failed:', error?.message || error);
