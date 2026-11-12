@@ -47,7 +47,7 @@ html body :is(
   a.homeLink,
   a.upsellCta,
   a.dz-upsell-hero-badge
-):not(#app-button-radius-reset) {
+):not(#app-button-radius-reset):not([data-brand-radius-control]) {
   border-radius: 0 !important;
   padding: 6px 10px !important;
 }
@@ -61,7 +61,7 @@ html body :is(
   button[class*="reorder" i],
   button[class*="order-action-btn" i],
   button[class*="upsell-action-btn" i]
-):not(#app-button-radius-reset) {
+):not(#app-button-radius-reset):not([data-brand-radius-control]) {
   border-radius: 0 !important;
   padding: 0 !important;
 }

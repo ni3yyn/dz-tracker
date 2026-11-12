@@ -265,6 +265,7 @@ export function BrandedSelect({
         aria-controls={listboxId}
         aria-disabled={disabled || loading || undefined}
         disabled={disabled || loading}
+        data-brand-radius-control={borderRadius ? 'true' : undefined}
         style={borderRadius ? { borderRadius } : undefined}
         onClick={() => isOpen ? closeMenu() : openMenu()}
         onKeyDown={handleTriggerKeyDown}
@@ -320,6 +321,7 @@ export function BrandedSelect({
                   isSelected ? styles.selected : '',
                   isActive ? styles.active : '',
                 ].filter(Boolean).join(' ')}
+                data-brand-radius-control={borderRadius ? 'true' : undefined}
                 onMouseEnter={() => !option.disabled && setActiveIndex(index)}
                 onClick={() => chooseOption(option)}
               >

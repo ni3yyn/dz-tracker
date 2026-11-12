@@ -661,6 +661,7 @@ export function TrackingLiveView({
                   type="button"
                   onClick={copyTracking}
                   className={styles.copyBtn}
+                  data-brand-radius-control="true"
                   aria-live="polite"
                   aria-label={copied ? 'تم نسخ رقم التتبع' : 'نسخ رقم التتبع'}
                   title={copied ? 'تم النسخ' : 'نسخ رقم التتبع'}
@@ -794,6 +795,7 @@ export function TrackingLiveView({
           target="_blank"
           rel="noreferrer"
           className={styles.floatingWhatsApp}
+          data-brand-radius-control="true"
           aria-label={`تواصل مع متجر ${storeName} عبر واتساب بخصوص الطلب ${externalOrderId}`}
         >
           <Icons.WhatsApp />

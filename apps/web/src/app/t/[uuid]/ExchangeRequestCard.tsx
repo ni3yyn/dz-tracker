@@ -156,7 +156,7 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
               <strong>{request ? 'هل ما زلت بحاجة إلى الاستبدال؟' : 'هل ترغب في استبدال المنتج؟'}</strong>
               <span>{request ? 'يمكنك إرسال طلب جديد إلى المتجر.' : 'ابدأ طلبك باختيار السبب المناسب.'}</span>
             </div>
-            <button type="button" className={styles.actionButton} style={{ borderRadius: buttonBorderRadius }} onClick={() => { setFormOpen(true); setError(''); }}>
+            <button type="button" className={styles.actionButton} data-brand-radius-control="true" style={{ borderRadius: buttonBorderRadius }} onClick={() => { setFormOpen(true); setError(''); }}>
               <span>{request ? 'تقديم طلب جديد' : 'أرغب في استبدال المنتج'}</span>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
@@ -167,7 +167,7 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
           <form className={styles.formPanel} onSubmit={submitRequest}>
             <div className={styles.formHeading}>
               <div><span className={styles.formStep}>طلب استبدال جديد</span><h3>أخبرنا كيف يمكننا مساعدتك</h3></div>
-              <button type="button" className={styles.closeForm} style={{ borderRadius: buttonBorderRadius }} onClick={() => { setFormOpen(false); setError(''); }} aria-label="إغلاق نموذج الاستبدال">
+              <button type="button" className={styles.closeForm} data-brand-radius-control="true" style={{ borderRadius: buttonBorderRadius }} onClick={() => { setFormOpen(false); setError(''); }} aria-label="إغلاق نموذج الاستبدال">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
               </button>
             </div>
@@ -191,8 +191,8 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
             </div>
             {error && <p className={styles.error} role="alert">{error}</p>}
             <div className={styles.formActions}>
-              <button type="button" className={styles.textButton} style={{ borderRadius: buttonBorderRadius }} onClick={() => { setFormOpen(false); setError(''); }} disabled={isSubmitting}>إلغاء</button>
-              <button type="submit" className={styles.submitButton} style={{ borderRadius: buttonBorderRadius }} disabled={isSubmitting || !reason}>{isSubmitting ? 'جارٍ إرسال الطلب...' : 'إرسال طلب الاستبدال'}</button>
+              <button type="button" className={styles.textButton} data-brand-radius-control="true" style={{ borderRadius: buttonBorderRadius }} onClick={() => { setFormOpen(false); setError(''); }} disabled={isSubmitting}>إلغاء</button>
+              <button type="submit" className={styles.submitButton} data-brand-radius-control="true" style={{ borderRadius: buttonBorderRadius }} disabled={isSubmitting || !reason}>{isSubmitting ? 'جارٍ إرسال الطلب...' : 'إرسال طلب الاستبدال'}</button>
             </div>
           </form>
         )}

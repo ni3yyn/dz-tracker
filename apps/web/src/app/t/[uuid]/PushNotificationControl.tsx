@@ -279,6 +279,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981', 
               type="button"
               onClick={handleUnsubscribe}
               disabled={isLoading}
+              data-brand-radius-control="true"
               style={{
                 padding: '7px 14px',
                 borderRadius: buttonBorderRadius,
@@ -298,6 +299,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981', 
               type="button"
               onClick={handleSubscribe}
               disabled={isLoading}
+              data-brand-radius-control="true"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
