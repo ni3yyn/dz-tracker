@@ -390,7 +390,7 @@ export function MerchantDashboardView({
     setSearchTerm(query);
     setStatusFilter(filter === 'exceptions' ? 'all' : filter);
     setActiveTab(filter === 'exceptions' ? 'exceptions' : 'orders');
-    setVisibleOrders(20);
+    setVisibleOrders(1);
   };
 
   return (
