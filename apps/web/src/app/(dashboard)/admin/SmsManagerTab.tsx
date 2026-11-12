@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   retrySmsTrackingJob,
   setSmsGatewayEnabled,
@@ -128,14 +128,30 @@ function statusTone(status: string): string {
 
 export default function SmsManagerTab({ data: initialData }: Props) {
   const [data, setData] = useState(initialData);
+  const [liveState, setLiveState] = useState<'connecting' | 'live' | 'reconnecting'>('connecting');
+  const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null);
+  const refreshInFlight = useRef(false);
+
   const refreshData = useCallback(async () => {
+    if (refreshInFlight.current || document.visibilityState === 'hidden') return;
+    refreshInFlight.current = true;
     try {
-      const response = await fetch('/api/admin/sms-gateway', { method: 'GET', cache: 'no-store' });
-      if (!response.ok) return;
+      const response = await fetch('/api/admin/sms-gateway', {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      if (!response.ok) throw new Error('SMS snapshot request failed');
       const nextData = await response.json() as SmsManagerData;
-      if (nextData?.ready) setData(nextData);
+      if (!nextData?.ready) throw new Error('SMS snapshot is not ready');
+      setData(nextData);
+      setLastRefreshAt(new Date());
+      setLiveState('live');
     } catch {
-      // Keep the last good snapshot visible during a temporary network failure.
+      // Keep the last good snapshot visible and show a reconnecting state.
+      setLiveState('reconnecting');
+    } finally {
+      refreshInFlight.current = false;
     }
   }, []);
   const [filter, setFilter] = useState<string>('all');
@@ -146,8 +162,22 @@ export default function SmsManagerTab({ data: initialData }: Props) {
 
   useEffect(() => {
     void refreshData();
-    const refreshTimer = window.setInterval(() => void refreshData(), 10_000);
-    return () => window.clearInterval(refreshTimer);
+
+    // Near-live updates: poll every 3 seconds while this tab is visible.
+    // Avoid background traffic and overlapping snapshot requests.
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refreshData();
+    }, 3_000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void refreshData();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.clearInterval(refreshTimer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [refreshData]);
 
   const filteredJobs = useMemo(
@@ -299,7 +329,7 @@ export default function SmsManagerTab({ data: initialData }: Props) {
       <div className={styles.queuePanel}>
         <div className={styles.sectionHeader}>
           <div><span className={styles.eyebrow}>OUTBOX / DELIVERY LOG</span><h3>قائمة الرسائل وسجل الإرسال</h3></div>
-          <span className={styles.sectionMeta}>آخر {data.jobs.length} رسالة · تحديث تلقائي كل 10 ثوانٍ</span>
+          <span className={styles.sectionMeta} data-live={liveState}><i />{liveState === 'live' ? 'مزامنة مباشرة' : liveState === 'connecting' ? 'جارٍ الاتصال…' : 'إعادة الاتصال…'} · آخر تحديث {lastRefreshAt ? lastRefreshAt.toLocaleTimeString('ar-DZ') : '—'}</span>
         </div>
         <div className={styles.filters} role="tablist" aria-label="تصفية رسائل SMS">
           {STATUS_FILTERS.map(([value, label]) => (
