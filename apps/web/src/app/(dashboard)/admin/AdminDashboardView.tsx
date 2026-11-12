@@ -14,6 +14,7 @@ import SiteHeader from '../../SiteHeader';
 import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import SmsManagerTab from './SmsManagerTab';
 import type { SmsManagerData } from './SmsManagerTab';
+import SupabaseUsageTab from './SupabaseUsageTab';
 
 interface MerchantItem {
   id: string;
@@ -83,16 +84,17 @@ export function AdminDashboardView({
   payments,
   smsManager,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'merchants' | 'telemetry' | 'sms' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'merchants' | 'telemetry' | 'sms' | 'usage' | 'settings'>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
   useEffect(() => {
-    const tabTitles: Record<'overview' | 'payments' | 'merchants' | 'telemetry' | 'sms' | 'settings', string> = {
+    const tabTitles: Record<'overview' | 'payments' | 'merchants' | 'telemetry' | 'sms' | 'usage' | 'settings', string> = {
       overview: 'مركز القيادة والإحصائيات',
       payments: 'الاشتراكات والدفعات',
       merchants: 'دليل المتاجر',
       telemetry: 'تيار الشحن والبيانات',
       sms: 'إدارة الرسائل النصية',
+      usage: 'استهلاك المنصة والحدود',
       settings: 'إعدادات المنصة',
     };
     document.title = tabTitles[activeTab] + ' | إدارة تاجر تراك';
@@ -407,6 +409,16 @@ export function AdminDashboardView({
             </button>
 
             <button
+              onClick={() => { setActiveTab('usage'); setMobileMenuOpen(false); }}
+              className={`${styles.railItem} ${activeTab === 'usage' ? styles.railItemActive : ''}`}
+            >
+              <div className={styles.railItemInner}>
+                <span className={styles.railIcon}><Icons.Activity /></span>
+                <span>استهلاك المنصة</span>
+              </div>
+            </button>
+
+            <button
               onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }}
               className={`${styles.railItem} ${activeTab === 'settings' ? styles.railItemActive : ''}`}
             >
@@ -457,6 +469,7 @@ export function AdminDashboardView({
               {activeTab === 'merchants' && 'دليل المتاجر وحصص الشحن'}
               {activeTab === 'telemetry' && 'مراقبة تيار الشحن المباشر'}
               {activeTab === 'sms' && 'إدارة ومراقبة رسائل SMS'}
+              {activeTab === 'usage' && 'استهلاك Supabase والحدود'}
               {activeTab === 'settings' && 'إعدادات المنصة والباقات'}
             </h1>
             <p>
@@ -465,6 +478,7 @@ export function AdminDashboardView({
               {activeTab === 'merchants' && 'إدارة المتاجر، المفاتيح، والتحكم בסقف الطلبات.'}
               {activeTab === 'telemetry' && 'تدفق لجميع تحديثات التتبع من مختلف شركات الشحن.'}
               {activeTab === 'sms' && 'مراقبة جهاز الإرسال، طابور الرسائل، المحاولات، والأخطاء.'}
+              {activeTab === 'usage' && 'قياس طلبات الخدمات ومراجعة الحصص الشهرية الفعلية والمسموح بها.'}
               {activeTab === 'settings' && 'تكوين بوابات الدفع الجزائرية وتسعير الباقات.'}
             </p>
           </div>
@@ -807,6 +821,9 @@ export function AdminDashboardView({
 
         {/* SMS OPERATIONS */}
         {activeTab === 'sms' && <SmsManagerTab data={smsManager} />}
+
+        {/* SUPABASE USAGE */}
+        {activeTab === 'usage' && <SupabaseUsageTab />}
 
         {/* TAB 5: SETTINGS */}
         {activeTab === 'settings' && (
