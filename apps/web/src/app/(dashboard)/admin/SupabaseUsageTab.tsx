@@ -230,7 +230,7 @@ export default function SupabaseUsageTab() {
       'Egress source: Supabase Dashboard → Organization → Usage, with the TajerTrack project selected. These are manually recorded dashboard values, not an API estimate.',
       '',
       '3) API REQUEST COUNTS — SUPABASE MANAGEMENT API',
-      `Returned daily buckets: ${buckets.length}`,
+      `Returned samples: ${buckets.length}`,
       `Bucket range: ${requestStart} to ${requestEnd}`,
       `REST / Database requests: ${totals.rest}`,
       `Auth requests: ${totals.auth}`,
