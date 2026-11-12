@@ -47,7 +47,7 @@ function RouteVisual({ mode }: { mode: AuthMode }) {
   );
 }
 
-export default function AuthForm({ mode, isAuthenticated = false }: { mode: AuthMode; isAuthenticated?: boolean }) {
+export default function AuthForm({ mode, isAuthenticated = false, nextPath = '' }: { mode: AuthMode; isAuthenticated?: boolean; nextPath?: string }) {
   const emailId = useId();
   const storeId = useId();
   const passwordId = useId();
@@ -108,6 +108,7 @@ export default function AuthForm({ mode, isAuthenticated = false }: { mode: Auth
           {infoMsg && <div className={styles.alertSuccess} role="status"><span className={styles.alertIcon}>✓</span><span>{infoMsg}</span></div>}
 
           <form onSubmit={handleSubmit} className={styles.form}>
+            {isLogin && nextPath && <input type="hidden" name="next" value={nextPath} />}
             {!isLogin && (
               <div className={styles.field}>
                 <label htmlFor={storeId}>اسم المتجر أو العلامة التجارية</label>
