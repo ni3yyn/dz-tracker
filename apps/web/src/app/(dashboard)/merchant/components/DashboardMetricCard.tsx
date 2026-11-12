@@ -7,6 +7,8 @@ interface DashboardMetricCardProps {
   className?: string;
   labelClassName?: string;
   valueClassName?: string;
+  description?: ReactNode;
+  descriptionClassName?: string;
   onClick?: () => void;
 }
 
@@ -21,12 +23,15 @@ export function DashboardMetricCard({
   className = 'dz-overview-kpi',
   labelClassName = 'dz-overview-kpi-label',
   valueClassName = 'dz-overview-kpi-value',
+  description,
+  descriptionClassName = 'dz-overview-kpi-description',
   onClick,
 }: DashboardMetricCardProps) {
   const content = (
     <>
       <span className={labelClassName}>{label}</span>
       <strong className={valueClassName}>{value}</strong>
+      {description != null && <span className={descriptionClassName}>{description}</span>}
     </>
   );
 
