@@ -64,6 +64,22 @@ export type SmsManagerData = {
     last_status: string | null;
     last_error: string | null;
   } | null;
+  nativeDevices?: Array<{
+    device_id: string;
+    display_name: string;
+    merchant_id: string;
+    enabled: boolean;
+    platform: string | null;
+    app_version: string | null;
+    device_model: string | null;
+    revoked_at: string | null;
+    last_seen_at: string | null;
+    last_claim_at: string | null;
+    last_result_at: string | null;
+    last_status: string | null;
+    last_error: string | null;
+    merchants?: Related<{ store_name: string | null }>;
+  }>;
   jobs: SmsJob[];
   attempts: SmsAttempt[];
   events: SmsAdminEvent[];
@@ -249,6 +265,17 @@ export default function SmsManagerTab({ data: initialData }: Props) {
     return runAction('device', () => setSmsGatewayDeviceEnabled(form), enabled ? 'تم تفعيل الجهاز.' : 'تم تعطيل الجهاز.');
   }
 
+  function toggleNativeDevice(deviceId: string, enabled: boolean) {
+    const form = new FormData();
+    form.set('device_id', deviceId);
+    form.set('enabled', String(enabled));
+    return runAction(
+      'native-device:' + deviceId,
+      () => setSmsGatewayDeviceEnabled(form),
+      enabled ? 'تم تفعيل هاتف التاجر.' : 'تم إيقاف هاتف التاجر.',
+    );
+  }
+
   function confirmRetry() {
     if (!retryTarget) return;
     const target = retryTarget;
@@ -343,6 +370,52 @@ export default function SmsManagerTab({ data: initialData }: Props) {
             {busy === 'device' ? 'جارٍ التحديث…' : data.device?.enabled ? 'تعطيل الجهاز' : 'تفعيل الجهاز'}
           </button>
         </div>
+      </div>
+
+      <div className={styles.queuePanel}>
+        <div className={styles.sectionHeader}>
+          <div><span className={styles.eyebrow}>MERCHANT PHONES</span><h3>هواتف التجار المرتبطة</h3></div>
+          <span className={styles.sectionMeta}>{(data.nativeDevices || []).length.toLocaleString('ar-DZ')} جهاز</span>
+        </div>
+        {(data.nativeDevices || []).length ? (
+          <div className={styles.nativeDeviceList}>
+            {(data.nativeDevices || []).map((phone) => {
+              const merchant = related(phone.merchants);
+              const freshness = gatewayFreshness(phone.last_seen_at);
+              const revoked = Boolean(phone.revoked_at);
+              const canManage = !revoked;
+              return (
+                <div className={styles.devicePanel} key={phone.device_id}>
+                  <div>
+                    <span className={styles.eyebrow}>{merchant?.store_name || 'متجر تاجر تراك'}</span>
+                    <h3>{phone.display_name || phone.device_model || 'هاتف Android'}</h3>
+                    <p>
+                      {phone.platform || 'android'} · إصدار التطبيق {phone.app_version || '—'} · آخر اتصال: {formatDate(phone.last_seen_at)}
+                    </p>
+                    {phone.last_status && <p>آخر نتيجة: {STATUS_LABELS[phone.last_status] || phone.last_status}</p>}
+                    {phone.last_error && <p className={styles.deviceError}>آخر خطأ: {phone.last_error}</p>}
+                    <small className={styles.nativeDeviceId}>معرّف الجهاز: {phone.device_id}</small>
+                  </div>
+                  <div className={styles.deviceActions}>
+                    <span className={phone.enabled && !revoked ? styles.deviceEnabled : styles.deviceDisabled}>
+                      {revoked ? 'تم استبدال الهاتف' : phone.enabled ? freshness.label : 'معطّل'}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.secondaryAction}
+                      disabled={busy !== null || !canManage}
+                      onClick={() => void toggleNativeDevice(phone.device_id, !phone.enabled)}
+                    >
+                      {busy === 'native-device:' + phone.device_id ? 'جارٍ التحديث…' : phone.enabled ? 'إيقاف الهاتف' : 'تفعيل الهاتف'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className={styles.emptyAudit}>لم يربط أي تاجر هاتف Android حتى الآن.</p>
+        )}
       </div>
 
       <div className={styles.queuePanel}>
