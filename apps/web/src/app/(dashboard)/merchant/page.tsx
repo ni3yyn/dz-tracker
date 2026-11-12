@@ -28,7 +28,7 @@ async function MerchantDashboardContent() {
   // جلب ملف التاجر الحالي مع تفاصيل الاشتراك
   let { data: merchant } = await supabaseAdmin
     .from('merchants')
-    .select('id, store_name, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, sms_tracking_enabled, logo_url, confirmation_telegram_enabled')
+    .select('id, store_name, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url, confirmation_telegram_enabled')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
@@ -48,7 +48,7 @@ async function MerchantDashboardContent() {
         subscription_status: 'active',
         max_orders_limit: isAdmin ? 999999 : 30,
       })
-      .select('id, store_name, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, sms_tracking_enabled, logo_url, confirmation_telegram_enabled')
+      .select('id, store_name, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at, telegram_tracking_link_enabled, logo_url, confirmation_telegram_enabled')
       .single();
 
     if (newMerchant) {
@@ -56,7 +56,26 @@ async function MerchantDashboardContent() {
     }
   }
 
-  // في حالة فشل الاتصال بقاعدة البيانات تماماً، نعرض شاشة استعادة مع زر تسجيل الخروج
+  // Read SMS availability separately so a deployment can safely precede the SQL migration.
+// Until the column exists, the dashboard remains usable and the SMS control stays disabled.
+let smsTrackingLinkEnabled = false;
+let smsTrackingStorageAvailable = false;
+if (merchant) {
+  const { data: smsSettings, error: smsSettingsError } = await supabaseAdmin
+    .from('merchants')
+    .select('sms_tracking_enabled')
+    .eq('id', merchant.id)
+    .maybeSingle();
+
+  if (!smsSettingsError) {
+    smsTrackingStorageAvailable = true;
+    smsTrackingLinkEnabled = Boolean(smsSettings?.sms_tracking_enabled);
+  } else {
+    console.warn('[SmsTracking] SMS settings are unavailable until the database migration is applied:', smsSettingsError.message);
+  }
+}
+
+// في حالة فشل الاتصال بقاعدة البيانات تماماً، نعرض شاشة استعادة مع زر تسجيل الخروج
   if (!merchant) {
     return (
       <div className={styles.container}>
@@ -294,7 +313,8 @@ async function MerchantDashboardContent() {
       }}
       payments={(payments || []) as any}
       telegramTrackingLinkEnabled={merchant.telegram_tracking_link_enabled ?? false}
-      smsTrackingLinkEnabled={Boolean((merchant as any).sms_tracking_enabled ?? false)}
+      smsTrackingLinkEnabled={smsTrackingLinkEnabled}
+      smsTrackingStorageAvailable={smsTrackingStorageAvailable}
       confirmationTelegramEnabled={(merchant as any).confirmation_telegram_enabled ?? false}
       initialUpsells={(upsells || []) as any}
       exchangeRequestsEnabled={exchangeRequestsEnabled}

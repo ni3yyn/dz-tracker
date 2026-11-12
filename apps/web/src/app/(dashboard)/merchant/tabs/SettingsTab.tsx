@@ -21,6 +21,7 @@ interface SettingsTabProps {
   onToggleTelegramTracking: () => Promise<void>;
   smsEnabled: boolean;
   isSavingSms: boolean;
+  smsTrackingStorageAvailable: boolean;
   onToggleSmsTracking: () => Promise<void>;
   confirmationEnabled: boolean;
   isSavingConfirmation: boolean;
@@ -61,6 +62,7 @@ export function SettingsTab({
   onToggleTelegramTracking,
   smsEnabled,
   isSavingSms,
+  smsTrackingStorageAvailable,
   onToggleSmsTracking,
   confirmationEnabled,
   isSavingConfirmation,
@@ -159,10 +161,11 @@ export function SettingsTab({
                     <h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>رسائل التتبع عبر SMS</h2>
                     <p style={{ margin: '5px 0 0', fontSize: '12px', lineHeight: 1.7, color: 'var(--ink-muted)' }}>إرسال رسالة SMS واحدة فقط عند تسجيل كل طلب جديد، تحتوي على رابط صفحة التتبع. تُرسل من رقم شريحة تاجر تراك المخصص.</p>
                   </div>
-                  <button type="button" role="switch" aria-checked={smsEnabled} aria-busy={isSavingSms} data-checked={smsEnabled ? 'true' : 'false'} aria-label="تفعيل إرسال رابط التتبع عبر SMS" disabled={isSavingSms} onClick={() => void onToggleSmsTracking()} style={{ width: '48px', height: '27px', flex: '0 0 48px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: smsEnabled ? '#273b30' : '#cbd1ca', cursor: isSavingSms ? 'wait' : 'pointer', opacity: isSavingSms ? .7 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'none' }}>
+                  <button type="button" role="switch" aria-checked={smsEnabled} aria-busy={isSavingSms} data-checked={smsEnabled ? 'true' : 'false'} aria-label="تفعيل إرسال رابط التتبع عبر SMS" disabled={!smsTrackingStorageAvailable || isSavingSms} onClick={() => void onToggleSmsTracking()} style={{ width: '48px', height: '27px', flex: '0 0 48px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: smsEnabled ? '#273b30' : '#cbd1ca', cursor: isSavingSms ? 'wait' : 'pointer', opacity: isSavingSms ? .7 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'none' }}>
                     <span className="dz-settings-switch-thumb">{isSavingSms && <span className="dz-settings-switch-spinner" aria-hidden="true" />}</span>
                   </button>
                 </div>
+                {!smsTrackingStorageAvailable && <p role="status" style={{ margin: '10px 0 0', paddingTop: '10px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '12px', lineHeight: 1.7 }}>يلزم تطبيق تحديث قاعدة البيانات الخاص برسائل SMS أولاً لتفعيل هذه الميزة.</p>}
                 <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '12px', color: smsEnabled ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{smsEnabled ? 'إرسال رابط التتبع برسالة واحدة لكل طلب مفعّل' : 'إرسال SMS معطّل'}</span>
                   <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>لا تُرسل رسائل عند تغيّر حالات الشحنة.</span>

@@ -8,6 +8,7 @@ interface UseMerchantSettingsOptions {
   subscription: SubscriptionInfo;
   telegramTrackingLinkEnabled: boolean;
   smsTrackingLinkEnabled: boolean;
+  smsTrackingStorageAvailable: boolean;
   confirmationTelegramEnabled: boolean;
   showToast: (message: string) => void;
 }
@@ -17,6 +18,7 @@ export function useMerchantSettings({
   subscription,
   telegramTrackingLinkEnabled,
   smsTrackingLinkEnabled,
+  smsTrackingStorageAvailable,
   confirmationTelegramEnabled,
   showToast,
 }: UseMerchantSettingsOptions) {
@@ -70,7 +72,7 @@ export function useMerchantSettings({
   };
 
   const handleToggleSmsTracking = async () => {
-    if (isSavingSms) return;
+    if (!smsTrackingStorageAvailable || isSavingSms) return;
     const next = !smsEnabled;
     setIsSavingSms(true);
     setSmsEnabled(next);

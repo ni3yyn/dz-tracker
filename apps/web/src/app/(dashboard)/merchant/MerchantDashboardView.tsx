@@ -75,6 +75,7 @@ interface Props {
   payments?: PaymentRecord[];
   telegramTrackingLinkEnabled?: boolean;
   smsTrackingLinkEnabled?: boolean;
+  smsTrackingStorageAvailable?: boolean;
   confirmationTelegramEnabled?: boolean;
   initialUpsells?: MerchantUpsellItem[];
   exceptionStates?: ShipmentExceptionState[];
@@ -119,6 +120,7 @@ export function MerchantDashboardView({
   payments = [],
   telegramTrackingLinkEnabled = false,
   smsTrackingLinkEnabled = false,
+  smsTrackingStorageAvailable = false,
   confirmationTelegramEnabled = false,
   initialUpsells = [],
   exceptionStates = [],
@@ -285,6 +287,7 @@ export function MerchantDashboardView({
     subscription,
     telegramTrackingLinkEnabled,
     smsTrackingLinkEnabled,
+    smsTrackingStorageAvailable,
     confirmationTelegramEnabled,
     showToast,
   });
@@ -733,6 +736,7 @@ export function MerchantDashboardView({
               onToggleTelegramTracking={handleToggleTelegramTracking}
               smsEnabled={smsEnabled}
               isSavingSms={isSavingSms}
+              smsTrackingStorageAvailable={smsTrackingStorageAvailable}
               onToggleSmsTracking={handleToggleSmsTracking}
               confirmationEnabled={confirmationEnabled}
               isSavingConfirmation={isSavingConfirmation}
