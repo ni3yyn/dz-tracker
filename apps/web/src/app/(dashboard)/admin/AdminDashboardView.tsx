@@ -15,6 +15,9 @@ import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import SmsManagerTab from './SmsManagerTab';
 import type { SmsManagerData } from './SmsManagerTab';
 import SupabaseUsageTab from './SupabaseUsageTab';
+import { DashboardFilterTabs } from '../merchant/components/DashboardFilterTabs';
+import { DashboardMetricCard } from '../merchant/components/DashboardMetricCard';
+import { BrandedSelect } from '../merchant/BrandedSelect';
 
 interface MerchantItem {
   id: string;
@@ -501,28 +504,46 @@ export function AdminDashboardView({
         {activeTab === 'overview' && (
           <div>
             <div className={styles.statsBar}>
-              <div className={styles.statItem}>
-                <span className={styles.cardTitle}>الدخل الشهري المتكرر (MRR)</span>
-                <span className={styles.cardValue}>{mrrDzd.toLocaleString()} <small style={{ fontSize: '1rem', color: 'var(--ink-muted)' }}>DZD</small></span>
-                <span className={styles.cardSub}>من الاشتراكات النشطة حالياً</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.cardTitle}>إجمالي المتاجر</span>
-                <span className={styles.cardValue}>{merchants.length}</span>
-                <span className={styles.cardSub}>{merchants.filter((m) => m.subscription_status === 'active').length} متجر نشط على المنصة</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.cardTitle}>إجمالي الشحنات</span>
-                <span className={styles.cardValue}>{orders.length}</span>
-                <span className={styles.cardSub}>شحنة معالجة بنجاح</span>
-              </div>
-              <div className={styles.statItem} style={{ background: pendingPayments.length > 0 ? 'var(--surface-hover)' : 'transparent' }}>
-                <span className={styles.cardTitle}>دفعات معلقة</span>
-                <span className={styles.cardValue}>{pendingPayments.length}</span>
-                <span className={styles.cardSub} style={pendingPayments.length > 0 ? { color: 'var(--ink-main)', fontWeight: 700 } : {}}>
-                  {pendingPayments.length > 0 ? 'تتطلب مراجعة إدارية' : 'محدثة ومؤكدة بالكامل'}
-                </span>
-              </div>
+              <DashboardMetricCard
+                as="div"
+                className={styles.statItem}
+                labelClassName={styles.cardTitle}
+                valueClassName={styles.cardValue}
+                descriptionClassName={styles.cardSub}
+                label="الدخل الشهري المتكرر (MRR)"
+                value={<>{mrrDzd.toLocaleString()} <small style={{ fontSize: '1rem', color: 'var(--ink-muted)' }}>DZD</small></>}
+                description="من الاشتراكات النشطة حالياً"
+              />
+              <DashboardMetricCard
+                as="div"
+                className={styles.statItem}
+                labelClassName={styles.cardTitle}
+                valueClassName={styles.cardValue}
+                descriptionClassName={styles.cardSub}
+                label="إجمالي المتاجر"
+                value={merchants.length}
+                description={`${merchants.filter((m) => m.subscription_status === 'active').length} متجر نشط على المنصة`}
+              />
+              <DashboardMetricCard
+                as="div"
+                className={styles.statItem}
+                labelClassName={styles.cardTitle}
+                valueClassName={styles.cardValue}
+                descriptionClassName={styles.cardSub}
+                label="إجمالي الشحنات"
+                value={orders.length}
+                description="شحنة معالجة بنجاح"
+              />
+              <DashboardMetricCard
+                as="div"
+                className={`${styles.statItem} ${pendingPayments.length > 0 ? styles.statItemAlert : ''}`}
+                labelClassName={styles.cardTitle}
+                valueClassName={styles.cardValue}
+                descriptionClassName={styles.cardSub}
+                label="دفعات معلقة"
+                value={pendingPayments.length}
+                description={pendingPayments.length > 0 ? 'تتطلب مراجعة إدارية' : 'محدثة ومؤكدة بالكامل'}
+              />
             </div>
 
             <div className={styles.card}>
@@ -670,13 +691,17 @@ export function AdminDashboardView({
         {/* TAB 3: MERCHANTS */}
         {activeTab === 'merchants' && (
           <div>
-            <div className={styles.filterRow}>
-              <button className={`${styles.filterBtn} ${merchantFilter === 'all' ? styles.filterBtnActive : ''}`} onClick={() => setMerchantFilter('all')}>الكل</button>
-              <button className={`${styles.filterBtn} ${merchantFilter === 'active' ? styles.filterBtnActive : ''}`} onClick={() => setMerchantFilter('active')}>نشط</button>
-              <button className={`${styles.filterBtn} ${merchantFilter === 'expiring' ? styles.filterBtnActive : ''}`} onClick={() => setMerchantFilter('expiring')}>ينتهي قريباً</button>
-              <button className={`${styles.filterBtn} ${merchantFilter === 'expired' ? styles.filterBtnActive : ''}`} onClick={() => setMerchantFilter('expired')}>منتهي</button>
-              <button className={`${styles.filterBtn} ${merchantFilter === 'suspended' ? styles.filterBtnActive : ''}`} onClick={() => setMerchantFilter('suspended')}>موقوف</button>
-            </div>
+            <DashboardFilterTabs
+              className={styles.adminFilterTabs}
+              ariaLabel="تصفية المتاجر حسب حالة الاشتراك"
+              items={[
+                { value: 'all', label: 'الكل', active: merchantFilter === 'all', onSelect: () => setMerchantFilter('all') },
+                { value: 'active', label: 'نشط', active: merchantFilter === 'active', onSelect: () => setMerchantFilter('active') },
+                { value: 'expiring', label: 'ينتهي قريباً', active: merchantFilter === 'expiring', onSelect: () => setMerchantFilter('expiring') },
+                { value: 'expired', label: 'منتهي', active: merchantFilter === 'expired', onSelect: () => setMerchantFilter('expired') },
+                { value: 'suspended', label: 'موقوف', active: merchantFilter === 'suspended', onSelect: () => setMerchantFilter('suspended') },
+              ]}
+            />
 
             <div className={styles.tableContainer}>
               <div className={styles.tableScrollArea}>
@@ -764,13 +789,17 @@ export function AdminDashboardView({
         {/* TAB 4: TELEMETRY (FIXED SCROLL WITH LAZY LOAD OBSERVER) */}
         {activeTab === 'telemetry' && (
           <div>
-            <div className={styles.filterRow}>
-              <button className={`${styles.filterBtn} ${carrierFilter === 'all' ? styles.filterBtnActive : ''}`} onClick={() => { setCarrierFilter('all'); setVisibleOrders(20); }}>الكل</button>
-              <button className={`${styles.filterBtn} ${carrierFilter === 'yalidine' ? styles.filterBtnActive : ''}`} onClick={() => { setCarrierFilter('yalidine'); setVisibleOrders(20); }}>Yalidine</button>
-              <button className={`${styles.filterBtn} ${carrierFilter === 'zr' ? styles.filterBtnActive : ''}`} onClick={() => { setCarrierFilter('zr'); setVisibleOrders(20); }}>ZR Express</button>
-              <button className={`${styles.filterBtn} ${carrierFilter === 'eco' ? styles.filterBtnActive : ''}`} onClick={() => { setCarrierFilter('eco'); setVisibleOrders(20); }}>EcoTrack</button>
-              <button className={`${styles.filterBtn} ${carrierFilter === 'maystro' ? styles.filterBtnActive : ''}`} onClick={() => { setCarrierFilter('maystro'); setVisibleOrders(20); }}>Maystro</button>
-            </div>
+            <DashboardFilterTabs
+              className={styles.adminFilterTabs}
+              ariaLabel="تصفية أحداث الشحن حسب شركة النقل"
+              items={[
+                { value: 'all', label: 'الكل', active: carrierFilter === 'all', onSelect: () => { setCarrierFilter('all'); setVisibleOrders(20); } },
+                { value: 'yalidine', label: 'Yalidine', active: carrierFilter === 'yalidine', onSelect: () => { setCarrierFilter('yalidine'); setVisibleOrders(20); } },
+                { value: 'zr', label: 'ZR Express', active: carrierFilter === 'zr', onSelect: () => { setCarrierFilter('zr'); setVisibleOrders(20); } },
+                { value: 'eco', label: 'EcoTrack', active: carrierFilter === 'eco', onSelect: () => { setCarrierFilter('eco'); setVisibleOrders(20); } },
+                { value: 'maystro', label: 'Maystro', active: carrierFilter === 'maystro', onSelect: () => { setCarrierFilter('maystro'); setVisibleOrders(20); } },
+              ]}
+            />
 
             <div className={styles.tableContainer}>
               <div className={styles.tableHeader}>
@@ -887,22 +916,25 @@ export function AdminDashboardView({
             <form onSubmit={handleSaveManualEdit}>
               <div style={{ marginBottom: '20px' }}>
                 <label className={styles.formLabel}>نوع الباقة (Tier)</label>
-                <select 
-                  name="tier" 
-                  value={editTier} 
-                  onChange={(e) => {
-                    const newTier = e.target.value;
+                <BrandedSelect
+                  name="tier"
+                  value={editTier}
+                  onChange={(newTier) => {
                     setEditTier(newTier);
                     const tierLimits: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
                     setEditLimit(tierLimits[newTier] || 30);
                   }}
-                  className={styles.input}
-                >
-                  <option value="starter">مجانية (30 طلباً)</option>
-                  <option value="basic">100 طلب (1,000 دج)</option>
-                  <option value="growth">200 طلب (1,800 دج)</option>
-                  <option value="scale">غير محدودة (2,500 دج - سقف مفتوح)</option>
-                </select>
+                  ariaLabel="نوع الباقة"
+                  variant="field"
+                  borderRadius="0"
+                  className={styles.adminBrandedSelect}
+                  options={[
+                    { value: 'starter', label: 'مجانية (30 طلباً)' },
+                    { value: 'basic', label: '100 طلب (1,000 دج)' },
+                    { value: 'growth', label: '200 طلب (1,800 دج)' },
+                    { value: 'scale', label: 'غير محدودة (2,500 دج - سقف مفتوح)' },
+                  ]}
+                />
               </div>
 
               <div style={{ marginBottom: '20px' }}>
