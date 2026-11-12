@@ -38,9 +38,24 @@ export async function login(formData: FormData) {
 
   if (isAuthorizedAdmin(signInData.user)) {
     redirect('/admin');
-  } else {
-    redirect('/merchant');
   }
+
+  const requestedNext = formData.get('next');
+  if (typeof requestedNext === 'string' && requestedNext.startsWith('/')) {
+    try {
+      const destination = new URL(requestedNext, 'https://tajertrack.invalid');
+      if (
+        destination.origin === 'https://tajertrack.invalid' &&
+        destination.pathname === '/mobile/sms-gateway/connect'
+      ) {
+        redirect(`${destination.pathname}${destination.search}`);
+      }
+    } catch {
+      // Ignore malformed or external post-login destinations.
+    }
+  }
+
+  redirect('/merchant');
 }
 
 export async function signup(formData: FormData) {
