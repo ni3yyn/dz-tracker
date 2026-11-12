@@ -136,6 +136,14 @@ BEGIN
   UPDATE public.sms_gateway_devices
      SET enabled = FALSE
    WHERE device_id = 'native-device-1';
+
+  -- A paused device keeps its credential and receives a clear pause response;
+  -- it must not be mistaken for a revoked/unknown phone.
+  SELECT public.poll_native_sms_gateway(repeat('a', 64), '0.1.0', 180) INTO v_poll;
+  IF v_poll->>'deviceDisabled' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'Admin-paused phone did not retain its pairing status: %', v_poll;
+  END IF;
+
   INSERT INTO public.sms_gateway_pairing_codes (code_hash, merchant_id, created_by, expires_at)
   VALUES (
     encode(digest('native-pair-code-blocked', 'sha256'), 'hex'),
