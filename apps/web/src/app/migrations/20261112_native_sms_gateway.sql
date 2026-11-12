@@ -157,7 +157,27 @@ SET search_path = public
 AS $$
 DECLARE
   v_job_id UUID;
+  v_sms_tracking_enabled BOOLEAN;
 BEGIN
+  SELECT merchant.sms_tracking_enabled
+    INTO v_sms_tracking_enabled
+    FROM public.merchants AS merchant
+   WHERE merchant.id = p_merchant_id;
+
+  IF v_sms_tracking_enabled IS DISTINCT FROM TRUE THEN
+    UPDATE public.sms_tracking_outbox
+       SET status = 'skipped',
+           result_code = 'merchant_sms_disabled',
+           last_error = 'SMS tracking was disabled for this merchant before the phone sent the message.',
+           locked_by = NULL,
+           locked_at = NULL,
+           lease_expires_at = NULL,
+           updated_at = NOW()
+     WHERE merchant_id = p_merchant_id
+       AND status IN ('pending', 'retry');
+    RETURN;
+  END IF;
+
   UPDATE public.sms_tracking_outbox
      SET status = 'unknown',
          result_code = 'device_lease_expired',
