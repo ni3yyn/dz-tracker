@@ -80,7 +80,7 @@ if (merchant) {
 let nativeSmsGatewayStorageAvailable = false;
 let nativeSmsDevice: { display_name: string; enabled: boolean } | null = null;
 if (merchant) {
-  const { data: nativeDevice, error: nativeDeviceError } = await supabaseAdmin
+  const { data: nativeDevice, error: nativeDeviceError } = await (supabaseAdmin as any)
     .from('sms_gateway_devices')
     .select('display_name, enabled, connected_at')
     .eq('merchant_id', merchant.id)
