@@ -1,30 +1,15 @@
 .section {
-  position: relative;
-  isolation: isolate;
   width: 100%;
   margin: clamp(32px, 4vw, 48px) 0 0;
-  overflow: hidden;
-  border: 1px solid var(--border-soft);
-  border-top: 3px solid var(--brand-primary, #355846);
-  background: color-mix(in srgb, var(--surface) 94%, var(--brand-primary, #355846));
+  padding-top: clamp(22px, 3vw, 30px);
+  border: 0;
+  border-top: 1px solid var(--border-soft);
+  background: transparent;
   color: var(--ink-main);
-  box-shadow: 0 18px 44px -38px color-mix(in srgb, var(--brand-primary, #355846) 42%, transparent);
+  box-shadow: none;
 }
 
-.section::before {
-  content: '';
-  position: absolute;
-  z-index: 0;
-  inset-inline-start: -92px;
-  top: -146px;
-  width: 290px;
-  height: 290px;
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--brand-primary, #355846) 13%, transparent), transparent 70%);
-}
-
-.sectionInner { position: relative; z-index: 1; padding: clamp(19px, 3vw, 30px); }
+.sectionInner { position: relative; padding: 0; }
 .section svg { display: block; flex: 0 0 auto; }
 .sectionIcon svg { width: 24px; height: 24px; max-width: 24px; max-height: 24px; }
 .statusIcon svg { width: 22px; height: 22px; max-width: 22px; max-height: 22px; }
@@ -101,7 +86,7 @@
 .actionButton:hover { background: color-mix(in srgb, var(--brand-primary, #355846) 88%, #000); }
 .actionButton:hover svg { transform: rotate(180deg) translateX(-3px); }
 .actionButton:active, .submitButton:not(:disabled):active { transform: translateY(1px); }
-.actionButton:focus-visible, .submitButton:focus-visible, .textButton:focus-visible, .closeForm:focus-visible, .reasonSelect:focus-visible, .noteLabel textarea:focus-visible { outline: 2px solid var(--brand-readable, var(--brand-primary)); outline-offset: 3px; }
+.actionButton:focus-visible, .submitButton:focus-visible, .textButton:focus-visible, .closeForm:focus-visible, .noteLabel textarea:focus-visible { outline: 2px solid var(--brand-readable, var(--brand-primary)); outline-offset: 3px; }
 
 .statusPanel {
   margin-top: 22px;
@@ -163,8 +148,7 @@
 
 .formFields { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 16px; align-items: start; }
 .reasonLabel, .noteLabel { display: grid; gap: 8px; min-width: 0; color: var(--ink-main); font-size: 12px; font-weight: 800; }
-.reasonSelect { width: 100%; min-height: 47px; padding: 10px 12px; border: 1px solid var(--border-soft); border-radius: 0; outline: none; background: var(--surface); color: var(--ink-main); font: inherit; font-size: 12px; font-weight: 550; cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease; }
-.reasonSelect:focus { border-color: var(--brand-primary, #355846); box-shadow: 0 0 0 3px var(--brand-primary-light, var(--status-tint)); }
+.reasonDropdown { width: 100%; min-width: 0; max-width: 100%; }
 .noteLabel > span { display: inline; margin-inline-start: 4px; color: var(--ink-light); font-size: 10px; font-weight: 550; }
 .noteLabel textarea { width: 100%; min-height: 96px; resize: vertical; padding: 11px 12px; border: 1px solid var(--border-soft); border-radius: 0; outline: none; background: var(--surface); color: var(--ink-main); font: inherit; font-size: 12px; font-weight: 450; line-height: 1.8; transition: border-color .16s ease, box-shadow .16s ease; }
 .noteLabel textarea:focus { border-color: var(--brand-primary, #355846); box-shadow: 0 0 0 3px var(--brand-primary-light, var(--status-tint)); }
@@ -195,7 +179,8 @@
 
 @media (max-width: 680px) {
   .section { margin-top: 28px; }
-  .sectionInner { padding: 18px; }
+  .section { padding-top: 19px; }
+  .sectionInner { padding: 0; }
   .sectionIntro { align-items: flex-start; gap: 13px; }
   .introIdentity { align-items: flex-start; gap: 11px; }
   .sectionIcon { width: 42px; height: 42px; flex-basis: 42px; }
@@ -219,7 +204,7 @@
 }
 
 @media (max-width: 420px) {
-  .sectionInner { padding: 15px 13px; }
+  .sectionInner { padding: 0; }
   .sectionIntro { flex-direction: column; }
   .introIdentity { width: 100%; }
   .orderRef { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-width: 0; padding: 7px 9px; }
@@ -246,7 +231,7 @@
   .section[data-revealed='true'] .statusPanel,
   .section[data-revealed='true'] .actionRow,
   .formPanel { animation: none !important; }
-  .actionButton, .actionButton svg, .submitButton, .closeForm, .reasonSelect, .noteLabel textarea { transition: none !important; }
+  .actionButton, .actionButton svg, .submitButton, .closeForm, .noteLabel textarea { transition: none !important; }
 }
 
 :global(.animNone) .section[data-revealed='false'] .sectionIntro,

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { ExchangeRequestSummary } from '../../../lib/exchange';
 import { EXCHANGE_REQUEST_REASONS } from '../../../lib/exchange';
+import { BrandedSelect } from '../../(dashboard)/merchant/BrandedSelect';
 import styles from './exchange.module.css';
 
 interface Props { trackingUuid: string; externalOrderId: string; initialRequest: ExchangeRequestSummary | null }
@@ -14,6 +15,8 @@ const statusCopy = {
   completed: { title: 'اكتمل الاستبدال', description: 'تم تسليم المنتج البديل بنجاح. شكراً لثقتك بالمتجر.' },
   rejected: { title: 'لم تتم الموافقة على الطلب', description: 'راجع رد المتجر أدناه. يمكنك تقديم طلب جديد عند الحاجة.' },
 } as const;
+
+const reasonOptions = EXCHANGE_REQUEST_REASONS.map((item) => ({ value: item.value, label: item.label }));
 
 const progressStages = [
   { status: 'pending', label: 'تم الإرسال' },
@@ -170,10 +173,15 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
             </div>
             <div className={styles.formFields}>
               <label className={styles.reasonLabel}>ما سبب رغبتك في الاستبدال؟
-                <select className={styles.reasonSelect} value={reason} onChange={(event) => { setReason(event.target.value); setError(''); }} required>
-                  <option value="" disabled>اختر سبب الاستبدال</option>
-                  {EXCHANGE_REQUEST_REASONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                </select>
+                <BrandedSelect
+                  className={styles.reasonDropdown}
+                  ariaLabel="سبب الاستبدال"
+                  value={reason}
+                  onChange={(value) => { setReason(value); setError(''); }}
+                  options={reasonOptions}
+                  placeholder="اختر سبب الاستبدال"
+                  variant="field"
+                />
               </label>
               <label className={styles.noteLabel}>تفاصيل إضافية <span>اختياري</span>
                 <textarea value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} rows={3} placeholder="أضف توضيحاً يساعد المتجر على معالجة طلبك..." />
