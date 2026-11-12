@@ -145,7 +145,7 @@
   padding: 9px 11px;
   border: 0;
   border-inline-start: 2px solid transparent;
-  border-radius: 0;
+  border-radius: inherit;
   background: transparent;
   color: #34483a;
   font: inherit;

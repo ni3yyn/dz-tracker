@@ -370,6 +370,16 @@ export function TrackingLiveView({
     : settings.cardRadius === 'sleek' ? '9px'
     : settings.cardRadius === 'pebble' ? '15px'
     : '12px';
+  const panelBorderRadius =
+    settings.cardRadius === 'sharp' ? '0px'
+    : settings.cardRadius === 'sleek' ? '10px'
+    : settings.cardRadius === 'pebble' ? '21px'
+    : '16px';
+  const buttonBorderRadius =
+    settings.cardRadius === 'sharp' ? '0px'
+    : settings.cardRadius === 'sleek' ? '9px'
+    : settings.cardRadius === 'pebble' ? '999px'
+    : '12px';
 
   const fontClass =
     settings.fontFamily === 'cairo' ? styles.fontCairo
@@ -662,7 +672,7 @@ export function TrackingLiveView({
             )}
 
             {trackingUuid && (
-              <PushNotificationControl trackingUuid={trackingUuid} brandColor={settings.brandColor} />
+              <PushNotificationControl trackingUuid={trackingUuid} brandColor={settings.brandColor} panelBorderRadius={panelBorderRadius} buttonBorderRadius={buttonBorderRadius} />
             )}
 
             <div className={styles.timelineHeading}>
@@ -705,7 +715,7 @@ export function TrackingLiveView({
           </section>
 
           {exchangeRequestsEnabled && exchangeRequestsStorageAvailable && isDeliveredStatus(currentOrderStatus) && (
-            <ExchangeRequestCard trackingUuid={trackingUuid || ''} externalOrderId={externalOrderId} initialRequest={initialExchangeRequest} controlBorderRadius={controlBorderRadius} />
+            <ExchangeRequestCard trackingUuid={trackingUuid || ''} externalOrderId={externalOrderId} initialRequest={initialExchangeRequest} controlBorderRadius={controlBorderRadius} buttonBorderRadius={buttonBorderRadius} />
           )}
 
           {upsells && upsells.length > 0 && (

@@ -5,6 +5,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 interface Props {
   trackingUuid: string;
   brandColor?: string;
+  panelBorderRadius: string;
+  buttonBorderRadius: string;
 }
 
 function urlB64ToUint8Array(base64String: string): BufferSource {
@@ -19,7 +21,7 @@ function urlB64ToUint8Array(base64String: string): BufferSource {
   return buffer;
 }
 
-export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }: Props) {
+export function PushNotificationControl({ trackingUuid, brandColor = '#10b981', panelBorderRadius, buttonBorderRadius }: Props) {
   const [supported, setSupported] = useState<boolean | null>(null);
   const [isIOSBrowser, setIsIOSBrowser] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -197,7 +199,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
       <div style={{
         marginTop: '16px',
         padding: '14px 16px',
-        borderRadius: 'var(--radius-panel)',
+        borderRadius: panelBorderRadius,
         background: 'rgba(2, 132, 199, 0.08)',
         border: '1px solid rgba(2, 132, 199, 0.2)',
         fontSize: '12px',
@@ -222,7 +224,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
       <div role="status" style={{
         marginTop: '16px',
         padding: '13px 15px',
-        borderRadius: 'var(--radius-panel)',
+        borderRadius: panelBorderRadius,
         background: 'rgba(100, 116, 139, 0.08)',
         border: '1px solid rgba(100, 116, 139, 0.18)',
         color: 'var(--ink-muted, #475569)',
@@ -238,7 +240,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
     <div style={{
       marginTop: '18px',
       padding: '16px 18px',
-      borderRadius: 'var(--radius-panel)',
+      borderRadius: panelBorderRadius,
       background: isSubscribed ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 24, 19, 0.03)',
       border: `1px solid ${isSubscribed ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 24, 19, 0.08)'}`,
       textAlign: 'right',
@@ -279,7 +281,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
               disabled={isLoading}
               style={{
                 padding: '7px 14px',
-                borderRadius: 'var(--radius-button)',
+                borderRadius: buttonBorderRadius,
                 border: '1px solid #d1d5db',
                 background: '#ffffff',
                 color: '#6b7280',
@@ -301,7 +303,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
                 alignItems: 'center',
                 gap: '6px',
                 padding: '9px 18px',
-                borderRadius: 'var(--radius-button)',
+                borderRadius: buttonBorderRadius,
                 border: 'none',
                 background: brandColor,
                 color: '#ffffff',
@@ -344,7 +346,7 @@ export function PushNotificationControl({ trackingUuid, brandColor = '#10b981' }
           gap: '8px',
           marginTop: '10px',
           padding: '8px 12px',
-          borderRadius: 'var(--radius-notice)',
+          borderRadius: panelBorderRadius,
           background: '#fef2f2',
           border: '1px solid #fecaca',
           color: '#991b1b',

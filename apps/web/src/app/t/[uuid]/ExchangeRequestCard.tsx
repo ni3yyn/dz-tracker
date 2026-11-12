@@ -6,7 +6,7 @@ import { EXCHANGE_REQUEST_REASONS } from '../../../lib/exchange';
 import { BrandedSelect } from '../../(dashboard)/merchant/BrandedSelect';
 import styles from './exchange.module.css';
 
-interface Props { trackingUuid: string; externalOrderId: string; initialRequest: ExchangeRequestSummary | null; controlBorderRadius: string }
+interface Props { trackingUuid: string; externalOrderId: string; initialRequest: ExchangeRequestSummary | null; controlBorderRadius: string; buttonBorderRadius: string }
 
 const statusCopy = {
   pending: { title: 'طلبك قيد المراجعة', description: 'وصل طلبك إلى المتجر. سيظهر هنا قرار المتجر وأي تحديث جديد.' },
@@ -40,7 +40,7 @@ function StatusIcon({ status }: { status: ExchangeRequestSummary['status'] }) {
   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.7" /><path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
-export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequest, controlBorderRadius }: Props) {
+export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequest, controlBorderRadius, buttonBorderRadius }: Props) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [request, setRequest] = useState<ExchangeRequestSummary | null>(initialRequest);
@@ -156,7 +156,7 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
               <strong>{request ? 'هل ما زلت بحاجة إلى الاستبدال؟' : 'هل ترغب في استبدال المنتج؟'}</strong>
               <span>{request ? 'يمكنك إرسال طلب جديد إلى المتجر.' : 'ابدأ طلبك باختيار السبب المناسب.'}</span>
             </div>
-            <button type="button" className={styles.actionButton} onClick={() => { setFormOpen(true); setError(''); }}>
+            <button type="button" className={styles.actionButton} style={{ borderRadius: buttonBorderRadius }} onClick={() => { setFormOpen(true); setError(''); }}>
               <span>{request ? 'تقديم طلب جديد' : 'أرغب في استبدال المنتج'}</span>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
@@ -167,7 +167,7 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
           <form className={styles.formPanel} onSubmit={submitRequest}>
             <div className={styles.formHeading}>
               <div><span className={styles.formStep}>طلب استبدال جديد</span><h3>أخبرنا كيف يمكننا مساعدتك</h3></div>
-              <button type="button" className={styles.closeForm} onClick={() => { setFormOpen(false); setError(''); }} aria-label="إغلاق نموذج الاستبدال">
+              <button type="button" className={styles.closeForm} style={{ borderRadius: buttonBorderRadius }} onClick={() => { setFormOpen(false); setError(''); }} aria-label="إغلاق نموذج الاستبدال">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
               </button>
             </div>
@@ -191,8 +191,8 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
             </div>
             {error && <p className={styles.error} role="alert">{error}</p>}
             <div className={styles.formActions}>
-              <button type="button" className={styles.textButton} onClick={() => { setFormOpen(false); setError(''); }} disabled={isSubmitting}>إلغاء</button>
-              <button type="submit" className={styles.submitButton} disabled={isSubmitting || !reason}>{isSubmitting ? 'جارٍ إرسال الطلب...' : 'إرسال طلب الاستبدال'}</button>
+              <button type="button" className={styles.textButton} style={{ borderRadius: buttonBorderRadius }} onClick={() => { setFormOpen(false); setError(''); }} disabled={isSubmitting}>إلغاء</button>
+              <button type="submit" className={styles.submitButton} style={{ borderRadius: buttonBorderRadius }} disabled={isSubmitting || !reason}>{isSubmitting ? 'جارٍ إرسال الطلب...' : 'إرسال طلب الاستبدال'}</button>
             </div>
           </form>
         )}
