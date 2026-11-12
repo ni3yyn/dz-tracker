@@ -228,3 +228,146 @@ REVOKE ALL ON FUNCTION public.claim_next_sms_tracking_job_for_device(TEXT, UUID,
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_next_sms_tracking_job_for_device(TEXT, UUID, INTEGER)
   TO service_role;
+
+
+-- One-request device poll: validate the per-phone token, update its heartbeat,
+-- honor global/merchant pause switches, and atomically claim a tenant job.
+-- This avoids a separate auth UPDATE + control SELECT + claim RPC on every idle
+-- poll, which matters when many merchants keep their phones online.
+CREATE OR REPLACE FUNCTION public.poll_native_sms_gateway(
+  p_token_hash TEXT,
+  p_app_version TEXT DEFAULT NULL,
+  p_lease_seconds INTEGER DEFAULT 180
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_device public.sms_gateway_devices%ROWTYPE;
+  v_global_enabled BOOLEAN;
+  v_sms_enabled BOOLEAN;
+  v_job public.sms_tracking_outbox%ROWTYPE;
+BEGIN
+  IF p_token_hash IS NULL OR p_token_hash !~ '^[0-9a-f]{64}$' THEN
+    RETURN jsonb_build_object('errorCode', 'unauthorized');
+  END IF;
+
+  SELECT *
+    INTO v_device
+    FROM public.sms_gateway_devices
+   WHERE token_hash = p_token_hash
+     AND merchant_id IS NOT NULL
+     AND revoked_at IS NULL
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('errorCode', 'unauthorized');
+  END IF;
+
+  UPDATE public.sms_gateway_devices
+     SET last_seen_at = NOW(),
+         app_version = CASE
+           WHEN p_app_version IS NULL OR BTRIM(p_app_version) = '' THEN app_version
+           ELSE LEFT(BTRIM(p_app_version), 32)
+         END,
+         updated_at = NOW()
+   WHERE device_id = v_device.device_id
+  RETURNING * INTO v_device;
+
+  IF v_device.enabled IS NOT TRUE THEN
+    RETURN jsonb_build_object('deviceDisabled', TRUE);
+  END IF;
+
+  SELECT enabled
+    INTO v_global_enabled
+    FROM public.sms_gateway_control
+   WHERE id = 'primary';
+
+  IF v_global_enabled IS NULL THEN
+    RETURN jsonb_build_object('errorCode', 'gateway_control_unavailable');
+  END IF;
+
+  IF v_global_enabled IS NOT TRUE THEN
+    RETURN jsonb_build_object('gatewayPaused', TRUE);
+  END IF;
+
+  SELECT sms_tracking_enabled
+    INTO v_sms_enabled
+    FROM public.merchants
+   WHERE id = v_device.merchant_id;
+
+  IF v_sms_enabled IS DISTINCT FROM TRUE THEN
+    UPDATE public.sms_tracking_outbox
+       SET status = 'skipped',
+           result_code = 'merchant_sms_disabled',
+           last_error = 'SMS tracking was disabled for this merchant before the phone sent the message.',
+           locked_by = NULL,
+           locked_at = NULL,
+           lease_expires_at = NULL,
+           updated_at = NOW()
+     WHERE merchant_id = v_device.merchant_id
+       AND status IN ('pending', 'retry');
+    RETURN jsonb_build_object('merchantDisabled', TRUE);
+  END IF;
+
+  UPDATE public.sms_tracking_outbox
+     SET status = 'unknown',
+         result_code = 'device_lease_expired',
+         last_error = COALESCE(
+           last_error,
+           'The Android phone did not report the result before its lease expired. No automatic resend was attempted.'
+         ),
+         locked_by = NULL,
+         locked_at = NULL,
+         lease_expires_at = NULL,
+         updated_at = NOW()
+   WHERE merchant_id = v_device.merchant_id
+     AND status = 'processing'
+     AND locked_by = v_device.device_id
+     AND lease_expires_at IS NOT NULL
+     AND lease_expires_at <= NOW();
+
+  SELECT *
+    INTO v_job
+    FROM public.sms_tracking_outbox
+   WHERE merchant_id = v_device.merchant_id
+     AND status IN ('pending', 'retry')
+     AND available_at <= NOW()
+   ORDER BY available_at ASC, created_at ASC
+   LIMIT 1
+   FOR UPDATE SKIP LOCKED;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('job', NULL);
+  END IF;
+
+  UPDATE public.sms_tracking_outbox
+     SET status = 'processing',
+         locked_by = v_device.device_id,
+         last_device_id = v_device.device_id,
+         locked_at = NOW(),
+         lease_expires_at = NOW() + make_interval(secs => GREATEST(30, LEAST(p_lease_seconds, 900))),
+         attempt_count = attempt_count + 1,
+         updated_at = NOW()
+   WHERE id = v_job.id
+  RETURNING * INTO v_job;
+
+  UPDATE public.sms_gateway_devices
+     SET last_claim_at = NOW(),
+         updated_at = NOW()
+   WHERE device_id = v_device.device_id;
+
+  RETURN jsonb_build_object(
+    'job', to_jsonb(v_job),
+    'deviceId', v_device.device_id,
+    'merchantId', v_device.merchant_id
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.poll_native_sms_gateway(TEXT, TEXT, INTEGER)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.poll_native_sms_gateway(TEXT, TEXT, INTEGER)
+  TO service_role;
