@@ -22,6 +22,12 @@ export class WebPushWorker {
     this.isRunning = true;
     console.log(`[WebPushWorker]: Starting worker loop (ID: ${this.config.workerId})...`);
 
+    // Back off while the queue is idle. A fresh order-history event is still
+    // picked up within 15 seconds, while an empty queue no longer causes
+    // heartbeat + claim requests every 3 seconds indefinitely.
+    let idlePollDelayMs = this.config.pollIntervalMs;
+    const maxIdlePollDelayMs = Math.max(this.config.pollIntervalMs, 15_000);
+
     // Ensure worker state is enabled in DB
     await this.queue.setWorkerEnabled(true);
 
@@ -41,10 +47,14 @@ export class WebPushWorker {
         );
 
         if (!job) {
-          // Queue is empty or paused
-          await this.sleep(this.config.pollIntervalMs);
+          // Queue is empty or paused. Exponential backoff is capped to keep
+          // notification latency bounded while greatly reducing idle DB work.
+          await this.sleep(idlePollDelayMs);
+          idlePollDelayMs = Math.min(maxIdlePollDelayMs, idlePollDelayMs * 2);
           continue;
         }
+
+        idlePollDelayMs = this.config.pollIntervalMs;
 
         let renewalInFlight: Promise<boolean> | null = null;
         const renewalIntervalMs = Math.max(
@@ -66,7 +76,9 @@ export class WebPushWorker {
         }
       } catch (err: any) {
         console.error('[WebPushWorker]: Unexpected error in main loop:', err?.message || err);
-        await this.sleep(this.config.pollIntervalMs);
+        const retryDelayMs = idlePollDelayMs;
+        idlePollDelayMs = Math.min(maxIdlePollDelayMs, Math.max(this.config.pollIntervalMs, idlePollDelayMs * 2));
+        await this.sleep(retryDelayMs);
       }
     }
 
