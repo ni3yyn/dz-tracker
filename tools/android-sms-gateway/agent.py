@@ -176,7 +176,9 @@ def main():
     db = open_database()
     acquire_wake_lock()
     print("[gateway] TajerTrack Android SMS gateway is running.")
-    print("[gateway] Backend: %s | Poll interval: %ss | Local journal: %s" % (BASE_URL, POLL_SECONDS, DB_PATH))
+    print("[gateway] Backend: %s | Poll interval: %ss (idle backoff up to 30s) | Local journal: %s" % (BASE_URL, POLL_SECONDS, DB_PATH))
+    idle_poll_seconds = POLL_SECONDS
+    max_idle_poll_seconds = max(POLL_SECONDS, 30)
 
     try:
         while True:
@@ -185,24 +187,31 @@ def main():
                 response = api_post(CLAIM_PATH, {})
                 job = response.get("job")
                 if job:
+                    idle_poll_seconds = POLL_SECONDS
                     send_job(db, job)
                 else:
-                    time.sleep(POLL_SECONDS)
+                    time.sleep(idle_poll_seconds)
+                    idle_poll_seconds = min(
+                        max_idle_poll_seconds,
+                        max(POLL_SECONDS, int(idle_poll_seconds * 1.5)),
+                    )
             except GatewayError as error:
                 print("[gateway] %s" % error)
                 if error.status == 401:
                     print("[gateway] Device token rejected. Stopping to avoid repeated unauthorized requests.")
                     return 3
-                if error.status == 503:
-                    time.sleep(max(POLL_SECONDS, 20))
-                else:
-                    time.sleep(POLL_SECONDS)
+                idle_poll_seconds = min(
+                    max_idle_poll_seconds,
+                    max(idle_poll_seconds * 2, 20 if error.status == 503 else POLL_SECONDS),
+                )
+                time.sleep(idle_poll_seconds)
             except KeyboardInterrupt:
                 print("\n[gateway] Stopping.")
                 return 0
             except Exception as error:
                 print("[gateway] Unexpected error: %s" % error)
-                time.sleep(POLL_SECONDS)
+                idle_poll_seconds = min(max_idle_poll_seconds, max(POLL_SECONDS, idle_poll_seconds * 2))
+                time.sleep(idle_poll_seconds)
     finally:
         try:
             subprocess.run(["termux-wake-unlock"], capture_output=True, timeout=5, check=False)
