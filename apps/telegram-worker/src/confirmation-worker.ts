@@ -32,6 +32,11 @@ export class TelegramConfirmationWorker {
     this.isRunning = true;
     console.log(`[ConfirmationWorker]: Starting confirmation loop (ID: ${this.config.workerId})...`);
 
+    // Confirmation delivery remains automatic, with a bounded 15-second
+    // pickup delay when no confirmation jobs are waiting.
+    let idlePollDelayMs = this.config.pollIntervalMs;
+    const maxIdlePollDelayMs = Math.max(this.config.pollIntervalMs, 15_000);
+
     while (this.isRunning) {
       try {
         const job = await this.queue.claimNextConfirmationJob(
@@ -40,14 +45,18 @@ export class TelegramConfirmationWorker {
         );
 
         if (!job) {
-          await this.sleep(this.config.pollIntervalMs);
+          await this.sleep(idlePollDelayMs);
+          idlePollDelayMs = Math.min(maxIdlePollDelayMs, idlePollDelayMs * 2);
           continue;
         }
 
+        idlePollDelayMs = this.config.pollIntervalMs;
         await this.processJob(job);
       } catch (err: any) {
         console.error('[ConfirmationWorker]: Unexpected error in main loop:', err?.message || err);
-        await this.sleep(this.config.pollIntervalMs);
+        const retryDelayMs = idlePollDelayMs;
+        idlePollDelayMs = Math.min(maxIdlePollDelayMs, Math.max(this.config.pollIntervalMs, idlePollDelayMs * 2));
+        await this.sleep(retryDelayMs);
       }
     }
 
