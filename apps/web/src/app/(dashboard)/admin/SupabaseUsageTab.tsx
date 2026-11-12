@@ -11,23 +11,50 @@ type UsageBucket = {
   total_storage_requests: number;
 };
 
+type DatabaseSize = {
+  bytes: string;
+  pretty: string;
+  measuredAt: string;
+  source: 'pg_database_size';
+};
+
 type UsageSnapshot = {
   configured?: boolean;
   missing?: string[];
-  projectRef?: string;
+  projectRef?: string | null;
   planTier?: string | null;
   interval?: '1day';
   buckets?: UsageBucket[];
   fetchedAt?: string;
+  databaseSize?: DatabaseSize | null;
+  databaseSizeError?: string | null;
   cached?: boolean;
   error?: string;
 };
 
+type EgressEntry = {
+  uncachedGb: string;
+  cachedGb: string;
+  periodStart: string;
+  periodEnd: string;
+  capturedAt: string;
+};
+
 type Quota = { label: string; amount: string; scope: string };
+
+const EGRESS_STORAGE_KEY = 'tajertrack-admin-supabase-egress-v1';
+const EMPTY_EGRESS: EgressEntry = {
+  uncachedGb: '',
+  cachedGb: '',
+  periodStart: '',
+  periodEnd: '',
+  capturedAt: '',
+};
 
 const QUOTAS: Record<string, Quota[]> = {
   free: [
-    { label: 'إجمالي نقل البيانات (Egress)', amount: '5 GB', scope: 'على مستوى المؤسسة' },
+    { label: 'Egress غير مخزّن مؤقتاً', amount: '5 GB', scope: 'على مستوى المؤسسة' },
+    { label: 'Cached Egress', amount: '5 GB', scope: 'على مستوى المؤسسة' },
     { label: 'حجم قاعدة البيانات', amount: '500 MB', scope: 'لكل مشروع' },
     { label: 'مساحة Storage', amount: '1 GB', scope: 'على مستوى المؤسسة' },
     { label: 'المستخدمون النشطون شهرياً (MAU)', amount: '50,000', scope: 'على مستوى المؤسسة' },
@@ -36,8 +63,9 @@ const QUOTAS: Record<string, Quota[]> = {
     { label: 'ذروة اتصالات Realtime', amount: '200', scope: 'على مستوى المؤسسة' },
   ],
   pro: [
-    { label: 'إجمالي نقل البيانات (Egress)', amount: '250 GB', scope: 'على مستوى المؤسسة' },
-    { label: 'حجم قاعدة البيانات', amount: '8 GB', scope: 'لكل مشروع' },
+    { label: 'Egress غير مخزّن مؤقتاً', amount: '250 GB', scope: 'على مستوى المؤسسة' },
+    { label: 'Cached Egress', amount: '250 GB', scope: 'على مستوى المؤسسة' },
+    { label: 'مساحة القرص للمشروع', amount: '8 GB', scope: 'لكل مشروع' },
     { label: 'مساحة Storage', amount: '100 GB', scope: 'على مستوى المؤسسة' },
     { label: 'المستخدمون النشطون شهرياً (MAU)', amount: '100,000', scope: 'على مستوى المؤسسة' },
     { label: 'استدعاءات Edge Functions', amount: '2,000,000', scope: 'على مستوى المؤسسة' },
@@ -45,8 +73,9 @@ const QUOTAS: Record<string, Quota[]> = {
     { label: 'ذروة اتصالات Realtime', amount: '500', scope: 'على مستوى المؤسسة' },
   ],
   team: [
-    { label: 'إجمالي نقل البيانات (Egress)', amount: '250 GB', scope: 'على مستوى المؤسسة' },
-    { label: 'حجم قاعدة البيانات', amount: '8 GB', scope: 'لكل مشروع' },
+    { label: 'Egress غير مخزّن مؤقتاً', amount: '250 GB', scope: 'على مستوى المؤسسة' },
+    { label: 'Cached Egress', amount: '250 GB', scope: 'على مستوى المؤسسة' },
+    { label: 'مساحة القرص للمشروع', amount: '8 GB', scope: 'لكل مشروع' },
     { label: 'مساحة Storage', amount: '100 GB', scope: 'على مستوى المؤسسة' },
     { label: 'المستخدمون النشطون شهرياً (MAU)', amount: '100,000', scope: 'على مستوى المؤسسة' },
     { label: 'استدعاءات Edge Functions', amount: '2,000,000', scope: 'على مستوى المؤسسة' },
@@ -77,12 +106,21 @@ function normalizeTier(value: string | null | undefined): string | null {
   return ['free', 'pro', 'team', 'enterprise'].includes(tier) ? tier : null;
 }
 
+function numericInput(value: string): number | null {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
 export default function SupabaseUsageTab() {
   const [snapshot, setSnapshot] = useState<UsageSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState('');
+  const [egress, setEgress] = useState<EgressEntry>(EMPTY_EGRESS);
+  const [egressLoaded, setEgressLoaded] = useState(false);
   const requestInFlight = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -96,8 +134,8 @@ export default function SupabaseUsageTab() {
         headers: { 'Cache-Control': 'no-cache' },
       });
       const body = await response.json() as UsageSnapshot;
-      if (!response.ok) throw new Error(body.error || 'تعذر جلب استهلاك Supabase.');
       setSnapshot(body);
+      if (!response.ok) throw new Error(body.error || 'تعذر جلب استهلاك Supabase.');
       setError(body.error || null);
       setLastChecked(new Date());
     } catch (cause: any) {
@@ -108,6 +146,28 @@ export default function SupabaseUsageTab() {
       setRefreshing(false);
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(EGRESS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<EgressEntry>;
+        setEgress({ ...EMPTY_EGRESS, ...parsed });
+      }
+    } catch {
+      // A malformed local entry should never prevent the admin page from loading.
+    }
+    setEgressLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!egressLoaded) return;
+    try {
+      window.localStorage.setItem(EGRESS_STORAGE_KEY, JSON.stringify(egress));
+    } catch {
+      // Storage may be unavailable in private browsing; copying still works.
+    }
+  }, [egress, egressLoaded]);
 
   useEffect(() => {
     void refresh();
@@ -139,17 +199,90 @@ export default function SupabaseUsageTab() {
   const tier = normalizeTier(snapshot?.planTier);
   const quotaRows = tier && tier !== 'enterprise' ? QUOTAS[tier] : [];
 
+  const copyAuditReport = useCallback(async () => {
+    const capturedAt = new Date().toISOString();
+    const uncached = numericInput(egress.uncachedGb);
+    const cached = numericInput(egress.cachedGb);
+    const monthlyEgressTotal = uncached !== null && cached !== null ? uncached + cached : null;
+    const requestStart = buckets[0]?.timestamp || 'غير متاح';
+    const requestEnd = buckets[buckets.length - 1]?.timestamp || 'غير متاح';
+    const database = snapshot?.databaseSize;
+    const lines = [
+      'TAJERTRACK — SUPABASE USAGE AUDIT',
+      `Report copied at (UTC): ${capturedAt}`,
+      `Project ref: ${snapshot?.projectRef || 'not configured'}`,
+      `Supabase plan: ${tier || 'not configured'}`,
+      '',
+      '1) DATABASE SIZE — LIVE SQL MEASUREMENT',
+      database
+        ? `Database size (all databases in this Postgres cluster): ${database.pretty} (${database.bytes} bytes)`
+        : `Database size: unavailable — ${snapshot?.databaseSizeError || 'measurement not loaded'}`,
+      database ? `Measured at (UTC): ${database.measuredAt}` : '',
+      'Method: SUM(pg_database_size(datname)) FROM pg_database; this is database data size, not total provisioned disk usage.',
+      '',
+      '2) EGRESS — COPIED FROM SUPABASE ORGANIZATION USAGE PAGE',
+      `Billing period start: ${egress.periodStart || 'not entered'}`,
+      `Billing period end: ${egress.periodEnd || 'not entered'}`,
+      `Uncached egress: ${uncached === null ? 'not entered' : uncached + ' GB'}`,
+      `Cached egress: ${cached === null ? 'not entered' : cached + ' GB'}`,
+      `Combined egress: ${monthlyEgressTotal === null ? 'not calculated (enter both values)' : monthlyEgressTotal + ' GB'}`,
+      `Egress figures recorded in this browser at (UTC): ${egress.capturedAt || 'not recorded'}`,
+      'Egress source: Supabase Dashboard → Organization → Usage, with the TajerTrack project selected. These are manually recorded dashboard values, not an API estimate.',
+      '',
+      '3) API REQUEST COUNTS — SUPABASE MANAGEMENT API',
+      `Returned daily buckets: ${buckets.length}`,
+      `Bucket range: ${requestStart} to ${requestEnd}`,
+      `REST / Database requests: ${totals.rest}`,
+      `Auth requests: ${totals.auth}`,
+      `Realtime requests: ${totals.realtime}`,
+      `Storage requests: ${totals.storage}`,
+      `Total of returned request categories: ${allRequests}`,
+      `API data fetched at (UTC): ${snapshot?.fetchedAt || 'not available'}`,
+      'Note: the request-count buckets are not egress bytes and are not a complete billing-cycle usage report.',
+      '',
+      '4) PUBLISHED PLAN ALLOWANCES (REFERENCE ONLY)',
+      ...(quotaRows.length ? quotaRows.map((quota) => `${quota.label}: ${quota.amount} — ${quota.scope}`) : ['Plan allowance not configured or Enterprise contract-specific.']),
+      'Allowances are separate from current consumption; organization-level metrics may include other projects.',
+      '',
+      '5) AUDIT NOTES',
+      'Database size is an SQL measurement from this project. Supabase billing database-size usage can use daily averages and organization-level aggregation.',
+      'Egress values must be read from Supabase Usage with the project filter selected; do not substitute aggregate organization totals unless auditing the whole organization.',
+    ].filter((line) => line !== undefined);
+
+    const report = lines.join('\n');
+    try {
+      await navigator.clipboard.writeText(report);
+      setCopyFeedback('تم نسخ تقرير التدقيق. أرسله في المحادثة لتحليل الأرقام الفعلية.');
+    } catch {
+      setCopyFeedback('تعذر النسخ تلقائياً. اسمح للمتصفح بالوصول إلى الحافظة وحاول مجدداً.');
+    }
+  }, [allRequests, buckets, egress, quotaRows, snapshot, tier, totals]);
+
+  const updateEgress = (patch: Partial<EgressEntry>) => {
+    setEgress((current) => ({
+      ...current,
+      ...patch,
+      capturedAt: new Date().toISOString(),
+    }));
+  };
+
   return (
     <section className={styles.usageRoot}>
       <div className={styles.topLine}>
         <div>
           <h2>استهلاك Supabase</h2>
-          <p>قياسات فعلية من Supabase Management API، مع حدود الباقة المنشورة.</p>
+          <p>قياسات فعلية من Supabase، مع توثيق مصدر كل رقم وحدود الباقة.</p>
         </div>
-        <button type="button" onClick={() => void refresh()} disabled={refreshing} className={styles.refreshButton}>
-          {refreshing ? 'جارٍ التحديث…' : 'تحديث الآن'}
-        </button>
+        <div className={styles.topActions}>
+          <button type="button" onClick={() => void copyAuditReport()} className={styles.copyButton}>
+            نسخ تقرير التدقيق
+          </button>
+          <button type="button" onClick={() => void refresh()} disabled={refreshing} className={styles.refreshButton}>
+            {refreshing ? 'جارٍ التحديث…' : 'تحديث الآن'}
+          </button>
+        </div>
       </div>
+      {copyFeedback ? <p className={styles.copyFeedback} role="status">{copyFeedback}</p> : null}
 
       {loading && !snapshot ? (
         <div className={styles.notice}>جارٍ قراءة بيانات الاستهلاك من Supabase…</div>
@@ -157,10 +290,81 @@ export default function SupabaseUsageTab() {
 
       {error ? <div className={styles.error}>{error}</div> : null}
 
+      <div className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <h3>حجم قاعدة البيانات الفعلي</h3>
+          <span>قياس SQL مباشر من PostgreSQL</span>
+        </div>
+        {snapshot?.databaseSize ? (
+          <div className={styles.databaseSizeMetric}>
+            <strong>{snapshot.databaseSize.pretty}</strong>
+            <span>{formatNumber(Number(snapshot.databaseSize.bytes))} bytes</span>
+            <small>آخر قياس: {new Date(snapshot.databaseSize.measuredAt).toLocaleString('ar-DZ')}</small>
+          </div>
+        ) : (
+          <p className={styles.empty}>
+            {snapshot?.databaseSizeError || 'سيظهر القياس بعد تحميل بيانات Supabase.'}
+          </p>
+        )}
+        <p className={styles.footnote}>
+          القياس يجمع أحجام قواعد البيانات داخل PostgreSQL باستخدام pg_database_size. وهو حجم بيانات قاعدة البيانات، وليس حجم القرص المخصص الذي يشمل WAL وملفات النظام.
+        </p>
+        {!snapshot?.databaseSize ? (
+          <p className={styles.migrationHint}>
+            فعّل القياس بتطبيق migration: <code>20261112_admin_database_size_monitor.sql</code>
+          </p>
+        ) : null}
+      </div>
+
+      <div className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <h3>استهلاك Egress خلال دورة الفوترة</h3>
+          <span>أرقام من صفحة Usage الرسمية</span>
+        </div>
+        <p className={styles.panelIntro}>
+          افتح صفحة Supabase Usage، اختر مشروع TajerTrack وحدد دورة الفوترة الحالية، ثم أدخل القيم المعروضة. تُحفظ هذه الأرقام في هذا المتصفح فقط وتدخل في تقرير النسخ.
+        </p>
+        <a className={styles.externalLink} href="https://supabase.com/dashboard/org/_/usage" target="_blank" rel="noreferrer">
+          فتح صفحة Supabase Usage
+        </a>
+        <div className={styles.egressGrid}>
+          <label className={styles.field}>
+            <span>بداية دورة الفوترة</span>
+            <input type="date" value={egress.periodStart} onChange={(event) => updateEgress({ periodStart: event.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>نهاية دورة الفوترة</span>
+            <input type="date" value={egress.periodEnd} onChange={(event) => updateEgress({ periodEnd: event.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Uncached Egress (GB)</span>
+            <input type="number" min="0" step="0.001" inputMode="decimal" placeholder="مثال: 1.42" value={egress.uncachedGb} onChange={(event) => updateEgress({ uncachedGb: event.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Cached Egress (GB)</span>
+            <input type="number" min="0" step="0.001" inputMode="decimal" placeholder="مثال: 0.38" value={egress.cachedGb} onChange={(event) => updateEgress({ cachedGb: event.target.value })} />
+          </label>
+        </div>
+        {numericInput(egress.uncachedGb) !== null || numericInput(egress.cachedGb) !== null ? (
+          <div className={styles.egressSummary}>
+            <span>Uncached: <strong>{egress.uncachedGb || '—'} GB</strong></span>
+            <span>Cached: <strong>{egress.cachedGb || '—'} GB</strong></span>
+            <span>Combined: <strong>{
+              numericInput(egress.uncachedGb) !== null && numericInput(egress.cachedGb) !== null
+                ? (numericInput(egress.uncachedGb)! + numericInput(egress.cachedGb)!).toFixed(3) + ' GB'
+                : 'أدخل القيمتين'
+            }</strong></span>
+          </div>
+        ) : null}
+        <p className={styles.footnote}>
+          لا تُستنتج أرقام Egress من عدد الطلبات. يجب نسخ Uncached وCached من Usage بعد اختيار المشروع والفترة الصحيحين؛ قد تختلف أرقام المؤسسة عن أرقام المشروع.
+        </p>
+      </div>
+
       {snapshot?.configured === false ? (
         <div className={styles.setupPanel}>
-          <h3>ربط مراقبة الاستهلاك</h3>
-          <p>يلزم إنشاء مفتاح قراءة محدود من Supabase وإضافته إلى متغيرات Vercel. لا تضع المفتاح في الواجهة أو في GitHub.</p>
+          <h3>ربط إحصاءات الطلبات</h3>
+          <p>يلزم إنشاء مفتاح قراءة محدود من Supabase وإضافته إلى متغيرات Vercel. قياس حجم قاعدة البيانات وحقول Egress أعلاه مستقل عن هذا الربط.</p>
           <ol>
             <li>من Supabase افتح Account → Access Tokens وأنشئ Fine-grained personal access token.</li>
             <li>اسمح له بصلاحية Usage Analytics → Read على مشروع TajerTrack فقط.</li>
@@ -245,14 +449,14 @@ export default function SupabaseUsageTab() {
         ) : (
           <p className={styles.empty}>اضبط <code>SUPABASE_PLAN_TIER</code> في Vercel لعرض الحدود الصحيحة لباقة المؤسسة.</p>
         )}
-        <p className={styles.footnote}>هذه حصص الباقة المنشورة وليست نسب استهلاك حالية. لا نحسب نسبة الاستخدام دون بيانات فوترة فعلية حتى لا نعرض أرقاماً مضللة.</p>
+        <p className={styles.footnote}>هذه حصص الباقة المنشورة وليست نسب استهلاك حالية. لا نحسب نسبة الاستخدام دون بيانات فوترة فعلية.</p>
         <a className={styles.externalLink} href="https://supabase.com/dashboard/org/_/usage" target="_blank" rel="noreferrer">
           فتح الاستهلاك والفوترة الفعلية في Supabase
         </a>
       </div>
 
       <div className={styles.disclaimer}>
-        ملحوظة: حصص Egress وStorage وMAU وEdge Functions وRealtime تُحتسب على مستوى المؤسسة، بينما حد حجم قاعدة البيانات المذكور لكل مشروع. راجع صفحة المؤسسة للتأكد من إجمالي كل المشاريع.
+        حصص Egress وStorage وMAU وEdge Functions وRealtime تُحتسب على مستوى المؤسسة، وقد تشمل مشاريع أخرى. اختر TajerTrack وحده عند تسجيل Egress. حجم قاعدة البيانات هنا قياس حالي للمشروع، بينما فوترة Database Size قد تعتمد متوسطات يومية خلال دورة الفوترة.
       </div>
       {lastChecked ? <div className={styles.lastChecked}>تم فحص الاتصال {lastChecked.toLocaleTimeString('ar-DZ')}</div> : null}
     </section>
