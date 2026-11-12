@@ -75,6 +75,32 @@ if (merchant) {
   }
 }
 
+// Native phone columns arrive with the native SMS gateway migration. Keep the
+// merchant dashboard usable on deployments where that migration is not live yet.
+let nativeSmsGatewayStorageAvailable = false;
+let nativeSmsDevice: { display_name: string; enabled: boolean } | null = null;
+if (merchant) {
+  const { data: nativeDevice, error: nativeDeviceError } = await supabaseAdmin
+    .from('sms_gateway_devices')
+    .select('display_name, enabled, connected_at')
+    .eq('merchant_id', merchant.id)
+    .is('revoked_at', null)
+    .order('connected_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!nativeDeviceError) {
+    nativeSmsGatewayStorageAvailable = true;
+    nativeSmsDevice = nativeDevice
+      ? { display_name: nativeDevice.display_name, enabled: Boolean(nativeDevice.enabled) }
+      : null;
+  } else {
+    console.warn('[NativeSmsGateway] Phone status is unavailable until the native SMS migration is applied:', nativeDeviceError.message);
+  }
+}
+
+const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim() || null;
+
 // في حالة فشل الاتصال بقاعدة البيانات تماماً، نعرض شاشة استعادة مع زر تسجيل الخروج
   if (!merchant) {
     return (
@@ -315,6 +341,9 @@ if (merchant) {
       telegramTrackingLinkEnabled={merchant.telegram_tracking_link_enabled ?? false}
       smsTrackingLinkEnabled={smsTrackingLinkEnabled}
       smsTrackingStorageAvailable={smsTrackingStorageAvailable}
+      nativeSmsGatewayStorageAvailable={nativeSmsGatewayStorageAvailable}
+      nativeSmsDevice={nativeSmsDevice}
+      nativeSmsDownloadUrl={nativeSmsDownloadUrl}
       confirmationTelegramEnabled={(merchant as any).confirmation_telegram_enabled ?? false}
       initialUpsells={(upsells || []) as any}
       exchangeRequestsEnabled={exchangeRequestsEnabled}
