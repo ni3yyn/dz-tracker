@@ -403,7 +403,7 @@
 .timelineCompact .eventContent p { margin-top: 4px; font-size: 14px; line-height: 1.75; }
 .timelineRail { border-inline-start: 0; padding-inline-start: 0; }
 .timelineRail .eventItem { padding-right: 0; padding-bottom: 28px; }
-.timelineRail .eventItem::before { right: -23px; top: 25px; width: 3px; background: var(--brand-primary, var(--status-ink)); border-radius: var(--radius-marker); }
+.timelineRail .eventItem::before { right: -23px; top: 25px; width: 2px; background: var(--border-strong); border-radius: var(--radius-marker); }
 .timelineRail .eventMarker { right: -34px; width: 25px; height: 25px; border: 0; border-radius: var(--radius-control); color: var(--brand-on-primary, #fff); background: var(--brand-primary, var(--status-ink)); box-shadow: none; }
 .timelineEditorial .eventItem { padding-right: 16px; padding-bottom: 28px; }
 .timelineEditorial .eventItem::before { right: 0; top: 0; bottom: 0; width: 1px; background: var(--border-soft); }
@@ -415,12 +415,12 @@
 .timelineEditorial .eventHeading time { font-size: 12px; }
 .timelineMilestones .eventItem { padding: 0 0 14px; }
 .timelineMilestones .eventItem::before, .timelineMilestones .eventMarker { display: none; }
-.timelineMilestones .eventContent { padding: 18px 19px; border: 1px solid color-mix(in srgb, var(--brand-primary, var(--status-ink)) 17%, var(--border-soft)); border-inline-start: 5px solid var(--brand-primary, var(--status-ink)); border-radius: var(--radius-timeline); background: color-mix(in srgb, var(--brand-primary, var(--status-ink)) 7%, var(--surface)); }
+.timelineMilestones .eventContent { padding: 18px 19px; border: 1px solid var(--border-soft); border-inline-start: 0; border-radius: var(--radius-timeline); background: color-mix(in srgb, var(--brand-primary, var(--status-ink)) 7%, var(--surface)); }
 .timelineMilestones .eventContent::before { content: 'محطة من الرحلة'; display: block; margin-bottom: 7px; color: var(--brand-readable, var(--status-ink)); font-size: 11px; line-height: 1.5; font-weight: 850; }
 .timelineMilestones .eventHeading { flex-direction: column; gap: 4px; }
 .timelineNumbered { counter-reset: shipment-event; }
 .timelineNumbered .eventItem { counter-increment: shipment-event; padding-right: 50px; padding-bottom: 27px; }
-.timelineNumbered .eventItem:not(:last-child)::before { right: 14px; top: 34px; width: 2px; background: color-mix(in srgb, var(--brand-primary, var(--status-ink)) 32%, var(--border-soft)); }
+.timelineNumbered .eventItem:not(:last-child)::before { right: 14px; top: 34px; width: 2px; background: var(--border-strong); }
 .timelineNumbered .eventMarker { right: 0; top: 0; width: 31px; height: 31px; border: 0; border-radius: var(--radius-control); background: var(--brand-primary, var(--status-ink)); color: var(--brand-on-primary, #fff); box-shadow: none; }
 .timelineNumbered .eventMarkerNumber { font-size: 12px; font-weight: 900; }
 .timelineNumbered .eventHeading { flex-direction: column; gap: 3px; }
