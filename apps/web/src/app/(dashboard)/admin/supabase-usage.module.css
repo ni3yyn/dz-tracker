@@ -194,3 +194,114 @@
   .egressGrid { grid-template-columns: 1fr; gap: 12px; }
   .egressSummary { gap: 10px 14px; }
 }
+
+
+/* Square, borderless usage workspace, matching the merchant dashboard. */
+.usageRoot,
+.usageRoot *,
+.usageRoot *::before,
+.usageRoot *::after {
+  border-radius: 0 !important;
+}
+
+.usageRoot {
+  --green: #294b37;
+  --green-deep: #1d3427;
+  --green-soft: #e6ece3;
+  --border-soft: #dfe3d9;
+  --border-strong: #cbd3c7;
+  gap: 16px;
+  color: var(--ink-main, #202a23);
+  font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+}
+
+.refreshButton,
+.copyButton {
+  min-height: 40px;
+  padding: 10px 15px;
+  border: 0;
+  box-shadow: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  transition: background .16s ease, color .16s ease;
+}
+
+.refreshButton {
+  background: var(--green);
+  color: #fffefa;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background: var(--green-deep);
+}
+
+.copyButton {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.copyButton:hover {
+  background: #dce6d9;
+}
+
+.notice,
+.error,
+.setupPanel,
+.panel,
+.disclaimer {
+  border: 0;
+  background: var(--surface, #fffefa);
+  box-shadow: none;
+}
+
+.error {
+  background: #fff1ef;
+  color: #a8322a;
+}
+
+.metricsGrid {
+  border: 0;
+  background: var(--border-soft, #dfe3d9);
+  box-shadow: none;
+}
+
+.metric {
+  background: var(--surface, #fffefa);
+}
+
+.quotaRow {
+  border-bottom-color: var(--border-soft, #dfe3d9);
+}
+
+.field input {
+  border: 0;
+  border-bottom: 1px solid var(--border-strong, #cbd3c7);
+  background: var(--bg-base, #f4f3ed);
+  box-shadow: none;
+}
+
+.field input:focus {
+  border-bottom-color: var(--green);
+  outline: none;
+  background: var(--surface, #fffefa);
+}
+
+.egressSummary {
+  border-top-color: var(--border-soft, #dfe3d9);
+  border-bottom-color: var(--border-soft, #dfe3d9);
+}
+
+@media (max-width: 560px) {
+  .topActions button {
+    min-width: 0;
+  }
+
+  .notice,
+  .error,
+  .setupPanel,
+  .panel,
+  .disclaimer {
+    padding: 15px;
+  }
+}
