@@ -44,7 +44,6 @@ export async function authenticateNativeSmsDevice(
         : {}),
     })
     .eq('token_hash', tokenHash)
-    .eq('enabled', true)
     .is('revoked_at', null)
     .not('merchant_id', 'is', null)
     .select('device_id, merchant_id, enabled, revoked_at')
