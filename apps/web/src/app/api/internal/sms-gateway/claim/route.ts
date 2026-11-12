@@ -64,25 +64,18 @@ export async function POST(request: Request) {
 
     // Every authenticated poll acts as a heartbeat, including while the
     // platform gateway or this device is paused.
-    const { data: device, error: deviceReadError } = await (supabase as any)
-      .from('sms_gateway_devices')
-      .select('device_id, enabled')
-      .eq('device_id', SMS_GATEWAY_WORKER_ID)
-      .maybeSingle();
-
-    if (deviceReadError || !device) {
-      console.error('[SmsGateway] Device registry is unavailable:', deviceReadError?.message || 'Device not registered.');
-      return NextResponse.json({ error: 'SMS gateway device is not registered.' }, { status: 503 });
-    }
-
-    const { error: heartbeatError } = await (supabase as any)
+    // Update the heartbeat and read the device switch in one PostgREST
+    // round-trip instead of a SELECT followed by an UPDATE on every poll.
+    const { data: device, error: deviceHeartbeatError } = await (supabase as any)
       .from('sms_gateway_devices')
       .update({ last_seen_at: now, updated_at: now })
-      .eq('device_id', SMS_GATEWAY_WORKER_ID);
+      .eq('device_id', SMS_GATEWAY_WORKER_ID)
+      .select('device_id, enabled')
+      .maybeSingle();
 
-    if (heartbeatError) {
-      console.error('[SmsGateway] Could not record device heartbeat:', heartbeatError.message);
-      return NextResponse.json({ error: 'Could not record SMS gateway heartbeat.' }, { status: 503 });
+    if (deviceHeartbeatError || !device) {
+      console.error('[SmsGateway] Device registry/heartbeat is unavailable:', deviceHeartbeatError?.message || 'Device not registered.');
+      return NextResponse.json({ error: 'SMS gateway device is not registered.' }, { status: 503 });
     }
 
     if (device.enabled !== true) {
