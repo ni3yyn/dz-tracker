@@ -104,7 +104,7 @@ jobs:
         run: |
           set -euo pipefail
           createdb tajertrack_native_sms_test
-          PGDATABASE=tajertrack_native_sms_test psql -X -v ON_ERROR_STOP=1 \\
+          PGDATABASE=tajertrack_native_sms_test psql -X -v ON_ERROR_STOP=1 \
             -f apps/web/tests/sql/native-sms-gateway-fixture-and-tests.sql
 
       - name: Verify SQL quota rules and concurrent reservations
