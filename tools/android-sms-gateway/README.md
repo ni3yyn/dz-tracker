@@ -5,14 +5,27 @@ This lightweight Termux agent lets one dedicated Android SIM send the single tra
 ## Backend setup
 
 1. Apply `apps/web/src/app/migrations/20261112_android_sms_gateway.sql` in the Supabase SQL editor.
-2. Generate a random secret of at least 32 characters on your computer:
+2. Apply `apps/web/src/app/migrations/20261112_sms_gateway_admin_manager.sql` after the first migration. This creates the platform pause switch, Android device heartbeat registry and admin audit log.
+3. Generate a random secret of at least 32 characters on your computer:
    ```bash
    python -c "import secrets; print(secrets.token_urlsafe(48))"
    ```
-3. Add the generated value to the **Vercel Production** environment as `SMS_GATEWAY_DEVICE_TOKEN`, then redeploy the web app.
-4. Merchants can then enable **SMS tracking link** in Settings. Only orders inserted after the switch is enabled are queued. Existing orders are not backfilled.
+4. Add the generated value to the **Vercel Production** environment as `SMS_GATEWAY_DEVICE_TOKEN`, then redeploy the web app.
+5. Merchants can then enable **SMS tracking link** in Settings. Only orders inserted after the switch is enabled are queued. Existing orders are not backfilled.
 
 The secret is a device credential, not a Supabase key. Never put a Supabase service-role key on the phone.
+
+## Admin operations
+
+The platform admin dashboard has an **إدارة رسائل SMS** section. It refreshes its queue snapshot every 10 seconds and shows recent outbox jobs, status totals, attempt history, the primary Android device heartbeat, the global gateway switch and audited manual actions.
+
+- The global pause stops the device from claiming new messages. A message already claimed by the phone may still finish sending.
+- Disabling the registered Android device prevents it from claiming new jobs while preserving its heartbeat for diagnostics.
+- Definite failures and dead-letter jobs can be manually re-queued. The retry keeps the historical attempt count and extends the allowed attempt budget by three.
+- An `unknown` job may already have reached the carrier. A manual retry requires explicit admin confirmation and can create a duplicate SMS.
+- `Submitted` means Android accepted the send request. It is not a carrier delivery receipt.
+
+The first version registers one device ID: `android-sms-gateway`. The device registry is ready for monitoring and safe disable/enable operations, but this version does not yet support enrolling multiple independent phones.
 
 ## Android / Termux setup
 
