@@ -24,6 +24,10 @@ export class TelegramTrackingWorker {
     this.isRunning = true;
     console.log(`[TelegramWorker]: Starting worker loop (ID: ${this.config.workerId})...`);
 
+    // Keep active delivery responsive, but slow the claim loop while idle.
+    let idlePollDelayMs = this.config.pollIntervalMs;
+    const maxIdlePollDelayMs = Math.max(this.config.pollIntervalMs, 15_000);
+
     while (this.isRunning) {
       try {
         // The process-wide lease is acquired before Telegram authentication in main.ts.
@@ -34,16 +38,20 @@ export class TelegramTrackingWorker {
         );
 
         if (!job) {
-          // Queue is empty or paused
-          await this.sleep(this.config.pollIntervalMs);
+          // Queue is empty or paused. The 15-second cap bounds new-order delay.
+          await this.sleep(idlePollDelayMs);
+          idlePollDelayMs = Math.min(maxIdlePollDelayMs, idlePollDelayMs * 2);
           continue;
         }
 
+        idlePollDelayMs = this.config.pollIntervalMs;
         // 3. Process the claimed tracking job
         await this.processJob(job);
       } catch (err: any) {
         console.error('[TelegramWorker]: Unexpected error in main loop:', err?.message || err);
-        await this.sleep(this.config.pollIntervalMs);
+        const retryDelayMs = idlePollDelayMs;
+        idlePollDelayMs = Math.min(maxIdlePollDelayMs, Math.max(this.config.pollIntervalMs, idlePollDelayMs * 2));
+        await this.sleep(retryDelayMs);
       }
     }
 
