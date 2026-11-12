@@ -111,20 +111,28 @@ BEGIN
    WHERE code_hash = p_code_hash
      AND consumed_at IS NULL;
 
-  -- The legacy global Termux worker may already hold a job for this
-  -- merchant. Convert that in-flight legacy lease to unknown before enabling
-  -- the native phone; never let the new phone blindly resend it.
-  UPDATE public.sms_tracking_outbox
+  -- A legacy Termux worker or the previous native phone may already hold
+  -- a job for this merchant. Convert every old-device lease to unknown before
+  -- revoking the old phone; the new phone must never resend an ambiguous SMS.
+  UPDATE public.sms_tracking_outbox AS job
      SET status = 'unknown',
          result_code = 'merchant_switched_to_native_sms_device',
-         last_error = 'The merchant connected a native phone while the legacy gateway held this job. The outcome must be checked before any manual resend.',
+         last_error = 'The merchant replaced the SMS phone while a previous gateway held this job. The outcome must be checked before any manual resend.',
          locked_by = NULL,
          locked_at = NULL,
          lease_expires_at = NULL,
          updated_at = NOW()
-   WHERE merchant_id = v_merchant_id
-     AND status = 'processing'
-     AND locked_by = 'android-sms-gateway';
+   WHERE job.merchant_id = v_merchant_id
+     AND job.status = 'processing'
+     AND (
+       job.locked_by = 'android-sms-gateway'
+       OR job.locked_by IN (
+         SELECT device.device_id
+           FROM public.sms_gateway_devices AS device
+          WHERE device.merchant_id = v_merchant_id
+            AND device.revoked_at IS NULL
+       )
+     );
 
   -- There is one active sending phone per merchant in the first release.
   UPDATE public.sms_gateway_devices
