@@ -98,7 +98,7 @@ async function getDatabaseSize(): Promise<{
         value: null,
         error: 'Apply the admin database-size SQL migration to enable this metric.',
       };
-      cachedDatabaseSize = { expiresAt: Date.now() + DATABASE_SIZE_CACHE_MS, ...result };
+      cachedDatabaseSize = { expiresAt: Date.now() + 60_000, ...result };
       return result;
     }
 
@@ -106,7 +106,7 @@ async function getDatabaseSize(): Promise<{
     const pretty = String((data as Record<string, unknown>).pretty ?? '');
     if (!/^\d+$/.test(bytes) || !pretty) {
       const result = { value: null, error: 'Supabase returned an invalid database-size measurement.' };
-      cachedDatabaseSize = { expiresAt: Date.now() + DATABASE_SIZE_CACHE_MS, ...result };
+      cachedDatabaseSize = { expiresAt: Date.now() + 60_000, ...result };
       return result;
     }
 
@@ -119,12 +119,12 @@ async function getDatabaseSize(): Promise<{
       },
       error: null,
     };
-    cachedDatabaseSize = { expiresAt: Date.now() + DATABASE_SIZE_CACHE_MS, ...result };
+    cachedDatabaseSize = { expiresAt: Date.now() + 60_000, ...result };
     return result;
   } catch (error: any) {
     console.error('[SupabaseUsage] Database-size query failed:', error?.message || error);
     const result = { value: null, error: 'Could not query PostgreSQL database size.' };
-    cachedDatabaseSize = { expiresAt: Date.now() + DATABASE_SIZE_CACHE_MS, ...result };
+    cachedDatabaseSize = { expiresAt: Date.now() + 60_000, ...result };
     return result;
   }
 }
