@@ -361,9 +361,15 @@ export function TrackingLiveView({
     : styles.cardGlass;
 
   const radiusClass =
-    settings.cardRadius === 'sleek' ? styles.radiusSleek
+    settings.cardRadius === 'sharp' ? styles.radiusSharp
+    : settings.cardRadius === 'sleek' ? styles.radiusSleek
     : settings.cardRadius === 'pebble' ? styles.radiusPebble
     : styles.radiusModern;
+  const controlBorderRadius =
+    settings.cardRadius === 'sharp' ? '0px'
+    : settings.cardRadius === 'sleek' ? '9px'
+    : settings.cardRadius === 'pebble' ? '15px'
+    : '12px';
 
   const fontClass =
     settings.fontFamily === 'cairo' ? styles.fontCairo
@@ -539,7 +545,7 @@ export function TrackingLiveView({
                 aria-live="polite"
                 style={{
                   padding: '16px 18px',
-                  borderRadius: 16,
+                  borderRadius: 'var(--radius-panel)',
                   marginBottom: 16,
                   background:
                     confirmationStatus === 'pending'
@@ -699,7 +705,7 @@ export function TrackingLiveView({
           </section>
 
           {exchangeRequestsEnabled && exchangeRequestsStorageAvailable && isDeliveredStatus(currentOrderStatus) && (
-            <ExchangeRequestCard trackingUuid={trackingUuid || ''} externalOrderId={externalOrderId} initialRequest={initialExchangeRequest} />
+            <ExchangeRequestCard trackingUuid={trackingUuid || ''} externalOrderId={externalOrderId} initialRequest={initialExchangeRequest} controlBorderRadius={controlBorderRadius} />
           )}
 
           {upsells && upsells.length > 0 && (

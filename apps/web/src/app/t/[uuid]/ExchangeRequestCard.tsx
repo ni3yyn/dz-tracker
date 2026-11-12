@@ -6,7 +6,7 @@ import { EXCHANGE_REQUEST_REASONS } from '../../../lib/exchange';
 import { BrandedSelect } from '../../(dashboard)/merchant/BrandedSelect';
 import styles from './exchange.module.css';
 
-interface Props { trackingUuid: string; externalOrderId: string; initialRequest: ExchangeRequestSummary | null }
+interface Props { trackingUuid: string; externalOrderId: string; initialRequest: ExchangeRequestSummary | null; controlBorderRadius: string }
 
 const statusCopy = {
   pending: { title: 'طلبك قيد المراجعة', description: 'وصل طلبك إلى المتجر. سيظهر هنا قرار المتجر وأي تحديث جديد.' },
@@ -40,7 +40,7 @@ function StatusIcon({ status }: { status: ExchangeRequestSummary['status'] }) {
   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.7" /><path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
-export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequest }: Props) {
+export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequest, controlBorderRadius }: Props) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [request, setRequest] = useState<ExchangeRequestSummary | null>(initialRequest);
@@ -181,6 +181,7 @@ export function ExchangeRequestCard({ trackingUuid, externalOrderId, initialRequ
                   options={reasonOptions}
                   placeholder="اختر سبب الاستبدال"
                   variant="field"
+                  borderRadius={controlBorderRadius}
                 />
               </label>
               <label className={styles.noteLabel}>تفاصيل إضافية <span>اختياري</span>

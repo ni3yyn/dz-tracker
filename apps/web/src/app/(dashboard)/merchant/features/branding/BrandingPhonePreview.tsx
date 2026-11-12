@@ -64,7 +64,14 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
   const cardBorder = brandConfig.cardSurface === 'bordered' || String(brandConfig.cardSurface) === 'paper' || String(brandConfig.cardSurface) === 'inset' || String(brandConfig.cardSurface) === 'tinted'
     ? `1px solid ${strongBorderColor}`
     : isOpenCanvas ? 'none' : String(brandConfig.cardSurface) === 'elevated' ? '1px solid transparent' : `1px solid ${borderColor}`;
-  const cardRadius = brandConfig.cardRadius === 'sleek' ? '14px' : brandConfig.cardRadius === 'pebble' ? '38px' : '26px';
+  const radiusTokens = brandConfig.cardRadius === 'sharp'
+    ? { card: '0px', panel: '0px', control: '0px', timeline: '0px', badge: '0px', avatar: '0px', marker: '0px', floating: '0px', notice: '0px' }
+    : brandConfig.cardRadius === 'sleek'
+      ? { card: '14px', panel: '10px', control: '9px', timeline: '9px', badge: '9px', avatar: '14px', marker: '5px', floating: '14px', notice: '10px' }
+      : brandConfig.cardRadius === 'pebble'
+        ? { card: '38px', panel: '21px', control: '15px', timeline: '15px', badge: '999px', avatar: '20px', marker: '12px', floating: '999px', notice: '18px' }
+        : { card: '26px', panel: '16px', control: '12px', timeline: '12px', badge: '12px', avatar: '18px', marker: '7px', floating: '16px', notice: '12px' };
+  const cardRadius = radiusTokens.card;
   const cardShadow = brandConfig.cardSurface === 'bordered' || String(brandConfig.cardSurface) === 'inset' || isOpenCanvas
     ? 'none'
     : String(brandConfig.cardSurface) === 'elevated' ? '0 18px 38px rgba(17,31,22,.17)'
@@ -76,8 +83,8 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
     : brandConfig.fontFamily === 'noto-kufi' ? "'Noto Kufi Arabic', system-ui, sans-serif"
     : "'Readex Pro', system-ui, sans-serif";
   const cardWidth = '100%';
-  const density = { padding: '16px 14px', gap: '12px', avatar: '39px', avatarRadius: '12px', topMargin: '14px' };
-  const panelRadius = brandConfig.cardRadius === 'sleek' ? '10px' : brandConfig.cardRadius === 'pebble' ? '21px' : '16px';
+  const density = { padding: '16px 14px', gap: '12px', avatar: '39px', avatarRadius: radiusTokens.avatar, topMargin: '14px' };
+  const panelRadius = radiusTokens.panel;
   const softFill = isDark ? 'rgba(255,255,255,.045)' : 'rgba(32,40,36,.035)';
   const brandTint = `${brandConfig.brandColor}16`;
 
@@ -101,6 +108,8 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
           ['--preview-border' as string]: borderColor,
           ['--preview-surface' as string]: raisedSurface,
           ['--preview-tint' as string]: brandTint,
+          ['--preview-radius-timeline' as string]: radiusTokens.timeline,
+          ['--preview-radius-marker' as string]: radiusTokens.marker,
           transition: 'background-color .2s ease, color .2s ease',
         } as React.CSSProperties}
       >
@@ -121,7 +130,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
 
           <header style={{ padding: density.padding, borderBottom: `1px solid ${borderColor}` }}>
             {brandConfig.announcementText && (
-              <div style={{ background: brandTint, border: `1px solid ${brandConfig.brandColor}35`, color: textColor, padding: '9px 11px', borderRadius: '10px', fontSize: '12px', lineHeight: 1.7, fontWeight: 600, marginBottom: density.topMargin, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <div style={{ background: brandTint, border: `1px solid ${brandConfig.brandColor}35`, color: textColor, padding: '9px 11px', borderRadius: radiusTokens.notice, fontSize: '12px', lineHeight: 1.7, fontWeight: 600, marginBottom: density.topMargin, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                 <span style={{ color: getReadableBrandAccent(brandConfig.brandColor, brandConfig.themeMode), fontSize: '11px', fontWeight: 800, flexShrink: 0 }}>تنبيه</span>
                 <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{brandConfig.announcementText}</span>
               </div>
@@ -134,7 +143,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
               </span>
               <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
                 {brandConfig.showOrderNumberBadge !== false && (
-                  <span style={{ fontSize: '10px', color: mutedColor, background: softFill, border: `1px solid ${borderColor}`, padding: '5px 7px', borderRadius: '99px', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '10px', color: mutedColor, background: softFill, border: `1px solid ${borderColor}`, padding: '5px 7px', borderRadius: radiusTokens.badge, whiteSpace: 'nowrap' }}>
                     طلب <b style={{ color: textColor }} dir="ltr">DZ-1042</b>
                   </span>
                 )}
@@ -184,7 +193,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
 
             {brandConfig.showCarrierBadge && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '15px', padding: '12px 0', borderBlock: `1px solid ${borderColor}`, minWidth: 0 }}>
-                <span style={{ width: '31px', height: '31px', display: 'grid', placeItems: 'center', borderRadius: '9px', background: brandTint, color: getReadableBrandAccent(brandConfig.brandColor, brandConfig.themeMode), flexShrink: 0, fontWeight: 800, fontSize: '15px' }}>↗</span>
+                <span style={{ width: '31px', height: '31px', display: 'grid', placeItems: 'center', borderRadius: radiusTokens.control, background: brandTint, color: getReadableBrandAccent(brandConfig.brandColor, brandConfig.themeMode), flexShrink: 0, fontWeight: 800, fontSize: '15px' }}>↗</span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: '11px', color: mutedColor, marginBottom: '3px' }}>ياليدين</span>
                   <strong style={{ display: 'block', fontSize: '13px', color: textColor, overflowWrap: 'anywhere' }} dir="ltr">12839401</strong>
@@ -195,7 +204,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', margin: '22px 0 15px', paddingTop: '18px', borderTop: `1px solid ${borderColor}` }}>
               <div style={{ fontSize: '16px', fontWeight: 850, letterSpacing: '-.02em', color: textColor }}>سجل التحديثات</div>
-              <span style={{ minWidth: '23px', height: '23px', padding: '2px 6px', borderRadius: '99px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: mutedColor, background: softFill, fontSize: '11px', fontWeight: 750 }}>{SAMPLE_PREVIEW_EVENTS.length - 1}</span>
+              <span style={{ minWidth: '23px', height: '23px', padding: '2px 6px', borderRadius: radiusTokens.badge, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: mutedColor, background: softFill, fontSize: '11px', fontWeight: 750 }}>{SAMPLE_PREVIEW_EVENTS.length - 1}</span>
             </div>
 
             {SAMPLE_PREVIEW_EVENTS.slice(1).map((event, index) => {
@@ -230,7 +239,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
         </div>
       </div>
       {brandConfig.supportPhone && brandConfig.showWhatsAppButton !== false && (
-        <div aria-hidden="true" style={{ position: 'absolute', bottom: '20px', left: '20px', zIndex: 40, display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 12px', borderRadius: '99px', background: '#188B55', color: '#fff', boxShadow: '0 7px 18px rgba(18,107,63,.25)', fontSize: '11px', fontWeight: 800, pointerEvents: 'none' }}>
+        <div aria-hidden="true" style={{ position: 'absolute', bottom: '20px', left: '20px', zIndex: 40, display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 12px', borderRadius: radiusTokens.floating, background: '#188B55', color: '#fff', boxShadow: '0 7px 18px rgba(18,107,63,.25)', fontSize: '11px', fontWeight: 800, pointerEvents: 'none' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.4 8.4 0 0 1-1 4 8.5 8.5 0 0 1-7.5 4.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.2a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5h.5a8.5 8.5 0 0 1 7.5 7.5v.5Z" /></svg> تواصل معنا
         </div>
       )}

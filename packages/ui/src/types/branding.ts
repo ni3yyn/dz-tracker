@@ -1,6 +1,6 @@
 export type BackgroundStyle  = 'aurora' | 'midnight' | 'minimal' | 'sunset' | 'emerald' | 'mesh';
 export type TimelineDesign   = 'stepper' | 'cards' | 'journey' | 'compact';
-export type CardRadius       = 'sleek' | 'modern' | 'pebble';
+export type CardRadius       = 'sharp' | 'sleek' | 'modern' | 'pebble';
 export type CardSurface      = 'glass' | 'solid' | 'bordered' | 'borderless';
 export type ThemeMode        = 'light' | 'dark' | 'auto';
 

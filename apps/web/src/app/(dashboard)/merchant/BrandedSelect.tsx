@@ -23,6 +23,7 @@ interface BrandedSelectProps {
   loading?: boolean;
   variant?: 'standard' | 'compact' | 'status' | 'field';
   className?: string;
+  borderRadius?: string;
 }
 
 interface MenuPosition {
@@ -45,6 +46,7 @@ export function BrandedSelect({
   loading = false,
   variant = 'standard',
   className,
+  borderRadius,
 }: BrandedSelectProps) {
   const generatedId = useId();
   const listboxId = `branded-select-${generatedId}`;
@@ -263,6 +265,7 @@ export function BrandedSelect({
         aria-controls={listboxId}
         aria-disabled={disabled || loading || undefined}
         disabled={disabled || loading}
+        style={borderRadius ? { borderRadius } : undefined}
         onClick={() => isOpen ? closeMenu() : openMenu()}
         onKeyDown={handleTriggerKeyDown}
       >
@@ -295,6 +298,7 @@ export function BrandedSelect({
             width: menuPosition.width,
             maxHeight: menuPosition.maxHeight,
             height: isMenuExpanded && isOpen ? String(menuHeight) + 'px' : '0px',
+            ...(borderRadius ? { borderRadius } : {}),
           }}
           onKeyDown={handleMenuKeyDown}
           onTransitionEnd={handleMenuTransitionEnd}

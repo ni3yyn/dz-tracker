@@ -351,7 +351,10 @@ export function BrandingTab({
                   </div>
 
                   <div>
-                    <label className="formLabel">استدارة الحواف</label>
+                    <label className="formLabel">طابع الحواف</label>
+                    <p style={{ fontSize: '12px', color: 'var(--ink-muted)', margin: '0 0 13px', lineHeight: 1.8 }}>
+                      اختر شخصية الحواف التي تناسب علامتك؛ سيُطبّق الاختيار على الأقسام والبطاقات والأزرار والحقول في صفحة التتبع.
+                    </p>
                     <div className="dz-choice-grid">
                       {CARD_RADII.map((cr) => (
                         <div

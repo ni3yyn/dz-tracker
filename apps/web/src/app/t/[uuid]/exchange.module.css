@@ -21,6 +21,7 @@
 
 .sectionIcon {
   display: grid;
+  border-radius: var(--radius-control);
   width: 50px;
   height: 50px;
   flex: 0 0 50px;
@@ -44,6 +45,7 @@
   border-inline-start: 2px solid var(--brand-primary, #355846);
   background: color-mix(in srgb, var(--brand-primary, #355846) 6%, var(--surface));
   text-align: start;
+  border-radius: var(--radius-control);
 }
 .orderRef span { color: var(--ink-light); font-size: 10px; font-weight: 650; }
 .orderRef strong { color: var(--ink-main); font-size: 12px; font-weight: 850; overflow-wrap: anywhere; }
@@ -57,6 +59,7 @@
   padding: 16px 17px;
   border: 1px solid var(--brand-primary-border, var(--border-soft));
   background: color-mix(in srgb, var(--brand-primary, #355846) 4%, var(--surface));
+  border-radius: var(--radius-panel);
 }
 .actionCopy { display: grid; gap: 3px; min-width: 0; }
 .actionCopy strong { color: var(--ink-main); font-size: 13px; font-weight: 800; line-height: 1.7; }
@@ -71,7 +74,7 @@
   flex: 0 0 auto;
   padding: 11px 17px;
   border: 1px solid var(--brand-primary, #355846);
-  border-radius: 0;
+  border-radius: var(--radius-button);
   background: var(--brand-primary, #355846);
   color: var(--brand-on-primary, #fff);
   font: inherit;
@@ -93,11 +96,12 @@
   padding: clamp(16px, 2.5vw, 23px);
   border: 1px solid var(--border-soft);
   border-inline-start: 3px solid var(--brand-primary, #355846);
+  border-radius: var(--radius-panel);
   background: color-mix(in srgb, var(--brand-primary, #355846) 4.5%, var(--surface));
 }
 .statusPanel[data-state='rejected'] { border-inline-start-color: #b85d45; background: color-mix(in srgb, #b85d45 5%, var(--surface)); }
 .statusHead { display: flex; align-items: flex-start; gap: 13px; }
-.statusIcon { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; background: color-mix(in srgb, var(--brand-primary, #355846) 11%, var(--surface)); color: var(--brand-readable, var(--brand-primary, #355846)); }
+.statusIcon { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: var(--radius-control); background: color-mix(in srgb, var(--brand-primary, #355846) 11%, var(--surface)); color: var(--brand-readable, var(--brand-primary, #355846)); }
 .statusPanel[data-state='rejected'] .statusIcon { background: color-mix(in srgb, #b85d45 12%, var(--surface)); color: #b85d45; }
 .statusIcon svg { width: 22px; height: 22px; }
 .statusCopy { min-width: 0; }
@@ -110,7 +114,7 @@
 .progressStep::after { content: ''; position: absolute; top: 13px; right: calc(50% + 15px); width: calc(100% - 30px); height: 2px; background: var(--border-strong); }
 .progressStep.progressReached::after { background: color-mix(in srgb, var(--brand-primary, #355846) 62%, var(--border-soft)); }
 .progressStep:last-child::after { display: none; }
-.progressMarker { position: relative; z-index: 1; display: grid; width: 27px; height: 27px; place-items: center; border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink-light); font-size: 10px; font-weight: 800; transition: border-color .2s ease, background .2s ease, color .2s ease, transform .2s ease; }
+.progressMarker { position: relative; z-index: 1; display: grid; width: 27px; height: 27px; place-items: center; border-radius: var(--radius-control); border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink-light); font-size: 10px; font-weight: 800; transition: border-color .2s ease, background .2s ease, color .2s ease, transform .2s ease; }
 .progressReached .progressMarker { border-color: var(--brand-primary, #355846); background: var(--brand-primary-light, var(--status-tint)); color: var(--brand-readable, var(--brand-primary)); }
 .progressCurrent .progressMarker { border-color: var(--brand-primary, #355846); background: var(--brand-primary, #355846); color: var(--brand-on-primary, #fff); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-primary, #355846) 12%, transparent); transform: scale(1.04); }
 .progressMarker svg { width: 14px; height: 14px; }
@@ -123,9 +127,9 @@
 .detailItem span { color: var(--ink-light); font-size: 10px; font-weight: 750; }
 .detailItem strong { color: var(--ink-main); font-size: 12px; font-weight: 700; line-height: 1.8; overflow-wrap: anywhere; }
 
-.shipmentDetails { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; padding: 13px 14px; border-inline-start: 2px solid var(--brand-primary, #355846); background: var(--surface); }
+.shipmentDetails { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; padding: 13px 14px; border-inline-start: 2px solid var(--brand-primary, #355846); border-radius: var(--radius-panel); background: var(--surface); }
 .shipmentHeading { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.shipmentIcon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; background: var(--brand-primary-light, var(--status-tint)); color: var(--brand-readable, var(--brand-primary)); }
+.shipmentIcon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border-radius: var(--radius-control); background: var(--brand-primary-light, var(--status-tint)); color: var(--brand-readable, var(--brand-primary)); }
 .shipmentIcon svg { width: 18px; height: 18px; }
 .shipmentHeading > div { display: grid; gap: 2px; min-width: 0; }
 .shipmentHeading span:not(.shipmentIcon) { color: var(--ink-light); font-size: 10px; font-weight: 700; }
@@ -134,7 +138,7 @@
 .shipmentStatus span { color: var(--ink-muted); font-size: 11px; font-weight: 700; line-height: 1.6; }
 .shipmentStatus strong { color: var(--ink-main); font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; font-size: 12px; font-weight: 800; overflow-wrap: anywhere; }
 
-.merchantResponse { margin-top: 15px; padding: 10px 13px; border-inline-start: 2px solid var(--border-strong); background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.merchantResponse { margin-top: 15px; padding: 10px 13px; border-inline-start: 2px solid var(--border-strong); border-radius: var(--radius-notice); background: color-mix(in srgb, var(--surface) 70%, transparent); }
 .merchantResponse span { color: var(--ink-light); font-size: 10px; font-weight: 800; }
 .merchantResponse p { margin: 4px 0 0; color: var(--ink-main); font-size: 12px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
 
@@ -142,7 +146,7 @@
 .formHeading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .formStep { display: block; margin-bottom: 4px; color: var(--brand-readable, var(--ink-muted)); font-size: 10px; font-weight: 800; }
 .formHeading h3 { margin: 0; color: var(--ink-main); font-size: 15px; font-weight: 850; line-height: 1.6; }
-.closeForm { display: grid; width: 37px; height: 37px; flex: 0 0 37px; place-items: center; border: 1px solid var(--border-soft); border-radius: 0; background: var(--surface); color: var(--ink-muted); cursor: pointer; transition: background .18s ease, border-color .18s ease, color .18s ease; }
+.closeForm { display: grid; width: 37px; height: 37px; flex: 0 0 37px; place-items: center; border: 1px solid var(--border-soft); border-radius: var(--radius-button); background: var(--surface); color: var(--ink-muted); cursor: pointer; transition: background .18s ease, border-color .18s ease, color .18s ease; }
 .closeForm svg { width: 17px; height: 17px; }
 .closeForm:hover { border-color: var(--border-strong); background: var(--status-tint); color: var(--ink-main); }
 
@@ -150,7 +154,7 @@
 .reasonLabel, .noteLabel { display: grid; gap: 8px; min-width: 0; color: var(--ink-main); font-size: 12px; font-weight: 800; }
 .reasonDropdown { width: 100%; min-width: 0; max-width: 100%; }
 .noteLabel > span { display: inline; margin-inline-start: 4px; color: var(--ink-light); font-size: 10px; font-weight: 550; }
-.noteLabel textarea { width: 100%; min-height: 96px; resize: vertical; padding: 11px 12px; border: 1px solid var(--border-soft); border-radius: 0; outline: none; background: var(--surface); color: var(--ink-main); font: inherit; font-size: 12px; font-weight: 450; line-height: 1.8; transition: border-color .16s ease, box-shadow .16s ease; }
+.noteLabel textarea { width: 100%; min-height: 96px; resize: vertical; padding: 11px 12px; border: 1px solid var(--border-soft); border-radius: var(--radius-control); outline: none; background: var(--surface); color: var(--ink-main); font: inherit; font-size: 12px; font-weight: 450; line-height: 1.8; transition: border-color .16s ease, box-shadow .16s ease; }
 .noteLabel textarea:focus { border-color: var(--brand-primary, #355846); box-shadow: 0 0 0 3px var(--brand-primary-light, var(--status-tint)); }
 .noteLabel textarea::placeholder { color: var(--ink-light); opacity: .85; }
 .noteLabel small { justify-self: end; margin-top: -3px; color: var(--ink-light); font-size: 10px; font-weight: 500; }
@@ -159,7 +163,7 @@
 .submitButton:disabled { opacity: .48; cursor: not-allowed; }
 .textButton { min-height: 43px; padding: 9px 5px; border: 0; border-radius: 0; background: transparent; color: var(--ink-muted); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .textButton:disabled { opacity: .45; cursor: not-allowed; }
-.error { margin: 13px 0 0; padding: 10px 12px; border-inline-start: 2px solid #b42318; background: color-mix(in srgb, #b42318 7%, var(--surface)); color: #b42318; font-size: 11px; font-weight: 650; line-height: 1.7; }
+.error { margin: 13px 0 0; padding: 10px 12px; border-inline-start: 2px solid #b42318; border-radius: var(--radius-notice); background: color-mix(in srgb, #b42318 7%, var(--surface)); color: #b42318; font-size: 11px; font-weight: 650; line-height: 1.7; }
 
 .section[data-revealed='false'] .sectionIntro,
 .section[data-revealed='false'] .statusPanel,

@@ -139,9 +139,10 @@ export const CARD_SURFACES: { id: CardSurface; name: string; desc: string; icon:
 ];
 
 export const CARD_RADII: { id: CardRadius; name: string; px: string }[] = [
-  { id: 'sleek', name: 'زوايا دقيقة (14px)', px: '14px' },
-  { id: 'modern', name: 'زوايا متوازنة (26px)', px: '26px' },
-  { id: 'pebble', name: 'زوايا لينة (38px)', px: '38px' },
+  { id: 'sharp', name: 'حواف حادّة', px: '0px · دون استدارة' },
+  { id: 'sleek', name: 'حواف أنيقة', px: '14px · استدارة دقيقة' },
+  { id: 'modern', name: 'حواف متوازنة', px: '26px · طابع عصري' },
+  { id: 'pebble', name: 'حواف مستديرة', px: '38px · استدارة ناعمة' },
 ];
 
 export function getBrandContrastRatio(hex: string, backgroundHex: string): number {
