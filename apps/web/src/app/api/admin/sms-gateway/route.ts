@@ -46,7 +46,6 @@ export async function GET() {
         .limit(200),
       supabase
         .from('sms_tracking_admin_events')
-        .from('sms_tracking_admin_events')
         .select('id, job_id, action, previous_status, new_status, details, created_at')
         .order('created_at', { ascending: false })
         .limit(50),
