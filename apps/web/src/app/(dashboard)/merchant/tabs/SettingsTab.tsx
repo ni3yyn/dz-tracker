@@ -96,11 +96,6 @@ export function SettingsTab({
 }: SettingsTabProps) {
   const customPlanRequestRef = useRef<CustomPlanRequestHandle>(null);
   const openCustomPlanRequest = () => customPlanRequestRef.current?.open();
-  const selectedPlanDetails = {
-    basic: { orderLimit: '100 طلب شهرياً', price: '1,000' },
-    growth: { orderLimit: '200 طلب شهرياً', price: '1,800' },
-    scale: { orderLimit: '500 طلب شهرياً', price: '2,500' },
-  }[selectedUpgradeTier];
 
   return (
             <div className="dz-settings-page">
@@ -355,15 +350,16 @@ export function SettingsTab({
                     </div>
                   )}
                   <div className="dz-billing-plan-picker-heading">
-                    <span className="dz-setup-eyebrow">الاشتراك الشهري</span>
-                    <h3 id="dz-billing-plan-picker-title">اختر الباقة حسب عدد طلباتك</h3>
-                    <p>حدّ شهري واضح لكل باقة، دون بطاقات أو تفاصيل زائدة.</p>
+                    <span className="dz-setup-eyebrow">الباقات</span>
+                    <h3 id="dz-billing-plan-picker-title">اختر الباقة المناسبة لحجم طلباتك</h3>
+                    <p>كل خيار يوضح عدد الطلبات المتاحة شهرياً. يمكنك طلب باقة مخصصة من القائمة.</p>
                   </div>
                   <div className="dz-billing-plan-picker-control">
-                    <label className="formLabel">الباقة والحد الشهري</label>
+                    <label className="formLabel" htmlFor="merchant-billing-tier">الباقة وعدد الطلبات شهرياً</label>
                     <BrandedSelect
+                      id="merchant-billing-tier"
                       className="dz-billing-tier-select"
-                      ariaLabel="اختر باقة الاشتراك"
+                      ariaLabel="اختر باقة الاشتراك وعدد الطلبات الشهري"
                       value={selectedUpgradeTier}
                       onChange={(value) => {
                         if (value === 'custom') {
@@ -374,24 +370,13 @@ export function SettingsTab({
                       }}
                       variant="field"
                       options={[
-                        { value: 'starter', label: 'مجانية · 30 طلباً شهرياً · 0 دج', disabled: true },
-                        { value: 'basic', label: 'Basic · 100 طلب شهرياً · 1,000 دج' },
-                        { value: 'growth', label: 'Growth · 200 طلب شهرياً · 1,800 دج' },
-                        { value: 'scale', label: 'Scale · 500 طلب شهرياً · 2,500 دج' },
-                        { value: 'custom', label: 'باقة مخصصة · أكثر من 500 طلب شهرياً' },
+                        { value: 'starter', label: 'المجانية — 30 طلباً شهرياً · 0 دج', disabled: true },
+                        { value: 'basic', label: 'Basic — 100 طلب شهرياً · 1,000 دج' },
+                        { value: 'growth', label: 'Growth — 200 طلب شهرياً · 1,800 دج' },
+                        { value: 'scale', label: 'Scale — 500 طلب شهرياً · 2,500 دج' },
+                        { value: 'custom', label: 'مخصصة — أكثر من 500 طلب شهرياً' },
                       ]}
                     />
-                  </div>
-                  <div className="dz-billing-plan-picker-summary" aria-live="polite">
-                    <div className="dz-billing-plan-picker-summary-item">
-                      <span>الحد المختار</span>
-                      <strong>{selectedPlanDetails.orderLimit}</strong>
-                    </div>
-                    <div className="dz-billing-plan-picker-summary-item">
-                      <span>السعر الشهري</span>
-                      <strong>{selectedPlanDetails.price} <small>دج / شهر</small></strong>
-                    </div>
-                    <p>حوّل المبلغ عبر BaridiMob ثم أرسل رقم العملية وصورة الوصل. لن تتغير باقتك حتى تتم مراجعة الدفع.</p>
                   </div>
                 </section>
               )}
