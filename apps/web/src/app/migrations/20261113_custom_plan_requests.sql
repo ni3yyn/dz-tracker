@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.custom_plan_requests (
   preferred_contact_method TEXT NOT NULL DEFAULT 'whatsapp'
     CHECK (preferred_contact_method IN ('whatsapp', 'phone')),
   monthly_tracking_urls INTEGER NOT NULL
-    CHECK (monthly_tracking_urls > 500 AND monthly_tracking_urls <= 2000000),
+    CHECK (monthly_tracking_urls > 0 AND monthly_tracking_urls <= 2000000),
   carrier_names TEXT,
   requirements TEXT,
   status TEXT NOT NULL DEFAULT 'new'
