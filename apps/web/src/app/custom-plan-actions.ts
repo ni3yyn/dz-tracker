@@ -8,8 +8,11 @@ type CustomPlanRequestResult = {
 };
 
 export async function submitCustomPlanRequest(formData: FormData): Promise<CustomPlanRequestResult> {
-  const honeypot = String(formData.get('website') || '').trim();
-  if (honeypot) return { success: true };
+  const honeypot = String(formData.get('__tt_quote_trap_7f3a') || '').trim();
+  if (honeypot) {
+    console.warn('[CustomPlanRequest] Rejected a submission with a filled honeypot field.');
+    return { error: 'تعذر إرسال الطلب. يرجى المحاولة مجدداً.' };
+  }
 
   const fullName = String(formData.get('full_name') || '').trim();
   const storeName = String(formData.get('store_name') || '').trim();
@@ -41,35 +44,40 @@ export async function submitCustomPlanRequest(formData: FormData): Promise<Custo
     return { error: 'تجاوزت إحدى الرسائل الحد المسموح.' };
   }
 
-  const db = getSupabaseAdminClient() as any;
-  const recentSince = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const { data: recentRequest, error: recentError } = await db
-    .from('custom_plan_requests')
-    .select('id')
-    .eq('contact_phone', contactPhone)
-    .gte('created_at', recentSince)
-    .limit(1)
-    .maybeSingle();
-
-  if (!recentError && recentRequest) {
-    return { error: 'وصلنا طلب حديث بهذا الرقم. سنعاود التواصل معك قريباً.' };
-  }
-
-  const { error } = await db.from('custom_plan_requests').insert({
-    full_name: fullName,
-    store_name: storeName,
-    contact_phone: contactPhone,
-    preferred_contact_method: preferredContactMethod,
-    monthly_tracking_urls: monthlyTrackingUrls,
-    carrier_names: carrierNames || null,
-    requirements: requirements || null,
-    status: 'new',
-  });
-
-  if (error) {
-    console.error('[CustomPlanRequest] Failed to save a quote request:', error.message);
+  try {
+    const db = getSupabaseAdminClient() as any;
+    const recentSince = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: recentRequest, error: recentError } = await db
+      .from('custom_plan_requests')
+      .select('id')
+      .eq('contact_phone', contactPhone)
+      .gte('created_at', recentSince)
+      .limit(1)
+      .maybeSingle();
+  
+    if (!recentError && recentRequest) {
+      return { error: 'وصلنا طلب حديث بهذا الرقم. سنعاود التواصل معك قريباً.' };
+    }
+  
+    const { error } = await db.from('custom_plan_requests').insert({
+      full_name: fullName,
+      store_name: storeName,
+      contact_phone: contactPhone,
+      preferred_contact_method: preferredContactMethod,
+      monthly_tracking_urls: monthlyTrackingUrls,
+      carrier_names: carrierNames || null,
+      requirements: requirements || null,
+      status: 'new',
+    });
+  
+    if (error) {
+      console.error('[CustomPlanRequest] Failed to save a quote request:', error.message);
+      return { error: 'تعذر إرسال طلبك حالياً. يرجى المحاولة بعد قليل.' };
+    }
+  
+    return { success: true }
+  } catch (caughtError) {
+    console.error('[CustomPlanRequest] Unexpected submission failure:', caughtError);
     return { error: 'تعذر إرسال طلبك حالياً. يرجى المحاولة بعد قليل.' };
-  }
-
-  return { success: true };
+  };
 }
