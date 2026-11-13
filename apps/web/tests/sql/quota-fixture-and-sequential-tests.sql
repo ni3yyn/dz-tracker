@@ -127,11 +127,16 @@ BEGIN
     INSERT INTO public.custom_plan_requests (
       full_name, store_name, contact_phone, preferred_contact_method, monthly_tracking_urls
     )
-    VALUES ('Small Plan', 'Small Store', '0555000000', 'whatsapp', 500);
-    RAISE EXCEPTION 'A custom plan request at 500 URLs should be rejected.';
+    VALUES ('Invalid Plan', 'Invalid Store', '0555000000', 'whatsapp', 0);
+    RAISE EXCEPTION 'A custom plan request with zero URLs should be rejected.';
   EXCEPTION WHEN check_violation THEN
     NULL;
   END;
+
+  INSERT INTO public.custom_plan_requests (
+    full_name, store_name, contact_phone, preferred_contact_method, monthly_tracking_urls, requirements
+  )
+  VALUES ('Special Plan', 'Special Store', '0555000001', 'whatsapp', 500, 'Custom integration requirements');
 
   SELECT relrowsecurity INTO v_rls_enabled
   FROM pg_class
