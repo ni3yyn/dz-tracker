@@ -896,17 +896,22 @@ export function AdminDashboardView({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid var(--border-soft)' }}>
                   <span style={{ color: 'var(--ink-muted)', fontWeight: 600 }}>باقة التجريب (Starter)</span>
-                  <strong>0 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 100 طلب مجاني</span></strong>
+                  <strong>0 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 30 رابطاً مجانياً</span></strong>
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid var(--border-soft)' }}>
+                  <span style={{ color: 'var(--ink-muted)', fontWeight: 600 }}>باقة الأساسية والنمو (Basic / Growth)</span>
+                  <strong>1,000 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 100 رابط شهرياً</span></strong>
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid var(--border-soft)' }}>
                   <span style={{ color: 'var(--ink-muted)', fontWeight: 600 }}>باقة النمو (Growth)</span>
-                  <strong>3,500 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 1,500 طلب شهرياً</span></strong>
+                  <strong>1,800 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 200 رابط شهرياً</span></strong>
                 </div>
-                
+
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--ink-main)', fontWeight: 700 }}>باقة التوسع (Scale)</span>
-                  <strong style={{ color: 'var(--ink-main)' }}>7,500 DZD <span style={{ fontSize: '12px', color: 'var(--ink-muted)', fontWeight: 400 }}>/ غير محدود</span></strong>
+                  <span style={{ color: 'var(--ink-main)', fontWeight: 700 }}>باقة الاحترافية (Scale)</span>
+                  <strong style={{ color: 'var(--ink-main)' }}>2,500 DZD <span style={{ fontSize: '12px', color: 'var(--ink-muted)', fontWeight: 400 }}>/ 500 رابط شهرياً</span></strong>
                 </div>
               </div>
             </div>
@@ -947,9 +952,9 @@ export function AdminDashboardView({
                   borderRadius="0"
                   className={styles.adminBrandedSelect}
                   options={[
-                    { value: 'starter', label: 'مجانية (30 طلباً)' },
-                    { value: 'basic', label: '100 طلب (1,000 دج)' },
-                    { value: 'growth', label: '200 طلب (1,800 دج)' },
+                    { value: 'starter', label: 'مجانية (30 رابطاً)' },
+                    { value: 'basic', label: '100 رابط (1,000 دج)' },
+                    { value: 'growth', label: '200 رابط (1,800 دج)' },
                     { value: 'scale', label: '500 رابط (2,500 دج)' },
                   ]}
                 />
