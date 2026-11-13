@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './home.module.css';
 
-type LegalDocument = 'privacy' | 'terms';
+type LegalDocument = 'privacy' | 'terms' | 'about';
 
 type Props = {
   isAuthenticated?: boolean;
@@ -44,8 +44,9 @@ export default function SiteFooter({
           <a href={isAuthenticated ? '/merchant' : '/login'}>{isAuthenticated ? 'لوحة التاجر' : 'تسجيل الدخول'}</a>
           <a href="/register">إنشاء حساب</a>
         </nav>
-        <nav className={styles.footerNav} aria-label="الوثائق القانونية">
-          <h2>الوثائق القانونية</h2>
+        <nav className={styles.footerNav} aria-label="معلومات ووثائق المنصة">
+          <h2>معلومات ووثائق المنصة</h2>
+          <a href="/about" aria-current={currentDocument === 'about' ? 'page' : undefined}>عن تاجر تراك</a>
           <a href="/privacy" aria-current={currentDocument === 'privacy' ? 'page' : undefined}>سياسة الخصوصية</a>
           <a href="/terms" aria-current={currentDocument === 'terms' ? 'page' : undefined}>شروط الاستخدام</a>
         </nav>
