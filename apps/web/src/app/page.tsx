@@ -481,7 +481,7 @@ export default async function HomePage() {
         <div className={styles.heroCopy} data-dz-reveal>
           
           <h1 id="hero-title">كل طلب له رحلة<br /><em>حتى بعد التسليم.</em></h1>
-          <p className={styles.heroDescription}>تاجر تراك منصة لتتبّع طلبات المتاجر الإلكترونية في الجزائر. ترسل رابط التتبّع للزبون عبر SMS، مع Telegram كقناة إضافية، وتجمع متابعة الشحنة وخدمات ما بعد البيع في صفحة واحدة.</p>
+          <p className={styles.heroDescription}>تاجر تراك منصة لتتبّع طلبات المتاجر الإلكترونية في الجزائر. يرسل رابط التتبّع للزبون عبر SMS من رقمك وشريحتك، دون رسوم SMS من تاجر تراك، مع Telegram كخيار إضافي وخدمات ما بعد البيع.</p>
           <div className={styles.heroActions}>
             <a className={styles.primaryButton} href={isAuthenticated ? "/merchant" : "/register"}>{isAuthenticated ? "افتح لوحة التاجر" : "اربط متجرك الآن"} <span aria-hidden="true">↗</span></a>
             <a className={styles.secondaryButton} href="#how-it-works">شاهد طريقة الربط <span aria-hidden="true">↓</span></a>
