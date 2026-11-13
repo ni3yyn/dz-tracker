@@ -344,15 +344,6 @@ export default function CustomPlanRequest() {
                   />
                 </div>
 
-                <input
-                  className={styles.customPlanHoneypot}
-                  type="text"
-                  name="__tt_quote_trap_7f3a"
-                  tabIndex={-1}
-                  autoComplete="off"
-                  aria-hidden="true"
-                />
-
                 {feedback && (
                   <p className={feedback.type === 'success' ? styles.customPlanSuccess : styles.customPlanError} role={feedback.type === 'success' ? 'status' : 'alert'}>
                     {feedback.message}
