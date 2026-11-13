@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from '@saas/database';
 import { createClient } from '../../../../lib/supabase-server';
 import { isAuthorizedAdmin } from '../../../../lib/admin-auth';
 import { approveNativeSmsDevice } from './actions';
+import PairingSubmitButton from './PairingSubmitButton';
 import styles from './connect.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -52,11 +53,9 @@ export default async function ConnectNativeSmsPage({
     ? 'لم يتم العثور على متجر مرتبط بهذا الحساب.'
     : params.error === 'pairing_unavailable'
       ? 'تعذر إنشاء رابط آمن الآن. حاول مرة أخرى.'
-      : params.error === 'invalid_phone'
-        ? 'أدخل رقم هاتف جزائري صحيحاً قبل ربط الهاتف.'
-        : params.error === 'phone_save_failed'
-          ? 'تعذر حفظ رقم الهاتف في حسابك. لم يتم ربط الجهاز؛ حاول مرة أخرى.'
-          : '';
+      : params.error === 'phone_unavailable'
+        ? 'لم نعثر على رقم هاتف جزائري صالح محفوظ في بيانات حسابك. حدّث رقم هاتف الحساب ثم أعد المحاولة.'
+        : '';
 
   if (merchantError || !merchant) {
     return (
@@ -111,24 +110,9 @@ export default async function ConnectNativeSmsPage({
         {errorMessage && <p className={styles.error} role="alert">{errorMessage}</p>}
 
         <form action={approveNativeSmsDevice} className={styles.form}>
-            <div className={styles.phoneField}>
-              <label htmlFor="merchant-phone">رقم هاتفك لاستقبال رسالة الاختبار</label>
-              <input
-                id="merchant-phone"
-                name="phoneNumber"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                dir="ltr"
-                maxLength={16}
-                required
-                defaultValue={typeof user.user_metadata?.merchant_phone === 'string' ? user.user_metadata.merchant_phone : ''}
-                placeholder="05xxxxxxxx"
-              />
-              <p>سيُحفظ هذا الرقم في حسابك، وستُرسل إليه رسالة الاختبار من الشريحة التي تختارها.</p>
-            </div>
-            <button className={styles.action} type="submit">ربط هذا الهاتف</button>
+          <PairingSubmitButton />
         </form>
+        <p className={styles.security}>سيُستخدم رقم الهاتف المسجل في حسابك تلقائياً لرسالة الاختبار، دون الحاجة إلى إدخاله مرة أخرى.</p>
 
         <p className={styles.notice}>
           ربط هاتف جديد سيوقف الإرسال من الهاتف السابق لهذا المتجر. يمكنك إيقاف الإرسال من التطبيق في أي وقت.

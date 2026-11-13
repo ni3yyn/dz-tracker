@@ -22,7 +22,7 @@ function connectErrorUrl(error: string) {
   return `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(APP_REDIRECT)}&error=${encodeURIComponent(error)}`;
 }
 
-export async function approveNativeSmsDevice(formData: FormData) {
+export async function approveNativeSmsDevice() {
   const supabaseAuth = await createClient();
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
@@ -35,9 +35,9 @@ export async function approveNativeSmsDevice(formData: FormData) {
     redirect('/admin');
   }
 
-  const merchantPhone = normalizeAlgerianMobileNumber(formData.get('phoneNumber'));
+  const merchantPhone = normalizeAlgerianMobileNumber(user.user_metadata?.merchant_phone);
   if (!merchantPhone) {
-    redirect(connectErrorUrl('invalid_phone'));
+    redirect(connectErrorUrl('phone_unavailable'));
   }
 
   const supabase = getSupabaseAdminClient() as any;
@@ -49,14 +49,6 @@ export async function approveNativeSmsDevice(formData: FormData) {
 
   if (merchantError || !merchant?.id) {
     redirect(connectErrorUrl('merchant_unavailable'));
-  }
-
-  const { error: phoneUpdateError } = await supabaseAuth.auth.updateUser({
-    data: { merchant_phone: merchantPhone },
-  });
-  if (phoneUpdateError) {
-    console.error('[NativeSmsGateway] Could not save merchant phone number:', phoneUpdateError.message);
-    redirect(connectErrorUrl('phone_save_failed'));
   }
 
   // The one-time code is high entropy, expires in five minutes, and only its

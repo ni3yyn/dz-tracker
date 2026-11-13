@@ -179,3 +179,30 @@
   outline: 2px solid rgba(41,75,55,.24);
   outline-offset: 4px;
 }
+
+
+.action:disabled {
+  cursor: progress;
+  opacity: .92;
+}
+.submitContent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.spinner {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border: 2px solid rgba(255, 255, 255, .35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: pairing-spin .72s linear infinite;
+}
+@keyframes pairing-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 1.8s; }
+}
