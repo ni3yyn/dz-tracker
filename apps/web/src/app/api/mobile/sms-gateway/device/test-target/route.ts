@@ -10,7 +10,7 @@ function normalizeAlgerianMobilePhone(input: string | null): string | null {
   if (value.startsWith('00')) value = `+${value.slice(2)}`;
   if (value.startsWith('213')) value = `+${value}`;
   if (/^0[5-7]\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
-  return /^\\+213[5-7]\d{8}$/.test(value) ? value : null;
+  return /^\+213[5-7]\d{8}$/.test(value) ? value : null;
 }
 
 export async function POST(request: Request) {
