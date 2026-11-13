@@ -19,7 +19,8 @@ export async function approveNativeSmsDevice(formData: FormData) {
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
   if (authError || !user) {
-    redirect(`/login?next=${encodeURIComponent(PAIRING_PATH)}`);
+    const nextPath = `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(APP_REDIRECT)}`;
+    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
 
   if (isAuthorizedAdmin(user)) {
