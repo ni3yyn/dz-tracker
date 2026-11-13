@@ -3,6 +3,7 @@ import { createClient } from '../../../lib/supabase-server';
 import { getSupabaseAdminClient } from '@saas/database';
 import { AdminDashboardView } from './AdminDashboardView';
 import type { SmsManagerData } from './SmsManagerTab';
+import type { CustomPlanRequestItem } from './CustomPlanRequestsTab';
 import { logout } from './actions';
 import styles from './admin.module.css';
 import { isAdminConfigured, isAuthorizedAdmin } from '../../../lib/admin-auth';
@@ -58,6 +59,17 @@ export default async function AdminDashboardPage() {
     .from('subscription_payments')
     .select('id, merchant_id, plan_tier, amount_dzd, payment_method, payment_proof_url, transaction_ref, status, admin_notes, created_at, reviewed_at, merchants(store_name)')
     .order('created_at', { ascending: false });
+
+  // Public quote requests are read only after server-side administrator authorization.
+  const { data: customPlanRequestsData, error: customPlanRequestsError } = await (supabase as any)
+    .from('custom_plan_requests')
+    .select('id, full_name, store_name, contact_phone, preferred_contact_method, monthly_tracking_urls, carrier_names, requirements, status, admin_notes, created_at, updated_at')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (customPlanRequestsError) {
+    console.warn('[CustomPlanRequests] Inbox is unavailable until its database migration is applied:', customPlanRequestsError.message);
+  }
 
   // SMS operations data is fetched only after the administrator authorization check.
   const adminDb = supabase as any;
@@ -133,6 +145,7 @@ export default async function AdminDashboardPage() {
       merchants={(merchants || []) as any}
       orders={(orders || []) as any}
       payments={(payments || []) as any}
+      customPlanRequests={(customPlanRequestsData || []) as CustomPlanRequestItem[]}
       smsManager={smsManager}
     />
   );
