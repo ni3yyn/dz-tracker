@@ -235,22 +235,22 @@ export function SettingsTab({
                   <div className="dz-unlimited-card-content">
                     <div className="dz-unlimited-header">
                       <span className="dz-unlimited-badge">
-                        <Icons.Zap /> باقة غير محدودة
+                        <Icons.Zap /> اشتراك سابق مفتوح
                       </span>
                       <span className="dz-unlimited-pill">
                         <Icons.Check /> نشطة
                       </span>
                     </div>
                     <h3 className="dz-unlimited-title">
-                      حسابك يعمل بالباقة غير المحدودة وبلا أي سقف للطلبات
+                      اشتراكك الحالي يحتفظ بسقفه المفتوح حتى تاريخ انتهائه
                     </h3>
                     <p className="dz-unlimited-desc">
-                      يمكنك تسجيل واستقبال وتتبع أي عدد من الشحنات شهرياً بكامل ميزات التتبع الفوري ودون أي حدود استهلاك.
+                      عند التجديد، ستكون باقة 2,500 دج محدودة بـ 500 رابط تتبّع شهرياً.
                     </p>
                   </div>
                   <div className="dz-unlimited-aside">
                     <span className="dz-unlimited-symbol">∞</span>
-                    <span className="dz-unlimited-symbol-label">سقف غير محدود</span>
+                    <span className="dz-unlimited-symbol-label">سقف مفتوح حالياً</span>
                   </div>
                 </div>
               )}
@@ -273,7 +273,7 @@ export function SettingsTab({
                 
                 <div className="dz-stat-item">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span className="dz-stat-title" style={{ margin: 0 }}>الاستهلاك الشهري (الطلبات)</span>
+                    <span className="dz-stat-title" style={{ margin: 0 }}>استهلاك روابط التتبّع شهرياً</span>
                     {isUnlimitedPlan && <span className="dz-unlimited-stat-tag">∞ سقف الاشتراك الحالي</span>}
                   </div>
                   <span className="dz-stat-value" style={{ marginBottom: '16px' }}>
@@ -296,7 +296,7 @@ export function SettingsTab({
               <p className="dz-billing-usage-note">
                 {isUnlimitedPlan 
                   ? 'سقف اشتراكك الحالي مفتوح حتى انتهائه؛ عند التجديد ستكون باقة 2,500 دج محدودة بـ 500 رابط شهرياً.' 
-                  : `تبقّى لك ${Math.max(normalizedLimit - subscription.used, 0)} طلباً من أصل ${normalizedLimit} لهذا الشهر. عند الاقتراب من الحد، يمكنك اختيار باقة أعلى من هنا. تُطبّق الباقة بعد مراجعة الدفع وتأكيده.`}
+                  : `تبقّى لك ${Math.max(normalizedLimit - subscription.used, 0)} رابطاً من أصل ${normalizedLimit} لهذا الشهر. عند الاقتراب من الحد، يمكنك اختيار باقة أعلى من هنا. تُطبّق الباقة بعد مراجعة الدفع وتأكيده.`}
               </p>
 
               {/* PLAN SELECTION SECTION — conditional on active paid plan */}
