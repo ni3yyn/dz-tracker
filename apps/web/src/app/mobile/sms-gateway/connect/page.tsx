@@ -44,7 +44,7 @@ export default async function ConnectNativeSmsPage({
   const supabase = getSupabaseAdminClient() as any;
   const { data: merchant, error: merchantError } = await supabase
     .from('merchants')
-    .select('id, store_name')
+    .select('id, store_name, logo_url')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
@@ -52,7 +52,11 @@ export default async function ConnectNativeSmsPage({
     ? 'لم يتم العثور على متجر مرتبط بهذا الحساب.'
     : params.error === 'pairing_unavailable'
       ? 'تعذر إنشاء رابط آمن الآن. حاول مرة أخرى.'
-      : '';
+      : params.error === 'legal_required'
+        ? 'يجب الموافقة على شروط الاستخدام وسياسة الخصوصية قبل ربط الهاتف.'
+        : params.error === 'legal_acceptance_unavailable'
+          ? 'تعذر حفظ موافقتك القانونية بشكل آمن. لم يتم ربط الهاتف؛ حاول مرة أخرى.'
+          : '';
 
   if (merchantError || !merchant) {
     return (
@@ -89,14 +93,42 @@ export default async function ConnectNativeSmsPage({
 
         <div className={styles.store}>
           <span className={styles.storeLabel}>المتجر الذي سيتم ربطه</span>
-          <strong>{merchant.store_name}</strong>
+          <div className={styles.storeIdentity}>
+            {typeof merchant.logo_url === 'string' && merchant.logo_url.trim() ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className={styles.storeLogo} src={merchant.logo_url} alt={`شعار ${merchant.store_name}`} />
+            ) : (
+              <span className={styles.storeLogoFallback} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M4 9.5 5.5 4h13L20 9.5M5 10v9h14v-9M9 19v-5h6v5M4 9.5c0 1.4 1 2.5 2.4 2.5S9 10.9 9 9.5c0 1.4 1.1 2.5 2.5 2.5S14 10.9 14 9.5c0 1.4 1.1 2.5 2.5 2.5S19 10.9 19 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            )}
+            <strong>{merchant.store_name}</strong>
+          </div>
         </div>
 
         {errorMessage && <p className={styles.error} role="alert">{errorMessage}</p>}
 
-        <form action={approveNativeSmsDevice}>
+        <form action={approveNativeSmsDevice} className={styles.form}>
+          <div className={styles.legalAcceptance}>
+            <label className={styles.acceptanceRow}>
+              <input type="checkbox" name="acceptTerms" value="yes" required />
+              <span>أوافق على <a href="/terms" target="_blank" rel="noopener noreferrer">شروط الاستخدام</a> وألتزم بها.</span>
+            </label>
+            <label className={styles.acceptanceRow}>
+              <input type="checkbox" name="acceptPrivacy" value="yes" required />
+              <span>أوافق على <a href="/privacy" target="_blank" rel="noopener noreferrer">سياسة الخصوصية</a> وأفهم كيفية معالجة بيانات المتجر والهاتف.</span>
+            </label>
+          </div>
           <button className={styles.action} type="submit">الموافقة وربط هذا الهاتف</button>
         </form>
+
+        <nav className={styles.legalLinks} aria-label="معلومات تاجر تراك">
+          <a href="/about">عن تاجر تراك</a>
+          <a href="/privacy">سياسة الخصوصية</a>
+          <a href="/terms">شروط الاستخدام</a>
+        </nav>
 
         <p className={styles.notice}>
           ربط هاتف جديد سيوقف الإرسال من الهاتف السابق لهذا المتجر. يمكنك إيقاف الإرسال من التطبيق في أي وقت.
