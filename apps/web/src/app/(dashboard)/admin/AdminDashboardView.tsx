@@ -16,6 +16,7 @@ import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import SmsManagerTab from './SmsManagerTab';
 import type { SmsManagerData } from './SmsManagerTab';
 import CustomPlanRequestsTab from './CustomPlanRequestsTab';
+import { AdminDataTable } from './AdminDataTable';
 import type { CustomPlanRequestItem } from './CustomPlanRequestsTab';
 import SupabaseUsageTab from './SupabaseUsageTab';
 import { DashboardFilterTabs } from '../merchant/components/DashboardFilterTabs';
@@ -618,16 +619,11 @@ export function AdminDashboardView({
                 <button className={`${styles.btn} ${styles.btnOutline}`} onClick={() => { setActiveTab('telemetry'); setMobileMenuOpen(false); }} style={{ padding: '8px 16px' }}>عرض التلتيتمري</button>
               </div>
               <div className={styles.tableScrollArea} style={{ maxHeight: '400px' }}>
-                <table className={styles.dataTable}>
-                  <thead>
-                    <tr>
-                      <th>الطلب</th>
-                      <th>المتجر</th>
-                      <th>الناقل والتتبع</th>
-                      <th>الحالة</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <AdminDataTable
+                  container={false}
+                  scrollArea={false}
+                  columns={["الطلب","المتجر","الناقل والتتبع","الحالة"]}
+                >
                     {orders.slice(0, 10).map((o) => {
                       const store = Array.isArray(o.merchants) ? o.merchants[0]?.store_name : (o.merchants as any)?.store_name || 'متجر';
                       return (
@@ -642,8 +638,8 @@ export function AdminDashboardView({
                         </tr>
                       );
                     })}
-                  </tbody>
-                </table>
+                  
+                </AdminDataTable>
               </div>
             </div>
           </div>
@@ -700,17 +696,11 @@ export function AdminDashboardView({
                 <h3>سجل العمليات السابقة ({payments.length})</h3>
               </div>
               <div className={styles.tableScrollArea}>
-                <table className={styles.dataTable}>
-                  <thead>
-                    <tr>
-                      <th>المتجر</th>
-                      <th>الباقة والمبلغ</th>
-                      <th>طريقة الدفع</th>
-                      <th>الحالة</th>
-                      <th>تاريخ المراجعة</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <AdminDataTable
+                  container={false}
+                  scrollArea={false}
+                  columns={["المتجر","الباقة والمبلغ","طريقة الدفع","الحالة","تاريخ المراجعة"]}
+                >
                     {payments.map((p) => {
                       const storeName = Array.isArray(p.merchants) ? p.merchants[0]?.store_name : (p.merchants as any)?.store_name || 'متجر';
                       return (
@@ -727,8 +717,8 @@ export function AdminDashboardView({
                         </tr>
                       );
                     })}
-                  </tbody>
-                </table>
+                  
+                </AdminDataTable>
               </div>
             </div>
           </div>
@@ -756,17 +746,11 @@ export function AdminDashboardView({
 
             <div className={styles.tableContainer}>
               <div className={styles.tableScrollArea}>
-                <table className={styles.dataTable}>
-                  <thead>
-                    <tr>
-                      <th>اسم المتجر و API</th>
-                      <th>الخطة والحالة</th>
-                      <th>الاستهلاك الشهري</th>
-                      <th>الصلاحية</th>
-                      <th>إجراءات الإدارة</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <AdminDataTable
+                  container={false}
+                  scrollArea={false}
+                  columns={["اسم المتجر و API","الخطة والحالة","الاستهلاك الشهري","الصلاحية","إجراءات الإدارة"]}
+                >
                     {filteredMerchants.map((m) => {
                       const tier = m.subscription_tier || 'starter';
                       const status = m.subscription_status || 'active';
@@ -830,8 +814,8 @@ export function AdminDashboardView({
                         </tr>
                       );
                     })}
-                  </tbody>
-                </table>
+                  
+                </AdminDataTable>
               </div>
             </div>
           </div>
@@ -858,18 +842,11 @@ export function AdminDashboardView({
                 <span style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>يتم عرض {Math.min(visibleOrders, filteredOrders.length)} من {filteredOrders.length}</span>
               </div>
               <div className={styles.tableScrollArea}>
-                <table className={styles.dataTable}>
-                  <thead>
-                    <tr>
-                      <th>المتجر</th>
-                      <th>رقم الطلب (Store)</th>
-                      <th>الناقل ورقم التتبع</th>
-                      <th>الحالة التشغيلية</th>
-                      <th>العميل</th>
-                      <th>تاريخ المعالجة</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <AdminDataTable
+                  container={false}
+                  scrollArea={false}
+                  columns={["المتجر","رقم الطلب (Store)","الناقل ورقم التتبع","الحالة التشغيلية","العميل","تاريخ المعالجة"]}
+                >
                     {filteredOrders.slice(0, visibleOrders).map((o) => {
                       const store = Array.isArray(o.merchants) ? o.merchants[0]?.store_name : (o.merchants as any)?.store_name || 'متجر';
                       return (
@@ -886,8 +863,8 @@ export function AdminDashboardView({
                         </tr>
                       );
                     })}
-                  </tbody>
-                </table>
+                  
+                </AdminDataTable>
                 {/* Sentinel for IntersectionObserver to trigger loading more items */}
                 {visibleOrders < filteredOrders.length && (
                   <div id="scroll-sentinel" style={{ padding: '20px', textAlign: 'center', color: 'var(--ink-muted)', fontSize: '13px' }}>
