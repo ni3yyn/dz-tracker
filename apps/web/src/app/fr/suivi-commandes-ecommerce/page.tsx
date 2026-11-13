@@ -6,7 +6,13 @@ const canonical = 'https://tajertrack.vercel.app/fr/suivi-commandes-ecommerce';
 export const metadata: Metadata = {
   title: 'Suivi des commandes e-commerce en Algérie',
   description: 'TajerTrack aide les boutiques en ligne en Algérie à envoyer le lien de suivi par SMS, suivre les livraisons et gérer les demandes d’échange après réception.',
-  alternates: { canonical },
+  alternates: {
+    canonical,
+    languages: {
+      'fr-DZ': canonical,
+      'ar-DZ': 'https://tajertrack.vercel.app/solutions/sms-order-tracking-algeria',
+    },
+  },
   openGraph: {
     type: 'article',
     locale: 'fr_DZ',

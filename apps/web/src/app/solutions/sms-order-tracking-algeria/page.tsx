@@ -6,7 +6,13 @@ const canonical = 'https://tajertrack.vercel.app/solutions/sms-order-tracking-al
 export const metadata: Metadata = {
   title: 'تتبّع الطلبات عبر SMS للمتاجر الجزائرية',
   description: 'تعرّف على طريقة إرسال رابط تتبّع الطلب عبر SMS مع تاجر تراك، منصة متابعة الشحن للمتاجر الإلكترونية في الجزائر.',
-  alternates: { canonical },
+  alternates: {
+    canonical,
+    languages: {
+      'ar-DZ': canonical,
+      'fr-DZ': 'https://tajertrack.vercel.app/fr/suivi-commandes-ecommerce',
+    },
+  },
   openGraph: {
     type: 'article',
     locale: 'ar_DZ',

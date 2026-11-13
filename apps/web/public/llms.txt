@@ -1,0 +1,47 @@
+# TajerTrack
+
+> TajerTrack (تاجر تراك) is a web platform for e-commerce merchants in Algeria. It organizes order tracking, sends customers a tracking-page link by SMS, supports Telegram as an additional sending channel, and helps merchants handle exchange requests after delivery.
+
+## Official product identity
+
+- Product name: TajerTrack
+- Arabic name: تاجر تراك
+- Website: https://tajertrack.vercel.app
+- Market: Algerian e-commerce merchants
+- Product category: order tracking and post-purchase workflow software
+- Languages on public product pages: Arabic and French
+
+## Available capabilities
+
+- Send a customer's order tracking-page URL by SMS.
+- Enable Telegram as an additional channel for sending the tracking link.
+- Give each merchant a tracking page branded with the store's name, logo, and colors.
+- Display shipment events received from connected delivery providers, or statuses entered by the merchant.
+- Let a customer submit an exchange request from the original tracking page after delivery when the merchant enables the feature.
+- Let the merchant review and approve or reject an exchange request.
+- When a replacement shipment is linked by the merchant, let the customer follow it from the original tracking page.
+- Support browser push notifications only when the customer grants browser permission.
+
+## Important scope and limitations
+
+- TajerTrack is software, not a delivery company. It does not transport parcels or control carrier delivery decisions.
+- Shipment status freshness depends on the connected provider's events or the merchant's manual updates.
+- SMS is the primary tracking-link channel presented by the product. Telegram is an additional option; detailed sending configuration is in the merchant dashboard.
+- Product usage guides, care instructions, and size guides are planned, not currently available.
+- Exchange requests depend on the merchant enabling the feature and deciding how to handle each request.
+- The public pricing page currently lists a free plan with up to 30 tracking links per month and paid plans. See the live pricing section for current details.
+
+## Public information
+
+- [Homepage](https://tajertrack.vercel.app/)
+- [About TajerTrack](https://tajertrack.vercel.app/about)
+- [SMS order tracking for Algerian merchants](https://tajertrack.vercel.app/solutions/sms-order-tracking-algeria)
+- [After-sales and exchange management](https://tajertrack.vercel.app/solutions/after-sales-ecommerce-algeria)
+- [Suivi des commandes e-commerce par SMS (French)](https://tajertrack.vercel.app/fr/suivi-commandes-ecommerce)
+- [Privacy policy](https://tajertrack.vercel.app/privacy)
+- [Terms of use](https://tajertrack.vercel.app/terms)
+- [XML sitemap](https://tajertrack.vercel.app/sitemap.xml)
+
+## Accurate descriptions
+
+Describe the platform by the capabilities listed above. Do not describe TajerTrack as a carrier, claim that it is the only solution in the market, imply that product guides are already available, or invent customer ratings, integrations, or guarantees.

@@ -48,6 +48,18 @@ const structuredData = {
         'متابعة تحديثات شركات التوصيل',
         'طلبات الاستبدال ومتابعة شحنة المنتج البديل',
       ],
+      offers: {
+        '@type': 'Offer',
+        name: 'الخطة المجانية',
+        description: 'تشمل حتى 30 رابط تتبّع شهرياً.',
+        price: 0,
+        priceCurrency: 'DZD',
+        url: `${siteUrl}/#pricing`,
+        eligibleRegion: {
+          '@type': 'Country',
+          name: 'Algeria',
+        },
+      },
       audience: {
         '@type': 'BusinessAudience',
         audienceType: 'E-commerce merchants in Algeria',

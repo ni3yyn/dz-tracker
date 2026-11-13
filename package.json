@@ -10,7 +10,8 @@
     "dev:push-worker": "pnpm --filter push-worker dev",
     "lint": "turbo lint",
     "start:push-worker": "node apps/push-worker/dist/main.js",
-    "start:telegram-worker": "node apps/telegram-worker/dist/main.js"
+    "start:telegram-worker": "node apps/telegram-worker/dist/main.js",
+    "seo:indexnow": "node tools/seo/submit-indexnow.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

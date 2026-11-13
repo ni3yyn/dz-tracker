@@ -10,6 +10,10 @@ import { createClient } from '../lib/supabase-server';
 export const metadata = {
   title: 'تتبّع طلبات المتاجر الجزائرية عبر SMS',
   description: 'تاجر تراك منصة لتتبّع طلبات المتاجر الإلكترونية في الجزائر. ترسل رابط التتبّع عبر SMS، مع Telegram كخيار إضافي، وتسهّل متابعة الشحن وطلبات الاستبدال بعد التسليم.',
+  alternates: {
+    canonical: 'https://tajertrack.vercel.app/',
+    languages: { 'ar-DZ': 'https://tajertrack.vercel.app/' },
+  },
 };
 
 const steps = [
