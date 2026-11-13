@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { updateCustomPlanRequest } from './actions';
 import styles from './admin.module.css';
 
@@ -33,10 +34,26 @@ function formatPhoneForWhatsApp(value: string) {
   return digits;
 }
 
-export default function CustomPlanRequestsTab({ requests: initialRequests }: { requests: CustomPlanRequestItem[] }) {
+export default function CustomPlanRequestsTab({
+  requests: initialRequests,
+  loadError,
+}: {
+  requests: CustomPlanRequestItem[];
+  loadError: string | null;
+}) {
+  const router = useRouter();
   const [requests, setRequests] = useState(initialRequests);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [isRefreshing, startRefresh] = useTransition();
+
+  useEffect(() => {
+    setRequests(initialRequests);
+  }, [initialRequests]);
+
+  const refreshRequests = () => {
+    startRefresh(() => router.refresh());
+  };
 
   const handleSave = async (event: React.FormEvent<HTMLFormElement>, requestId: string) => {
     event.preventDefault();
@@ -70,24 +87,46 @@ export default function CustomPlanRequestsTab({ requests: initialRequests }: { r
     }
   };
 
+  if (loadError) {
+    return (
+      <div className={styles.card} style={{ padding: '28px 22px' }}>
+        <h3 style={{ margin: '0 0 8px', fontSize: '16px' }}>تعذر تحميل طلبات الباقات المخصصة</h3>
+        <p role="alert" style={{ margin: '0 0 14px', color: '#9a3528', fontSize: '12px', lineHeight: 1.8 }}>
+          {loadError}
+        </p>
+        <button type="button" className={styles.btn} onClick={refreshRequests} disabled={isRefreshing}>
+          {isRefreshing ? 'جارٍ التحديث...' : 'إعادة المحاولة'}
+        </button>
+      </div>
+    );
+  }
+
   if (requests.length === 0) {
     return (
       <div className={styles.card} style={{ padding: '48px 22px', textAlign: 'center' }}>
         <h3 style={{ margin: '0 0 8px', fontSize: '16px' }}>لا توجد طلبات باقات مخصصة بعد</h3>
-        <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: '12px' }}>
+        <p style={{ margin: '0 0 16px', color: 'var(--ink-muted)', fontSize: '12px' }}>
           ستظهر هنا طلبات عروض الأسعار التي يرسلها العملاء من صفحة الأسعار.
         </p>
+        <button type="button" className={styles.btn} onClick={refreshRequests} disabled={isRefreshing}>
+          {isRefreshing ? 'جارٍ التحديث...' : 'تحديث القائمة'}
+        </button>
       </div>
     );
   }
 
   return (
     <section>
-      <div className={styles.tableHeader} style={{ marginBottom: '14px' }}>
-        <h3>طلبات عروض الأسعار ({requests.length})</h3>
-        <span style={{ color: 'var(--ink-muted)', fontSize: '11px' }}>
-          الجديدة: {requests.filter((request) => request.status === 'new').length}
-        </span>
+      <div className={styles.tableHeader} style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <div>
+          <h3>طلبات عروض الأسعار ({requests.length})</h3>
+          <span style={{ color: 'var(--ink-muted)', fontSize: '11px' }}>
+            الجديدة: {requests.filter((request) => request.status === 'new').length}
+          </span>
+        </div>
+        <button type="button" className={styles.btn} onClick={refreshRequests} disabled={isRefreshing}>
+          {isRefreshing ? 'جارٍ التحديث...' : 'تحديث'}
+        </button>
       </div>
 
       {feedback && (
