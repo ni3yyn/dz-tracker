@@ -4,6 +4,8 @@ import React, { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateCustomPlanRequest } from './actions';
 import styles from './admin.module.css';
+import { BrandedSelect } from '../merchant/BrandedSelect';
+import { AdminDataTable } from './AdminDataTable';
 
 export interface CustomPlanRequestItem {
   id: string;
@@ -20,12 +22,12 @@ export interface CustomPlanRequestItem {
   updated_at: string;
 }
 
-const STATUS_OPTIONS = [
+const STATUS_OPTIONS: { value: CustomPlanRequestItem['status']; label: string }[] = [
   { value: 'new', label: 'جديد' },
   { value: 'contacted', label: 'تم التواصل' },
   { value: 'quoted', label: 'تم إرسال العرض' },
   { value: 'closed', label: 'مغلق' },
-] as const;
+];
 
 function formatPhoneForWhatsApp(value: string) {
   const digits = value.replace(/\D/g, '');
@@ -135,20 +137,9 @@ export default function CustomPlanRequestsTab({
         </p>
       )}
 
-      <div className={styles.tableContainer}>
-        <div className={styles.tableScrollArea}>
-          <table className={styles.dataTable}>
-            <thead>
-              <tr>
-                <th>العميل والمتجر</th>
-                <th>التواصل</th>
-                <th>الحجم الشهري</th>
-                <th>الاحتياجات</th>
-                <th>تاريخ الطلب</th>
-                <th>المتابعة</th>
-              </tr>
-            </thead>
-            <tbody>
+      <AdminDataTable
+        columns={['العميل والمتجر', 'التواصل', 'الحجم الشهري', 'الاحتياجات', 'تاريخ الطلب', 'المتابعة']}
+      >
               {requests.map((request) => {
                 const whatsappPhone = formatPhoneForWhatsApp(request.contact_phone);
                 const whatsappMessage = 'مرحباً ' + request.full_name + '، تواصلنا معك بخصوص طلب الخطة المخصصة لمتجر ' + request.store_name + ' على تاجر تراك.';
@@ -182,9 +173,15 @@ export default function CustomPlanRequestsTab({
                     </td>
                     <td data-label="المتابعة" style={{ minWidth: '210px' }}>
                       <form onSubmit={(event) => void handleSave(event, request.id)}>
-                        <select name="status" defaultValue={request.status} className={styles.input} style={{ minHeight: '36px', marginBottom: '7px', padding: '5px 8px', fontSize: '11px' }}>
-                          {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
+                        <BrandedSelect
+                          name="status"
+                          defaultValue={request.status}
+                          options={STATUS_OPTIONS}
+                          ariaLabel={`حالة متابعة طلب ${request.full_name}`}
+                          variant="field"
+                          borderRadius="0"
+                          className={styles.adminBrandedSelect}
+                        />
                         <textarea name="admin_notes" defaultValue={request.admin_notes || ''} rows={2} maxLength={1500} className={styles.input} placeholder="ملاحظات التفاوض والسعر..." style={{ minHeight: '54px', marginBottom: '7px', padding: '7px 8px', fontSize: '11px', resize: 'vertical' }} />
                         <button type="submit" className={styles.btn} disabled={savingId === request.id} style={{ minHeight: '34px', padding: '0 12px', fontSize: '11px', opacity: savingId === request.id ? .65 : 1 }}>
                           {savingId === request.id ? 'جارٍ الحفظ...' : 'حفظ المتابعة'}
@@ -194,10 +191,7 @@ export default function CustomPlanRequestsTab({
                   </tr>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+  
+      </AdminDataTable>    </section>
   );
 }
