@@ -2,6 +2,17 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const needsDashboardLogin = pathname.startsWith('/merchant') || pathname.startsWith('/admin');
+  const needsNativeSmsLogin = pathname === '/mobile/sms-gateway/connect';
+  const isLoginPage = pathname === '/login';
+
+  // Public pages do not need a Supabase session lookup. Keep marketing pages
+  // and search crawlers out of the authentication round trip.
+  if (!needsDashboardLogin && !needsNativeSmsLogin && !isLoginPage) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -52,11 +63,6 @@ export async function middleware(request: NextRequest) {
 
   // Preserve the native-phone approval URL through sign-in so the merchant
   // returns directly to the pairing confirmation after authenticating.
-  const needsDashboardLogin =
-    request.nextUrl.pathname.startsWith('/merchant') ||
-    request.nextUrl.pathname.startsWith('/admin');
-  const needsNativeSmsLogin = request.nextUrl.pathname === '/mobile/sms-gateway/connect';
-
   if (!user && (needsDashboardLogin || needsNativeSmsLogin)) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
@@ -68,7 +74,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // إذا كان مسجل دخول ويحاول فتح صفحة تسجيل الدخول، نوجهه للوحة المناسبة
-  if (user && request.nextUrl.pathname === '/login') {
+  if (user && isLoginPage) {
     const url = request.nextUrl.clone();
     if (isAdmin) {
       url.pathname = '/admin';

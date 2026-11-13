@@ -11,7 +11,9 @@
     "lint": "turbo lint",
     "start:push-worker": "node apps/push-worker/dist/main.js",
     "start:telegram-worker": "node apps/telegram-worker/dist/main.js",
-    "seo:indexnow": "node tools/seo/submit-indexnow.mjs"
+    "seo:indexnow": "node tools/seo/submit-indexnow.mjs",
+    "seo:check": "node tools/seo/check-public-discovery.mjs",
+    "seo:benchmark": "node tools/seo/create-ai-visibility-run.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

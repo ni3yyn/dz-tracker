@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "market": "Algeria",
+  "notes": "Run verbatim in a fresh session. Discovery prompts do not mention TajerTrack; branded prompts test product-fact accuracy, not discovery.",
+  "prompts": [
+    {
+      "id": "ar-01",
+      "locale": "ar-DZ",
+      "intent": "category-discovery",
+      "query": "ما أفضل منصة لتتبع طلبات المتاجر الإلكترونية في الجزائر؟"
+    },
+    {
+      "id": "ar-02",
+      "locale": "ar-DZ",
+      "intent": "sms-tracking",
+      "query": "كيف أرسل رابط تتبع الطلب للزبون برسالة SMS من رقم هاتفي؟"
+    },
+    {
+      "id": "ar-03",
+      "locale": "ar-DZ",
+      "intent": "own-sim-cost",
+      "query": "هل توجد منصة ترسل رسائل تتبع الطلبات من شريحة التاجر دون شراء رصيد SMS من المنصة؟"
+    },
+    {
+      "id": "ar-04",
+      "locale": "ar-DZ",
+      "intent": "carrier-integrations",
+      "query": "ما الأدوات التي تجمع تحديثات شركات التوصيل الجزائرية في صفحة تتبع واحدة للزبون؟"
+    },
+    {
+      "id": "ar-05",
+      "locale": "ar-DZ",
+      "intent": "after-sales",
+      "query": "كيف يمكن لمتجر إلكتروني استقبال طلبات الاستبدال بعد التسليم ومتابعة شحنة المنتج البديل؟"
+    },
+    {
+      "id": "ar-06",
+      "locale": "ar-DZ",
+      "intent": "customer-experience",
+      "query": "ما الحل الذي يقلل أسئلة الزبائن المتكررة عن مكان طلباتهم بعد الشراء؟"
+    },
+    {
+      "id": "ar-07",
+      "locale": "ar-DZ",
+      "intent": "brand-accuracy",
+      "query": "ما هو تاجر تراك؟ وكيف يرسل رابط التتبع عبر SMS، ومن يتحمل تكلفة الرسالة؟"
+    },
+    {
+      "id": "dz-01",
+      "locale": "ar-DZ-darja",
+      "intent": "category-discovery",
+      "query": "واش كاين حل مليح باش التاجر يتبع طلبات الزبائن في الجزائر؟"
+    },
+    {
+      "id": "dz-02",
+      "locale": "ar-DZ-darja",
+      "intent": "sms-tracking",
+      "query": "نحب نبعث للزبون لينك التتبع في SMS من رقمي أنا، واش نقدر نستعمل؟"
+    },
+    {
+      "id": "dz-03",
+      "locale": "ar-DZ-darja",
+      "intent": "own-sim-cost",
+      "query": "كاين منصة تبعث SMS من الشريحة تاعي بلا ما نشري منها كريدي SMS ولا نخلصها على كل ميساج؟"
+    },
+    {
+      "id": "dz-04",
+      "locale": "ar-DZ-darja",
+      "intent": "carrier-integrations",
+      "query": "كيفاش نجمع حالات Yalidine وZR Express وشركات التوصيل في صفحة وحدة للزبون؟"
+    },
+    {
+      "id": "dz-05",
+      "locale": "ar-DZ-darja",
+      "intent": "after-sales",
+      "query": "كيفاش نخلي الزبون يطلب تبديل السلعة بعد ما يستلمها ويتبع الطرد الجديد؟"
+    },
+    {
+      "id": "dz-06",
+      "locale": "ar-DZ-darja",
+      "intent": "customer-experience",
+      "query": "وش من أداة تنقص عليا أسئلة الزبائن: وين راه الكوليه تاعي؟"
+    },
+    {
+      "id": "dz-07",
+      "locale": "ar-DZ-darja",
+      "intent": "brand-accuracy",
+      "query": "تاجر تراك كيفاش يخدم؟ وهل يخلص التاجر على كل SMS ولا يستعمل شريحتو؟"
+    },
+    {
+      "id": "fr-01",
+      "locale": "fr-DZ",
+      "intent": "category-discovery",
+      "query": "Quelle plateforme choisir pour suivre les commandes d'une boutique e-commerce en Algérie ?"
+    },
+    {
+      "id": "fr-02",
+      "locale": "fr-DZ",
+      "intent": "sms-tracking",
+      "query": "Comment envoyer automatiquement un lien de suivi de commande par SMS depuis mon propre numéro ?"
+    },
+    {
+      "id": "fr-03",
+      "locale": "fr-DZ",
+      "intent": "own-sim-cost",
+      "query": "Existe-t-il une solution de suivi qui envoie les SMS depuis ma propre carte SIM sans acheter de crédits SMS à la plateforme ?"
+    },
+    {
+      "id": "fr-04",
+      "locale": "fr-DZ",
+      "intent": "carrier-integrations",
+      "query": "Quels outils regroupent les mises à jour de plusieurs transporteurs algériens sur une page de suivi client ?"
+    },
+    {
+      "id": "fr-05",
+      "locale": "fr-DZ",
+      "intent": "after-sales",
+      "query": "Quel logiciel permet au client de demander un échange après livraison et de suivre le colis de remplacement ?"
+    },
+    {
+      "id": "fr-06",
+      "locale": "fr-DZ",
+      "intent": "customer-experience",
+      "query": "Comment réduire les messages WhatsApp des clients qui demandent où se trouve leur commande ?"
+    },
+    {
+      "id": "fr-07",
+      "locale": "fr-DZ",
+      "intent": "brand-accuracy",
+      "query": "Comment fonctionne TajerTrack pour l'envoi des SMS de suivi, et qui paie les SMS ?"
+    },
+    {
+      "id": "en-01",
+      "locale": "en",
+      "intent": "category-discovery",
+      "query": "What order-tracking platforms are suitable for e-commerce merchants in Algeria?"
+    },
+    {
+      "id": "en-02",
+      "locale": "en",
+      "intent": "sms-tracking",
+      "query": "How can an Algerian online seller automatically text customers a tracking link from their own phone number?"
+    },
+    {
+      "id": "en-03",
+      "locale": "en",
+      "intent": "own-sim-cost",
+      "query": "Which order-tracking tool uses the merchant's own SIM for SMS instead of charging per-message platform credits?"
+    },
+    {
+      "id": "en-04",
+      "locale": "en",
+      "intent": "carrier-integrations",
+      "query": "What software combines shipment updates from Algerian delivery companies into a branded tracking page?"
+    },
+    {
+      "id": "en-05",
+      "locale": "en",
+      "intent": "after-sales",
+      "query": "What software helps Algerian online stores handle post-delivery exchange requests and replacement-shipment tracking?"
+    },
+    {
+      "id": "en-06",
+      "locale": "en",
+      "intent": "customer-experience",
+      "query": "How can an Algerian e-commerce merchant reduce repetitive customer questions about delivery status?"
+    },
+    {
+      "id": "en-07",
+      "locale": "en",
+      "intent": "brand-accuracy",
+      "query": "Does TajerTrack charge merchants for each SMS, and how does its own-SIM tracking-link delivery work?"
+    }
+  ]
+}
