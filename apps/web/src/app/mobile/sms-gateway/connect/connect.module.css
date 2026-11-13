@@ -184,3 +184,41 @@
 @media (prefers-reduced-motion: reduce) {
   .action { transition: none; }
 }
+
+
+.phoneField {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+.phoneField label {
+  color: #435147;
+  font-size: 12px;
+  font-weight: 600;
+}
+.phoneField input {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid #cbd4c8;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  color: #202a23;
+  font: inherit;
+  font-size: 14px;
+}
+.phoneField input:focus {
+  border-bottom: 2px solid #294b37;
+}
+.phoneField p {
+  margin: 0;
+  color: #7b877d;
+  font-size: 10px;
+  line-height: 1.9;
+}
+.phoneField input:focus-visible {
+  outline: 2px solid rgba(41,75,55,.24);
+  outline-offset: 4px;
+}

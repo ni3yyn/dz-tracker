@@ -7,6 +7,15 @@ import { getSupabaseAdminClient } from '@saas/database';
 import { isAuthorizedAdmin } from '../../../lib/admin-auth';
 import { LEGAL_TERMS_VERSION, LEGAL_PRIVACY_VERSION } from '../../../lib/legal';
 
+function normalizeAlgerianMobileNumber(input: unknown): string | null {
+  if (typeof input !== 'string') return null;
+  let value = input.trim().replace(/[\\s().-]/g, '');
+  if (value.startsWith('00')) value = `+${value.slice(2)}`;
+  if (value.startsWith('213')) value = `+${value}`;
+  if (/^0[5-7]\\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
+  return /^\\+213[5-7]\\d{8}$/.test(value) ? value : null;
+}
+
 export async function login(formData: FormData) {
   const email = (formData.get('email') as string)?.trim().toLowerCase();
   const password = formData.get('password') as string;
@@ -65,6 +74,7 @@ export async function signup(formData: FormData) {
   const password = formData.get('password') as string;
   const passwordConfirm = formData.get('passwordConfirm') as string;
   const storeName = (formData.get('storeName') as string)?.trim();
+  const merchantPhone = normalizeAlgerianMobileNumber(formData.get('phoneNumber'));
 
   if (!email || !password) {
     return { error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور' };
@@ -74,6 +84,9 @@ export async function signup(formData: FormData) {
   }
   if (!storeName || storeName.length < 2) {
     return { error: 'يرجى إدخال اسم المتجر أو العلامة التجارية' };
+  }
+  if (!merchantPhone) {
+    return { error: 'أدخل رقم هاتف جزائري صحيحاً بصيغة 05 أو 06 أو 07، أو مع رمز الدولة +213.' };
   }
   if (password.length < 6) {
     return { error: 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل' };
@@ -91,6 +104,7 @@ export async function signup(formData: FormData) {
     options: {
       data: {
         store_name: storeName || email.split('@')[0],
+        merchant_phone: merchantPhone,
       },
     },
   });

@@ -75,7 +75,11 @@ export default async function ConnectNativeSmsPage({
         ? 'يجب الموافقة على شروط الاستخدام وسياسة الخصوصية قبل ربط الهاتف.'
         : params.error === 'legal_acceptance_unavailable'
           ? 'تعذر حفظ موافقتك القانونية بشكل آمن. لم يتم ربط الهاتف؛ حاول مرة أخرى.'
-          : '';
+          : params.error === 'invalid_phone'
+            ? 'أدخل رقم هاتف جزائري صحيحاً قبل ربط الهاتف.'
+            : params.error === 'phone_save_failed'
+              ? 'تعذر حفظ رقم الهاتف في حسابك. لم يتم ربط الجهاز؛ حاول مرة أخرى.'
+              : '';
 
   if (merchantError || !merchant) {
     return (
@@ -131,6 +135,22 @@ export default async function ConnectNativeSmsPage({
 
         {!acceptanceError && (
           <form action={approveNativeSmsDevice} className={styles.form}>
+            <div className={styles.phoneField}>
+              <label htmlFor="merchant-phone">رقم هاتفك لاستقبال رسالة الاختبار</label>
+              <input
+                id="merchant-phone"
+                name="phoneNumber"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                dir="ltr"
+                maxLength={16}
+                required
+                defaultValue={typeof user.user_metadata?.merchant_phone === 'string' ? user.user_metadata.merchant_phone : ''}
+                placeholder="05xxxxxxxx"
+              />
+              <p>سيُحفظ هذا الرقم في حسابك، وستُرسل إليه رسالة الاختبار من الشريحة التي تختارها.</p>
+            </div>
             {!existingAcceptance && (
               <div className={styles.legalAcceptance}>
                 <label className={styles.acceptanceRow}>

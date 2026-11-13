@@ -10,6 +10,15 @@ import { LEGAL_TERMS_VERSION, LEGAL_PRIVACY_VERSION } from '../../../../lib/lega
 const PAIRING_PATH = '/mobile/sms-gateway/connect';
 const APP_REDIRECT = 'tajertrack-sms://pair';
 
+function normalizeAlgerianMobileNumber(input: unknown): string | null {
+  if (typeof input !== 'string') return null;
+  let value = input.trim().replace(/[\\s().-]/g, '');
+  if (value.startsWith('00')) value = `+${value.slice(2)}`;
+  if (value.startsWith('213')) value = `+${value}`;
+  if (/^0[5-7]\\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
+  return /^\\+213[5-7]\\d{8}$/.test(value) ? value : null;
+}
+
 function connectErrorUrl(error: string) {
   return `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(APP_REDIRECT)}&error=${encodeURIComponent(error)}`;
 }
@@ -25,6 +34,11 @@ export async function approveNativeSmsDevice(formData: FormData) {
 
   if (isAuthorizedAdmin(user)) {
     redirect('/admin');
+  }
+
+  const merchantPhone = normalizeAlgerianMobileNumber(formData.get('phoneNumber'));
+  if (!merchantPhone) {
+    redirect(connectErrorUrl('invalid_phone'));
   }
 
   const supabase = getSupabaseAdminClient() as any;
@@ -74,6 +88,14 @@ export async function approveNativeSmsDevice(formData: FormData) {
       console.error('[NativeSmsGateway] Could not save legal acceptance:', acceptanceInsertError.message);
       redirect(connectErrorUrl('legal_acceptance_unavailable'));
     }
+  }
+
+  const { error: phoneUpdateError } = await supabaseAuth.auth.updateUser({
+    data: { merchant_phone: merchantPhone },
+  });
+  if (phoneUpdateError) {
+    console.error('[NativeSmsGateway] Could not save merchant phone number:', phoneUpdateError.message);
+    redirect(connectErrorUrl('phone_save_failed'));
   }
 
   // The one-time code is high entropy, expires in five minutes, and only its

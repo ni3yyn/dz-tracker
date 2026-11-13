@@ -50,6 +50,7 @@ function RouteVisual({ mode }: { mode: AuthMode }) {
 export default function AuthForm({ mode, isAuthenticated = false, nextPath = '' }: { mode: AuthMode; isAuthenticated?: boolean; nextPath?: string }) {
   const emailId = useId();
   const storeId = useId();
+  const phoneId = useId();
   const passwordId = useId();
   const confirmId = useId();
   const isLogin = mode === 'login';
@@ -113,6 +114,12 @@ export default function AuthForm({ mode, isAuthenticated = false, nextPath = '' 
               <div className={styles.field}>
                 <label htmlFor={storeId}>اسم المتجر أو العلامة التجارية</label>
                 <input id={storeId} type="text" name="storeName" required minLength={2} autoComplete="organization" placeholder="مثال: متجر النخبة" className={styles.input} disabled={loading} />
+              </div>
+            )}
+            {!isLogin && (
+              <div className={styles.field}>
+                <label htmlFor={phoneId}>رقم هاتفك</label>
+                <input id={phoneId} type="tel" name="phoneNumber" required autoComplete="tel" inputMode="tel" maxLength={16} placeholder="05xxxxxxxx" dir="ltr" className={styles.input} disabled={loading} />
               </div>
             )}
             <div className={styles.field}>
