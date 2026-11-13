@@ -22,8 +22,8 @@ export function useMerchantSettings({
   confirmationTelegramEnabled,
   showToast,
 }: UseMerchantSettingsOptions) {
-  const isUnlimitedPlan = subscription.tier === 'scale' || (subscription.limit !== undefined && subscription.limit >= 999999);
-  const tierDefaults: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
+  const isUnlimitedPlan = subscription.limit !== undefined && subscription.limit >= 999999;
+  const tierDefaults: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 500 };
   const normalizedLimit = isUnlimitedPlan
     ? 999999
     : Math.max(subscription.limit || 0, tierDefaults[subscription.tier] || 30);
