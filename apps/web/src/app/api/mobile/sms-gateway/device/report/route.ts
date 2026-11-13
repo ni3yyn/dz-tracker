@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const { supabase, device } = auth;
     const { data: job, error: readError } = await supabase
       .from('sms_tracking_outbox')
-      .select('id, merchant_id, status, attempt_count, max_attempts, locked_by, last_device_id, last_error')
+      .select('id, merchant_id, status, result_code, attempt_count, max_attempts, locked_by, last_device_id, last_error')
       .eq('id', jobId)
       .eq('merchant_id', device.merchant_id)
       .maybeSingle();
@@ -46,6 +46,18 @@ export async function POST(request: Request) {
     }
     if (status === 'unknown' && job.status === 'unknown' && job.last_device_id === device.device_id) {
       return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'unknown' });
+    }
+    if (
+      status === 'failed' &&
+      job.last_device_id === device.device_id &&
+      ['retry', 'dead_letter'].includes(job.status) &&
+      ['device_send_failed_retry_scheduled', 'device_send_failed_max_attempts'].includes(job.result_code)
+    ) {
+      return NextResponse.json({
+        success: true,
+        alreadyRecorded: true,
+        resultingStatus: job.status,
+      });
     }
     if (!['processing', 'unknown'].includes(job.status) ||
         job.last_device_id !== device.device_id ||
