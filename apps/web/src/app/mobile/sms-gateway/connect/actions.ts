@@ -27,10 +27,6 @@ export async function approveNativeSmsDevice(formData: FormData) {
     redirect('/admin');
   }
 
-  if (formData.get('acceptTerms') !== 'yes' || formData.get('acceptPrivacy') !== 'yes') {
-    redirect(connectErrorUrl('legal_required'));
-  }
-
   const supabase = getSupabaseAdminClient() as any;
   const { data: merchant, error: merchantError } = await supabase
     .from('merchants')
@@ -42,22 +38,42 @@ export async function approveNativeSmsDevice(formData: FormData) {
     redirect(connectErrorUrl('merchant_unavailable'));
   }
 
-  const { error: acceptanceError } = await supabase
+  // Reuse the consent captured during signup. Never overwrite its original
+  // timestamp or source just because the merchant is pairing another phone.
+  const { data: existingAcceptance, error: acceptanceLookupError } = await supabase
     .from('merchant_legal_acceptances')
-    .upsert({
-      user_id: user.id,
-      merchant_id: merchant.id,
-      terms_version: LEGAL_TERMS_VERSION,
-      privacy_version: LEGAL_PRIVACY_VERSION,
-      accepted_at: new Date().toISOString(),
-      acceptance_source: 'native_sms_gateway_pairing',
-    }, {
-      onConflict: 'user_id,terms_version,privacy_version',
-    });
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('terms_version', LEGAL_TERMS_VERSION)
+    .eq('privacy_version', LEGAL_PRIVACY_VERSION)
+    .maybeSingle();
 
-  if (acceptanceError) {
-    console.error('[NativeSmsGateway] Could not save legal acceptance:', acceptanceError.message);
+  if (acceptanceLookupError) {
+    console.error('[NativeSmsGateway] Could not verify legal acceptance:', acceptanceLookupError.message);
     redirect(connectErrorUrl('legal_acceptance_unavailable'));
+  }
+
+  if (!existingAcceptance) {
+    if (formData.get('acceptTerms') !== 'yes' || formData.get('acceptPrivacy') !== 'yes') {
+      redirect(connectErrorUrl('legal_required'));
+    }
+
+    const { error: acceptanceInsertError } = await supabase
+      .from('merchant_legal_acceptances')
+      .insert({
+        user_id: user.id,
+        merchant_id: merchant.id,
+        terms_version: LEGAL_TERMS_VERSION,
+        privacy_version: LEGAL_PRIVACY_VERSION,
+        accepted_at: new Date().toISOString(),
+        acceptance_source: 'native_sms_gateway_pairing',
+      });
+
+    // A concurrent request may have saved the same version after our lookup.
+    if (acceptanceInsertError && acceptanceInsertError.code !== '23505') {
+      console.error('[NativeSmsGateway] Could not save legal acceptance:', acceptanceInsertError.message);
+      redirect(connectErrorUrl('legal_acceptance_unavailable'));
+    }
   }
 
   // The one-time code is high entropy, expires in five minutes, and only its
