@@ -12,11 +12,11 @@ const APP_REDIRECT = 'tajertrack-sms://pair';
 
 function normalizeAlgerianMobileNumber(input: unknown): string | null {
   if (typeof input !== 'string') return null;
-  let value = input.trim().replace(/[\\s().-]/g, '');
+  let value = input.trim().replace(/[\s().-]/g, '');
   if (value.startsWith('00')) value = `+${value.slice(2)}`;
   if (value.startsWith('213')) value = `+${value}`;
-  if (/^0[5-7]\\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
-  return /^\\+213[5-7]\\d{8}$/.test(value) ? value : null;
+  if (/^0[5-7]\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
+  return /^\+213[5-7]\d{8}$/.test(value) ? value : null;
 }
 
 function connectErrorUrl(error: string) {
