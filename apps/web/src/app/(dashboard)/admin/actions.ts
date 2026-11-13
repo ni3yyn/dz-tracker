@@ -391,3 +391,42 @@ export async function retrySmsTrackingJob(formData: FormData): Promise<AdminActi
   revalidatePath('/admin');
   return { success: true };
 }
+
+
+// Update the sales follow-up state and negotiation notes for a custom plan request.
+export async function updateCustomPlanRequest(formData: FormData): Promise<AdminActionResult> {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
+
+  const requestId = String(formData.get('request_id') || '').trim();
+  const status = String(formData.get('status') || '');
+  const adminNotes = String(formData.get('admin_notes') || '').trim();
+
+  if (!requestId) return { error: 'معرّف طلب العرض غير موجود.' };
+  if (!['new', 'contacted', 'quoted', 'closed'].includes(status)) {
+    return { error: 'حالة المتابعة المحددة غير صالحة.' };
+  }
+  if (adminNotes.length > 1500) {
+    return { error: 'ملاحظات المتابعة طويلة جداً.' };
+  }
+
+  const db = getSupabaseAdminClient() as any;
+  const { data, error } = await db
+    .from('custom_plan_requests')
+    .update({
+      status,
+      admin_notes: adminNotes || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', requestId)
+    .select('id')
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error('[CustomPlanRequest] Admin update failed:', error?.message || 'Request not found');
+    return { error: 'تعذر تحديث طلب العرض. تحقق من تطبيق ترحيل قاعدة البيانات.' };
+  }
+
+  revalidatePath('/admin');
+  return { success: true };
+}
