@@ -1404,3 +1404,176 @@
   width: 100%;
   height: 100%;
 }
+
+
+/* Custom-plan side panel: shared horizontal reveal timing with Add Order. */
+.customPlanDrawerBackdrop {
+  --ink: #202a23;
+  --muted: #68746a;
+  --line: #e1e5dc;
+  --green: #294b37;
+  --green-deep: #1d3427;
+  --surface: #fffefa;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  justify-content: flex-start;
+  direction: rtl;
+  background: rgba(16, 24, 19, .45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  animation: none !important;
+  transition: opacity .3s ease, visibility 0s linear .5s;
+}
+.customPlanDrawerBackdrop[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+.customPlanDrawerBackdrop input,
+.customPlanDrawerBackdrop select,
+.customPlanDrawerBackdrop button,
+.customPlanDrawerBackdrop textarea {
+  font-family: inherit;
+}
+.customPlanDrawer {
+  --custom-plan-drawer-width: min(500px, 100vw);
+  box-sizing: border-box;
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+  height: 100%;
+  max-height: 100dvh;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  background: #fffefa;
+  color: #202a23;
+  box-shadow: 0 20px 70px rgba(20, 30, 23, .25);
+  animation: none !important;
+  transform: none !important;
+  transition:
+    flex-basis .48s cubic-bezier(.2,.75,.25,1),
+    width .48s cubic-bezier(.2,.75,.25,1),
+    opacity .28s ease,
+    visibility 0s linear .48s;
+}
+.customPlanDrawer[data-open="true"] {
+  flex-basis: var(--custom-plan-drawer-width);
+  width: var(--custom-plan-drawer-width);
+  opacity: 1;
+  visibility: visible;
+  border-inline-start: 1px solid #e5e6df;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transition-delay: 0s;
+}
+.customPlanDrawerInner {
+  box-sizing: border-box;
+  width: min(500px, 100vw);
+  min-width: min(500px, 100vw);
+  min-height: 100%;
+  padding: 32px 28px;
+}
+.customPlanDrawerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #e5e6df;
+}
+.customPlanDrawerKicker {
+  display: block;
+  margin-bottom: 6px;
+  color: #69736e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+.customPlanDrawerHeader h2 {
+  margin: 0;
+  color: #202a23;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: -.045em;
+}
+.customPlanDrawerHeader p {
+  max-width: 390px;
+  margin: 7px 0 0;
+  color: #68746a;
+  font-size: 11px;
+  line-height: 1.9;
+}
+.customPlanDrawerClose {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  padding: 0;
+  border: 1px solid #e5e6df;
+  border-radius: 10px;
+  background: #f4f5f1;
+  color: #202a23;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease;
+}
+.customPlanDrawerClose svg { width: 18px; height: 18px; }
+.customPlanDrawerClose:hover:not(:disabled) { border-color: #cbd5c9; background: #e9eee7; }
+.customPlanDrawerClose:disabled { opacity: .55; cursor: wait; }
+.customPlanDrawerForm { padding: 22px 0 8px; }
+.customPlanDrawerTextarea { min-height: 112px !important; resize: vertical; }
+.customPlanDrawerActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, .6fr);
+  gap: 10px;
+  margin-top: 2px;
+}
+.customPlanDrawerSubmit,
+.customPlanDrawerCancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 49px;
+  padding: 12px 16px;
+  border: 1px solid #294b37;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, opacity .18s ease;
+}
+.customPlanDrawerSubmit { background: #294b37; color: #fffefa; }
+.customPlanDrawerSubmit:hover:not(:disabled) { border-color: #1d3427; background: #1d3427; }
+.customPlanDrawerCancel { border-color: #dfe4db; background: #f9faf6; color: #435147; }
+.customPlanDrawerCancel:hover:not(:disabled) { border-color: #c5d0c2; background: #eef2eb; }
+.customPlanDrawerSubmit:disabled,
+.customPlanDrawerCancel:disabled { opacity: .6; cursor: wait; }
+.customPlanDrawer :focus-visible {
+  outline: 3px solid rgba(53, 88, 70, .22);
+  outline-offset: 2px;
+}
+@media (max-width: 560px) {
+  .customPlanDrawerInner { padding: 24px 18px calc(24px + env(safe-area-inset-bottom)); }
+  .customPlanDrawerHeader h2 { font-size: 21px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .customPlanDrawerBackdrop,
+  .customPlanDrawer {
+    transition-duration: .01ms !important;
+    animation: none !important;
+  }
+}
