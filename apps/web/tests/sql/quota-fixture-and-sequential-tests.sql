@@ -59,6 +59,7 @@ INSERT INTO public.telegram_worker_state (id) VALUES (1);
 \ir ../../src/app/migrations/20261113_tiered_pricing_limits.sql
 \ir ../../src/app/migrations/20261111_order_exchange_requests.sql
 \ir ../../src/app/migrations/20261111_order_exchange_replacement_shipments.sql
+\ir ../../src/app/migrations/20261113_custom_plan_requests.sql
 
 DO $slot_test$
 DECLARE
@@ -90,6 +91,71 @@ BEGIN
   END IF;
 END;
 $slot_test$;
+
+DO $custom_plan_request_test$
+DECLARE
+  v_request_id UUID;
+  v_rls_enabled BOOLEAN;
+BEGIN
+  INSERT INTO public.custom_plan_requests (
+    full_name,
+    store_name,
+    contact_phone,
+    preferred_contact_method,
+    monthly_tracking_urls,
+    carrier_names,
+    requirements
+  )
+  VALUES (
+    'Test Merchant',
+    'Test Store',
+    '+213555000000',
+    'whatsapp',
+    501,
+    'Yalidine, ZR Express',
+    'Need a custom volume plan'
+  )
+  RETURNING id INTO v_request_id;
+
+  IF v_request_id IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.custom_plan_requests WHERE id = v_request_id AND status = 'new'
+  ) THEN
+    RAISE EXCEPTION 'A valid custom plan quote request was not stored with new status.';
+  END IF;
+
+  BEGIN
+    INSERT INTO public.custom_plan_requests (
+      full_name, store_name, contact_phone, preferred_contact_method, monthly_tracking_urls
+    )
+    VALUES ('Small Plan', 'Small Store', '0555000000', 'whatsapp', 500);
+    RAISE EXCEPTION 'A custom plan request at 500 URLs should be rejected.';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  SELECT relrowsecurity INTO v_rls_enabled
+  FROM pg_class
+  WHERE oid = 'public.custom_plan_requests'::regclass;
+
+  IF v_rls_enabled IS DISTINCT FROM TRUE THEN
+    RAISE EXCEPTION 'RLS must be enabled on custom_plan_requests.';
+  END IF;
+
+  IF has_table_privilege('anon', 'public.custom_plan_requests', 'SELECT')
+     OR has_table_privilege('authenticated', 'public.custom_plan_requests', 'SELECT') THEN
+    RAISE EXCEPTION 'Public and authenticated roles must not read custom plan leads directly.';
+  END IF;
+
+  IF NOT has_table_privilege('service_role', 'public.custom_plan_requests', 'SELECT')
+     OR NOT has_table_privilege('service_role', 'public.custom_plan_requests', 'INSERT')
+     OR NOT has_table_privilege('service_role', 'public.custom_plan_requests', 'UPDATE') THEN
+    RAISE EXCEPTION 'The server service role must be able to manage custom plan quote requests.';
+  END IF;
+
+  RAISE NOTICE 'Custom plan request storage, minimum volume, and access-control tests passed.';
+END;
+$custom_plan_request_test$;
+
 
 DO $quota_test$
 DECLARE
