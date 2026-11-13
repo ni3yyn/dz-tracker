@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
 import { createClient } from '../../../../lib/supabase-server';
 import { isAuthorizedAdmin } from '../../../../lib/admin-auth';
-import { LEGAL_TERMS_VERSION, LEGAL_PRIVACY_VERSION } from '../../../../lib/legal';
 
 const PAIRING_PATH = '/mobile/sms-gateway/connect';
 const APP_REDIRECT = 'tajertrack-sms://pair';
@@ -50,44 +49,6 @@ export async function approveNativeSmsDevice(formData: FormData) {
 
   if (merchantError || !merchant?.id) {
     redirect(connectErrorUrl('merchant_unavailable'));
-  }
-
-  // Reuse the consent captured during signup. Never overwrite its original
-  // timestamp or source just because the merchant is pairing another phone.
-  const { data: existingAcceptance, error: acceptanceLookupError } = await supabase
-    .from('merchant_legal_acceptances')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('terms_version', LEGAL_TERMS_VERSION)
-    .eq('privacy_version', LEGAL_PRIVACY_VERSION)
-    .maybeSingle();
-
-  if (acceptanceLookupError) {
-    console.error('[NativeSmsGateway] Could not verify legal acceptance:', acceptanceLookupError.message);
-    redirect(connectErrorUrl('legal_acceptance_unavailable'));
-  }
-
-  if (!existingAcceptance) {
-    if (formData.get('acceptTerms') !== 'yes' || formData.get('acceptPrivacy') !== 'yes') {
-      redirect(connectErrorUrl('legal_required'));
-    }
-
-    const { error: acceptanceInsertError } = await supabase
-      .from('merchant_legal_acceptances')
-      .insert({
-        user_id: user.id,
-        merchant_id: merchant.id,
-        terms_version: LEGAL_TERMS_VERSION,
-        privacy_version: LEGAL_PRIVACY_VERSION,
-        accepted_at: new Date().toISOString(),
-        acceptance_source: 'native_sms_gateway_pairing',
-      });
-
-    // A concurrent request may have saved the same version after our lookup.
-    if (acceptanceInsertError && acceptanceInsertError.code !== '23505') {
-      console.error('[NativeSmsGateway] Could not save legal acceptance:', acceptanceInsertError.message);
-      redirect(connectErrorUrl('legal_acceptance_unavailable'));
-    }
   }
 
   const { error: phoneUpdateError } = await supabaseAuth.auth.updateUser({
