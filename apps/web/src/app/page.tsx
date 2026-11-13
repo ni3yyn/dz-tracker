@@ -9,7 +9,7 @@ import { createClient } from '../lib/supabase-server';
 
 export const metadata = {
   title: 'نظام تتبّع طلبات المتاجر',
-  description: 'تابع طلبات متجرك برسائل SMS من شريحتك وروابط تتبّع مخصصة، وقدّم لزبائنك تجربة أسهل للاستبدال وخدمات ما بعد البيع.',
+  description: 'أرسل روابط تتبّع الطلبات عبر SMS، وتابع الشحنات، وقدّم لزبائنك تجربة أسهل للاستبدال وخدمات ما بعد البيع.',
 };
 
 const steps = [
@@ -31,7 +31,7 @@ const steps = [
   {
     number: '04',
     title: 'دع التتبّع يسير',
-    description: 'يصل رابط التتبّع عبر Telegram، ويمكن للزبون تفعيل تنبيهات المتصفح. واربط هاتف Android لإرسال SMS من شريحتك، ثم تابع أي طلب يحتاج تدخّلك عبر WhatsApp أو خدمات ما بعد البيع.',
+    description: 'يرسل تاجر تراك رابط التتبّع للزبون عبر SMS، مع إمكانية استخدام Telegram كقناة إضافية. ويمكن للزبون متابعة تحديثات الشحنة، ثم طلب الاستبدال من صفحة التتبّع نفسها.',
   },
   {
     number: '05',
@@ -57,24 +57,24 @@ const features = [
   },
   {
     number: '03',
-    label: 'رابط الزبون عبر Telegram',
-    title: 'رابط التتبّع يصل تلقائياً عبر Telegram',
-    description: 'عند تفعيل الخدمة، يرسل حساب Telegram الخاص بتاجر تراك رابط صفحة التتبّع تلقائياً مع الطلب الجديد إلى الحساب الذي يمكن العثور عليه برقم هاتف الزبون. لا يحتاج الزبون إلى بدء محادثة مع بوت؛ ويعتمد العثور على الحساب على صحة الرقم وإعدادات خصوصية Telegram.',
-    symbol: 'telegram',
+    label: 'رسائل SMS',
+    title: 'رابط التتبّع يصل عبر SMS',
+    description: 'يرسل تاجر تراك رابط التتبّع إلى الزبون برسالة SMS. تفاصيل خيارات الإرسال متاحة داخل لوحة التحكم.',
+    symbol: 'sms',
   },
   {
     number: '04',
+    label: 'قناة إضافية',
+    title: 'Telegram كخيار إضافي',
+    description: 'يمكنك تفعيل Telegram كقناة إضافية لإرسال رابط التتبّع.',
+    symbol: 'telegram',
+  },
+  {
+    number: '05',
     label: 'تنبيهات المتصفح',
     title: 'إشعار عند كل تغيير في حالة الشحنة',
     description: 'من صفحة التتبّع، يفعّل الزبون إشعارات المتصفح بإذنه. بعدها تصله تنبيهات عند كل تحديث جديد لحالة شحنته، حتى إذا أغلق الصفحة، ما دام المتصفح والجهاز يسمحان بالإشعارات.',
     symbol: 'browserNotifications',
-  },
-  {
-    number: '05',
-    label: 'رسائل SMS',
-    title: 'راسل زبائنك من رقم شريحتك',
-    description: 'اربط هاتف Android بتاجر تراك ليُرسل رسائل SMS عبر شريحتك أنت. ويمكنك اختيار التناوب بين شريحتي الهاتف عند دعم الجهاز، من دون أن يكون ذلك إلزامياً.',
-    symbol: 'sms',
   },
   {
     number: '06',
@@ -120,15 +120,11 @@ const faqs = [
   },
   {
     question: 'كيف يصل رابط التتبّع إلى الزبون؟',
-    answer: 'عند تفعيل روابط التتبّع، يحاول حساب Telegram الخاص بتاجر تراك العثور على حساب الزبون باستخدام رقم الهاتف المسجل، ثم يرسل إليه رابط التتبّع تلقائياً. لا يحتاج الزبون إلى بدء محادثة مع بوت أو تقديم موافقة داخل تاجر تراك. يجب أن يكون الرقم صحيحاً وأن تسمح إعدادات خصوصية Telegram بالعثور على الحساب عبره.',
+    answer: 'يرسل تاجر تراك رابط التتبّع إلى الزبون عبر SMS. ويمكنك تفعيل Telegram كقناة إضافية، وتجد خيارات الإرسال وتفاصيلها داخل لوحة التحكم.',
   },
   {
     question: 'هل يتلقى الزبون إشعارات عند تغيّر حالة الطلب؟',
     answer: 'نعم. من صفحة التتبّع، يختار الزبون تفعيل إشعارات المتصفح ويمنح الإذن. بعدها تصله تنبيهات عند تسجيل تحديث جديد لحالة الشحنة، حتى عند إغلاق صفحة التتبّع، بحسب دعم المتصفح وإعدادات الجهاز.',
-  },
-  {
-    question: 'كيف تعمل رسائل SMS؟',
-    answer: 'بعد ربط تطبيق تاجر تراك للهاتف بحسابك، تُرسل الرسائل عبر شريحة هاتف Android. ويمكنك اختيار التناوب بين شريحتين إذا كان جهازك يدعم ذلك. تُحتسب تكلفة الرسائل وفق باقة متعامل الهاتف.',
   },
   {
     question: 'كيف يطلب الزبون استبدال المنتج؟',
@@ -470,14 +466,14 @@ export default async function HomePage() {
         <div className={styles.heroCopy} data-dz-reveal>
           
           <h1 id="hero-title">كل طلب له رحلة<br /><em>حتى بعد التسليم.</em></h1>
-          <p className={styles.heroDescription}>من رابط تتبّع يصل تلقائياً عبر Telegram، وتنبيهات المتصفح ورسائل SMS من شريحتك، إلى طلبات الاستبدال التي يتابعها الزبون من الصفحة نفسها. تاجر تراك يساعدك على رعاية رحلة العميل قبل التسليم وبعده.</p>
+          <p className={styles.heroDescription}>يرسل تاجر تراك رابط التتبّع للزبون عبر SMS، مع إمكانية استخدام Telegram كقناة إضافية. ويتابع الزبون تحديثات الشحنة، ثم يجد طريقاً واضحاً لخدمات ما بعد البيع من الصفحة نفسها.</p>
           <div className={styles.heroActions}>
             <a className={styles.primaryButton} href={isAuthenticated ? "/merchant" : "/register"}>{isAuthenticated ? "افتح لوحة التاجر" : "اربط متجرك الآن"} <span aria-hidden="true">↗</span></a>
             <a className={styles.secondaryButton} href="#how-it-works">شاهد طريقة الربط <span aria-hidden="true">↓</span></a>
           </div>
           <div className={styles.heroProof}>
             <span className={styles.heroProofMark}><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.2 4.2L19 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-            <span>SDK أو Webhook</span><i /> <span>Telegram وSMS</span><i /> <span>استبدال أسهل</span><i /> <span>+80 شركة توصيل جزائرية</span>
+            <span>رابط التتبّع عبر SMS</span><i /> <span>Telegram كخيار إضافي</span><i /> <span>استبدال أسهل</span><i /> <span>+80 شركة توصيل جزائرية</span>
           </div>
         </div>
         <TrackingPreview />
@@ -503,7 +499,7 @@ export default async function HomePage() {
       <section className={styles.featuresSection} id="features" aria-labelledby="features-title" data-dz-reveal>
         <div className={styles.featuresHead}>
           <div><span className={styles.sectionEyebrow}>من أول تواصل إلى ما بعد التسليم</span><h2 id="features-title">تتبّع ورسائل.<br /><em>وخدمات ما بعد البيع.</em></h2></div>
-          <p>اجمع رابط التتبّع وTelegram وSMS من شريحتك، ثم سهّل الاستبدال وواصل بناء تجربة أفضل للزبون بعد وصول طلبه.</p>
+          <p>أرسل رابط التتبّع عبر SMS، واجعل متابعة الطلب والاستبدال أوضح للزبون من صفحة واحدة.</p>
         </div>
         <div className={styles.featuresList}>
           {features.map((feature, index) => (
