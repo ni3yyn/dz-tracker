@@ -4,6 +4,7 @@ import ScrollRevealObserver from './ScrollRevealObserver';
 import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import FaqAccordion from './FaqAccordion';
+import PricingCalculator from './PricingCalculator';
 import { createClient } from '../lib/supabase-server';
 
 export const metadata = {
@@ -478,33 +479,34 @@ export default async function HomePage() {
 
       <section className={styles.pricingSection} id="pricing" aria-labelledby="pricing-title" data-dz-reveal>
         <div className={styles.pricingHead}>
-          <span className={styles.sectionEyebrow}>تسعير حسب عدد الطلبات</span>
-          <h2 id="pricing-title">ابدأ مجاناً.<br /><em>ادفع حسب حجم متجرك.</em></h2>
-          <p>اختر الخطة حسب عدد الطلبات التي تستقبلها كل شهر.</p>
+          <span className={styles.sectionEyebrow}>تسعير حسب روابط التتبّع</span>
+          <h2 id="pricing-title">سعر واضح.<br /><em>حسب حجم متجرك.</em></h2>
+          <p>أدخل عدد روابط التتبّع المتوقع شهرياً، وسيظهر لك الاشتراك المناسب مباشرة.</p>
         </div>
         <div className={styles.pricingList}>
           <article className={styles.priceRow}>
-            <div><span className={styles.priceOrders}>أقل من 30 طلباً / شهر</span><h3>مجاني</h3></div>
+            <div><span className={styles.priceOrders}>حتى 30 رابط تتبّع / شهر</span><h3>مجاني</h3></div>
             <div className={styles.priceAmount}><strong>0</strong><span>دج / شهرياً</span></div>
             <a href="/register" className={styles.priceLink}>ابدأ مجاناً <span aria-hidden="true">↗</span></a>
           </article>
           <article className={styles.priceRow}>
-            <div><span className={styles.priceOrders}>حتى 100 طلب / شهر</span><h3>للمتاجر الصغيرة</h3></div>
+            <div><span className={styles.priceOrders}>حتى 100 رابط تتبّع / شهر</span><h3>الأساسية</h3></div>
             <div className={styles.priceAmount}><strong>1,000</strong><span>دج / شهرياً</span></div>
             <a href="/register" className={styles.priceLink}>اختر الخطة <span aria-hidden="true">↗</span></a>
           </article>
           <article className={styles.priceRow}>
-            <div><span className={styles.priceOrders}>حتى 200 طلب / شهر</span><h3>للمتاجر النامية</h3></div>
+            <div><span className={styles.priceOrders}>حتى 200 رابط تتبّع / شهر</span><h3>النمو</h3></div>
             <div className={styles.priceAmount}><strong>1,800</strong><span>دج / شهرياً</span></div>
             <a href="/register" className={styles.priceLink}>اختر الخطة <span aria-hidden="true">↗</span></a>
           </article>
-          <article className={`${styles.priceRow} ${styles.priceRowUnlimited}`}>
-            <div><span className={styles.priceOrders}>دون حدّ للطلبات</span><h3>للحجم الكبير</h3></div>
+          <article className={styles.priceRow + ' ' + styles.priceRowUnlimited}>
+            <div><span className={styles.priceOrders}>حتى 500 رابط تتبّع / شهر</span><h3>الاحترافية</h3></div>
             <div className={styles.priceAmount}><strong>2,500</strong><span>دج / شهرياً</span></div>
             <a href="/register" className={styles.priceLink}>اختر الخطة <span aria-hidden="true">↗</span></a>
           </article>
+          <PricingCalculator />
         </div>
-        <p className={styles.pricingNote}>تُحتسب الخطة حسب عدد الطلبات الشهري. تفاصيل الحدود الدقيقة تظهر قبل الاشتراك.</p>
+        <p className={styles.pricingNote}>يُحتسب كل طلب جديد برابط تتبّع واحد ضمن الاستهلاك الشهري. تحديثات شركة التوصيل وإعادة إرسال الأحداث لا تستهلك روابط إضافية.</p>
       </section>
 
       <section className={styles.faqSection} id="faq" aria-labelledby="faq-title" data-dz-reveal>

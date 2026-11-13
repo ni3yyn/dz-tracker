@@ -56,6 +56,7 @@ INSERT INTO public.telegram_worker_state (id) VALUES (1);
 
 \ir ../../src/app/migrations/20261111_telegram_phone_slot_reservation.sql
 \ir ../../src/app/migrations/20261111_atomic_order_quota.sql
+\ir ../../src/app/migrations/20261113_tiered_pricing_limits.sql
 \ir ../../src/app/migrations/20261111_order_exchange_requests.sql
 \ir ../../src/app/migrations/20261111_order_exchange_replacement_shipments.sql
 
@@ -202,6 +203,59 @@ BEGIN
   FROM public.orders WHERE merchant_id = v_merchant;
 END;
 $quota_test$;
+
+
+DO $scale_quota_test$
+DECLARE
+  v_result JSONB;
+  v_merchant UUID;
+BEGIN
+  -- The new 2,500 DZD scale plan accepts 500 tracking URLs, then blocks the 501st.
+  v_merchant := '10000000-0000-4000-8000-000000000005';
+  INSERT INTO public.merchants (id, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at)
+  VALUES (v_merchant, 'scale', 'active', 500, 499, NOW() + INTERVAL '15 days');
+
+  INSERT INTO public.orders (merchant_id, external_order_id, created_at)
+  SELECT v_merchant, 'scale-existing-' || n, NOW() - INTERVAL '1 day'
+  FROM generate_series(1, 499) AS n;
+  INSERT INTO public.merchant_order_usage_events (merchant_id, order_id, external_order_id, created_at)
+  SELECT merchant_id, id, external_order_id, created_at
+  FROM public.orders WHERE merchant_id = v_merchant;
+
+  v_result := public.create_tracked_order_with_quota(
+    v_merchant, 'scale-500', NULL, NULL, NULL, NULL, 'order_placed',
+    NULL, NULL, NULL, NULL, NULL, 'direct'
+  );
+  IF v_result->>'outcome' <> 'created'
+     OR (v_result->>'monthly_orders_used')::INTEGER <> 500
+     OR (v_result->>'order_limit')::INTEGER <> 500 THEN
+    RAISE EXCEPTION 'Scale 500th link should be accepted at a 500 limit; got %', v_result;
+  END IF;
+
+  v_result := public.create_tracked_order_with_quota(
+    v_merchant, 'scale-501', NULL, NULL, NULL, NULL, 'order_placed',
+    NULL, NULL, NULL, NULL, NULL, 'direct'
+  );
+  IF v_result->>'outcome' <> 'subscription_limit_reached' THEN
+    RAISE EXCEPTION 'Scale 501st link should be blocked; got %', v_result;
+  END IF;
+
+  -- Existing merchants whose current subscription stored 999999 keep that
+  -- allowance until renewal; the next approval writes the new 500 limit.
+  v_merchant := '10000000-0000-4000-8000-000000000006';
+  INSERT INTO public.merchants (id, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at)
+  VALUES (v_merchant, 'scale', 'active', 999999, 0, NOW() + INTERVAL '15 days');
+
+  v_result := public.create_tracked_order_with_quota(
+    v_merchant, 'scale-legacy-allowance', NULL, NULL, NULL, NULL, 'order_placed',
+    NULL, NULL, NULL, NULL, NULL, 'direct'
+  );
+  IF v_result->>'outcome' <> 'created'
+     OR (v_result->>'order_limit')::INTEGER <> 999999 THEN
+    RAISE EXCEPTION 'Legacy scale allowance should remain available for the active cycle; got %', v_result;
+  END IF;
+END;
+$scale_quota_test$;
 
 
 DO $exchange_lifecycle_test$

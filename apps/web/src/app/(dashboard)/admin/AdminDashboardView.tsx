@@ -162,10 +162,10 @@ export function AdminDashboardView({
 
   const openEditModal = (m: MerchantItem) => {
     const t = m.subscription_tier || 'starter';
-    const tierLimits: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
+    const tierLimits: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 500 };
     const dLimit = tierLimits[t] || 30;
     setEditTier(t);
-    setEditLimit(t === 'scale' ? 999999 : (m.max_orders_limit && m.max_orders_limit >= dLimit ? m.max_orders_limit : dLimit));
+    setEditLimit(m.max_orders_limit && m.max_orders_limit >= dLimit ? m.max_orders_limit : dLimit);
     setEditingMerchant(m);
   };
 
@@ -738,10 +738,10 @@ export function AdminDashboardView({
                       const tier = m.subscription_tier || 'starter';
                       const status = m.subscription_status || 'active';
                       const used = m.monthly_orders_used || 0;
-                      const tierLimits: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
+                      const tierLimits: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 500 };
                       const defaultLimit = tierLimits[tier] || 30;
-                      const limit = tier === 'scale' ? 999999 : (m.max_orders_limit ? Math.max(m.max_orders_limit, defaultLimit) : defaultLimit);
-                      const isUnlimited = tier === 'scale' || limit >= 999999;
+                      const limit = m.max_orders_limit ? Math.max(m.max_orders_limit, defaultLimit) : defaultLimit;
+                      const isUnlimited = limit >= 999999;
                       const pct = isUnlimited ? 0 : Math.min(Math.round((used / limit) * 100), 100);
                       const now = new Date();
                       const expiresAt = m.subscription_expires_at ? new Date(m.subscription_expires_at) : null;
@@ -896,17 +896,22 @@ export function AdminDashboardView({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid var(--border-soft)' }}>
                   <span style={{ color: 'var(--ink-muted)', fontWeight: 600 }}>باقة التجريب (Starter)</span>
-                  <strong>0 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 100 طلب مجاني</span></strong>
+                  <strong>0 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 30 رابطاً مجانياً</span></strong>
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid var(--border-soft)' }}>
+                  <span style={{ color: 'var(--ink-muted)', fontWeight: 600 }}>الباقة الأساسية (Basic)</span>
+                  <strong>1,000 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 100 رابط شهرياً</span></strong>
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid var(--border-soft)' }}>
                   <span style={{ color: 'var(--ink-muted)', fontWeight: 600 }}>باقة النمو (Growth)</span>
-                  <strong>3,500 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 1,500 طلب شهرياً</span></strong>
+                  <strong>1,800 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 200 رابط شهرياً</span></strong>
                 </div>
-                
+
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--ink-main)', fontWeight: 700 }}>باقة التوسع (Scale)</span>
-                  <strong style={{ color: 'var(--ink-main)' }}>7,500 DZD <span style={{ fontSize: '12px', color: 'var(--ink-muted)', fontWeight: 400 }}>/ غير محدود</span></strong>
+                  <span style={{ color: 'var(--ink-main)', fontWeight: 700 }}>باقة الاحترافية (Scale)</span>
+                  <strong style={{ color: 'var(--ink-main)' }}>2,500 DZD <span style={{ fontSize: '12px', color: 'var(--ink-muted)', fontWeight: 400 }}>/ 500 رابط شهرياً</span></strong>
                 </div>
               </div>
             </div>
@@ -939,7 +944,7 @@ export function AdminDashboardView({
                   value={editTier}
                   onChange={(newTier) => {
                     setEditTier(newTier);
-                    const tierLimits: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 999999 };
+                    const tierLimits: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 500 };
                     setEditLimit(tierLimits[newTier] || 30);
                   }}
                   ariaLabel="نوع الباقة"
@@ -947,10 +952,10 @@ export function AdminDashboardView({
                   borderRadius="0"
                   className={styles.adminBrandedSelect}
                   options={[
-                    { value: 'starter', label: 'مجانية (30 طلباً)' },
-                    { value: 'basic', label: '100 طلب (1,000 دج)' },
-                    { value: 'growth', label: '200 طلب (1,800 دج)' },
-                    { value: 'scale', label: 'غير محدودة (2,500 دج - سقف مفتوح)' },
+                    { value: 'starter', label: 'مجانية (30 رابطاً)' },
+                    { value: 'basic', label: '100 رابط (1,000 دج)' },
+                    { value: 'growth', label: '200 رابط (1,800 دج)' },
+                    { value: 'scale', label: '500 رابط (2,500 دج)' },
                   ]}
                 />
               </div>
@@ -961,17 +966,16 @@ export function AdminDashboardView({
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label className={styles.formLabel}>سقف الطلبات الشهري الجديد (Limit)</label>
+                <label className={styles.formLabel}>سقف روابط التتبّع الشهري الجديد (Limit)</label>
                 <input 
                   type="number" 
                   name="limit" 
                   value={editLimit} 
                   onChange={(e) => setEditLimit(parseInt(e.target.value, 10) || 0)} 
                   className={styles.input}
-                  disabled={editTier === 'scale'}
                 />
                 <small style={{ color: 'var(--ink-muted)', display: 'block', marginTop: '6px', fontSize: '11px' }}>
-                  {editTier === 'scale' ? 'باقة غير محدودة: تم ضبط السقف تلقائياً على 999999 (بدون أي حد).' : `الحد الافتراضي للباقة المختارة: ${editLimit} طلب شهرياً.`}
+                  {`الحد الشهري المخصص لهذا المتجر: ${editLimit} رابط تتبّع.`}
                 </small>
               </div>
 

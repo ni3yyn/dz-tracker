@@ -43,7 +43,7 @@ export async function approvePayment(formData: FormData): Promise<AdminActionRes
 
   // تحديد سقف الطلبات بناءً على الباقة
   let orderLimit = 200;
-  if (payment.plan_tier === 'scale') orderLimit = 999999;
+  if (payment.plan_tier === 'scale') orderLimit = 500;
   if (payment.plan_tier === 'growth') orderLimit = 200;
   if (payment.plan_tier === 'basic') orderLimit = 100;
   if (payment.plan_tier === 'starter') orderLimit = 30;
@@ -114,7 +114,8 @@ export async function manualUpdateSubscription(formData: FormData): Promise<Admi
   const merchantId = formData.get('merchant_id') as string;
   const tier = (formData.get('tier') as string) || 'growth';
   const additionalDays = parseInt((formData.get('days') as string) || '30', 10);
-  const customLimit = parseInt((formData.get('limit') as string) || '1500', 10);
+  const customLimitRaw = (formData.get('limit') as string | null)?.trim() || '';
+  const customLimit = customLimitRaw ? Number.parseInt(customLimitRaw, 10) : null;
   const resetUsed = formData.get('reset_used') === 'true';
 
   if (!merchantId) return { error: 'معرّف المتجر مطلوب' };
@@ -128,14 +129,12 @@ export async function manualUpdateSubscription(formData: FormData): Promise<Admi
     starter: 30,
     basic: 100,
     growth: 200,
-    scale: 999999,
+    scale: 500,
   };
 
   const defaultLimit = TIER_LIMITS[tier] || 30;
   let finalLimit = defaultLimit;
-  if (tier === 'scale') {
-    finalLimit = 999999;
-  } else if (customLimit && !isNaN(customLimit) && customLimit > 0) {
+  if (customLimit !== null && Number.isSafeInteger(customLimit) && customLimit >= defaultLimit) {
     finalLimit = customLimit;
   }
 
