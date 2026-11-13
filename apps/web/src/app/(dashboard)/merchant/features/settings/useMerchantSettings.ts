@@ -22,16 +22,19 @@ export function useMerchantSettings({
   confirmationTelegramEnabled,
   showToast,
 }: UseMerchantSettingsOptions) {
-  const isUnlimitedPlan = subscription.limit !== undefined && subscription.limit >= 999999;
   const tierDefaults: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 500 };
-  const normalizedLimit = isUnlimitedPlan
-    ? 999999
-    : Math.max(subscription.limit || 0, tierDefaults[subscription.tier] || 30);
-
   const hasActivePaidPlan =
     subscription.status === 'active' &&
     subscription.tier !== 'starter' &&
     Boolean(subscription.expiresAt && new Date(subscription.expiresAt).getTime() > Date.now());
+  const hasLegacyUnlimitedAllowance = subscription.limit !== undefined && subscription.limit >= 999999;
+  const isUnlimitedPlan = hasLegacyUnlimitedAllowance && hasActivePaidPlan;
+  const effectiveStoredLimit = hasLegacyUnlimitedAllowance && !hasActivePaidPlan && subscription.tier === 'scale'
+    ? 500
+    : subscription.limit || 0;
+  const normalizedLimit = isUnlimitedPlan
+    ? 999999
+    : Math.max(effectiveStoredLimit, tierDefaults[subscription.tier] || 30);
 
   const expiryDateFormatted = subscription.expiresAt
     ? new Date(subscription.expiresAt).toLocaleDateString('ar-DZ')
