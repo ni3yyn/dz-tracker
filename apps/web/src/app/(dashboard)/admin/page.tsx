@@ -146,6 +146,7 @@ export default async function AdminDashboardPage() {
       orders={(orders || []) as any}
       payments={(payments || []) as any}
       customPlanRequests={(customPlanRequestsData || []) as CustomPlanRequestItem[]}
+      customPlanRequestsError={customPlanRequestsError?.message || null}
       smsManager={smsManager}
     />
   );
