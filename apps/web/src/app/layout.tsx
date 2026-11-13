@@ -52,11 +52,7 @@ const structuredData = {
         '@type': 'BusinessAudience',
         audienceType: 'E-commerce merchants in Algeria',
       },
-      availableLanguage: ['Arabic', 'French'],
-      areaServed: {
-        '@type': 'Country',
-        name: 'Algeria',
-      },
+      inLanguage: ['ar-DZ', 'fr-DZ'],
       creator: { '@id': organizationId },
       isPartOf: { '@id': `${siteUrl}/#website` },
     },
