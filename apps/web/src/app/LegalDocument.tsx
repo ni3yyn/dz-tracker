@@ -8,7 +8,7 @@ type LegalSection = { title: string; body: ReactNode };
 type Props = {
   title: string;
   intro: string;
-  currentDocument: 'privacy' | 'terms';
+  currentDocument: 'privacy' | 'terms' | 'about';
   sections: LegalSection[];
   showOperatorDetails?: boolean;
 };
