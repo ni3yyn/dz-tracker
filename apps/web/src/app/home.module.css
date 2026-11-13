@@ -658,71 +658,119 @@
 .priceLink:hover span { transform: translate(-2px, -2px); }
 .pricingNote { grid-column: 2; margin: -5px 0 0; font-size: 10px; }
 
-.pricingCalculator {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, .72fr);
-  align-items: center;
-  gap: 13px 22px;
-  margin-top: 25px;
-  padding-top: 22px;
+
+.customPlan {
+  margin-top: 24px;
+  padding: 22px 0 0;
   border-top: 1px solid var(--line);
 }
-.pricingCalculatorField { min-width: 0; }
-.pricingCalculatorField label {
-  display: block;
-  margin-bottom: 8px;
+.customPlanTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.customPlanTop h3 {
+  margin: 5px 0 0;
   color: var(--ink);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
+}
+.customPlanTop p {
+  max-width: 480px;
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.9;
+}
+.customPlanPrice {
+  flex: 0 0 auto;
+  padding-top: 4px;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.customPlanButton,
+.customPlanSubmit {
+  display: inline-flex;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 0 16px;
+  border: 1px solid var(--green);
+  border-radius: 0;
+  background: var(--green);
+  color: #fffefa;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, opacity .18s ease;
+}
+.customPlanButton:hover,
+.customPlanSubmit:hover { background: var(--green-deep); border-color: var(--green-deep); }
+.customPlanButton span { color: #e9b08e; font-size: 15px; }
+.customPlanForm {
+  margin-top: 20px;
+  padding-top: 19px;
+  border-top: 1px solid var(--line);
+}
+.customPlanFormIntro strong { color: var(--ink); font-size: 13px; }
+.customPlanFormIntro p {
+  margin: 5px 0 16px;
+  color: var(--muted);
+  font-size: 10px;
   line-height: 1.8;
 }
-.pricingCalculatorInput {
+.customPlanFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px 15px;
+}
+.customPlanFields label { display: flex; min-width: 0; flex-direction: column; gap: 6px; }
+.customPlanFields label > span { color: var(--ink); font-size: 10px; font-weight: 600; }
+.customPlanFields input,
+.customPlanFields select,
+.customPlanFields textarea {
   width: 100%;
-  min-height: 47px;
-  padding: 0 13px;
+  min-width: 0;
+  min-height: 43px;
+  padding: 10px 11px;
   border: 1px solid #cbd4c8;
   border-radius: 0;
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: 15px;
-  direction: ltr;
-  text-align: right;
+  font-size: 11px;
   outline: none;
-  transition: border-color .18s ease, box-shadow .18s ease;
 }
-.pricingCalculatorInput:focus {
-  border-color: var(--green);
-  box-shadow: 0 0 0 2px rgba(41, 75, 55, .11);
+.customPlanFields textarea { min-height: 88px; resize: vertical; }
+.customPlanFields input:focus,
+.customPlanFields select:focus,
+.customPlanFields textarea:focus { border-color: var(--green); }
+.customPlanWideField { grid-column: 1 / -1; }
+.customPlanHoneypot {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
 }
-.pricingCalculatorResult {
-  display: flex;
-  min-height: 82px;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  padding: 11px 15px;
-  background: var(--green-soft);
-  border-inline-start: 2px solid var(--green);
+.customPlanSuccess,
+.customPlanError {
+  margin: 13px 0 0;
+  padding: 11px 12px;
+  font-size: 11px;
+  line-height: 1.8;
 }
-.pricingCalculatorTier { color: var(--muted); font-size: 10px; font-weight: 600; }
-.pricingCalculatorPrice {
-  color: var(--green);
-  font-size: clamp(21px, 2.3vw, 27px);
-  font-weight: 700;
-  letter-spacing: -.045em;
-  font-variant-numeric: tabular-nums;
-}
-.pricingCalculatorPrice small { color: var(--muted); font-size: 10px; font-weight: 500; letter-spacing: 0; }
-.pricingCalculatorLimit { color: var(--muted); font-size: 10px; line-height: 1.7; }
-.pricingCalculatorPrompt { color: var(--green); font-size: 15px; font-weight: 600; }
-.pricingCalculatorHint {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.9;
-}
+.customPlanSuccess { background: var(--green-soft); color: var(--green-deep); }
+.customPlanError { background: #f9e8e5; color: #9a3528; }
+.customPlanSubmit { margin-top: 16px; }
+.customPlanSubmit:disabled { opacity: .6; cursor: wait; }
+.customPlanPrivacy { margin: 8px 0 0; color: var(--muted); font-size: 9px; }
 
 .footerPricing { color: #6c786d; text-decoration: none; }
 .footerPricing:hover { color: var(--green); }
@@ -733,7 +781,6 @@
   .pricingHead { position: static; }
   .pricingHead > p { max-width: 560px; }
   .pricingNote { grid-column: 1; }
-  .pricingCalculator { grid-template-columns: minmax(0, 1fr) minmax(0, .85fr); }
 }
 @media (max-width: 560px) {
   .navbar { min-height: 66px; }
@@ -743,8 +790,6 @@
   .navPrimary { min-height: 35px; padding: 0 9px; font-size: 10px; }
   .pricingSection { padding: 58px 0; gap: 19px; }
   .pricingHead h2 { font-size: clamp(29px, 8vw, 38px); }
-  .pricingCalculator { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  .pricingCalculatorResult { min-height: 70px; }
   .priceRow { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; padding: 18px 0; }
   .priceAmount { grid-column: 2; grid-row: 1; flex-direction: column; align-items: flex-start; gap: 0; }
   .priceAmount strong { font-size: 25px; }
@@ -752,6 +797,10 @@
   .priceLink { grid-column: 1 / -1; justify-self: start; padding-top: 2px; }
   .priceRow h3 { font-size: 13px; }
   .pricingNote { font-size: 10px; }
+  .customPlanTop { flex-direction: column; gap: 8px; }
+  .customPlanFields { grid-template-columns: minmax(0, 1fr); }
+  .customPlanWideField { grid-column: auto; }
+  .customPlanButton, .customPlanSubmit { width: 100%; }
 }
 
 
