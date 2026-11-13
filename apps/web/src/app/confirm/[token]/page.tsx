@@ -28,6 +28,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: order
       ? 'راجع تفاصيل طلبك من ' + storeName + ' وأكّد استلام المتجر لطلبك.'
       : 'صفحة تأكيد الطلب في تاجر تراك.',
+    robots: {
+      index: false,
+      follow: false,
+      googleBot: { index: false, follow: false, noarchive: true },
+    },
   };
 }
 

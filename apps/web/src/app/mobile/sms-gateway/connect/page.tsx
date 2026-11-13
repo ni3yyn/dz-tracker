@@ -11,6 +11,11 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'ربط هاتف إرسال الرسائل',
   description: 'اربط هاتفك بمتجر تاجر تراك لإرسال روابط تتبع الطلبات من شريحتك.',
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false, noarchive: true },
+  },
 };
 
 const APP_REDIRECT = 'tajertrack-sms://pair';

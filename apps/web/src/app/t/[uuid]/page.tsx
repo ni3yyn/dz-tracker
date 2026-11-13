@@ -28,6 +28,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: order
       ? 'تابع آخر حالة وتحديثات شحنتك لدى ' + storeName + ' من صفحة التتبّع الخاصة بطلبك.'
       : 'صفحة تتبّع الشحنة في تاجر تراك.',
+    robots: {
+      index: false,
+      follow: false,
+      googleBot: { index: false, follow: false, noarchive: true },
+    },
   };
 }
 
