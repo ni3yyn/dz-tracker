@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
 import { createClient } from '../../../../lib/supabase-server';
 import { isAuthorizedAdmin } from '../../../../lib/admin-auth';
+import { LEGAL_TERMS_VERSION, LEGAL_PRIVACY_VERSION } from '../../../../lib/legal';
 import { approveNativeSmsDevice } from './actions';
 import styles from './connect.module.css';
 
@@ -48,7 +49,25 @@ export default async function ConnectNativeSmsPage({
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
-  const errorMessage = params.error === 'merchant_unavailable'
+  const acceptanceResult = merchant?.id
+    ? await supabase
+        .from('merchant_legal_acceptances')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('terms_version', LEGAL_TERMS_VERSION)
+        .eq('privacy_version', LEGAL_PRIVACY_VERSION)
+        .maybeSingle()
+    : { data: null, error: null };
+  const existingAcceptance = acceptanceResult.data;
+  const acceptanceError = acceptanceResult.error;
+
+  if (acceptanceError) {
+    console.error('[NativeSmsGateway] Could not verify legal acceptance:', acceptanceError.message);
+  }
+
+  const errorMessage = acceptanceError
+    ? 'تعذر التحقق من موافقتك القانونية بشكل آمن. يرجى المحاولة لاحقاً.'
+    : params.error === 'merchant_unavailable'
     ? 'لم يتم العثور على متجر مرتبط بهذا الحساب.'
     : params.error === 'pairing_unavailable'
       ? 'تعذر إنشاء رابط آمن الآن. حاول مرة أخرى.'
@@ -110,19 +129,25 @@ export default async function ConnectNativeSmsPage({
 
         {errorMessage && <p className={styles.error} role="alert">{errorMessage}</p>}
 
-        <form action={approveNativeSmsDevice} className={styles.form}>
-          <div className={styles.legalAcceptance}>
-            <label className={styles.acceptanceRow}>
-              <input type="checkbox" name="acceptTerms" value="yes" required />
-              <span>أوافق على <a href="/terms" target="_blank" rel="noopener noreferrer">شروط الاستخدام</a> وألتزم بها.</span>
-            </label>
-            <label className={styles.acceptanceRow}>
-              <input type="checkbox" name="acceptPrivacy" value="yes" required />
-              <span>أوافق على <a href="/privacy" target="_blank" rel="noopener noreferrer">سياسة الخصوصية</a> وأفهم كيفية معالجة بيانات المتجر والهاتف.</span>
-            </label>
-          </div>
-          <button className={styles.action} type="submit">الموافقة وربط هذا الهاتف</button>
-        </form>
+        {!acceptanceError && (
+          <form action={approveNativeSmsDevice} className={styles.form}>
+            {!existingAcceptance && (
+              <div className={styles.legalAcceptance}>
+                <label className={styles.acceptanceRow}>
+                  <input type="checkbox" name="acceptTerms" value="yes" required />
+                  <span>أوافق على <a href="/terms" target="_blank" rel="noopener noreferrer">شروط الاستخدام</a> وألتزم بها.</span>
+                </label>
+                <label className={styles.acceptanceRow}>
+                  <input type="checkbox" name="acceptPrivacy" value="yes" required />
+                  <span>أوافق على <a href="/privacy" target="_blank" rel="noopener noreferrer">سياسة الخصوصية</a> وأفهم كيفية معالجة بيانات المتجر والهاتف.</span>
+                </label>
+              </div>
+            )}
+            <button className={styles.action} type="submit">
+              {existingAcceptance ? 'ربط هذا الهاتف' : 'الموافقة وربط هذا الهاتف'}
+            </button>
+          </form>
+        )}
 
         <nav className={styles.legalLinks} aria-label="معلومات تاجر تراك">
           <a href="/about">عن تاجر تراك</a>
