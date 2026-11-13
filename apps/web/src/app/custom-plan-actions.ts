@@ -28,8 +28,11 @@ export async function submitCustomPlanRequest(formData: FormData): Promise<Custo
   if (!/^[+\d\s()\-]{8,24}$/.test(contactPhone) || contactPhone.replace(/\D/g, '').length < 8) {
     return { error: 'أدخل رقم هاتف أو واتساب صحيحاً للتواصل معك.' };
   }
-  if (!Number.isSafeInteger(monthlyTrackingUrls) || monthlyTrackingUrls <= 500 || monthlyTrackingUrls > 2000000) {
-    return { error: 'الخطة المخصصة متاحة ابتداءً من 501 رابط تتبّع شهرياً.' };
+  if (!Number.isSafeInteger(monthlyTrackingUrls) || monthlyTrackingUrls < 1 || monthlyTrackingUrls > 2000000) {
+    return { error: 'أدخل عدداً صحيحاً من رابط تتبّع واحد إلى مليوني رابط شهرياً.' };
+  }
+  if (monthlyTrackingUrls <= 500 && requirements.length < 5) {
+    return { error: 'للطلبات التي لا تتجاوز 500 رابط، اشرح الاحتياج الخاص الذي يتطلب باقة مخصصة.' };
   }
   if (!['whatsapp', 'phone'].includes(preferredContactMethod)) {
     return { error: 'طريقة التواصل المحددة غير صالحة.' };
