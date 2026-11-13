@@ -14,6 +14,8 @@ import SiteHeader from '../../SiteHeader';
 import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import SmsManagerTab from './SmsManagerTab';
 import type { SmsManagerData } from './SmsManagerTab';
+import CustomPlanRequestsTab from './CustomPlanRequestsTab';
+import type { CustomPlanRequestItem } from './CustomPlanRequestsTab';
 import SupabaseUsageTab from './SupabaseUsageTab';
 import { DashboardFilterTabs } from '../merchant/components/DashboardFilterTabs';
 import { DashboardMetricCard } from '../merchant/components/DashboardMetricCard';
@@ -64,6 +66,7 @@ interface Props {
   merchants: MerchantItem[];
   orders: OrderItem[];
   payments: PaymentItem[];
+  customPlanRequests: CustomPlanRequestItem[];
   smsManager: SmsManagerData;
 }
 
@@ -85,15 +88,17 @@ export function AdminDashboardView({
   merchants,
   orders,
   payments,
+  customPlanRequests,
   smsManager,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'merchants' | 'telemetry' | 'sms' | 'usage' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'custom-plans' | 'merchants' | 'telemetry' | 'sms' | 'usage' | 'settings'>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
   useEffect(() => {
-    const tabTitles: Record<'overview' | 'payments' | 'merchants' | 'telemetry' | 'sms' | 'usage' | 'settings', string> = {
+    const tabTitles: Record<'overview' | 'payments' | 'custom-plans' | 'merchants' | 'telemetry' | 'sms' | 'usage' | 'settings', string> = {
       overview: 'مركز القيادة والإحصائيات',
       payments: 'الاشتراكات والدفعات',
+      'custom-plans': 'طلبات الباقات المخصصة',
       merchants: 'دليل المتاجر',
       telemetry: 'تيار الشحن والبيانات',
       sms: 'إدارة الرسائل النصية',
@@ -400,6 +405,19 @@ export function AdminDashboardView({
             </button>
 
             <button
+              onClick={() => { setActiveTab('custom-plans'); setMobileMenuOpen(false); }}
+              className={`${styles.railItem} ${activeTab === 'custom-plans' ? styles.railItemActive : ''}`}
+            >
+              <div className={styles.railItemInner}>
+                <span className={styles.railIcon}><Icons.Message /></span>
+                <span>طلبات الباقات المخصصة</span>
+              </div>
+              {customPlanRequests.filter((request) => request.status === 'new').length > 0 && (
+                <span className={styles.pendingBadge}>{customPlanRequests.filter((request) => request.status === 'new').length}</span>
+              )}
+            </button>
+
+            <button
               onClick={() => { setActiveTab('merchants'); setMobileMenuOpen(false); }}
               className={`${styles.railItem} ${activeTab === 'merchants' ? styles.railItemActive : ''}`}
             >
@@ -487,6 +505,7 @@ export function AdminDashboardView({
             <h1>
               {activeTab === 'overview' && 'مركز القيادة والإحصائيات'}
               {activeTab === 'payments' && 'إدارة الاشتراكات وتأكيد الدفع'}
+              {activeTab === 'custom-plans' && 'طلبات الباقات المخصصة'}
               {activeTab === 'merchants' && 'دليل المتاجر وحصص الشحن'}
               {activeTab === 'telemetry' && 'مراقبة تيار الشحن المباشر'}
               {activeTab === 'sms' && 'إدارة ومراقبة رسائل SMS'}
@@ -496,6 +515,7 @@ export function AdminDashboardView({
             <p>
               {activeTab === 'overview' && 'نظرة شاملة على الأداء، الإيرادات، ونشاط النواقل في الجزائر.'}
               {activeTab === 'payments' && 'مراجعة وتأكيد طلبات الترقية وتجديد الباقات.'}
+              {activeTab === 'custom-plans' && 'مراجعة طلبات عروض الأسعار والتواصل مع أصحاب المتاجر للتفاوض على الحجم والسعر.'}
               {activeTab === 'merchants' && 'إدارة المتاجر، المفاتيح، والتحكم בסقف الطلبات.'}
               {activeTab === 'telemetry' && 'تدفق لجميع تحديثات التتبع من مختلف شركات الشحن.'}
               {activeTab === 'sms' && 'مراقبة جهاز الإرسال، طابور الرسائل، المحاولات، والأخطاء.'}
@@ -704,6 +724,11 @@ export function AdminDashboardView({
               </div>
             </div>
           </div>
+        )}
+
+        {/* CUSTOM PLAN SALES INBOX */}
+        {activeTab === 'custom-plans' && (
+          <CustomPlanRequestsTab requests={customPlanRequests} />
         )}
 
         {/* TAB 3: MERCHANTS */}

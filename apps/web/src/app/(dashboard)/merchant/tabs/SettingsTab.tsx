@@ -382,6 +382,14 @@ export function SettingsTab({
                 </section>
               )}
 
+              <div className="dz-billing-custom-plan" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', marginTop: '18px', padding: '16px 18px', background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 0 }}>
+                <div style={{ minWidth: 0, flex: '1 1 240px' }}>
+                  <strong style={{ display: 'block', color: 'var(--ink-main)', fontSize: '14px' }}>خطة مخصصة</strong>
+                  <span style={{ display: 'block', marginTop: '5px', color: 'var(--ink-muted)', fontSize: '11px', lineHeight: 1.7 }}>لأكثر من 500 رابط تتبّع شهرياً أو لاحتياجات تشغيل خاصة. نتفق معك على السقف والسعر.</span>
+                </div>
+                <a href="/#pricing" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: '39px', padding: '0 14px', background: 'var(--ink-main)', color: 'var(--surface)', textDecoration: 'none', fontSize: '11px', fontWeight: 700, borderRadius: 0, whiteSpace: 'nowrap' }}>ناقش باقة مخصصة <span aria-hidden="true" style={{ marginInlineStart: '8px' }}>↗</span></a>
+              </div>
+
               {/* BaridiMob payment form: always shown except when scale plan is active and advance renewal is not requested */}
               {(!hasActivePaidPlan || !isUnlimitedPlan || showAdvanceRenewal) && (
               <>
