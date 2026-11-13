@@ -1,12 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap');
+
 .page {
   min-height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 36px 22px;
-  background: #f5f6f3;
-  color: #17251d;
-  font-family: inherit;
+  background: #f4f3ed;
+  color: #202a23;
+  font-family: 'Readex Pro', 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif;
 }
 .content {
   width: min(100%, 480px);
@@ -15,56 +17,120 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 54px;
-  font-size: 16px;
+  margin-bottom: 48px;
+  color: #202a23;
+  font-size: 17px;
   font-weight: 700;
 }
 .brandMark {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  color: #f5f6f3;
-  background: #20392b;
+  color: #f4f3ed;
+  background: #294b37;
 }
-.brandMark svg { width: 25px; height: 25px; }
+.brandMark svg { width: 27px; height: 27px; }
 .eyebrow {
-  margin: 0 0 14px;
+  margin: 0 0 13px;
   color: #66816c;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: .04em;
+  letter-spacing: .025em;
 }
 .content h1 {
-  max-width: 420px;
+  max-width: 430px;
   margin: 0;
-  font-size: clamp(28px, 6vw, 40px);
-  line-height: 1.35;
+  color: #202a23;
+  font-size: clamp(27px, 6vw, 38px);
+  line-height: 1.45;
   font-weight: 700;
-  letter-spacing: -.04em;
+  letter-spacing: -.045em;
 }
 .description {
-  margin: 18px 0 28px;
+  margin: 16px 0 25px;
   color: #5c6960;
-  font-size: 14px;
-  line-height: 1.9;
+  font-size: 13px;
+  line-height: 2;
 }
 .store {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 18px 0;
-  margin: 0 0 24px;
+  gap: 12px;
+  padding: 17px 0;
+  margin: 0 0 22px;
   border-top: 1px solid #dce3dd;
   border-bottom: 1px solid #dce3dd;
 }
 .storeLabel {
   color: #78847b;
-  font-size: 12px;
+  font-size: 11px;
 }
-.store strong {
-  font-size: 17px;
+.storeIdentity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
+.storeIdentity strong {
+  min-width: 0;
+  color: #202a23;
+  font-size: 16px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.storeLogo,
+.storeLogoFallback {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: grid;
+  place-items: center;
+  object-fit: contain;
+  border: 1px solid #dfe3d9;
+  background: #fffefa;
+}
+.storeLogoFallback {
+  color: #294b37;
+  padding: 10px;
+}
+.storeLogoFallback svg { width: 100%; height: 100%; }
+.form { display: block; }
+.legalAcceptance {
+  display: grid;
+  gap: 13px;
+  padding: 15px 0 17px;
+  margin: 0 0 17px;
+  border-top: 1px solid #dfe3d9;
+  border-bottom: 1px solid #dfe3d9;
+}
+.acceptanceRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #48564c;
+  font-size: 11px;
+  line-height: 1.9;
+  cursor: pointer;
+}
+.acceptanceRow input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  margin: 3px 0 0;
+  accent-color: #294b37;
+  cursor: pointer;
+}
+.acceptanceRow a,
+.legalLinks a {
+  color: #294b37;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: #aebcaf;
+  text-underline-offset: 3px;
+}
+.acceptanceRow a:hover,
+.legalLinks a:hover { text-decoration-color: #294b37; }
 .action {
   width: 100%;
   min-height: 54px;
@@ -74,30 +140,47 @@
   border: 0;
   border-radius: 0;
   padding: 0 18px;
-  background: #20392b;
+  background: #294b37;
   color: #fff;
-  font: inherit;
-  font-size: 14px;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
+  transition: background .18s ease, transform .18s ease;
 }
-.action:hover { background: #294735; }
+.action:hover { background: #1d3427; }
+.action:active { transform: translateY(1px); }
 .action:focus-visible { outline: 3px solid #d57955; outline-offset: 3px; }
+.legalLinks {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 16px 0 0;
+  font-size: 10px;
+}
 .notice, .security {
   margin: 17px 0 0;
   color: #68756b;
-  font-size: 12px;
-  line-height: 1.8;
+  font-size: 11px;
+  line-height: 1.9;
 }
 .security { color: #89938b; }
 .error {
-  margin: 0 0 18px;
-  color: #a13f32;
-  font-size: 13px;
-  line-height: 1.7;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-inline-start: 3px solid #d57955;
+  background: #f4e9e2;
+  color: #8b4335;
+  font-size: 11px;
+  line-height: 1.8;
 }
 @media (max-width: 520px) {
-  .page { align-items: flex-start; padding-top: 54px; }
-  .brand { margin-bottom: 44px; }
+  .page { align-items: flex-start; padding: 44px 20px 32px; }
+  .brand { margin-bottom: 38px; }
+  .description { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .action { transition: none; }
 }
