@@ -242,7 +242,7 @@ export function SettingsTab({
                       </span>
                     </div>
                     <h3 className="dz-unlimited-title">
-                      اشتراكك الحالي يحتفظ بسقفه المفتوح حتى تاريخ انتهائه
+                      كان اشتراكك يمنحك سقفاً مفتوحاً؛ الباقة الجديدة بسعر 2,500 دج تمنح 500 رابط تتبّع شهرياً.
                     </h3>
                     <p className="dz-unlimited-desc">
                       عند التجديد، ستكون باقة 2,500 دج محدودة بـ 500 رابط تتبّع شهرياً.
@@ -250,7 +250,7 @@ export function SettingsTab({
                   </div>
                   <div className="dz-unlimited-aside">
                     <span className="dz-unlimited-symbol">∞</span>
-                    <span className="dz-unlimited-symbol-label">سقف مفتوح حالياً</span>
+                    <span className="dz-unlimited-symbol-label">سقف الاشتراك السابق</span>
                   </div>
                 </div>
               )}
