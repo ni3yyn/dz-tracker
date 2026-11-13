@@ -8,12 +8,6 @@ type CustomPlanRequestResult = {
 };
 
 export async function submitCustomPlanRequest(formData: FormData): Promise<CustomPlanRequestResult> {
-  const honeypot = String(formData.get('__tt_quote_trap_7f3a') || '').trim();
-  if (honeypot) {
-    console.warn('[CustomPlanRequest] Rejected a submission with a filled honeypot field.');
-    return { error: 'تعذر إرسال الطلب. يرجى المحاولة مجدداً.' };
-  }
-
   const fullName = String(formData.get('full_name') || '').trim();
   const storeName = String(formData.get('store_name') || '').trim();
   const contactPhone = String(formData.get('contact_phone') || '').trim();
