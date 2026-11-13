@@ -1,10 +1,11 @@
-import type { FormEvent } from 'react';
+import { useRef, type FormEvent } from 'react';
 import { BrandedSelect } from '../BrandedSelect';
 import { ImageUploadField } from '../ImageUploadField';
 import { Icons } from '../components/DashboardIcons';
 import type { EditableBrandSettings } from '../shared/branding-types';
 import type { PaymentRecord, SubscriptionInfo } from '../shared/subscription-types';
 import type { UpgradeTier } from '../features/settings/settings-types';
+import CustomPlanRequest, { type CustomPlanRequestHandle } from '../../../CustomPlanRequest';
 
 interface SettingsTabProps {
   merchantId: string;
@@ -93,6 +94,14 @@ export function SettingsTab({
   proofImageUrl,
   onProofImageUrlChange,
 }: SettingsTabProps) {
+  const customPlanRequestRef = useRef<CustomPlanRequestHandle>(null);
+  const openCustomPlanRequest = () => customPlanRequestRef.current?.open();
+  const selectedPlanDetails = {
+    basic: { orderLimit: '100 طلب شهرياً', price: '1,000' },
+    growth: { orderLimit: '200 طلب شهرياً', price: '1,800' },
+    scale: { orderLimit: '500 طلب شهرياً', price: '2,500' },
+  }[selectedUpgradeTier];
+
   return (
             <div className="dz-settings-page">
               <div className="dz-settings-section dz-settings-profile" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px', marginBottom: '14px', boxShadow: 'var(--shadow-sm)' }}>
@@ -299,11 +308,9 @@ export function SettingsTab({
                   : `تبقّى لك ${Math.max(normalizedLimit - subscription.used, 0)} رابطاً من أصل ${normalizedLimit} لهذا الشهر. عند الاقتراب من الحد، يمكنك اختيار باقة أعلى من هنا. تُطبّق الباقة بعد مراجعة الدفع وتأكيده.`}
               </p>
 
-              {/* PLAN SELECTION SECTION — conditional on active paid plan */}
               {hasActivePaidPlan && isUnlimitedPlan ? (
-                /* Scale plan active: no need to pick a pack, offer advance renewal only */
                 <div className="dz-active-plan-card">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
                     <span className="dz-unlimited-badge"><Icons.Shield /> الباقة غير المحدودة نشطة</span>
                     {expiryDateFormatted && (
                       <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>حتى {expiryDateFormatted}</span>
@@ -313,14 +320,24 @@ export function SettingsTab({
                     أنت على الباقة غير المحدودة. لا حاجة لاختيار باقة أخرى حالياً.
                     {expiryDateFormatted && ` تجديد الباقة الحالية سيكون في ${expiryDateFormatted}.`}
                   </p>
-                  <button
-                    type="button"
-                    className="dz-btn dz-btn-outline"
-                    style={{ fontSize: '13px' }}
-                    onClick={() => onToggleAdvanceRenewal()}
-                  >
-                    {showAdvanceRenewal ? 'إلغاء الدفع المسبق' : 'دفع تجديد الشهر القادم مسبقاً'}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <button
+                      type="button"
+                      className="dz-btn dz-btn-outline"
+                      style={{ fontSize: '13px' }}
+                      onClick={() => onToggleAdvanceRenewal()}
+                    >
+                      {showAdvanceRenewal ? 'إلغاء الدفع المسبق' : 'دفع تجديد الشهر القادم مسبقاً'}
+                    </button>
+                    <button
+                      type="button"
+                      className="dz-billing-custom-request-link"
+                      onClick={openCustomPlanRequest}
+                    >
+                      طلب باقة مخصصة
+                      <span aria-hidden="true">↗</span>
+                    </button>
+                  </div>
                   {!showAdvanceRenewal && (
                     <p style={{ margin: '12px 0 0', fontSize: '11px', color: 'var(--ink-muted)' }}>
                       يمكنك تحويل مبلغ التجديد مسبقاً قبل انتهاء الباقة وإرسال وصل الدفع للمراجعة.
@@ -328,8 +345,7 @@ export function SettingsTab({
                   )}
                 </div>
               ) : (
-                /* Not on scale or no active paid plan: show full plan chooser */
-                <section className="dz-billing-pricing" aria-labelledby="dz-billing-pricing-title" dir="rtl">
+                <section className="dz-billing-plan-picker" aria-labelledby="dz-billing-plan-picker-title" dir="rtl">
                   {hasActivePaidPlan && expiryDateFormatted && (
                     <div className="dz-billing-next-cycle-banner">
                       <strong>اختيار الباقة للشهر القادم</strong>
@@ -338,57 +354,47 @@ export function SettingsTab({
                       </p>
                     </div>
                   )}
-                  <div className="dz-billing-pricing-head"><span className="dz-setup-eyebrow">الأسعار الشهرية</span><h3 id="dz-billing-pricing-title">اختَر الباقة حسب عدد روابط التتبّع</h3><p>يُحسب الحد حسب روابط التتبّع الجديدة خلال الشهر.</p></div>
-                  <div className="dz-billing-plan-list">
-                    <div className={`dz-billing-plan ${subscription.tier === 'starter' ? 'is-current' : ''}`}><div><strong>مجانية</strong><small>حتى 30 رابط تتبّع شهرياً</small></div><b>0 <small>دج / شهر</small></b><span>{subscription.tier === 'starter' ? 'باقتك الحالية' : 'للتجربة والبدء'}</span><div className="dz-billing-plan-benefit">إدارة أساسية للطلبات ورابط تتبّع لكل شحنة.</div></div>
-                    <div className={`dz-billing-plan ${subscription.tier === 'basic' ? 'is-current' : ''} ${selectedUpgradeTier === 'basic' ? 'is-selected' : ''}`}>
-                      <div><strong>100 رابط</strong><small>حتى 100 رابط تتبّع شهرياً</small></div>
-                      <b>1,000 <small>دج / شهر</small></b>
-                      <div className="dz-billing-plan-benefit">للمتاجر التي تحتاج مساحة أكبر للطلبات.</div>
-                      {subscription.tier === 'basic' && hasActivePaidPlan ? (
-                        <span style={{ fontSize: '11px', color: '#263b30', fontWeight: 700, textAlign: 'center', padding: '6px 0' }}>
-                          باقتك الحالية{expiryDateFormatted ? ` (حتى ${expiryDateFormatted})` : ''}
-                        </span>
-                      ) : (
-                        <button type="button" onClick={() => onSelectUpgradeTier('basic')}>
-                          {selectedUpgradeTier === 'basic' ? 'الباقة المختارة' : (hasActivePaidPlan ? 'اختيار للشهر القادم' : 'اختيار الباقة')}
-                        </button>
-                      )}
-                    </div>
-                    <div className={`dz-billing-plan ${subscription.tier === 'growth' ? 'is-current' : ''} ${selectedUpgradeTier === 'growth' ? 'is-selected' : ''}`}>
-                      <div><strong>200 رابط</strong><small>حتى 200 رابط تتبّع شهرياً</small></div>
-                      <b>1,800 <small>دج / شهر</small></b>
-                      <div className="dz-billing-plan-benefit">للنمو مع متابعة عدد أكبر من الشحنات.</div>
-                      {subscription.tier === 'growth' && hasActivePaidPlan ? (
-                        <span style={{ fontSize: '11px', color: '#263b30', fontWeight: 700, textAlign: 'center', padding: '6px 0' }}>
-                          باقتك الحالية{expiryDateFormatted ? ` (حتى ${expiryDateFormatted})` : ''}
-                        </span>
-                      ) : (
-                        <button type="button" onClick={() => onSelectUpgradeTier('growth')}>
-                          {selectedUpgradeTier === 'growth' ? 'الباقة المختارة' : (hasActivePaidPlan ? 'اختيار للشهر القادم' : 'اختيار الباقة')}
-                        </button>
-                      )}
-                    </div>
-                    <div className={`dz-billing-plan ${subscription.tier === 'scale' ? 'is-current' : ''} ${selectedUpgradeTier === 'scale' ? 'is-selected' : ''}`}>
-                      <div><strong>500 رابط</strong><small>حتى 500 رابط تتبّع شهرياً</small></div>
-                      <b>2,500 <small>دج / شهر</small></b>
-                      <div className="dz-billing-plan-benefit">للمتاجر ذات حجم الشحنات المرتفع.</div>
-                      <button type="button" onClick={() => onSelectUpgradeTier('scale')}>
-                        {selectedUpgradeTier === 'scale' ? 'الباقة المختارة' : (hasActivePaidPlan ? 'اختيار للشهر القادم' : 'اختيار الباقة')}
-                      </button>
-                    </div>
+                  <div className="dz-billing-plan-picker-heading">
+                    <span className="dz-setup-eyebrow">الاشتراك الشهري</span>
+                    <h3 id="dz-billing-plan-picker-title">اختر الباقة حسب عدد طلباتك</h3>
+                    <p>حدّ شهري واضح لكل باقة، دون بطاقات أو تفاصيل زائدة.</p>
                   </div>
-                  <div className="dz-billing-selected-summary"><div><strong>الباقة المحددة للدفع: {{ basic: '100 رابط', growth: '200 رابط', scale: '500 رابط' }[selectedUpgradeTier]}{hasActivePaidPlan && expiryDateFormatted ? ` (تبدأ ${expiryDateFormatted})` : ''}</strong><p>حوّل المبلغ عبر BaridiMob ثم أرسل رقم العملية ورابط صورة الوصل في النموذج أدناه. لن تتغير باقتك حتى تتم مراجعة الدفع.</p></div><div className="dz-billing-selected-price">{{ basic: '1,000', growth: '1,800', scale: '2,500' }[selectedUpgradeTier]} <small>دج / شهر</small></div></div>
+                  <div className="dz-billing-plan-picker-control">
+                    <label className="formLabel">الباقة والحد الشهري</label>
+                    <BrandedSelect
+                      className="dz-billing-tier-select"
+                      ariaLabel="اختر باقة الاشتراك"
+                      value={selectedUpgradeTier}
+                      onChange={(value) => {
+                        if (value === 'custom') {
+                          openCustomPlanRequest();
+                          return;
+                        }
+                        onSelectUpgradeTier(value as UpgradeTier);
+                      }}
+                      variant="field"
+                      options={[
+                        { value: 'starter', label: 'مجانية · 30 طلباً شهرياً · 0 دج', disabled: true },
+                        { value: 'basic', label: 'Basic · 100 طلب شهرياً · 1,000 دج' },
+                        { value: 'growth', label: 'Growth · 200 طلب شهرياً · 1,800 دج' },
+                        { value: 'scale', label: 'Scale · 500 طلب شهرياً · 2,500 دج' },
+                        { value: 'custom', label: 'باقة مخصصة · أكثر من 500 طلب شهرياً' },
+                      ]}
+                    />
+                  </div>
+                  <div className="dz-billing-plan-picker-summary" aria-live="polite">
+                    <div className="dz-billing-plan-picker-summary-item">
+                      <span>الحد المختار</span>
+                      <strong>{selectedPlanDetails.orderLimit}</strong>
+                    </div>
+                    <div className="dz-billing-plan-picker-summary-item">
+                      <span>السعر الشهري</span>
+                      <strong>{selectedPlanDetails.price} <small>دج / شهر</small></strong>
+                    </div>
+                    <p>حوّل المبلغ عبر BaridiMob ثم أرسل رقم العملية وصورة الوصل. لن تتغير باقتك حتى تتم مراجعة الدفع.</p>
+                  </div>
                 </section>
               )}
-
-              <div className="dz-billing-custom-plan" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', marginTop: '18px', padding: '16px 18px', background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 0 }}>
-                <div style={{ minWidth: 0, flex: '1 1 240px' }}>
-                  <strong style={{ display: 'block', color: 'var(--ink-main)', fontSize: '14px' }}>خطة مخصصة</strong>
-                  <span style={{ display: 'block', marginTop: '5px', color: 'var(--ink-muted)', fontSize: '11px', lineHeight: 1.7 }}>لأكثر من 500 رابط تتبّع شهرياً أو لاحتياجات تشغيل خاصة. نتفق معك على السقف والسعر.</span>
-                </div>
-                <a href="/#pricing" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: '39px', padding: '0 14px', background: 'var(--ink-main)', color: 'var(--surface)', textDecoration: 'none', fontSize: '11px', fontWeight: 700, borderRadius: 0, whiteSpace: 'nowrap' }}>ناقش باقة مخصصة <span aria-hidden="true" style={{ marginInlineStart: '8px' }}>↗</span></a>
-              </div>
 
               {/* BaridiMob payment form: always shown except when scale plan is active and advance renewal is not requested */}
               {(!hasActivePaidPlan || !isUnlimitedPlan || showAdvanceRenewal) && (
@@ -410,20 +416,6 @@ export function SettingsTab({
                   </div>
 
                   <form onSubmit={onSubmitProof}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <label className="formLabel">اختر الباقة</label>
-                      <BrandedSelect
-                        ariaLabel="اختر الباقة"
-                        value={selectedUpgradeTier}
-                        onChange={(value) => onSelectUpgradeTier(value as UpgradeTier)}
-                        variant="field"
-                        options={[
-                          { value: 'basic', label: '100 رابط تتبّع شهرياً — 1,000 دج' },
-                          { value: 'growth', label: '200 رابط تتبّع شهرياً — 1,800 دج' },
-                          { value: 'scale', label: '500 رابط تتبّع شهرياً — 2,500 دج' },
-                        ]}
-                      />
-                    </div>
                     <div style={{ marginBottom: '16px' }}>
                       <label className="formLabel">رقم العملية (Transaction Ref)</label>
                       <input type="text" name="transaction_ref" placeholder="BM-..." className="input" required />
@@ -519,6 +511,11 @@ export function SettingsTab({
                   </a>
                 </nav>
               </section>
+              <CustomPlanRequest
+                ref={customPlanRequestRef}
+                hideTrigger
+                dashboardMode
+              />
             </div>
   );
 }

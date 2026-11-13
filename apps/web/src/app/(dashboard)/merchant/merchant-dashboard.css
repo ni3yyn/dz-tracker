@@ -5604,3 +5604,133 @@
   white-space: nowrap;
   padding-inline: 12px;
 }
+
+
+/* Subscription chooser: one quiet, square selector instead of pricing cards. */
+.dz-admin-root .dz-billing-plan-picker {
+  display: grid;
+  grid-template-columns: minmax(0, .95fr) minmax(280px, 1.05fr);
+  align-items: end;
+  gap: 17px 34px;
+  margin: 18px 0 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.dz-admin-root .dz-billing-plan-picker-heading {
+  min-width: 0;
+}
+.dz-admin-root .dz-billing-plan-picker-heading h3 {
+  margin: 4px 0 5px;
+  color: var(--ink-main);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+.dz-admin-root .dz-billing-plan-picker-heading p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.dz-admin-root .dz-billing-plan-picker-control {
+  min-width: 0;
+}
+.dz-admin-root .dz-billing-plan-picker-control .formLabel {
+  display: block;
+  margin-bottom: 5px;
+}
+.dz-admin-root .dz-billing-tier-select button[aria-haspopup="listbox"] {
+  min-height: 49px;
+  padding-inline: 0;
+  border: 0 !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.dz-admin-root .dz-billing-tier-select button[aria-haspopup="listbox"]:hover:not(:disabled),
+.dz-admin-root .dz-billing-tier-select button[aria-haspopup="listbox"][aria-expanded="true"] {
+  border-bottom-color: var(--ink-main) !important;
+  background: transparent !important;
+}
+.dz-admin-root .dz-billing-plan-picker-summary {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px 34px;
+  min-width: 0;
+  margin: 0;
+  padding: 13px 0 0;
+  border: 0;
+  border-top: 1px solid var(--border-soft);
+  border-radius: 0;
+  background: transparent;
+}
+.dz-admin-root .dz-billing-plan-picker-summary-item {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+.dz-admin-root .dz-billing-plan-picker-summary-item > span {
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+.dz-admin-root .dz-billing-plan-picker-summary-item strong {
+  color: var(--ink-main);
+  font-size: 13px;
+  font-weight: 800;
+}
+.dz-admin-root .dz-billing-plan-picker-summary-item small {
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+.dz-admin-root .dz-billing-plan-picker-summary > p {
+  flex: 1 1 270px;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.dz-admin-root .dz-billing-custom-request-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-main);
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: underline;
+  text-decoration-color: var(--border-soft);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.dz-admin-root .dz-billing-custom-request-link:hover {
+  color: var(--green, #294b37);
+  text-decoration-color: currentColor;
+}
+@media (max-width: 760px) {
+  .dz-admin-root .dz-billing-plan-picker {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 13px;
+    margin: 15px 0 22px;
+  }
+  .dz-admin-root .dz-billing-plan-picker-heading h3 {
+    font-size: 17px;
+  }
+  .dz-admin-root .dz-billing-plan-picker-summary {
+    gap: 9px 20px;
+    padding-top: 11px;
+  }
+  .dz-admin-root .dz-billing-plan-picker-summary > p {
+    flex-basis: 100%;
+  }
+}

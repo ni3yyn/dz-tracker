@@ -1577,3 +1577,19 @@
     animation: none !important;
   }
 }
+
+
+/* The embedded merchant-settings drawer follows TajerTrack's flat dashboard controls. */
+.customPlanDrawerBackdrop[data-dashboard-mode="true"] .customPlanDrawerClose {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.customPlanDrawerBackdrop[data-dashboard-mode="true"] .customPlanDrawerSubmit,
+.customPlanDrawerBackdrop[data-dashboard-mode="true"] .customPlanDrawerCancel {
+  border-radius: 0;
+}
+.customPlanDrawerBackdrop[data-dashboard-mode="true"] .customPlanDrawerCancel {
+  border: 0;
+  background: transparent;
+}

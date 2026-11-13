@@ -1,13 +1,23 @@
 'use client';
 
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useId, useImperativeHandle, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { submitCustomPlanRequest } from './custom-plan-actions';
 import authStyles from './(auth)/auth.module.css';
 import { BrandedSelect } from './(dashboard)/merchant/BrandedSelect';
 import styles from './home.module.css';
 
-export default function CustomPlanRequest() {
+export interface CustomPlanRequestHandle {
+  open: () => void;
+}
+
+interface CustomPlanRequestProps {
+  hideTrigger?: boolean;
+  dashboardMode?: boolean;
+}
+
+const CustomPlanRequest = forwardRef<CustomPlanRequestHandle, CustomPlanRequestProps>(
+  function CustomPlanRequest({ hideTrigger = false, dashboardMode = false }, ref) {
   const fullNameId = useId();
   const storeNameId = useId();
   const phoneId = useId();
@@ -125,10 +135,12 @@ export default function CustomPlanRequest() {
     }
   };
 
+  useImperativeHandle(ref, () => ({ open: openPanel }), [openPanel]);
+
   const finishPanelClose = () => {
     if (isPanelOpen) return;
     setIsPanelMounted(false);
-    triggerRef.current?.focus({ preventScroll: true });
+    if (!hideTrigger) triggerRef.current?.focus({ preventScroll: true });
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -160,6 +172,7 @@ export default function CustomPlanRequest() {
 
   return (
     <>
+      {!hideTrigger && (
       <article className={styles.customPlan}>
         <div className={styles.customPlanTop}>
           <div>
@@ -181,11 +194,13 @@ export default function CustomPlanRequest() {
           <span aria-hidden="true">↗</span>
         </button>
       </article>
+      )}
 
       {isPanelMounted && typeof document !== 'undefined' && createPortal(
         <div
           className={styles.customPlanDrawerBackdrop}
           data-open={isPanelOpen ? 'true' : 'false'}
+          data-dashboard-mode={dashboardMode ? 'true' : undefined}
           aria-hidden={!isPanelOpen}
           role="presentation"
           onMouseDown={(event) => {
@@ -367,4 +382,9 @@ export default function CustomPlanRequest() {
       )}
     </>
   );
-}
+  }
+);
+
+CustomPlanRequest.displayName = 'CustomPlanRequest';
+
+export default CustomPlanRequest;
