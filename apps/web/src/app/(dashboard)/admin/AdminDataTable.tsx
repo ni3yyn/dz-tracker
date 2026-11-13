@@ -7,11 +7,14 @@ interface AdminDataTableProps {
   header?: ReactNode;
   maxHeight?: string | number;
   footer?: ReactNode;
+  container?: boolean;
+  scrollArea?: boolean;
 }
 
 /**
- * Shared admin table frame.
- * Every admin table uses the same container, scroll area, header cells and row styling.
+ * Shared admin table markup and styling.
+ * Use the full frame by default, or render only the table inside an existing
+ * table container/scroll area when composing it with an existing admin header.
  */
 export function AdminDataTable({
   columns,
@@ -19,26 +22,43 @@ export function AdminDataTable({
   header,
   maxHeight,
   footer,
+  container = true,
+  scrollArea = true,
 }: AdminDataTableProps) {
+  const table = (
+    <table className={styles.dataTable}>
+      <thead>
+        <tr>
+          {columns.map((column, index) => (
+            <th key={index}>{column}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>{children}</tbody>
+    </table>
+  );
+
+  const content = scrollArea ? (
+    <div
+      className={styles.tableScrollArea}
+      style={maxHeight == null ? undefined : { maxHeight }}
+    >
+      {table}
+      {footer}
+    </div>
+  ) : (
+    <>
+      {table}
+      {footer}
+    </>
+  );
+
+  if (!container) return content;
+
   return (
     <div className={styles.tableContainer}>
       {header}
-      <div
-        className={styles.tableScrollArea}
-        style={maxHeight == null ? undefined : { maxHeight }}
-      >
-        <table className={styles.dataTable}>
-          <thead>
-            <tr>
-              {columns.map((column, index) => (
-                <th key={index}>{column}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>{children}</tbody>
-        </table>
-        {footer}
-      </div>
+      {content}
     </div>
   );
 }
