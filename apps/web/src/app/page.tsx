@@ -4,7 +4,7 @@ import ScrollRevealObserver from './ScrollRevealObserver';
 import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import FaqAccordion from './FaqAccordion';
-import PricingCalculator from './PricingCalculator';
+import CustomPlanRequest from './CustomPlanRequest';
 import { createClient } from '../lib/supabase-server';
 
 export const metadata = {
@@ -481,7 +481,7 @@ export default async function HomePage() {
         <div className={styles.pricingHead}>
           <span className={styles.sectionEyebrow}>تسعير حسب روابط التتبّع</span>
           <h2 id="pricing-title">سعر واضح.<br /><em>حسب حجم متجرك.</em></h2>
-          <p>أدخل عدد روابط التتبّع المتوقع شهرياً، وسيظهر لك الاشتراك المناسب مباشرة.</p>
+          <p>باقات واضحة للمتاجر من البداية وحتى 500 رابط تتبّع شهرياً. وللحجم الأكبر، نتفق معك على باقة تناسب نشاطك.</p>
         </div>
         <div className={styles.pricingList}>
           <article className={styles.priceRow}>
@@ -504,9 +504,9 @@ export default async function HomePage() {
             <div className={styles.priceAmount}><strong>2,500</strong><span>دج / شهرياً</span></div>
             <a href="/register" className={styles.priceLink}>اختر الخطة <span aria-hidden="true">↗</span></a>
           </article>
-          <PricingCalculator />
+          <CustomPlanRequest />
         </div>
-        <p className={styles.pricingNote}>يُحتسب كل طلب جديد برابط تتبّع واحد ضمن الاستهلاك الشهري. تحديثات شركة التوصيل وإعادة إرسال الأحداث لا تستهلك روابط إضافية.</p>
+        <p className={styles.pricingNote}>يُحتسب كل طلب جديد برابط تتبّع واحد ضمن الاستهلاك الشهري. تحديثات شركة التوصيل وإعادة إرسال الأحداث لا تستهلك روابط إضافية. للمتاجر ذات الحجم الأكبر، تواصل معنا للحصول على عرض مخصص.</p>
       </section>
 
       <section className={styles.faqSection} id="faq" aria-labelledby="faq-title" data-dz-reveal>
