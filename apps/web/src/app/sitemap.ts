@@ -1,10 +1,15 @@
 import type { MetadataRoute } from 'next';
 
+const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://tajertrack.vercel.app';
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://tajertrack.vercel.app';
   return [
-    { url: base, lastModified: new Date() },
-    { url: `${base}/privacy`, lastModified: new Date() },
-    { url: `${base}/terms`, lastModified: new Date() },
+    { url: base },
+    { url: `${base}/about` },
+    { url: `${base}/privacy` },
+    { url: `${base}/terms` },
+    { url: `${base}/solutions/sms-order-tracking-algeria` },
+    { url: `${base}/solutions/after-sales-ecommerce-algeria` },
+    { url: `${base}/fr/suivi-commandes-ecommerce` },
   ];
 }

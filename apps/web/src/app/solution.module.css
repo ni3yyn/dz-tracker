@@ -1,0 +1,50 @@
+/* TajerTrack editorial solution pages: semantic, spacious, and deliberately free of card stacks. */
+.page {
+  --paper: #f7f6f0;
+  --ink: #202a23;
+  --muted: #657267;
+  --line: #e2e6dd;
+  --green: #294b37;
+  --clay: #d57955;
+  min-height: 100svh;
+  padding-inline: clamp(18px, 5vw, 72px);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Readex Pro', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+}
+.page[dir='rtl'] { direction: rtl; text-align: right; }
+.page[dir='ltr'] { direction: ltr; text-align: left; }
+.siteHeader { width: min(100%, 1280px); height: 82px; margin: 0 auto; }
+.content { width: min(100%, 920px); margin: 20px auto 0; padding-bottom: 20px; }
+.hero { padding: 14px 0 38px; border-bottom: 1px solid var(--line); }
+.eyebrow { display: inline-block; color: #7a867a; font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.hero h1 { max-width: 850px; margin: 15px 0 0; color: var(--ink); font-size: clamp(31px, 5vw, 48px); font-weight: 700; line-height: 1.45; letter-spacing: -.055em; }
+.intro { max-width: 790px; margin: 17px 0 0; color: var(--muted); font-size: clamp(14px, 1.6vw, 17px); line-height: 2.1; }
+.article { padding-top: 7px; }
+.section, .faq, .related { padding: 27px 0; border-bottom: 1px solid var(--line); }
+.section h2, .faq h2, .related h2 { margin: 0 0 13px; color: var(--green); font-size: clamp(17px, 2vw, 21px); font-weight: 700; line-height: 1.7; }
+.section p, .faqItem p { max-width: 820px; margin: 0 0 12px; color: #465349; font-size: 13px; line-height: 2.15; }
+.section p:last-child, .faqItem p:last-child { margin-bottom: 0; }
+.section ul { margin: 8px 0 0; padding-inline-start: 22px; color: #465349; font-size: 13px; line-height: 2.2; }
+.section li { margin: 5px 0; padding-inline-start: 4px; }
+.faqItem { padding: 14px 0; border-top: 1px solid rgba(190, 199, 185, .55); }
+.faqItem:first-of-type { border-top: 0; }
+.faqItem h3 { margin: 0 0 5px; color: #273b2e; font-size: 14px; font-weight: 700; line-height: 1.8; }
+.related a { display: flex; align-items: center; justify-content: space-between; gap: 18px; max-width: 560px; padding: 9px 0; color: var(--green); font-size: 13px; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(190, 199, 185, .45); }
+.related a:last-child { border-bottom: 0; }
+.related a span { color: var(--clay); }
+.cta { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 29px 0 8px; }
+.cta p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.9; }
+.cta a { display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-height: 46px; padding: 0 17px; color: #fffefa; background: var(--green); font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; transition: background .2s ease; }
+.cta a:hover { background: #1d3427; }
+.footer { margin: 70px calc(-1 * clamp(18px, 5vw, 72px)) 0; padding-inline: clamp(18px, 5vw, 72px); }
+@media (max-width: 640px) {
+  .page { padding-inline: 16px; }
+  .siteHeader { height: 70px; }
+  .content { margin-top: 9px; }
+  .hero { padding-bottom: 25px; }
+  .section, .faq, .related { padding: 21px 0; }
+  .section p, .faqItem p, .section ul { font-size: 12px; }
+  .cta { align-items: flex-start; flex-direction: column; }
+  .footer { margin-inline: -16px; padding-inline: 16px; }
+}

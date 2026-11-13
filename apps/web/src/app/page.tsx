@@ -8,8 +8,8 @@ import CustomPlanRequest from './CustomPlanRequest';
 import { createClient } from '../lib/supabase-server';
 
 export const metadata = {
-  title: 'نظام تتبّع طلبات المتاجر',
-  description: 'أرسل روابط تتبّع الطلبات عبر SMS، وتابع الشحنات، وقدّم لزبائنك تجربة أسهل للاستبدال وخدمات ما بعد البيع.',
+  title: 'تتبّع طلبات المتاجر الجزائرية عبر SMS',
+  description: 'تاجر تراك منصة لتتبّع طلبات المتاجر الإلكترونية في الجزائر. ترسل رابط التتبّع عبر SMS، مع Telegram كخيار إضافي، وتسهّل متابعة الشحن وطلبات الاستبدال بعد التسليم.',
 };
 
 const steps = [
@@ -466,7 +466,7 @@ export default async function HomePage() {
         <div className={styles.heroCopy} data-dz-reveal>
           
           <h1 id="hero-title">كل طلب له رحلة<br /><em>حتى بعد التسليم.</em></h1>
-          <p className={styles.heroDescription}>يرسل تاجر تراك رابط التتبّع للزبون عبر SMS، مع إمكانية استخدام Telegram كقناة إضافية. ويتابع الزبون تحديثات الشحنة، ثم يجد طريقاً واضحاً لخدمات ما بعد البيع من الصفحة نفسها.</p>
+          <p className={styles.heroDescription}>تاجر تراك منصة لتتبّع طلبات المتاجر الإلكترونية في الجزائر. ترسل رابط التتبّع للزبون عبر SMS، مع Telegram كقناة إضافية، وتجمع متابعة الشحنة وخدمات ما بعد البيع في صفحة واحدة.</p>
           <div className={styles.heroActions}>
             <a className={styles.primaryButton} href={isAuthenticated ? "/merchant" : "/register"}>{isAuthenticated ? "افتح لوحة التاجر" : "اربط متجرك الآن"} <span aria-hidden="true">↗</span></a>
             <a className={styles.secondaryButton} href="#how-it-works">شاهد طريقة الربط <span aria-hidden="true">↓</span></a>

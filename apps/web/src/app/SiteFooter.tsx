@@ -38,6 +38,9 @@ export default function SiteFooter({
           <a href={sectionHref('features')}>المزايا</a>
           <a href={sectionHref('pricing')}>الخطط والأسعار</a>
           <a href={sectionHref('faq')}>الأسئلة الشائعة</a>
+          <a href="/solutions/sms-order-tracking-algeria">تتبّع الطلبات عبر SMS</a>
+          <a href="/solutions/after-sales-ecommerce-algeria">خدمات ما بعد البيع</a>
+          <a href="/fr/suivi-commandes-ecommerce" lang="fr" dir="ltr">Suivi des commandes (FR)</a>
         </nav>
         <nav className={styles.footerNav} aria-label="روابط حساب التاجر">
           <h2>حساب التاجر</h2>
