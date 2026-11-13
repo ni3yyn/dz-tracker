@@ -961,7 +961,7 @@ export function AdminDashboardView({
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label className={styles.formLabel}>سقف الطلبات الشهري الجديد (Limit)</label>
+                <label className={styles.formLabel}>سقف روابط التتبّع الشهري الجديد (Limit)</label>
                 <input 
                   type="number" 
                   name="limit" 
@@ -970,7 +970,7 @@ export function AdminDashboardView({
                   className={styles.input}
                 />
                 <small style={{ color: 'var(--ink-muted)', display: 'block', marginTop: '6px', fontSize: '11px' }}>
-                  `الحد الشهري المخصص لهذا المتجر: ${editLimit} رابط تتبّع.`
+                  {`الحد الشهري المخصص لهذا المتجر: ${editLimit} رابط تتبّع.`}
                 </small>
               </div>
 
