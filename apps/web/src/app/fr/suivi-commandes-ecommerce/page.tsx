@@ -5,7 +5,7 @@ const canonical = 'https://tajertrack.vercel.app/fr/suivi-commandes-ecommerce';
 
 export const metadata: Metadata = {
   title: 'Suivi des commandes e-commerce en Algérie',
-  description: 'TajerTrack aide les boutiques en ligne en Algérie à envoyer le lien de suivi par SMS, suivre les livraisons et gérer les demandes d’échange après réception.',
+  description: 'Envoyez le lien de suivi depuis votre propre numéro et votre carte SIM avec TajerTrack, sans frais SMS facturés par TajerTrack.',
   alternates: {
     canonical,
     languages: {
@@ -29,7 +29,7 @@ export default function FrenchOrderTrackingSolution() {
       direction="ltr"
       eyebrow="Pour les boutiques en ligne en Algérie"
       title="Suivi des commandes e-commerce par SMS"
-      intro="TajerTrack est une plateforme de suivi des commandes conçue pour les boutiques e-commerce en Algérie. Elle envoie au client un lien de suivi par SMS, afin qu’il puisse consulter l’avancement de sa livraison sur une page aux couleurs de votre boutique. Telegram reste un canal complémentaire."
+      intro="TajerTrack est une plateforme de suivi des commandes conçue pour les boutiques e-commerce en Algérie. Le lien de suivi est envoyé par SMS depuis votre propre numéro et votre carte SIM, sans frais SMS facturés par TajerTrack. Votre client consulte ensuite l’avancement de sa livraison sur une page aux couleurs de votre boutique. Telegram reste un canal complémentaire."
       sections={[
         {
           id: 'suivi-sms',
@@ -43,6 +43,19 @@ export default function FrenchOrderTrackingSolution() {
             'Affichage des statuts et événements de livraison disponibles.',
             'Page de suivi personnalisée à l’image de la boutique.',
             'Telegram disponible comme canal d’envoi complémentaire, selon les réglages du commerçant.',
+          ],
+        },
+        {
+          id: 'sms-votre-numero',
+          title: 'Vos SMS, depuis votre propre numéro, sans frais TajerTrack',
+          paragraphs: [
+            'Le lien de suivi part de votre propre numéro et de votre carte SIM grâce à la passerelle SMS intégrée à TajerTrack. Vous n’avez pas de crédit SMS à acheter auprès de TajerTrack et la plateforme ne facture pas de frais par message. Les éventuels coûts ou débits dépendent de votre forfait et de votre opérateur mobile.',
+            'L’envoi SMS fait ainsi partie du parcours de suivi TajerTrack, plutôt que d’un solde de messages séparé à recharger sur une plateforme tierce.',
+          ],
+          bullets: [
+            'Envoi depuis votre numéro et votre carte SIM.',
+            'Aucun portefeuille SMS ni frais par message facturé par TajerTrack.',
+            'Les éventuels frais dépendent de votre forfait opérateur.',
           ],
         },
         {
@@ -74,6 +87,14 @@ export default function FrenchOrderTrackingSolution() {
         {
           question: 'TajerTrack envoie-t-il le lien de suivi par SMS ?',
           answer: 'Oui. TajerTrack envoie le lien de la page de suivi au client par SMS. Les options de configuration sont disponibles dans le tableau de bord.',
+        },
+        {
+          question: 'TajerTrack facture-t-il les SMS ?',
+          answer: 'Non. TajerTrack ne vend pas de crédit SMS et ne facture pas chaque message. Les SMS sont envoyés depuis votre propre numéro et votre carte SIM via la passerelle intégrée ; les éventuels coûts dépendent de votre forfait opérateur.',
+        },
+        {
+          question: 'Dois-je acheter un crédit SMS auprès de TajerTrack ?',
+          answer: 'Non. Vous utilisez votre propre SIM et votre numéro ; aucun solde SMS TajerTrack n’est à recharger.',
         },
         {
           question: 'Telegram est-il obligatoire ?',

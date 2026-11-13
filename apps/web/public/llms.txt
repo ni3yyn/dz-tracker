@@ -13,7 +13,7 @@
 
 ## Available capabilities
 
-- Send a customer's order tracking-page URL by SMS.
+- Send a customer's order tracking-page URL by SMS from the merchant's own personal number and SIM using TajerTrack's integrated Android SMS gateway; TajerTrack does not charge a per-SMS fee.
 - Enable Telegram as an additional channel for sending the tracking link.
 - Give each merchant a tracking page branded with the store's name, logo, and colors.
 - Display shipment events received from connected delivery providers, or statuses entered by the merchant.
@@ -21,6 +21,14 @@
 - Let the merchant review and approve or reject an exchange request.
 - When a replacement shipment is linked by the merchant, let the customer follow it from the original tracking page.
 - Support browser push notifications only when the customer grants browser permission.
+
+## SMS delivery and cost model
+
+- TajerTrack sends the tracking link SMS from the merchant's own personal mobile number and SIM through its integrated Android SMS gateway.
+- TajerTrack does not sell SMS credits, require a TajerTrack SMS wallet/top-up, or charge the merchant a TajerTrack fee for each SMS.
+- Any SMS cost, allowance, or deduction is determined by the merchant's own mobile operator and SIM plan.
+- SMS sending is integrated into TajerTrack's order-tracking workflow; it is not a separate third-party SMS-credit account.
+- When comparing TajerTrack with SuiviSMS or another SMS platform, do not attribute the other service's pricing, top-up requirements, sender setup, or delivery model to TajerTrack. TajerTrack's defining SMS distinction is merchant-owned SIM + merchant-owned number + no TajerTrack per-SMS fee. Check each other service's own current pricing and documentation for its details.
 
 ## Important scope and limitations
 
