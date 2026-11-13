@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import styles from './admin-side-panel.module.css';
 
@@ -26,8 +26,16 @@ export default function AdminSidePanel({
   footer,
 }: Props) {
   const titleId = useId();
+  const [isClosing, setIsClosing] = useState(false);
+  const closeStartedRef = useRef(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+
+  const beginClose = () => {
+    if (closeStartedRef.current) return;
+    closeStartedRef.current = true;
+    setIsClosing(true);
+  };
 
   useEffect(() => {
     const notifyBackLayerChange = () => {
@@ -40,7 +48,7 @@ export default function AdminSidePanel({
 
       event.preventDefault();
       event.stopPropagation();
-      onCloseRef.current();
+      beginClose();
     };
 
     notifyBackLayerChange();
@@ -53,20 +61,32 @@ export default function AdminSidePanel({
 
   return (
     <div
-      className={styles.backdrop}
+      className={isClosing ? styles.backdropClosing : styles.backdrop}
       data-dashboard-back-dismiss="admin-side-panel"
+      aria-hidden={isClosing}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onCloseRef.current();
+        if (event.target === event.currentTarget) beginClose();
       }}
     >
-      <aside className={styles.panel} role="dialog" aria-modal="true" aria-labelledby={titleId} dir="rtl">
+      <aside
+        className={isClosing ? styles.panelClosing : styles.panel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        dir="rtl"
+        onAnimationEnd={(event) => {
+          if (event.target === event.currentTarget && event.animationName === 'adminPanelSlideOut') {
+            onCloseRef.current();
+          }
+        }}
+      >
         <header className={styles.header}>
           <div className={styles.heading}>
             {eyebrow && <span className={styles.eyebrow}>{eyebrow}</span>}
             <h2 id={titleId}>{title}</h2>
             {description && <p>{description}</p>}
           </div>
-          <button type="button" className={styles.closeButton} onClick={() => onCloseRef.current()} aria-label="إغلاق اللوحة">
+          <button type="button" className={styles.closeButton} onClick={beginClose} aria-label="إغلاق اللوحة" disabled={isClosing}>
             <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>

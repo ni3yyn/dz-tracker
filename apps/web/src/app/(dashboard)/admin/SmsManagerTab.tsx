@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   retrySmsTrackingJob,
+  deleteReplacedSmsGatewayDevice,
   setSmsGatewayEnabled,
   setSmsGatewayDeviceEnabled,
 } from './actions';
@@ -51,6 +52,24 @@ type SmsAdminEvent = {
   created_at: string;
 };
 
+type NativeSmsDevice = {
+  device_id: string;
+  display_name: string;
+  merchant_id: string;
+  enabled: boolean;
+  platform: string | null;
+  app_version: string | null;
+  device_model: string | null;
+  connected_at: string | null;
+  revoked_at: string | null;
+  last_seen_at: string | null;
+  last_claim_at: string | null;
+  last_result_at: string | null;
+  last_status: string | null;
+  last_error: string | null;
+  merchants?: Related<{ store_name: string | null }>;
+};
+
 export type SmsManagerData = {
   ready: boolean;
   setupError?: string | null;
@@ -65,22 +84,7 @@ export type SmsManagerData = {
     last_status: string | null;
     last_error: string | null;
   } | null;
-  nativeDevices?: Array<{
-    device_id: string;
-    display_name: string;
-    merchant_id: string;
-    enabled: boolean;
-    platform: string | null;
-    app_version: string | null;
-    device_model: string | null;
-    revoked_at: string | null;
-    last_seen_at: string | null;
-    last_claim_at: string | null;
-    last_result_at: string | null;
-    last_status: string | null;
-    last_error: string | null;
-    merchants?: Related<{ store_name: string | null }>;
-  }>;
+  nativeDevices?: NativeSmsDevice[];
   jobs: SmsJob[];
   attempts: SmsAttempt[];
   events: SmsAdminEvent[];
@@ -137,6 +141,48 @@ function gatewayFreshness(lastSeen: string | null | undefined): { label: string;
   return { label: 'متصل', tone: 'online' };
 }
 
+function formatSince(value: string | null | undefined): string {
+  if (!value) return 'لا توجد نبضة اتصال مسجلة';
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return 'وقت الاتصال غير معروف';
+  const elapsed = Math.max(0, Date.now() - timestamp);
+  if (elapsed < 60_000) return 'منذ أقل من دقيقة';
+  if (elapsed < 3_600_000) return 'منذ ' + Math.floor(elapsed / 60_000).toLocaleString('ar-DZ') + ' دقيقة';
+  if (elapsed < 86_400_000) return 'منذ ' + Math.floor(elapsed / 3_600_000).toLocaleString('ar-DZ') + ' ساعة';
+  return 'منذ ' + Math.floor(elapsed / 86_400_000).toLocaleString('ar-DZ') + ' يوم';
+}
+
+function nativeDeviceStatus(device: NativeSmsDevice): { label: string; tone: string; detail: string } {
+  if (!device.enabled) {
+    return {
+      label: 'موقوف من الإدارة',
+      tone: 'muted',
+      detail: 'هذا الهاتف مقترن، لكن الإدارة منعت استخدامه للإرسال.',
+    };
+  }
+
+  const freshness = gatewayFreshness(device.last_seen_at);
+  if (freshness.tone === 'online') {
+    return {
+      label: 'متصل الآن',
+      tone: 'online',
+      detail: 'خدمة SMS تعمل وتتواصل مع تاجر تراك.',
+    };
+  }
+  if (freshness.tone === 'warning') {
+    return {
+      label: 'الاتصال متأخر',
+      tone: 'warning',
+      detail: 'الهاتف مقترن، لكن آخر نبضة اتصال أقدم من المعتاد.',
+    };
+  }
+  return {
+    label: 'مقترن، دون اتصال حديث',
+    tone: 'offline',
+    detail: 'الاقتران محفوظ، لكن خدمة SMS لا ترسل نبض اتصال حالياً.',
+  };
+}
+
 function statusTone(status: string): string {
   if (status === 'submitted') return 'success';
   if (status === 'pending' || status === 'retry' || status === 'processing') return 'active';
@@ -175,6 +221,8 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
   const [filter, setFilter] = useState<string>('all');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [retryTarget, setRetryTarget] = useState<SmsJob | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<NativeSmsDevice | null>(null);
+  const [showReplacedDevices, setShowReplacedDevices] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -185,7 +233,10 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
     };
     const dismissOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+      const layer = (event as KeyboardEvent & { __tajerDashboardBackLayer?: string }).__tajerDashboardBackLayer;
+      if (layer && layer !== 'admin-sms-retry') return;
       event.preventDefault();
+      event.stopPropagation();
       setRetryTarget(null);
     };
     notifyBackLayerChange();
@@ -195,6 +246,27 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
       notifyBackLayerChange();
     };
   }, [retryTarget]);
+
+  useEffect(() => {
+    if (!deleteTarget) return;
+    const notifyBackLayerChange = () => {
+      window.dispatchEvent(new Event('tajer-dashboard-back-layer-change'));
+    };
+    const dismissOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      const layer = (event as KeyboardEvent & { __tajerDashboardBackLayer?: string }).__tajerDashboardBackLayer;
+      if (layer && layer !== 'admin-sms-device-delete') return;
+      event.preventDefault();
+      event.stopPropagation();
+      setDeleteTarget(null);
+    };
+    notifyBackLayerChange();
+    document.addEventListener('keydown', dismissOnEscape, true);
+    return () => {
+      document.removeEventListener('keydown', dismissOnEscape, true);
+      notifyBackLayerChange();
+    };
+  }, [deleteTarget]);
 
   useEffect(() => {
     void refreshData();
@@ -283,7 +355,29 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
     [data.jobs, selectedJobId],
   );
 
-  const freshness = gatewayFreshness(data.device?.last_seen_at);
+  const allNativeDevices = data.nativeDevices || [];
+  const activeNativeDevices = allNativeDevices.filter((phone) => !phone.revoked_at);
+  const replacedNativeDevices = allNativeDevices.filter((phone) => Boolean(phone.revoked_at));
+  const connectedNativeDevices = activeNativeDevices.filter(
+    (phone) => phone.enabled && gatewayFreshness(phone.last_seen_at).tone === 'online',
+  );
+  const enabledNativeDevices = activeNativeDevices.filter((phone) => phone.enabled);
+  const filteredActiveDevices = filteredNativeDevices.filter((phone) => !phone.revoked_at);
+  const filteredReplacedDevices = filteredNativeDevices.filter((phone) => Boolean(phone.revoked_at));
+
+  const gatewayStatus = !data.control?.enabled
+    ? { label: 'الإرسال متوقف من لوحة الإدارة', tone: 'warning' }
+    : connectedNativeDevices.length > 0
+      ? {
+          label: connectedNativeDevices.length.toLocaleString('ar-DZ') + ' هاتف متصل الآن',
+          tone: 'online',
+        }
+      : enabledNativeDevices.length > 0
+        ? { label: 'الهواتف مقترنة، لكن خدمة الإرسال غير نشطة', tone: 'warning' }
+        : activeNativeDevices.length > 0
+          ? { label: 'الهواتف المقترنة موقوفة من الإدارة', tone: 'warning' }
+          : { label: 'لم يتم ربط هاتف بعد', tone: 'offline' };
+
   const queued = (data.counts.pending || 0) + (data.counts.retry || 0);
   const needsReview = (data.counts.unknown || 0) + (data.counts.dead_letter || 0) + (data.counts.failed || 0);
 
@@ -311,13 +405,6 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
     return runAction('gateway', () => setSmsGatewayEnabled(form), enabled ? 'تم تشغيل بوابة SMS.' : 'تم إيقاف إرسال SMS مؤقتاً.');
   }
 
-  function toggleDevice(enabled: boolean) {
-    const form = new FormData();
-    form.set('device_id', data.device?.device_id || 'android-sms-gateway');
-    form.set('enabled', String(enabled));
-    return runAction('device', () => setSmsGatewayDeviceEnabled(form), enabled ? 'تم تفعيل الجهاز.' : 'تم تعطيل الجهاز.');
-  }
-
   function toggleNativeDevice(deviceId: string, enabled: boolean) {
     const form = new FormData();
     form.set('device_id', deviceId);
@@ -326,6 +413,17 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
       'native-device:' + deviceId,
       () => setSmsGatewayDeviceEnabled(form),
       enabled ? 'تم تفعيل هاتف التاجر.' : 'تم إيقاف هاتف التاجر.',
+    );
+  }
+
+  function confirmDeleteReplacedDevice() {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    void runAction(
+      'delete-device:' + target.device_id,
+      () => deleteReplacedSmsGatewayDevice(target.device_id),
+      'تم حذف سجل الهاتف المستبدل فقط.',
     );
   }
 
@@ -369,19 +467,20 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
           <span className={styles.eyebrow}>SMS GATEWAY / OPERATIONS</span>
           <div className={styles.healthTitleRow}>
             <h2>حالة بوابة الرسائل</h2>
-            <span className={styles.healthStatus} data-tone={freshness.tone}>
-              <i />{freshness.label}
+            <span className={styles.healthStatus} data-tone={gatewayStatus.tone}>
+              <i />{gatewayStatus.label}
             </span>
           </div>
-          <p>
-            {data.device?.display_name || 'بوابة Android SIM'}
-            <span>آخر اتصال: {formatDate(data.device?.last_seen_at)}</span>
+          <p className={styles.gatewaySummary}>
+            <span>{activeNativeDevices.length.toLocaleString('ar-DZ')} هاتف مقترن</span>
+            <span>{connectedNativeDevices.length.toLocaleString('ar-DZ')} متصل الآن</span>
+            <span>{replacedNativeDevices.length.toLocaleString('ar-DZ')} سجل مستبدل</span>
           </p>
         </div>
         <div className={styles.healthActions}>
           <div className={styles.switchCopy}>
-            <strong>{data.control?.enabled ? 'الإرسال العام مفعّل' : 'الإرسال العام متوقف'}</strong>
-            <small>إيقاف البوابة يمنع الأجهزة من استلام رسائل جديدة؛ ولا يحذف الرسائل المعلّقة.</small>
+            <strong>{data.control?.enabled ? 'السماح العام بالإرسال مفعّل' : 'الإرسال العام متوقف'}</strong>
+            <small>هذا المفتاح يسمح للأجهزة المعتمدة باستلام الرسائل. لا يعني بحد ذاته أن هاتفاً متصلاً الآن.</small>
           </div>
           <button
             type="button"
@@ -402,74 +501,150 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
         <div className={styles.metric}><span>تم التخطي</span><strong>{(data.counts.skipped || 0).toLocaleString('ar-DZ')}</strong><small>رقم غير صالح أو إعداد التاجر متوقف</small></div>
       </div>
 
-      <div className={styles.devicePanel}>
-        <div>
-          <span className={styles.eyebrow}>SENDING DEVICE</span>
-          <h3>{data.device?.display_name || 'Primary Android SIM gateway'}</h3>
-          <p>آخر طلب من الجهاز: {formatDate(data.device?.last_seen_at)} · آخر نتيجة: {formatDate(data.device?.last_result_at)}</p>
-          {data.device?.last_error && <p className={styles.deviceError}>آخر خطأ: {data.device.last_error}</p>}
-          {data.device?.last_status && <p>آخر حالة مرسلة: {STATUS_LABELS[data.device.last_status] || data.device.last_status}</p>}
-        </div>
-        <div className={styles.deviceActions}>
-          <span className={data.device?.enabled ? styles.deviceEnabled : styles.deviceDisabled}>
-            {data.device?.enabled ? 'الجهاز مسموح له بالإرسال' : 'الجهاز معطّل'}
-          </span>
-          <button
-            type="button"
-            className={styles.secondaryAction}
-            disabled={busy !== null || !data.device}
-            onClick={() => void toggleDevice(!data.device?.enabled)}
-          >
-            {busy === 'device' ? 'جارٍ التحديث…' : data.device?.enabled ? 'تعطيل الجهاز' : 'تفعيل الجهاز'}
-          </button>
-        </div>
-      </div>
-
-      <div className={styles.queuePanel}>
+      <section className={styles.queuePanel} aria-label="هواتف SMS المقترنة">
         <div className={styles.sectionHeader}>
-          <div><span className={styles.eyebrow}>MERCHANT PHONES</span><h3>هواتف التجار المرتبطة</h3></div>
-          <span className={styles.sectionMeta}>{filteredNativeDevices.length.toLocaleString('ar-DZ')} من {(data.nativeDevices || []).length.toLocaleString('ar-DZ')} جهاز</span>
+          <div>
+            <span className={styles.eyebrow}>MERCHANT PHONES</span>
+            <h3>هواتف SMS المقترنة</h3>
+            <p className={styles.deviceSectionHint}>
+              الهاتف المقترن محفوظ في حساب المتجر. يظهر «متصل الآن» فقط عندما تكون خدمة الإرسال مشغّلة على الهاتف وترسل نبضات اتصال.
+            </p>
+          </div>
+          <span className={styles.sectionMeta}>
+            {filteredActiveDevices.length.toLocaleString('ar-DZ')} من {activeNativeDevices.length.toLocaleString('ar-DZ')} هاتف
+          </span>
         </div>
-        {filteredNativeDevices.length ? (
+
+        {filteredActiveDevices.length ? (
           <div className={styles.nativeDeviceList}>
-            {filteredNativeDevices.map((phone) => {
+            {filteredActiveDevices.map((phone) => {
               const merchant = related(phone.merchants);
-              const freshness = gatewayFreshness(phone.last_seen_at);
-              const revoked = Boolean(phone.revoked_at);
-              const canManage = !revoked;
+              const status = nativeDeviceStatus(phone);
               return (
-                <div className={styles.devicePanel} key={phone.device_id}>
-                  <div>
-                    <span className={styles.eyebrow}>{merchant?.store_name || 'متجر تاجر تراك'}</span>
-                    <h3>{phone.display_name || phone.device_model || 'هاتف Android'}</h3>
-                    <p>
-                      {phone.platform || 'android'} · إصدار التطبيق {phone.app_version || '—'} · آخر اتصال: {formatDate(phone.last_seen_at)}
-                    </p>
-                    {phone.last_status && <p>آخر نتيجة: {STATUS_LABELS[phone.last_status] || phone.last_status}</p>}
-                    {phone.last_error && <p className={styles.deviceError}>آخر خطأ: {phone.last_error}</p>}
-                    <small className={styles.nativeDeviceId}>معرّف الجهاز: {phone.device_id}</small>
+                <article className={styles.nativeDeviceRow} key={phone.device_id}>
+                  <span className={styles.nativeDeviceIndicator} data-tone={status.tone} aria-hidden="true" />
+                  <div className={styles.nativeDeviceInfo}>
+                    <div className={styles.nativeDeviceHeading}>
+                      <strong>{merchant?.store_name || 'متجر تاجر تراك'}</strong>
+                      <span className={styles.nativeDeviceModel}>{phone.device_model || phone.display_name || 'هاتف Android'}</span>
+                      <span className={styles.nativeDeviceStatus} data-tone={status.tone}>{status.label}</span>
+                    </div>
+                    <p>{status.detail}</p>
+                    <small>
+                      آخر اتصال: {formatSince(phone.last_seen_at)}
+                      <span> · آخر نتيجة: {phone.last_status ? (STATUS_LABELS[phone.last_status] || phone.last_status) : 'لا توجد نتيجة بعد'}</span>
+                      <span> · التطبيق: {phone.app_version || 'غير معروف'}</span>
+                    </small>
+                    {phone.last_error && <small className={styles.deviceError}>آخر خطأ: {phone.last_error}</small>}
+                    <small className={styles.nativeDeviceId}>
+                      معرّف الهاتف: …{phone.device_id.slice(-8)}
+                      {phone.connected_at ? ' · تاريخ الربط: ' + formatDate(phone.connected_at) : ''}
+                    </small>
                   </div>
-                  <div className={styles.deviceActions}>
-                    <span className={phone.enabled && !revoked ? styles.deviceEnabled : styles.deviceDisabled}>
-                      {revoked ? 'تم استبدال الهاتف' : phone.enabled ? freshness.label : 'معطّل'}
-                    </span>
+                  <div className={styles.nativeDeviceActions}>
                     <button
                       type="button"
                       className={styles.secondaryAction}
-                      disabled={busy !== null || !canManage}
+                      disabled={busy !== null}
                       onClick={() => void toggleNativeDevice(phone.device_id, !phone.enabled)}
                     >
-                      {busy === 'native-device:' + phone.device_id ? 'جارٍ التحديث…' : phone.enabled ? 'إيقاف الهاتف' : 'تفعيل الهاتف'}
+                      {busy === 'native-device:' + phone.device_id
+                        ? 'جارٍ التحديث…'
+                        : phone.enabled ? 'منع الإرسال' : 'السماح بالإرسال'}
                     </button>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
         ) : (
-          <p className={styles.emptyAudit}>{normalizedSearch ? 'لا توجد أجهزة تطابق البحث.' : 'لم يربط أي تاجر هاتف Android حتى الآن.'}</p>
+          <p className={styles.emptyAudit}>
+            {normalizedSearch ? 'لا توجد هواتف مقترنة تطابق البحث.' : 'لم يتم ربط أي هاتف Android بعد.'}
+          </p>
         )}
-      </div>
+
+        {replacedNativeDevices.length > 0 && (
+          <div className={styles.replacedDevices}>
+            <button
+              type="button"
+              className={styles.replacedDevicesToggle}
+              aria-expanded={showReplacedDevices || (normalizedSearch.length > 0 && filteredReplacedDevices.length > 0)}
+              onClick={() => setShowReplacedDevices((current) => !current)}
+            >
+              <span>سجل الهواتف المستبدلة</span>
+              <span className={styles.replacedDevicesCount}>{filteredReplacedDevices.length.toLocaleString('ar-DZ')} من {replacedNativeDevices.length.toLocaleString('ar-DZ')}</span>
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <path d={showReplacedDevices || (normalizedSearch.length > 0 && filteredReplacedDevices.length > 0) ? 'm6 9 6 6 6-6' : 'm9 6 6 6-6 6'} />
+              </svg>
+            </button>
+            {(showReplacedDevices || (normalizedSearch.length > 0 && filteredReplacedDevices.length > 0)) && (
+              <div className={styles.replacedDevicesList}>
+                <p className={styles.replacedDevicesHint}>
+                  هذه الهواتف أُلغى ربطها تلقائياً عند ربط هاتف أحدث بالمتجر نفسه. لا يمكنها إرسال رسائل. حذف السجل يزيله من هذه القائمة فقط ولا يحذف سجل الرسائل أو المحاولات.
+                </p>
+                {filteredReplacedDevices.length ? filteredReplacedDevices.map((phone) => {
+                  const merchant = related(phone.merchants);
+                  return (
+                    <article className={styles.replacedDeviceRow} key={phone.device_id}>
+                      <div className={styles.replacedDeviceInfo}>
+                        <strong>{merchant?.store_name || 'متجر تاجر تراك'}</strong>
+                        <span>{phone.device_model || phone.display_name || 'هاتف Android'}</span>
+                        <small>تم استبداله: {formatDate(phone.revoked_at)} · المعرّف: …{phone.device_id.slice(-8)}</small>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.deleteDeviceButton}
+                        disabled={busy !== null}
+                        onClick={() => setDeleteTarget(phone)}
+                      >
+                        حذف السجل
+                      </button>
+                    </article>
+                  );
+                }) : (
+                  <p className={styles.emptyAudit}>لا توجد سجلات مستبدلة تطابق البحث.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {deleteTarget && (
+        <div
+          data-dashboard-back-dismiss="admin-sms-device-delete"
+          className={styles.modalBackdrop}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setDeleteTarget(null);
+          }}
+        >
+          <section className={styles.confirmModal} role="dialog" aria-modal="true" aria-labelledby="sms-delete-device-title" dir="rtl">
+            <span className={styles.eyebrow}>DEVICE HISTORY</span>
+            <h3 id="sms-delete-device-title">حذف سجل الهاتف المستبدل؟</h3>
+            <p>
+              سيُحذف سجل هذا الهاتف من قائمة الأجهزة فقط. لا يتأثر الهاتف المقترن حالياً، ولا تُحذف رسائل SMS أو نتائج المحاولات السابقة.
+            </p>
+            <div className={styles.deleteDeviceSummary}>
+              <strong>{related(deleteTarget.merchants)?.store_name || 'متجر تاجر تراك'}</strong>
+              <span>{deleteTarget.device_model || deleteTarget.display_name || 'هاتف Android'}</span>
+            </div>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.secondaryAction} onClick={() => setDeleteTarget(null)}>
+                إلغاء
+              </button>
+              <button
+                type="button"
+                className={styles.retryButton}
+                disabled={busy !== null}
+                onClick={confirmDeleteReplacedDevice}
+              >
+                {busy === 'delete-device:' + deleteTarget.device_id ? 'جارٍ الحذف…' : 'تأكيد الحذف'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <div className={styles.queuePanel}>
         <div className={styles.sectionHeader}>
@@ -535,8 +710,8 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
         <div className={styles.sectionHeader}><div><span className={styles.eyebrow}>ADMIN AUDIT</span><h3>سجل إجراءات الإدارة</h3></div></div>
         {filteredEvents.length ? filteredEvents.slice(0, 20).map((event) => (
           <div key={event.id} className={styles.auditRow}>
-            <span>{event.action === 'retry_job' ? 'إعادة محاولة رسالة' : event.action === 'force_retry_unknown' ? 'إعادة إرسال نتيجة مجهولة' : event.action === 'pause_gateway' ? 'إيقاف بوابة SMS' : event.action === 'resume_gateway' ? 'استئناف بوابة SMS' : event.action === 'disable_device' ? 'تعطيل جهاز' : 'تفعيل جهاز'}</span>
-            <code>{event.job_id ? event.job_id.slice(0, 8) : '—'}</code>
+            <span>{event.action === 'retry_job' ? 'إعادة محاولة رسالة' : event.action === 'force_retry_unknown' ? 'إعادة إرسال نتيجة مجهولة' : event.action === 'pause_gateway' ? 'إيقاف بوابة SMS' : event.action === 'resume_gateway' ? 'استئناف بوابة SMS' : event.action === 'disable_device' ? 'تعطيل جهاز' : event.action === 'delete_replaced_device' ? 'حذف سجل هاتف مستبدل' : 'تفعيل جهاز'}</span>
+            <code>{event.job_id ? event.job_id.slice(0, 8) : typeof event.details?.device_id === 'string' ? event.details.device_id.slice(-8) : '—'}</code>
             <small>{formatDate(event.created_at)}</small>
           </div>
         )) : <p className={styles.emptyAudit}>{normalizedSearch ? 'لا توجد إجراءات تطابق البحث.' : 'لم تُسجّل إجراءات إدارية بعد.'}</p>}

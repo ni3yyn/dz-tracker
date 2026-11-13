@@ -153,14 +153,24 @@ export function AdminDashboardView({
       const smsRetryDialog = typeof document !== 'undefined'
         ? document.querySelector('[data-dashboard-back-dismiss="admin-sms-retry"]')
         : null;
+      const smsDeviceDeleteDialog = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="admin-sms-device-delete"]')
+        : null;
       const openDropdown = typeof document !== 'undefined'
         ? document.querySelector('[data-dashboard-back-dismiss="dropdown"]')
         : null;
       const adminSidePanel = typeof document !== 'undefined'
         ? document.querySelector('[data-dashboard-back-dismiss="admin-side-panel"]')
         : null;
-      if (smsRetryDialog || openDropdown || adminSidePanel) {
-        dispatchLayerEscape(smsRetryDialog ? 'admin-sms-retry' : openDropdown ? 'dropdown' : 'admin-side-panel');
+      if (smsRetryDialog || smsDeviceDeleteDialog || openDropdown || adminSidePanel) {
+        const topLayer = smsRetryDialog
+          ? 'admin-sms-retry'
+          : smsDeviceDeleteDialog
+            ? 'admin-sms-device-delete'
+            : openDropdown
+              ? 'dropdown'
+              : 'admin-side-panel';
+        dispatchLayerEscape(topLayer);
         return true;
       }
 
@@ -971,9 +981,7 @@ export function AdminDashboardView({
           eyebrow="STORE MANAGEMENT"
           title="تعديل اشتراك المتجر"
           description={"تحديث الباقة وحدود الاستخدام لمتجر " + editingMerchant.store_name + "."}
-          onClose={() => {
-            if (!isSubmitting) setEditingMerchant(null);
-          }}
+          onClose={() => setEditingMerchant(null)}
           footer={
             <>
               <button

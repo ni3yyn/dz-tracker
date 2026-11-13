@@ -321,6 +321,43 @@ export async function setSmsGatewayDeviceEnabled(formData: FormData): Promise<Ad
   return { success: true };
 }
 
+export async function deleteReplacedSmsGatewayDevice(deviceIdInput: string): Promise<AdminActionResult> {
+  const denied = await denyUnlessAdmin();
+  if (denied) return denied;
+
+  const deviceId = String(deviceIdInput || '').trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(deviceId)) {
+    return { error: 'معرّف الهاتف غير صالح.' };
+  }
+
+  const supabase = getSupabaseAdminClient() as any;
+  const { data: deletedDevice, error } = await supabase
+    .from('sms_gateway_devices')
+    .delete()
+    .eq('device_id', deviceId)
+    .not('revoked_at', 'is', null)
+    .select('device_id')
+    .maybeSingle();
+
+  if (error) {
+    console.error('[SmsGatewayAdmin] Could not delete replaced phone:', error.message);
+    return { error: 'تعذر حذف سجل الهاتف المستبدل.' };
+  }
+  if (!deletedDevice) {
+    return { error: 'لم يُحذف السجل: يمكن حذف الهواتف المستبدلة فقط، وليس الهاتف المقترن حالياً.' };
+  }
+
+  await recordSmsAdminEvent({
+    action: 'delete_replaced_device',
+    previous_status: 'replaced',
+    new_status: 'deleted',
+    details: { device_id: deviceId },
+  });
+
+  revalidatePath('/admin');
+  return { success: true };
+}
+
 export async function retrySmsTrackingJob(formData: FormData): Promise<AdminActionResult> {
   const denied = await denyUnlessAdmin();
   if (denied) return denied;

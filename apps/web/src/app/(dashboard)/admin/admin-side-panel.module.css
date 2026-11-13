@@ -140,3 +140,31 @@
     animation-duration: .01ms !important;
   }
 }
+
+
+.backdropClosing {
+  animation: adminPanelFadeOut .2s ease both;
+  pointer-events: none;
+}
+
+.panelClosing {
+  pointer-events: none;
+  animation: adminPanelSlideOut .22s cubic-bezier(.4, 0, .2, 1) both;
+}
+
+@keyframes adminPanelFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes adminPanelSlideOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(32px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdropClosing,
+  .panelClosing {
+    animation-duration: .01ms !important;
+  }
+}
