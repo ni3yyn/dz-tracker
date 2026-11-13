@@ -81,7 +81,7 @@ export default function CustomPlanRequest() {
             </label>
             <label>
               <span>عدد روابط التتبّع المتوقع شهرياً</span>
-              <input name="monthly_tracking_urls" type="number" inputMode="numeric" min={501} max={2000000} step={1} required placeholder="مثلاً: 1000" />
+              <input name="monthly_tracking_urls" type="number" inputMode="numeric" min={1} max={2000000} step={1} required placeholder="مثلاً: 1000" />
             </label>
             <label>
               <span>شركات التوصيل التي تستخدمها</span>
