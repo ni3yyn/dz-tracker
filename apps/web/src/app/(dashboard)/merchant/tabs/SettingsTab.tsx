@@ -342,7 +342,7 @@ export function SettingsTab({
                   <div className="dz-billing-plan-list">
                     <div className={`dz-billing-plan ${subscription.tier === 'starter' ? 'is-current' : ''}`}><div><strong>مجانية</strong><small>حتى 30 رابط تتبّع شهرياً</small></div><b>0 <small>دج / شهر</small></b><span>{subscription.tier === 'starter' ? 'باقتك الحالية' : 'للتجربة والبدء'}</span><div className="dz-billing-plan-benefit">إدارة أساسية للطلبات ورابط تتبّع لكل شحنة.</div></div>
                     <div className={`dz-billing-plan ${subscription.tier === 'basic' ? 'is-current' : ''} ${selectedUpgradeTier === 'basic' ? 'is-selected' : ''}`}>
-                      <div><strong>100 رابط</strong><small>حتى 100 رابط شهرياً</small></div>
+                      <div><strong>100 رابط</strong><small>حتى 100 رابط تتبّع شهرياً</small></div>
                       <b>1,000 <small>دج / شهر</small></b>
                       <div className="dz-billing-plan-benefit">للمتاجر التي تحتاج مساحة أكبر للطلبات.</div>
                       {subscription.tier === 'basic' && hasActivePaidPlan ? (
@@ -356,7 +356,7 @@ export function SettingsTab({
                       )}
                     </div>
                     <div className={`dz-billing-plan ${subscription.tier === 'growth' ? 'is-current' : ''} ${selectedUpgradeTier === 'growth' ? 'is-selected' : ''}`}>
-                      <div><strong>200 رابط</strong><small>حتى 200 رابط شهرياً</small></div>
+                      <div><strong>200 رابط</strong><small>حتى 200 رابط تتبّع شهرياً</small></div>
                       <b>1,800 <small>دج / شهر</small></b>
                       <div className="dz-billing-plan-benefit">للنمو مع متابعة عدد أكبر من الشحنات.</div>
                       {subscription.tier === 'growth' && hasActivePaidPlan ? (
@@ -378,7 +378,7 @@ export function SettingsTab({
                       </button>
                     </div>
                   </div>
-                  <div className="dz-billing-selected-summary"><div><strong>الباقة المحددة للدفع: ${{ basic: '100 رابط', growth: '200 رابط', scale: '500 رابط' }[selectedUpgradeTier]}{hasActivePaidPlan && expiryDateFormatted ? ` (تبدأ ${expiryDateFormatted})` : ''}</strong><p>حوّل المبلغ عبر BaridiMob ثم أرسل رقم العملية ورابط صورة الوصل في النموذج أدناه. لن تتغير باقتك حتى تتم مراجعة الدفع.</p></div><div className="dz-billing-selected-price">{{ basic: '1,000', growth: '1,800', scale: '2,500' }[selectedUpgradeTier]} <small>دج / شهر</small></div></div>
+                  <div className="dz-billing-selected-summary"><div><strong>الباقة المحددة للدفع: {{ basic: '100 رابط', growth: '200 رابط', scale: '500 رابط' }[selectedUpgradeTier]}{hasActivePaidPlan && expiryDateFormatted ? ` (تبدأ ${expiryDateFormatted})` : ''}</strong><p>حوّل المبلغ عبر BaridiMob ثم أرسل رقم العملية ورابط صورة الوصل في النموذج أدناه. لن تتغير باقتك حتى تتم مراجعة الدفع.</p></div><div className="dz-billing-selected-price">{{ basic: '1,000', growth: '1,800', scale: '2,500' }[selectedUpgradeTier]} <small>دج / شهر</small></div></div>
                 </section>
               )}
 
@@ -410,9 +410,9 @@ export function SettingsTab({
                         onChange={(value) => onSelectUpgradeTier(value as UpgradeTier)}
                         variant="field"
                         options={[
-                          { value: 'basic', label: '100 رابط شهرياً — 1,000 دج' },
-                          { value: 'growth', label: '200 رابط شهرياً — 1,800 دج' },
-                          { value: 'scale', label: '500 رابط شهرياً — 2,500 دج' },
+                          { value: 'basic', label: '100 رابط تتبّع شهرياً — 1,000 دج' },
+                          { value: 'growth', label: '200 رابط تتبّع شهرياً — 1,800 دج' },
+                          { value: 'scale', label: '500 رابط تتبّع شهرياً — 2,500 دج' },
                         ]}
                       />
                     </div>
