@@ -718,16 +718,17 @@ export async function submitPaymentProof(formData: FormData) {
     return { error: 'لا يمكنك إرسال طلب دفع لمتجر آخر.' };
   }
 
-  const planTier = (formData.get('plan_tier') as string | null) || 'basic';
-  const planPrices: Record<string, number> = {
+  const requestedPlanTier = (formData.get('plan_tier') as string | null) || 'basic';
+  if (!['basic', 'growth', 'scale'].includes(requestedPlanTier)) {
+    return { error: 'الباقة المحددة غير صالحة.' };
+  }
+  const planTier = requestedPlanTier as 'basic' | 'growth' | 'scale';
+  const planPrices: Record<typeof planTier, number> = {
     basic: 1000,
     growth: 1800,
     scale: 2500,
   };
   const amountDzd = planPrices[planTier];
-  if (!amountDzd) {
-    return { error: 'الباقة المحددة غير صالحة.' };
-  }
 
   const paymentMethod = (formData.get('payment_method') as string) || 'baridimob';
   const transactionRef = (formData.get('transaction_ref') as string)?.trim() || null;
