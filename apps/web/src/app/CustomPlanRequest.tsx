@@ -4,6 +4,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { submitCustomPlanRequest } from './custom-plan-actions';
 import authStyles from './(auth)/auth.module.css';
+import { BrandedSelect } from './(dashboard)/merchant/BrandedSelect';
 import styles from './home.module.css';
 
 export default function CustomPlanRequest() {
@@ -20,6 +21,31 @@ export default function CustomPlanRequest() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const backGuardActiveRef = useRef(false);
+  const ignoreProgrammaticPopRef = useRef(false);
+  const isSubmittingRef = useRef(isSubmitting);
+  isSubmittingRef.current = isSubmitting;
+
+  const pushBackGuard = () => {
+    const currentState = window.history.state && typeof window.history.state === 'object'
+      ? window.history.state as Record<string, unknown>
+      : {};
+    window.history.pushState(
+      { ...currentState, __tajerCustomPlanRequestDrawer: true },
+      '',
+      window.location.href
+    );
+    backGuardActiveRef.current = true;
+  };
+
+  const closeOpenBrandedSelect = () => {
+    const trigger = document.querySelector<HTMLButtonElement>(
+      '[data-dashboard-back-dismiss="dropdown"] button[aria-haspopup="listbox"][aria-expanded="true"]'
+    );
+    if (!trigger) return false;
+    trigger.click();
+    return true;
+  };
 
   useEffect(() => {
     if (!isPanelMounted) return;
@@ -33,23 +59,70 @@ export default function CustomPlanRequest() {
     firstFieldRef.current?.focus({ preventScroll: true });
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isSubmitting) {
-        setIsPanelOpen(false);
+      // BrandedSelect handles Escape first while its menu is open.
+      if (event.key === 'Escape' && !event.defaultPrevented && !isSubmittingRef.current) {
+        closePanel();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isPanelOpen, isSubmitting]);
+  }, [isPanelOpen]);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (ignoreProgrammaticPopRef.current) {
+        ignoreProgrammaticPopRef.current = false;
+        event.stopImmediatePropagation();
+        return;
+      }
+
+      if (!backGuardActiveRef.current) return;
+      backGuardActiveRef.current = false;
+
+      // Dismiss the topmost control first; the drawer remains the next Back target.
+      if (closeOpenBrandedSelect() || isSubmittingRef.current) {
+        pushBackGuard();
+        event.stopImmediatePropagation();
+        return;
+      }
+
+      // Keep Next.js from interpreting this drawer dismissal as route navigation.
+      event.stopImmediatePropagation();
+      setIsPanelOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState, true);
+    return () => window.removeEventListener('popstate', handlePopState, true);
+  }, []);
 
   const openPanel = () => {
     setFeedback(null);
-    setIsPanelMounted(true);
+    if (typeof window !== 'undefined' && !backGuardActiveRef.current) {
+      pushBackGuard();
+    }
+    if (isPanelMounted) {
+      setIsPanelOpen(true);
+    } else {
+      setIsPanelMounted(true);
+    }
   };
 
   const closePanel = () => {
-    if (isSubmitting) return;
+    if (isSubmittingRef.current) return;
+    closeOpenBrandedSelect();
     setIsPanelOpen(false);
+
+    if (backGuardActiveRef.current) {
+      const currentState = window.history.state && typeof window.history.state === 'object'
+        ? window.history.state as Record<string, unknown>
+        : {};
+      backGuardActiveRef.current = false;
+      if (currentState.__tajerCustomPlanRequestDrawer === true) {
+        ignoreProgrammaticPopRef.current = true;
+        window.history.back();
+      }
+    }
   };
 
   const finishPanelClose = () => {
@@ -243,16 +316,19 @@ export default function CustomPlanRequest() {
 
                 <div className={authStyles.field}>
                   <label htmlFor={contactMethodId}>طريقة التواصل المفضلة</label>
-                  <select
+                  <BrandedSelect
                     id={contactMethodId}
                     name="preferred_contact_method"
                     defaultValue="whatsapp"
-                    className={authStyles.input}
+                    options={[
+                      { value: 'whatsapp', label: 'واتساب' },
+                      { value: 'phone', label: 'مكالمة هاتفية' },
+                    ]}
+                    placeholder="اختر طريقة التواصل"
+                    ariaLabel="طريقة التواصل المفضلة"
+                    variant="field"
                     disabled={isSubmitting}
-                  >
-                    <option value="whatsapp">واتساب</option>
-                    <option value="phone">مكالمة هاتفية</option>
-                  </select>
+                  />
                 </div>
 
                 <div className={authStyles.field}>
