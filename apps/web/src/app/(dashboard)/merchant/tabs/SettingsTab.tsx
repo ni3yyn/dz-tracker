@@ -338,11 +338,11 @@ export function SettingsTab({
                       </p>
                     </div>
                   )}
-                  <div className="dz-billing-pricing-head"><span className="dz-setup-eyebrow">الأسعار الشهرية</span><h3 id="dz-billing-pricing-title">اختَر الباقة حسب عدد طلباتك</h3><p>يُحسب الحد حسب الطلبات المسجّلة خلال الشهر.</p></div>
+                  <div className="dz-billing-pricing-head"><span className="dz-setup-eyebrow">الأسعار الشهرية</span><h3 id="dz-billing-pricing-title">اختَر الباقة حسب عدد روابط التتبّع</h3><p>يُحسب الحد حسب روابط التتبّع الجديدة خلال الشهر.</p></div>
                   <div className="dz-billing-plan-list">
-                    <div className={`dz-billing-plan ${subscription.tier === 'starter' ? 'is-current' : ''}`}><div><strong>مجانية</strong><small>أقل من 30 طلباً شهرياً</small></div><b>0 <small>دج / شهر</small></b><span>{subscription.tier === 'starter' ? 'باقتك الحالية' : 'للتجربة والبدء'}</span><div className="dz-billing-plan-benefit">إدارة أساسية للطلبات ورابط تتبّع لكل شحنة.</div></div>
+                    <div className={`dz-billing-plan ${subscription.tier === 'starter' ? 'is-current' : ''}`}><div><strong>مجانية</strong><small>حتى 30 رابط تتبّع شهرياً</small></div><b>0 <small>دج / شهر</small></b><span>{subscription.tier === 'starter' ? 'باقتك الحالية' : 'للتجربة والبدء'}</span><div className="dz-billing-plan-benefit">إدارة أساسية للطلبات ورابط تتبّع لكل شحنة.</div></div>
                     <div className={`dz-billing-plan ${subscription.tier === 'basic' ? 'is-current' : ''} ${selectedUpgradeTier === 'basic' ? 'is-selected' : ''}`}>
-                      <div><strong>100 طلب</strong><small>حتى 100 طلب شهرياً</small></div>
+                      <div><strong>100 رابط</strong><small>حتى 100 رابط شهرياً</small></div>
                       <b>1,000 <small>دج / شهر</small></b>
                       <div className="dz-billing-plan-benefit">للمتاجر التي تحتاج مساحة أكبر للطلبات.</div>
                       {subscription.tier === 'basic' && hasActivePaidPlan ? (
@@ -356,7 +356,7 @@ export function SettingsTab({
                       )}
                     </div>
                     <div className={`dz-billing-plan ${subscription.tier === 'growth' ? 'is-current' : ''} ${selectedUpgradeTier === 'growth' ? 'is-selected' : ''}`}>
-                      <div><strong>200 طلب</strong><small>حتى 200 طلب شهرياً</small></div>
+                      <div><strong>200 رابط</strong><small>حتى 200 رابط شهرياً</small></div>
                       <b>1,800 <small>دج / شهر</small></b>
                       <div className="dz-billing-plan-benefit">للنمو مع متابعة عدد أكبر من الشحنات.</div>
                       {subscription.tier === 'growth' && hasActivePaidPlan ? (
@@ -410,8 +410,8 @@ export function SettingsTab({
                         onChange={(value) => onSelectUpgradeTier(value as UpgradeTier)}
                         variant="field"
                         options={[
-                          { value: 'basic', label: '100 طلب شهرياً — 1,000 دج' },
-                          { value: 'growth', label: '200 طلب شهرياً — 1,800 دج' },
+                          { value: 'basic', label: '100 رابط شهرياً — 1,000 دج' },
+                          { value: 'growth', label: '200 رابط شهرياً — 1,800 دج' },
                           { value: 'scale', label: '500 رابط شهرياً — 2,500 دج' },
                         ]}
                       />
