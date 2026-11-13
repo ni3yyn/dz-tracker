@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   approvePayment,
   rejectPayment,
@@ -67,6 +68,7 @@ interface Props {
   orders: OrderItem[];
   payments: PaymentItem[];
   customPlanRequests: CustomPlanRequestItem[];
+  customPlanRequestsError: string | null;
   smsManager: SmsManagerData;
 }
 
@@ -89,8 +91,10 @@ export function AdminDashboardView({
   orders,
   payments,
   customPlanRequests,
+  customPlanRequestsError,
   smsManager,
 }: Props) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'custom-plans' | 'merchants' | 'telemetry' | 'sms' | 'usage' | 'settings'>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => { setMobileMenuOpen(false); }, [activeTab]);
@@ -107,6 +111,10 @@ export function AdminDashboardView({
     };
     document.title = tabTitles[activeTab] + ' | إدارة تاجر تراك';
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'custom-plans') router.refresh();
+  }, [activeTab, router]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [merchantFilter, setMerchantFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'suspended'>('all');
@@ -728,7 +736,7 @@ export function AdminDashboardView({
 
         {/* CUSTOM PLAN SALES INBOX */}
         {activeTab === 'custom-plans' && (
-          <CustomPlanRequestsTab requests={customPlanRequests} />
+          <CustomPlanRequestsTab requests={customPlanRequests} loadError={customPlanRequestsError} />
         )}
 
         {/* TAB 3: MERCHANTS */}
