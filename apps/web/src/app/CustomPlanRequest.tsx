@@ -347,9 +347,9 @@ export default function CustomPlanRequest() {
                 <input
                   className={styles.customPlanHoneypot}
                   type="text"
-                  name="website"
+                  name="__tt_quote_trap_7f3a"
                   tabIndex={-1}
-                  autoComplete="off"
+                  autoComplete="new-password"
                   aria-hidden="true"
                 />
 
