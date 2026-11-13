@@ -900,7 +900,7 @@ export function AdminDashboardView({
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid var(--border-soft)' }}>
-                  <span style={{ color: 'var(--ink-muted)', fontWeight: 600 }}>باقة الأساسية والنمو (Basic / Growth)</span>
+                  <span style={{ color: 'var(--ink-muted)', fontWeight: 600 }}>الباقة الأساسية (Basic)</span>
                   <strong>1,000 DZD <span style={{ fontSize: '12px', color: 'var(--ink-light)', fontWeight: 400 }}>/ 100 رابط شهرياً</span></strong>
                 </div>
                 
