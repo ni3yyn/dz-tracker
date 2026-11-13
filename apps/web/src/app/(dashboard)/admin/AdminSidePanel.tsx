@@ -51,10 +51,13 @@ export default function AdminSidePanel({
       beginClose();
     };
 
+    const handleRequestedClose = () => beginClose();
     notifyBackLayerChange();
     document.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('tajer-dashboard-side-panel-close', handleRequestedClose);
     return () => {
       document.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('tajer-dashboard-side-panel-close', handleRequestedClose);
       notifyBackLayerChange();
     };
   }, []);
@@ -75,7 +78,7 @@ export default function AdminSidePanel({
         aria-labelledby={titleId}
         dir="rtl"
         onAnimationEnd={(event) => {
-          if (event.target === event.currentTarget && event.animationName === 'adminPanelSlideOut') {
+          if (event.target === event.currentTarget && isClosing) {
             onCloseRef.current();
           }
         }}

@@ -399,7 +399,7 @@ export function AdminDashboardView({
     if (res?.error) {
       alert(res.error);
     } else {
-      setEditingMerchant(null);
+      window.dispatchEvent(new Event('tajer-dashboard-side-panel-close'));
       showToast('تم تحديث اشتراك المتجر بنجاح');
     }
   };
@@ -986,7 +986,7 @@ export function AdminDashboardView({
             <>
               <button
                 type="button"
-                onClick={() => setEditingMerchant(null)}
+                onClick={() => window.dispatchEvent(new Event('tajer-dashboard-side-panel-close'))}
                 className={styles.btn + ' ' + styles.btnOutline}
                 disabled={isSubmitting}
               >
