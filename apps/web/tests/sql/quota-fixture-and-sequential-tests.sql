@@ -211,7 +211,7 @@ DECLARE
   v_merchant UUID;
 BEGIN
   -- The new 2,500 DZD scale plan accepts 500 tracking URLs, then blocks the 501st.
-  v_merchant := '10000000-0000-4000-8000-000000000005';
+  v_merchant := '10000000-0000-4000-8000-000000000006';
   INSERT INTO public.merchants (id, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at)
   VALUES (v_merchant, 'scale', 'active', 500, 499, NOW() + INTERVAL '15 days');
 
@@ -242,7 +242,7 @@ BEGIN
 
   -- Existing merchants whose current subscription stored 999999 keep that
   -- allowance until renewal; the next approval writes the new 500 limit.
-  v_merchant := '10000000-0000-4000-8000-000000000006';
+  v_merchant := '10000000-0000-4000-8000-000000000007';
   INSERT INTO public.merchants (id, subscription_tier, subscription_status, max_orders_limit, monthly_orders_used, subscription_expires_at)
   VALUES (v_merchant, 'scale', 'active', 999999, 0, NOW() + INTERVAL '15 days');
 
