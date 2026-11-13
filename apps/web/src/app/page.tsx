@@ -9,7 +9,7 @@ import { createClient } from '../lib/supabase-server';
 
 export const metadata = {
   title: 'نظام تتبّع طلبات المتاجر',
-  description: 'نظّم تتبّع طلبات متجرك، وخصّص تجربة الزبون بهويتك التجارية، وتابع حالات الشحن من مكان واحد.',
+  description: 'تابع طلبات متجرك برسائل SMS من شريحتك وروابط تتبّع مخصصة، وقدّم لزبائنك تجربة أسهل للاستبدال وخدمات ما بعد البيع.',
 };
 
 const steps = [
@@ -31,7 +31,12 @@ const steps = [
   {
     number: '04',
     title: 'دع التتبّع يسير',
-    description: 'يصل رابط التتبّع للزبون عبر حساب Telegram الخاص بتاجر تراك عند تفعيل الخدمة، ويمكنه تفعيل تنبيهات المتصفح لمتابعة تغيّر حالة الشحنة. وإذا احتجت تدخّلك، يصلك تذكير مع زر WhatsApp للتواصل بشأن التأجيل أو الإلغاء.',
+    description: 'يصل رابط التتبّع عبر Telegram، ويمكن للزبون تفعيل تنبيهات المتصفح. واربط هاتف Android لإرسال SMS من شريحتك، ثم تابع أي طلب يحتاج تدخّلك عبر WhatsApp أو خدمات ما بعد البيع.',
+  },
+  {
+    number: '05',
+    title: 'تابع ما بعد التسليم',
+    description: 'بعد استلام الطلب، يستطيع الزبون إرسال طلب استبدال من صفحة التتبّع ومتابعة قرار المتجر وشحنة المنتج البديل من الرابط نفسه. وإرشادات الاستخدام والعناية بالمنتج قادمة لتكتمل التجربة.',
   },
 ];
 
@@ -66,24 +71,45 @@ const features = [
   },
   {
     number: '05',
+    label: 'رسائل SMS',
+    title: 'راسل زبائنك من رقم شريحتك',
+    description: 'اربط هاتف Android بتاجر تراك ليُرسل رسائل SMS عبر شريحتك أنت. ويمكنك اختيار التناوب بين شريحتي الهاتف عند دعم الجهاز، من دون أن يكون ذلك إلزامياً.',
+    symbol: 'sms',
+  },
+  {
+    number: '06',
     label: 'شبكة التوصيل',
     title: 'منظومة تضم أكثر من 80 شركة توصيل جزائرية',
     description: 'تتوفر ربطات مع أكثر من 80 شركة توصيل جزائرية، منها Yalidine وZR Express. تظهر حالة الشحنة وفق الأحداث التي توفرها الشركة المتصلة.',
     symbol: 'network',
   },
   {
-    number: '06',
+    number: '07',
     label: 'متابعة الزبون',
     title: 'تذكير بالطلبات التي تحتاج تدخّلك',
     description: 'إذا لم يردّ الزبون على مندوب التوصيل، ينبهك تاجر تراك لتتواصل معه مباشرة عبر زر WhatsApp سريع، وتتأكد إن كان التسليم سيؤجّل أم يُلغى.',
     symbol: 'whatsappReminder',
   },
   {
-    number: '07',
+    number: '08',
     label: 'تحديث الحالات',
     title: 'تحديث يدوي أو مزامنة تلقائية',
     description: 'غيّر حالة الطلب من لوحة التاجر متى احتجت، أو دع شركة التوصيل المتصلة تحدّثها تلقائياً عند وصول أحداث جديدة.',
     symbol: 'sync',
+  },
+  {
+    number: '09',
+    label: 'خدمات ما بعد البيع',
+    title: 'استبدال أسهل من صفحة التتبّع',
+    description: 'بعد الاستلام، يرسل الزبون طلب الاستبدال ويحدد السبب والتفاصيل من صفحة الطلب. تراجع الطلب من لوحة التاجر، ثم تربط شحنة البديل ليتابعها الزبون من الرابط الأصلي.',
+    symbol: 'exchange',
+  },
+  {
+    number: '10',
+    label: 'دليل المنتج · قريباً',
+    title: 'إرشادات الاستخدام والعناية',
+    description: 'نعمل على مساحة تتيح لك مشاركة إرشادات المنتج، ونصائح الاستخدام والعناية والمقاسات، حتى يعرف الزبون ما يحتاجه بعد الشراء.',
+    symbol: 'productGuide',
   },
 ];
 
@@ -99,6 +125,18 @@ const faqs = [
   {
     question: 'هل يتلقى الزبون إشعارات عند تغيّر حالة الطلب؟',
     answer: 'نعم. من صفحة التتبّع، يختار الزبون تفعيل إشعارات المتصفح ويمنح الإذن. بعدها تصله تنبيهات عند تسجيل تحديث جديد لحالة الشحنة، حتى عند إغلاق صفحة التتبّع، بحسب دعم المتصفح وإعدادات الجهاز.',
+  },
+  {
+    question: 'كيف تعمل رسائل SMS؟',
+    answer: 'بعد ربط تطبيق تاجر تراك للهاتف بحسابك، تُرسل الرسائل عبر شريحة هاتف Android. ويمكنك اختيار التناوب بين شريحتين إذا كان جهازك يدعم ذلك. تُحتسب تكلفة الرسائل وفق باقة متعامل الهاتف.',
+  },
+  {
+    question: 'كيف يطلب الزبون استبدال المنتج؟',
+    answer: 'بعد استلام الطلب، وإذا فعّل المتجر الخدمة، يظهر للزبون خيار طلب الاستبدال في صفحة التتبّع. يختار السبب ويضيف التفاصيل، ثم يتابع قرار المتجر وشحنة المنتج البديل من الصفحة نفسها.',
+  },
+  {
+    question: 'هل تتوفر إرشادات للمنتج؟',
+    answer: 'إرشادات الاستخدام والعناية بالمنتج من خدمات ما بعد البيع التي نعمل على إضافتها قريباً.',
   },
   {
     question: 'من يحدّث حالة الشحنة؟',
@@ -301,6 +339,72 @@ function FeatureSymbol({ type }: { type: string }) {
       <circle className={styles.illustrationSpark} cx="37" cy="20" r="3" fill="#d57955" />
     </svg>
   );
+  if (type === 'sms') return (
+    <svg className={styles.illustrationSvg} viewBox="0 0 180 138" fill="none" aria-hidden="true">
+      <ellipse className={styles.illustrationBlobWarm} cx="90" cy="72" rx="73" ry="53" fill="#f0e4d9" />
+      <circle className={styles.illustrationOrbit} cx="90" cy="70" r="53" stroke="#d9c5b7" strokeWidth="1" strokeDasharray="2 7" />
+      <g className={styles.smsDevice}>
+        <rect x="57" y="17" width="49" height="101" rx="8" fill="#fffefa" stroke="#cbd8c6" strokeWidth="1.4" />
+        <path d="M72 25h19" stroke="#aab8a5" strokeWidth="2" strokeLinecap="round" />
+        <rect x="64" y="35" width="35" height="67" rx="3" fill="#e8eee5" />
+        <path d="M70 46h22M70 53h17" stroke="#82977e" strokeWidth="2" strokeLinecap="round" />
+        <rect x="69" y="64" width="25" height="27" rx="4" fill="#fffefa" stroke="#d3ddcf" />
+        <path d="M75 72h13M75 78h10M75 84h7" stroke="#9bac96" strokeWidth="1.7" strokeLinecap="round" />
+        <circle cx="81.5" cy="109" r="2" fill="#aab8a5" />
+      </g>
+      <g className={styles.smsMessage}>
+        <path d="M17 48h48a6 6 0 0 1 6 6v19a6 6 0 0 1-6 6H45l-10 8v-8H17a6 6 0 0 1-6-6V54a6 6 0 0 1 6-6Z" fill="#294b37" />
+        <path d="M23 61h34M23 69h24" stroke="#f7f6f0" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="57" cy="69" r="2.2" fill="#d57955" />
+      </g>
+      <g className={styles.smsSignal}>
+        <path d="M119 62a17 17 0 0 1 0 24M127 54a29 29 0 0 1 0 40" stroke="#7f9a7b" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="112" cy="74" r="4" fill="#d57955" />
+      </g>
+      <g className={styles.smsSim}>
+        <path d="m137 81 18 0 7 8v21h-25V81Z" fill="#fffefa" stroke="#cbd8c6" strokeWidth="1.2" strokeLinejoin="round" />
+        <path d="M143 87h11v11h-11z" fill="#e6eee3" stroke="#8ca489" strokeWidth="1" />
+        <path d="M143 104h11" stroke="#a8b7a2" strokeWidth="1.6" strokeLinecap="round" />
+      </g>
+      <circle className={styles.illustrationSpark} cx="147" cy="28" r="3" fill="#d57955" />
+    </svg>
+  );
+  if (type === 'exchange') return (
+    <svg className={styles.illustrationSvg} viewBox="0 0 180 138" fill="none" aria-hidden="true">
+      <ellipse className={styles.illustrationBlob} cx="90" cy="72" rx="73" ry="53" fill="#e6ece2" />
+      <circle className={styles.exchangeOrbit} cx="90" cy="70" r="52" stroke="#b9c9b5" strokeWidth="1.2" strokeDasharray="3 7" />
+      <path className={styles.exchangeRoute} d="M42 61a42 42 0 0 1 78-10l5 7m-1-11 2 11-11-1M138 79a42 42 0 0 1-78 10l-5-7m1 11-2-11 11 1" stroke="#829b7e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <g className={styles.exchangeParcel}>
+        <rect x="57" y="43" width="66" height="58" rx="6" fill="#fffefa" stroke="#cbd8c6" strokeWidth="1.3" />
+        <path d="m57 57 33 16 33-16M90 73v28" stroke="#9caf97" strokeWidth="1.4" strokeLinejoin="round" />
+        <path d="m77 49 13 7 13-7" stroke="#d57955" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M81 83h18M81 89h12" stroke="#a8b7a2" strokeWidth="1.8" strokeLinecap="round" />
+      </g>
+      <g className={styles.exchangeSignal}>
+        <circle cx="136" cy="36" r="9" fill="#294b37" />
+        <path d="m132 36 3 3 5-6" stroke="#fffefa" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+      <circle className={styles.illustrationSpark} cx="32" cy="104" r="3" fill="#d57955" />
+    </svg>
+  );
+  if (type === 'productGuide') return (
+    <svg className={styles.illustrationSvg} viewBox="0 0 180 138" fill="none" aria-hidden="true">
+      <ellipse className={styles.illustrationBlobWarm} cx="90" cy="72" rx="73" ry="53" fill="#f0e4d9" />
+      <circle className={styles.illustrationOrbit} cx="90" cy="70" r="52" stroke="#d9c5b7" strokeWidth="1" strokeDasharray="2 7" />
+      <g className={styles.guideBook}>
+        <path d="M31 37a7 7 0 0 1 7-7h47v78H38a7 7 0 0 0-7 7V37Z" fill="#fffefa" stroke="#d5dfd0" strokeWidth="1.3" strokeLinejoin="round" />
+        <path d="M149 37a7 7 0 0 0-7-7H95v78h47a7 7 0 0 1 7 7V37Z" fill="#fffefa" stroke="#d5dfd0" strokeWidth="1.3" strokeLinejoin="round" />
+        <path d="M90 30v78" stroke="#c9d6c4" strokeWidth="1.3" />
+        <path d="M43 47h29M43 55h24M43 68h32M43 76h25M105 47h29M105 55h23M105 68h30M105 76h24" stroke="#9caf97" strokeWidth="2" strokeLinecap="round" />
+        <path d="M43 91h18m44 0h20" stroke="#d57955" strokeWidth="2" strokeLinecap="round" />
+      </g>
+      <g className={styles.guideTick}>
+        <circle cx="131" cy="96" r="14" fill="#294b37" />
+        <path d="m125 96 4 4 8-9" stroke="#fffefa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+      <circle className={styles.illustrationSpark} cx="148" cy="22" r="3" fill="#d57955" />
+    </svg>
+  );
   if (type === 'network') return (
     <svg className={styles.illustrationSvg} viewBox="0 0 180 138" fill="none" aria-hidden="true">
       <ellipse className={styles.illustrationBlob} cx="90" cy="73" rx="72" ry="53" fill="#e6ece2" />
@@ -365,15 +469,15 @@ export default async function HomePage() {
       <section className={styles.hero} aria-labelledby="hero-title">
         <div className={styles.heroCopy} data-dz-reveal>
           
-          <h1 id="hero-title">قلّل رسائل<br /><em>«وين راه طلبي؟»</em></h1>
-          <p className={styles.heroDescription}>عندما تكبر الطلبات، تتكرر أسئلة العملاء عن حالة الشحن. عند تفعيل الخدمة، يرسل حساب Telegram الخاص بتاجر تراك رابط التتبّع تلقائياً إلى حساب الزبون الذي يمكن العثور عليه عبر رقم هاتفه، مع إمكانية تفعيل تنبيهات المتصفح عند تغيّر حالة الشحنة.</p>
+          <h1 id="hero-title">كل طلب له رحلة<br /><em>حتى بعد التسليم.</em></h1>
+          <p className={styles.heroDescription}>من رابط تتبّع يصل تلقائياً عبر Telegram، وتنبيهات المتصفح ورسائل SMS من شريحتك، إلى طلبات الاستبدال التي يتابعها الزبون من الصفحة نفسها. تاجر تراك يساعدك على رعاية رحلة العميل قبل التسليم وبعده.</p>
           <div className={styles.heroActions}>
             <a className={styles.primaryButton} href={isAuthenticated ? "/merchant" : "/register"}>{isAuthenticated ? "افتح لوحة التاجر" : "اربط متجرك الآن"} <span aria-hidden="true">↗</span></a>
             <a className={styles.secondaryButton} href="#how-it-works">شاهد طريقة الربط <span aria-hidden="true">↓</span></a>
           </div>
           <div className={styles.heroProof}>
             <span className={styles.heroProofMark}><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.2 4.2L19 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-            <span>SDK أو Webhook</span><i /> <span>رابط عبر Telegram</span><i /> <span>تنبيهات المتصفح</span><i /> <span>+80 شركة توصيل جزائرية</span>
+            <span>SDK أو Webhook</span><i /> <span>Telegram وSMS</span><i /> <span>استبدال أسهل</span><i /> <span>+80 شركة توصيل جزائرية</span>
           </div>
         </div>
         <TrackingPreview />
@@ -382,8 +486,8 @@ export default async function HomePage() {
       <section className={styles.howSection} id="how-it-works" aria-labelledby="how-title" data-dz-reveal>
         <div className={styles.sectionIntro}>
           <span className={styles.sectionEyebrow}>كيف يعمل؟</span>
-          <h2 id="how-title">اربط الطلبات.<br /><em>خفّف أسئلة المتابعة.</em></h2>
-          <p>أنشئ حسابك، واربط متجرك، ثم خصّص صفحة التتبّع بهوية علامتك. بعدها تظهر التحديثات في مكان واحد وتعرف أيّ الطلبات تحتاج إلى متابعة.</p>
+          <h2 id="how-title">اربط الطلبات.<br /><em>واستمر مع الزبون بعدها.</em></h2>
+          <p>جهّز قنوات التواصل والتتبّع، وامنح الزبون طريقاً واضحاً لمتابعة الطلب وطلب الاستبدال عند الحاجة.</p>
         </div>
         <div className={styles.stepsList}>
           {steps.map((step) => (
@@ -398,8 +502,8 @@ export default async function HomePage() {
 
       <section className={styles.featuresSection} id="features" aria-labelledby="features-title" data-dz-reveal>
         <div className={styles.featuresHead}>
-          <div><span className={styles.sectionEyebrow}>من الربط إلى التحديث</span><h2 id="features-title">رابط تتبّع باسم متجرك.<br /><em>وتحديثات في مكان واحد.</em></h2></div>
-          <p>الزبون يعرف آخر حالة متاحة من صفحة تحمل هوية متجرك، وأنت تقلّل الرسائل المتكررة عن مكان الطلب.</p>
+          <div><span className={styles.sectionEyebrow}>من أول تواصل إلى ما بعد التسليم</span><h2 id="features-title">تتبّع ورسائل.<br /><em>وخدمات ما بعد البيع.</em></h2></div>
+          <p>اجمع رابط التتبّع وTelegram وSMS من شريحتك، ثم سهّل الاستبدال وواصل بناء تجربة أفضل للزبون بعد وصول طلبه.</p>
         </div>
         <div className={styles.featuresList}>
           {features.map((feature, index) => (
@@ -516,8 +620,8 @@ export default async function HomePage() {
 
       <section className={styles.finalCta} data-dz-reveal>
         <span className={styles.finalCtaEyebrow}>ابدأ من هنا</span>
-        <h2>اربط متجرك.<br /><em>ودع الزبون يتابع بنفسه.</em></h2>
-        <p>ابدأ بحساب تاجر، ثم اختر الربط المناسب لاستقبال الطلبات وتحديث حالاتها.</p>
+        <h2>اهتم بكل رحلة.<br /><em>من الطلب إلى ما بعد البيع.</em></h2>
+        <p>اربط متجرك، واختر قنوات الرسائل، وقدّم لزبائنك تتبّعاً واضحاً وخدمات ما بعد الاستلام.</p>
         <a className={styles.finalCtaButton} href="/register">ابدأ ربط متجرك <span aria-hidden="true">↗</span></a>
         <svg className={styles.ctaRouteArt} viewBox="0 0 240 180" fill="none" aria-hidden="true"><path className={styles.ctaRoutePath} d="M5 22h65c45 0 45 48 0 48H42c-38 0-38 45 0 45h64c39 0 39 43 77 43h52" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 7" strokeLinecap="round"/><circle className={styles.ctaRouteNode} cx="5" cy="22" r="4" fill="#D57955"/><circle className={styles.ctaRouteNode} cx="70" cy="70" r="4" fill="currentColor"/><circle className={styles.ctaRouteNode} cx="106" cy="115" r="4" fill="#D57955"/><circle className={styles.ctaRouteNode} cx="235" cy="158" r="4" fill="currentColor"/></svg>
       </section>

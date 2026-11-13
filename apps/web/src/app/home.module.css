@@ -1593,3 +1593,34 @@
   border: 0;
   background: transparent;
 }
+
+
+/* SMS, exchange, and product-guide feature scenes: motion follows the action. */
+.smsDevice, .smsMessage, .smsSignal, .smsSim,
+.exchangeParcel, .exchangeSignal, .guideBook, .guideTick {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.smsDevice { animation: tjt-drift-a 5.7s ease-in-out infinite; }
+.smsMessage { animation: tjt-drift-c 4.8s ease-in-out infinite .2s; }
+.smsSignal { animation: tjt-signal-pulse 2.6s ease-in-out infinite; }
+.smsSim { animation: tjt-drift-b 6s ease-in-out infinite .4s; }
+.exchangeOrbit { transform-box: fill-box; transform-origin: center; animation: tjt-orbit-spin 31s linear infinite; }
+.exchangeRoute { stroke-dasharray: 4 7; animation: tjt-route-flow 4.8s linear infinite; }
+.exchangeParcel { animation: tjt-drift-a 5.5s ease-in-out infinite; }
+.exchangeSignal { animation: tjt-signal-pulse 2.8s ease-in-out infinite .3s; }
+.guideBook { animation: tjt-drift-b 6.2s ease-in-out infinite; }
+.guideTick { animation: tjt-drift-c 4.8s ease-in-out infinite .35s; }
+@media (hover: hover) and (pointer: fine) {
+  .featureRow:hover .smsMessage,
+  .featureRow:hover .exchangeSignal,
+  .featureRow:hover .guideTick { animation-duration: 1.7s; }
+  .featureRow:hover .exchangeOrbit { animation-duration: 15s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .smsDevice, .smsMessage, .smsSignal, .smsSim,
+  .exchangeOrbit, .exchangeRoute, .exchangeParcel, .exchangeSignal,
+  .guideBook, .guideTick {
+    animation: none !important;
+  }
+}
