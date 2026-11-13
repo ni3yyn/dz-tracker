@@ -6,10 +6,13 @@ export async function middleware(request: NextRequest) {
   const needsDashboardLogin = pathname.startsWith('/merchant') || pathname.startsWith('/admin');
   const needsNativeSmsLogin = pathname === '/mobile/sms-gateway/connect';
   const isLoginPage = pathname === '/login';
+  const hasSupabaseSessionCookie = request.cookies.getAll().some(({ name }) =>
+    name.startsWith('sb-') && name.includes('auth-token')
+  );
 
-  // Public pages do not need a Supabase session lookup. Keep marketing pages
-  // and search crawlers out of the authentication round trip.
-  if (!needsDashboardLogin && !needsNativeSmsLogin && !isLoginPage) {
+  // Anonymous public requests (including search crawlers) do not need a
+  // Supabase session lookup. Keep auth refresh for signed-in visitors.
+  if (!needsDashboardLogin && !needsNativeSmsLogin && !isLoginPage && !hasSupabaseSessionCookie) {
     return NextResponse.next({ request });
   }
 

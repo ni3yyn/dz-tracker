@@ -80,6 +80,7 @@ async function main() {
       fail(page.path + ' returned HTTP ' + result.response.status);
       continue;
     }
+    const failuresBeforePage = failures.length;
     const canonical = canonicalOf(result.body);
     const expected = SITE + (page.path === '/' ? '/' : page.path);
     if (!canonical || canonical.replace(/\/$/, '') !== expected.replace(/\/$/, '')) {
@@ -92,7 +93,9 @@ async function main() {
     if (page.path.startsWith('/fr/') && !/<main[^>]*lang=["']fr["'][^>]*dir=["']ltr["']/i.test(result.body)) {
       fail('French landing page does not mark main content lang=fr and dir=ltr');
     }
-    pass(page.path + ' returned HTTP 200 and passed canonical/indexability/content checks');
+    if (failures.length === failuresBeforePage) {
+      pass(page.path + ' returned HTTP 200 and passed canonical/indexability/content checks');
+    }
   }
 
   const home = await get('/');

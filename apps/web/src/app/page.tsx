@@ -6,6 +6,7 @@ import SiteFooter from './SiteFooter';
 import FaqAccordion from './FaqAccordion';
 import CustomPlanRequest from './CustomPlanRequest';
 import { createClient } from '../lib/supabase-server';
+import { cookies } from 'next/headers';
 
 export const metadata = {
   title: 'تتبّع طلبات المتاجر الجزائرية عبر SMS',
@@ -459,9 +460,15 @@ function FeatureSymbol({ type }: { type: string }) {
 export default async function HomePage() {
   let isAuthenticated = false;
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    isAuthenticated = Boolean(user);
+    const cookieStore = await cookies();
+    const hasSupabaseSessionCookie = cookieStore.getAll().some(({ name }) =>
+      name.startsWith('sb-') && name.includes('auth-token')
+    );
+    if (hasSupabaseSessionCookie) {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      isAuthenticated = Boolean(user);
+    }
   } catch {
     isAuthenticated = false;
   }
