@@ -9,7 +9,7 @@ const outputDir = resolve(scriptDir, 'benchmark-runs');
 const dateArg = process.argv.slice(2).find((arg) => arg.startsWith('--date='))?.slice('--date='.length);
 const date = dateArg ?? new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Algiers' }).format(new Date());
 
-if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) {
+if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) {
   throw new Error('Use --date=YYYY-MM-DD for a valid benchmark date.');
 }
 
@@ -40,12 +40,12 @@ for (const prompt of prompts) {
 }
 
 await mkdir(outputDir, { recursive: true });
-const outputPath = resolve(outputDir, `ai-visibility-${date}.csv`);
+const outputPath = resolve(outputDir, 'ai-visibility-' + date + '.csv');
 try {
   await access(outputPath);
-  throw new Error(`Refusing to overwrite existing benchmark run: ${outputPath}`);
+  throw new Error('Refusing to overwrite existing benchmark run: ' + outputPath);
 } catch (error) {
   if (error instanceof Error && error.message.startsWith('Refusing')) throw error;
 }
 await writeFile(outputPath, rows.join('\n') + '\n', 'utf8');
-process.stdout.write(`Created ${prompts.length} prompts × ${platforms.length} platforms = ${prompts.length * platforms.length} benchmark rows:\n${outputPath}\n`);
+process.stdout.write('Created ' + prompts.length + ' prompts × ' + platforms.length + ' platforms = ' + (prompts.length * platforms.length) + ' benchmark rows:\n' + outputPath + '\n');
