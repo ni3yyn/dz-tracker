@@ -358,3 +358,11 @@
     padding: 20px 16px;
   }
 }
+
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}

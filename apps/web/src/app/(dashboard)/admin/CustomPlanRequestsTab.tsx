@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateCustomPlanRequest } from './actions';
 import styles from './admin.module.css';
@@ -39,9 +39,11 @@ function formatPhoneForWhatsApp(value: string) {
 export default function CustomPlanRequestsTab({
   requests: initialRequests,
   loadError,
+  searchQuery = '',
 }: {
   requests: CustomPlanRequestItem[];
   loadError: string | null;
+  searchQuery?: string;
 }) {
   const router = useRouter();
   const [requests, setRequests] = useState(initialRequests);
@@ -52,6 +54,23 @@ export default function CustomPlanRequestsTab({
   useEffect(() => {
     setRequests(initialRequests);
   }, [initialRequests]);
+
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredRequests = useMemo(() => {
+    if (!normalizedSearch) return requests;
+    return requests.filter((request) => [
+      request.id,
+      request.full_name,
+      request.store_name,
+      request.contact_phone,
+      request.preferred_contact_method,
+      request.monthly_tracking_urls,
+      request.carrier_names,
+      request.requirements,
+      request.status,
+      request.admin_notes,
+    ].some((value) => String(value ?? '').toLowerCase().includes(normalizedSearch)));
+  }, [requests, normalizedSearch]);
 
   const refreshRequests = () => {
     startRefresh(() => router.refresh());
@@ -131,7 +150,7 @@ export default function CustomPlanRequestsTab({
         header={
           <div className={styles.tableHeader}>
             <div>
-              <h3>طلبات عروض الأسعار ({requests.length})</h3>
+              <h3>طلبات عروض الأسعار ({filteredRequests.length} من {requests.length})</h3>
               <span style={{ color: 'var(--ink-muted)', fontSize: '11px' }}>
                 الجديدة: {requests.filter((request) => request.status === 'new').length}
               </span>
@@ -143,7 +162,11 @@ export default function CustomPlanRequestsTab({
         }
         columns={['العميل والمتجر', 'التواصل', 'الحجم الشهري', 'الاحتياجات', 'تاريخ الطلب', 'المتابعة']}
       >
-        {requests.map((request) => {
+        {filteredRequests.length === 0 ? (
+          <tr><td colSpan={6} style={{ padding: '28px 14px', textAlign: 'center', color: 'var(--ink-muted)', fontSize: '12px' }}>
+            لا توجد طلبات تطابق البحث الحالي.
+          </td></tr>
+        ) : filteredRequests.map((request) => {
           const whatsappPhone = formatPhoneForWhatsApp(request.contact_phone);
           const whatsappMessage = 'مرحباً ' + request.full_name + '، تواصلنا معك بخصوص طلب الخطة المخصصة لمتجر ' + request.store_name + ' على تاجر تراك.';
           return (

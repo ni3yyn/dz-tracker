@@ -1,12 +1,13 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   retrySmsTrackingJob,
   setSmsGatewayEnabled,
   setSmsGatewayDeviceEnabled,
 } from './actions';
 import styles from './sms-manager.module.css';
+import AdminSidePanel from './AdminSidePanel';
 import { DashboardFilterTabs } from '../merchant/components/DashboardFilterTabs';
 
 type Related<T> = T | T[] | null | undefined;
@@ -86,7 +87,7 @@ export type SmsManagerData = {
   counts: Record<string, number>;
 };
 
-type Props = { data: SmsManagerData };
+type Props = { data: SmsManagerData; searchQuery?: string };
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'في الانتظار',
@@ -143,7 +144,7 @@ function statusTone(status: string): string {
   return 'muted';
 }
 
-export default function SmsManagerTab({ data: initialData }: Props) {
+export default function SmsManagerTab({ data: initialData, searchQuery = '' }: Props) {
   const [data, setData] = useState(initialData);
   const [liveState, setLiveState] = useState<'connecting' | 'live' | 'reconnecting'>('connecting');
   const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null);
@@ -172,7 +173,7 @@ export default function SmsManagerTab({ data: initialData }: Props) {
     }
   }, []);
   const [filter, setFilter] = useState<string>('all');
-  const [expandedJob, setExpandedJob] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [retryTarget, setRetryTarget] = useState<SmsJob | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -215,10 +216,57 @@ export default function SmsManagerTab({ data: initialData }: Props) {
     };
   }, [refreshData]);
 
+  const normalizedSearch = searchQuery.trim().toLowerCase();
   const filteredJobs = useMemo(
-    () => filter === 'all' ? data.jobs : data.jobs.filter((job) => job.status === filter),
-    [data.jobs, filter],
+    () => data.jobs.filter((job) => {
+      if (filter !== 'all' && job.status !== filter) return false;
+      if (!normalizedSearch) return true;
+      const order = related(job.orders);
+      const merchant = related(job.merchants);
+      return [
+        job.id,
+        job.order_id,
+        job.status,
+        STATUS_LABELS[job.status],
+        job.last_error,
+        job.result_code,
+        order?.external_order_id,
+        order?.customer_name,
+        order?.customer_phone,
+        merchant?.store_name,
+      ].some((value) => String(value ?? '').toLowerCase().includes(normalizedSearch));
+    }),
+    [data.jobs, filter, normalizedSearch],
   );
+
+  const filteredNativeDevices = useMemo(() => {
+    const devices = data.nativeDevices || [];
+    if (!normalizedSearch) return devices;
+    return devices.filter((phone) => {
+      const merchant = related(phone.merchants);
+      return [
+        phone.device_id,
+        phone.display_name,
+        phone.device_model,
+        phone.platform,
+        phone.app_version,
+        phone.last_status,
+        phone.last_error,
+        merchant?.store_name,
+      ].some((value) => String(value ?? '').toLowerCase().includes(normalizedSearch));
+    });
+  }, [data.nativeDevices, normalizedSearch]);
+
+  const filteredEvents = useMemo(() => {
+    if (!normalizedSearch) return data.events;
+    return data.events.filter((event) => [
+      event.action,
+      event.job_id,
+      event.previous_status,
+      event.new_status,
+      JSON.stringify(event.details || {}),
+    ].some((value) => String(value ?? '').toLowerCase().includes(normalizedSearch)));
+  }, [data.events, normalizedSearch]);
 
   const attemptsByJob = useMemo(() => {
     const map = new Map<string, SmsAttempt[]>();
@@ -229,6 +277,11 @@ export default function SmsManagerTab({ data: initialData }: Props) {
     }
     return map;
   }, [data.attempts]);
+
+  const selectedJob = useMemo(
+    () => data.jobs.find((job) => job.id === selectedJobId) || null,
+    [data.jobs, selectedJobId],
+  );
 
   const freshness = gatewayFreshness(data.device?.last_seen_at);
   const queued = (data.counts.pending || 0) + (data.counts.retry || 0);
@@ -375,11 +428,11 @@ export default function SmsManagerTab({ data: initialData }: Props) {
       <div className={styles.queuePanel}>
         <div className={styles.sectionHeader}>
           <div><span className={styles.eyebrow}>MERCHANT PHONES</span><h3>هواتف التجار المرتبطة</h3></div>
-          <span className={styles.sectionMeta}>{(data.nativeDevices || []).length.toLocaleString('ar-DZ')} جهاز</span>
+          <span className={styles.sectionMeta}>{filteredNativeDevices.length.toLocaleString('ar-DZ')} من {(data.nativeDevices || []).length.toLocaleString('ar-DZ')} جهاز</span>
         </div>
-        {(data.nativeDevices || []).length ? (
+        {filteredNativeDevices.length ? (
           <div className={styles.nativeDeviceList}>
-            {(data.nativeDevices || []).map((phone) => {
+            {filteredNativeDevices.map((phone) => {
               const merchant = related(phone.merchants);
               const freshness = gatewayFreshness(phone.last_seen_at);
               const revoked = Boolean(phone.revoked_at);
@@ -414,7 +467,7 @@ export default function SmsManagerTab({ data: initialData }: Props) {
             })}
           </div>
         ) : (
-          <p className={styles.emptyAudit}>لم يربط أي تاجر هاتف Android حتى الآن.</p>
+          <p className={styles.emptyAudit}>{normalizedSearch ? 'لا توجد أجهزة تطابق البحث.' : 'لم يربط أي تاجر هاتف Android حتى الآن.'}</p>
         )}
       </div>
 
@@ -440,64 +493,37 @@ export default function SmsManagerTab({ data: initialData }: Props) {
             <thead><tr><th>الطلب</th><th>المتجر</th><th>رقم العميل</th><th>الحالة</th><th>المحاولات</th><th>آخر تحديث</th><th>الإجراء</th></tr></thead>
             <tbody>
               {filteredJobs.length === 0 ? (
-                <tr><td colSpan={7} className={styles.empty}>لا توجد رسائل ضمن هذا التصنيف.</td></tr>
+                <tr><td colSpan={7} className={styles.empty}>{normalizedSearch ? 'لا توجد رسائل تطابق البحث الحالي.' : 'لا توجد رسائل ضمن هذا التصنيف.'}</td></tr>
               ) : filteredJobs.map((job) => {
                 const order = related(job.orders);
                 const merchant = related(job.merchants);
-                const attempts = attemptsByJob.get(job.id) || [];
                 const canRetry = ['failed', 'dead_letter', 'unknown'].includes(job.status);
                 return (
-                  <Fragment key={job.id}>
-                    <tr className={expandedJob === job.id ? styles.expandedRow : undefined}>
-                      <td>
-                        <button type="button" className={styles.orderButton} onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}>
-                          {order?.external_order_id || job.order_id.slice(0, 8)}
-                          <small>{order?.customer_name || 'طلب'}</small>
+                  <tr key={job.id}>
+                    <td>
+                      <button type="button" className={styles.orderButton} onClick={() => setSelectedJobId(job.id)}>
+                        {order?.external_order_id || job.order_id.slice(0, 8)}
+                        <small>{order?.customer_name || 'طلب'}</small>
+                      </button>
+                    </td>
+                    <td>{merchant?.store_name || '—'}</td>
+                    <td className={styles.phone}>{maskPhone(order?.customer_phone)}</td>
+                    <td><span className={styles.status} data-tone={statusTone(job.status)}>{STATUS_LABELS[job.status] || job.status}</span></td>
+                    <td className={styles.number}>{job.attempt_count} / {job.max_attempts}</td>
+                    <td>{formatDate(job.updated_at)}</td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        <button type="button" className={styles.detailButton} onClick={() => setSelectedJobId(job.id)}>
+                          التفاصيل
                         </button>
-                      </td>
-                      <td>{merchant?.store_name || '—'}</td>
-                      <td className={styles.phone}>{maskPhone(order?.customer_phone)}</td>
-                      <td><span className={styles.status} data-tone={statusTone(job.status)}>{STATUS_LABELS[job.status] || job.status}</span></td>
-                      <td className={styles.number}>{job.attempt_count} / {job.max_attempts}</td>
-                      <td>{formatDate(job.updated_at)}</td>
-                      <td>
-                        {canRetry ? (
+                        {canRetry && (
                           <button type="button" className={styles.retryButton} disabled={busy !== null} onClick={() => setRetryTarget(job)}>
                             إعادة المعالجة
                           </button>
-                        ) : (
-                          <button type="button" className={styles.detailButton} onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}>
-                            {expandedJob === job.id ? 'إخفاء التفاصيل' : 'التفاصيل'}
-                          </button>
                         )}
-                      </td>
-                    </tr>
-                    {expandedJob === job.id && (
-                      <tr>
-                        <td colSpan={7} className={styles.detailsCell}>
-                          <div className={styles.detailsGrid}>
-                            <div><span>معرّف الطلب</span><code>{job.order_id}</code></div>
-                            <div><span>وقت الإنشاء</span><strong>{formatDate(job.created_at)}</strong></div>
-                            <div><span>وقت الإرسال</span><strong>{formatDate(job.submitted_at)}</strong></div>
-                            <div><span>رمز النتيجة</span><code>{job.result_code || '—'}</code></div>
-                            <div><span>الخطأ الأخير</span><strong>{job.last_error || '—'}</strong></div>
-                            <div><span>انتهاء الحجز</span><strong>{formatDate(job.lease_expires_at)}</strong></div>
-                          </div>
-                          <div className={styles.attempts}>
-                            <strong>سجل المحاولات</strong>
-                            {attempts.length ? attempts.map((attempt) => (
-                              <div key={attempt.id} className={styles.attemptRow}>
-                                <span>المحاولة {attempt.attempt_number}</span>
-                                <span className={styles.status} data-tone={statusTone(attempt.outcome)}>{STATUS_LABELS[attempt.outcome] || attempt.outcome}</span>
-                                <span>{formatDate(attempt.created_at)}</span>
-                                {attempt.error_message && <small>{attempt.error_message}</small>}
-                              </div>
-                            )) : <p>لا توجد نتائج مُسجلة للمحاولات حتى الآن.</p>}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
+                      </div>
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>
@@ -507,14 +533,54 @@ export default function SmsManagerTab({ data: initialData }: Props) {
 
       <div className={styles.auditPanel}>
         <div className={styles.sectionHeader}><div><span className={styles.eyebrow}>ADMIN AUDIT</span><h3>سجل إجراءات الإدارة</h3></div></div>
-        {data.events.length ? data.events.slice(0, 20).map((event) => (
+        {filteredEvents.length ? filteredEvents.slice(0, 20).map((event) => (
           <div key={event.id} className={styles.auditRow}>
             <span>{event.action === 'retry_job' ? 'إعادة محاولة رسالة' : event.action === 'force_retry_unknown' ? 'إعادة إرسال نتيجة مجهولة' : event.action === 'pause_gateway' ? 'إيقاف بوابة SMS' : event.action === 'resume_gateway' ? 'استئناف بوابة SMS' : event.action === 'disable_device' ? 'تعطيل جهاز' : 'تفعيل جهاز'}</span>
             <code>{event.job_id ? event.job_id.slice(0, 8) : '—'}</code>
             <small>{formatDate(event.created_at)}</small>
           </div>
-        )) : <p className={styles.emptyAudit}>لم تُسجّل إجراءات إدارية بعد.</p>}
+        )) : <p className={styles.emptyAudit}>{normalizedSearch ? 'لا توجد إجراءات تطابق البحث.' : 'لم تُسجّل إجراءات إدارية بعد.'}</p>}
       </div>
+
+      {selectedJob && (
+        <AdminSidePanel
+          eyebrow="SMS DELIVERY RECORD"
+          title={related(selectedJob.orders)?.external_order_id || selectedJob.order_id.slice(0, 8)}
+          description={[related(selectedJob.merchants)?.store_name, related(selectedJob.orders)?.customer_name].filter(Boolean).join(' · ') || 'تفاصيل رسالة التتبّع'}
+          onClose={() => setSelectedJobId(null)}
+          footer={['failed', 'dead_letter', 'unknown'].includes(selectedJob.status) ? (
+            <button type="button" className={styles.retryButton} disabled={busy !== null} onClick={() => setRetryTarget(selectedJob)}>
+              إعادة المعالجة
+            </button>
+          ) : undefined}
+        >
+          <div className={styles.detailsGrid}>
+            <div><span>معرّف الرسالة</span><code>{selectedJob.id}</code></div>
+            <div><span>معرّف الطلب</span><code>{selectedJob.order_id}</code></div>
+            <div><span>رقم العميل</span><strong className={styles.phone}>{maskPhone(related(selectedJob.orders)?.customer_phone)}</strong></div>
+            <div><span>الحالة</span><strong className={styles.status} data-tone={statusTone(selectedJob.status)}>{STATUS_LABELS[selectedJob.status] || selectedJob.status}</strong></div>
+            <div><span>المحاولات</span><strong>{selectedJob.attempt_count} / {selectedJob.max_attempts}</strong></div>
+            <div><span>رمز النتيجة</span><code>{selectedJob.result_code || '—'}</code></div>
+            <div><span>وقت الإنشاء</span><strong>{formatDate(selectedJob.created_at)}</strong></div>
+            <div><span>وقت آخر تحديث</span><strong>{formatDate(selectedJob.updated_at)}</strong></div>
+            <div><span>وقت الإرسال</span><strong>{formatDate(selectedJob.submitted_at)}</strong></div>
+            <div><span>انتهاء الحجز</span><strong>{formatDate(selectedJob.lease_expires_at)}</strong></div>
+            <div><span>الجهاز الذي عالج الرسالة</span><code>{selectedJob.locked_by || '—'}</code></div>
+            <div><span>الخطأ الأخير</span><strong>{selectedJob.last_error || '—'}</strong></div>
+          </div>
+          <div className={styles.attempts}>
+            <strong>سجل المحاولات</strong>
+            {(attemptsByJob.get(selectedJob.id) || []).length ? (attemptsByJob.get(selectedJob.id) || []).map((attempt) => (
+              <div key={attempt.id} className={styles.attemptRow}>
+                <span>المحاولة {attempt.attempt_number}</span>
+                <span className={styles.status} data-tone={statusTone(attempt.outcome)}>{STATUS_LABELS[attempt.outcome] || attempt.outcome}</span>
+                <span>{formatDate(attempt.created_at)}</span>
+                {attempt.error_message && <small>{attempt.error_message}</small>}
+              </div>
+            )) : <p>لا توجد نتائج مُسجلة للمحاولات حتى الآن.</p>}
+          </div>
+        </AdminSidePanel>
+      )}
 
       {retryTarget && (
         <div data-dashboard-back-dismiss="admin-sms-retry" className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setRetryTarget(null); }}>

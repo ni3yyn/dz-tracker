@@ -11,6 +11,7 @@ import {
   logout,
 } from './actions';
 import styles from './admin.module.css';
+import AdminSidePanel from './AdminSidePanel';
 import SiteHeader from '../../SiteHeader';
 import { useDashboardBackHandler } from '../useDashboardBackHandler';
 import SmsManagerTab from './SmsManagerTab';
@@ -129,32 +130,37 @@ export function AdminDashboardView({
     setActiveTab,
     hasActiveOverlay: Boolean(mobileMenuOpen || editingMerchant),
     onBack: () => {
+      const dispatchLayerEscape = (layer: string) => {
+        const event = new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }) as KeyboardEvent & { __tajerDashboardBackLayer?: string };
+        event.__tajerDashboardBackLayer = layer;
+        document.dispatchEvent(event);
+      };
+
       const globalDialog = typeof document !== 'undefined'
         ? document.querySelector('[data-dashboard-back-dismiss="global-dialog"]')
         : null;
       if (globalDialog instanceof HTMLElement) {
-        globalDialog.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Escape',
-          bubbles: true,
-          cancelable: true,
-        }));
+        dispatchLayerEscape('global-dialog');
         return true;
       }
 
-      // Dismiss the topmost local control before closing its containing editor
-      // or navigating to the previous dashboard tab.
+      // Dismiss only the topmost local layer. The marker leaves the panel
+      // behind an inner dialog or dropdown open until the next Back action.
       const smsRetryDialog = typeof document !== 'undefined'
         ? document.querySelector('[data-dashboard-back-dismiss="admin-sms-retry"]')
         : null;
       const openDropdown = typeof document !== 'undefined'
         ? document.querySelector('[data-dashboard-back-dismiss="dropdown"]')
         : null;
-      if (smsRetryDialog || openDropdown) {
-        document.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Escape',
-          bubbles: true,
-          cancelable: true,
-        }));
+      const adminSidePanel = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="admin-side-panel"]')
+        : null;
+      if (smsRetryDialog || openDropdown || adminSidePanel) {
+        dispatchLayerEscape(smsRetryDialog ? 'admin-sms-retry' : openDropdown ? 'dropdown' : 'admin-side-panel');
         return true;
       }
 
@@ -205,6 +211,31 @@ export function AdminDashboardView({
   const pendingPayments = useMemo(() => {
     return payments.filter((p) => p.status === 'pending');
   }, [payments]);
+
+  const normalizedAdminSearch = searchQuery.trim().toLowerCase();
+  const filteredPayments = useMemo(() => {
+    if (!normalizedAdminSearch) return payments;
+    return payments.filter((payment) => {
+      const storeName = Array.isArray(payment.merchants)
+        ? payment.merchants[0]?.store_name
+        : (payment.merchants as any)?.store_name;
+      return [
+        storeName,
+        payment.id,
+        payment.merchant_id,
+        payment.plan_tier,
+        payment.payment_method,
+        payment.transaction_ref,
+        payment.amount_dzd,
+        payment.status,
+      ].some((value) => String(value ?? '').toLowerCase().includes(normalizedAdminSearch));
+    });
+  }, [payments, normalizedAdminSearch]);
+
+  const filteredPendingPayments = useMemo(
+    () => filteredPayments.filter((payment) => payment.status === 'pending'),
+    [filteredPayments],
+  );
 
   const carrierDistribution = useMemo(() => {
     let yalidine = 0;
@@ -260,12 +291,17 @@ export function AdminDashboardView({
         const c = (o.carrier_name || '').toLowerCase();
         if (!c.includes(carrierFilter)) return false;
       }
-      if (!searchQuery) return true;
-      return (
-        o.external_order_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (o.carrier_tracking_number || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (o.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      if (!normalizedAdminSearch) return true;
+      const storeName = Array.isArray(o.merchants) ? o.merchants[0]?.store_name : o.merchants?.store_name;
+      return [
+        o.external_order_id,
+        o.carrier_tracking_number,
+        o.customer_name,
+        o.carrier_name,
+        o.current_status,
+        storeName,
+        o.merchant_id,
+      ].some((value) => String(value ?? '').toLowerCase().includes(normalizedAdminSearch));
     });
   }, [orders, carrierFilter, searchQuery]);
 
@@ -648,7 +684,7 @@ export function AdminDashboardView({
         {/* TAB 2: PAYMENTS */}
         {activeTab === 'payments' && (
           <div>
-            {pendingPayments.length === 0 ? (
+            {filteredPendingPayments.length === 0 ? (
               <div className={styles.card} style={{ textAlign: 'center', padding: '60px 20px', marginBottom: '32px' }}>
                 <div aria-hidden="true" style={{ width: '44px', height: '44px', margin: '0 auto 18px', display: 'grid', placeItems: 'center', border: '1px solid var(--border-soft)', borderRadius: '12px', background: '#f6f6f1', color: 'var(--ink-muted)', fontSize: '18px' }}>✓</div>
                 <h3 style={{ margin: 0, fontSize: '18px' }}>لا يوجد تحويلات قيد الانتظار</h3>
@@ -656,7 +692,7 @@ export function AdminDashboardView({
               </div>
             ) : (
               <div className={styles.listCard}>
-                {pendingPayments.map((p) => {
+                {filteredPendingPayments.map((p) => {
                   const storeName = Array.isArray(p.merchants) ? p.merchants[0]?.store_name : (p.merchants as any)?.store_name || 'متجر';
                   return (
                     <div key={p.id} className={styles.listItem}>
@@ -693,7 +729,7 @@ export function AdminDashboardView({
 
             <div className={styles.tableContainer}>
               <div className={styles.tableHeader}>
-                <h3>سجل العمليات السابقة ({payments.length})</h3>
+                <h3>سجل العمليات السابقة ({filteredPayments.length} من {payments.length})</h3>
               </div>
               <div className={styles.tableScrollArea}>
                 <AdminDataTable
@@ -701,7 +737,7 @@ export function AdminDashboardView({
                   scrollArea={false}
                   columns={["المتجر","الباقة والمبلغ","طريقة الدفع","الحالة","تاريخ المراجعة"]}
                 >
-                    {payments.map((p) => {
+                    {filteredPayments.map((p) => {
                       const storeName = Array.isArray(p.merchants) ? p.merchants[0]?.store_name : (p.merchants as any)?.store_name || 'متجر';
                       return (
                         <tr key={p.id}>
@@ -726,7 +762,7 @@ export function AdminDashboardView({
 
         {/* CUSTOM PLAN SALES INBOX */}
         {activeTab === 'custom-plans' && (
-          <CustomPlanRequestsTab requests={customPlanRequests} loadError={customPlanRequestsError} />
+          <CustomPlanRequestsTab requests={customPlanRequests} loadError={customPlanRequestsError} searchQuery={searchQuery} />
         )}
 
         {/* TAB 3: MERCHANTS */}
@@ -877,7 +913,7 @@ export function AdminDashboardView({
         )}
 
         {/* SMS OPERATIONS */}
-        {activeTab === 'sms' && <SmsManagerTab data={smsManager} />}
+        {activeTab === 'sms' && <SmsManagerTab data={smsManager} searchQuery={searchQuery} />}
 
         {/* SUPABASE USAGE */}
         {activeTab === 'usage' && <SupabaseUsageTab />}
@@ -930,79 +966,87 @@ export function AdminDashboardView({
 
       </main>
 
-      {/* EDIT MERCHANT MODAL */}
       {editingMerchant && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>تعديل اشتراك المتجر</h3>
-              <button onClick={() => setEditingMerchant(null)} style={{ background: 'transparent', border: 'none', color: 'var(--ink-light)', cursor: 'pointer', display: 'flex' }}>
-                <Icons.X />
+        <AdminSidePanel
+          eyebrow="STORE MANAGEMENT"
+          title="تعديل اشتراك المتجر"
+          description={"تحديث الباقة وحدود الاستخدام لمتجر " + editingMerchant.store_name + "."}
+          onClose={() => {
+            if (!isSubmitting) setEditingMerchant(null);
+          }}
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setEditingMerchant(null)}
+                className={styles.btn + ' ' + styles.btnOutline}
+                disabled={isSubmitting}
+              >
+                إلغاء
               </button>
-            </div>
-
-            <div style={{ marginBottom: '24px', padding: '16px', background: 'var(--bg-base)', borderRadius: '12px' }}>
-              <strong style={{ display: 'block', fontSize: '15px' }}>{editingMerchant.store_name}</strong>
-              <span className={styles.mono} style={{ border: 'none', padding: 0, marginTop: '4px', display: 'block' }}>{editingMerchant.api_key}</span>
-            </div>
-
-            <form onSubmit={handleSaveManualEdit}>
-              <div style={{ marginBottom: '20px' }}>
-                <label className={styles.formLabel}>نوع الباقة (Tier)</label>
-                <BrandedSelect
-                  name="tier"
-                  value={editTier}
-                  onChange={(newTier) => {
-                    setEditTier(newTier);
-                    const tierLimits: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 500 };
-                    setEditLimit(tierLimits[newTier] || 30);
-                  }}
-                  ariaLabel="نوع الباقة"
-                  variant="field"
-                  borderRadius="0"
-                  className={styles.adminBrandedSelect}
-                  options={[
-                    { value: 'starter', label: 'مجانية (30 رابطاً)' },
-                    { value: 'basic', label: '100 رابط (1,000 دج)' },
-                    { value: 'growth', label: '200 رابط (1,800 دج)' },
-                    { value: 'scale', label: '500 رابط (2,500 دج)' },
-                  ]}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label className={styles.formLabel}>تمديد الصلاحية (بالأيام المضافة)</label>
-                <input type="number" name="days" defaultValue={30} min={1} max={365} className={styles.input} />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label className={styles.formLabel}>سقف روابط التتبّع الشهري الجديد (Limit)</label>
-                <input 
-                  type="number" 
-                  name="limit" 
-                  value={editLimit} 
-                  onChange={(e) => setEditLimit(parseInt(e.target.value, 10) || 0)} 
-                  className={styles.input}
-                />
-                <small style={{ color: 'var(--ink-muted)', display: 'block', marginTop: '6px', fontSize: '11px' }}>
-                  {`الحد الشهري المخصص لهذا المتجر: ${editLimit} رابط تتبّع.`}
-                </small>
-              </div>
-
-              <div style={{ marginBottom: '28px', padding: '12px 14px', background: 'var(--bg-base)', borderRadius: '10px', border: '1px solid var(--border-soft)' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                  <input type="checkbox" name="reset_used" value="true" />
-                  <span>تصفير عداد الطلبات المستهلكة للشهر الجديد (العداد الحالي: {editingMerchant.monthly_orders_used || 0})</span>
-                </label>
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setEditingMerchant(null)} className={`${styles.btn} ${styles.btnOutline}`}>إلغاء الأمر</button>
-                <button type="submit" disabled={isSubmitting} className={styles.btn}>{isSubmitting ? 'جاري الحفظ...' : 'تأكيد وحفظ التعديلات'}</button>
-              </div>
-            </form>
+              <button type="submit" form="admin-merchant-subscription-form" disabled={isSubmitting} className={styles.btn}>
+                {isSubmitting ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+              </button>
+            </>
+          }
+        >
+          <div style={{ marginBottom: '22px', paddingBottom: '17px', borderBottom: '1px solid var(--border-soft)' }}>
+            <strong style={{ display: 'block', fontSize: '15px' }}>{editingMerchant.store_name}</strong>
+            <span className={styles.mono} style={{ display: 'block', marginTop: '7px', overflowWrap: 'anywhere' }}>{editingMerchant.api_key}</span>
+            <span style={{ display: 'block', marginTop: '9px', color: 'var(--ink-muted)', fontSize: '11px' }}>
+              الاستخدام الشهري: {(editingMerchant.monthly_orders_used || 0).toLocaleString('ar-DZ')} طلب
+            </span>
           </div>
-        </div>
+
+          <form id="admin-merchant-subscription-form" onSubmit={handleSaveManualEdit}>
+            <div style={{ marginBottom: '20px' }}>
+              <label className={styles.formLabel}>نوع الباقة</label>
+              <BrandedSelect
+                name="tier"
+                value={editTier}
+                onChange={(newTier) => {
+                  setEditTier(newTier);
+                  const tierLimits: Record<string, number> = { starter: 30, basic: 100, growth: 200, scale: 500 };
+                  setEditLimit(tierLimits[newTier] || 30);
+                }}
+                ariaLabel="نوع الباقة"
+                variant="field"
+                borderRadius="0"
+                className={styles.adminBrandedSelect}
+                options={[
+                  { value: 'starter', label: 'مجانية (30 رابطاً)' },
+                  { value: 'basic', label: '100 رابط (1,000 دج)' },
+                  { value: 'growth', label: '200 رابط (1,800 دج)' },
+                  { value: 'scale', label: '500 رابط (2,500 دج)' },
+                ]}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label className={styles.formLabel}>تمديد الصلاحية (بالأيام المضافة)</label>
+              <input type="number" name="days" defaultValue={30} min={1} max={365} className={styles.input} />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label className={styles.formLabel}>سقف روابط التتبّع الشهري الجديد</label>
+              <input
+                type="number"
+                name="limit"
+                value={editLimit}
+                onChange={(e) => setEditLimit(parseInt(e.target.value, 10) || 0)}
+                className={styles.input}
+              />
+              <small style={{ color: 'var(--ink-muted)', display: 'block', marginTop: '6px', fontSize: '11px' }}>
+                {"الحد الشهري المخصص لهذا المتجر: " + editLimit + " رابط تتبّع."}
+              </small>
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '26px', paddingTop: '18px', borderTop: '1px solid var(--border-soft)', cursor: 'pointer', fontSize: '12px', lineHeight: 1.7, fontWeight: 600 }}>
+              <input type="checkbox" name="reset_used" value="true" style={{ marginTop: '3px' }} />
+              <span>تصفير عداد الطلبات المستهلكة للشهر الجديد (العداد الحالي: {editingMerchant.monthly_orders_used || 0})</span>
+            </label>
+          </form>
+        </AdminSidePanel>
       )}
     </div>
   );
