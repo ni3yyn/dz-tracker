@@ -696,22 +696,49 @@ export async function saveBrandSettings(formData: FormData) {
 
 // 4. إرسال وصل تحويل BaridiMob لتجديد / ترقية الاشتراك
 export async function submitPaymentProof(formData: FormData) {
-  const merchantId = formData.get('merchant_id') as string;
-  const planTier = (formData.get('plan_tier') as string) || 'basic';
-  const amountDzd = parseInt((formData.get('amount_dzd') as string) || '1000', 10);
+  const authSupabase = await createClient();
+  const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+  if (authError || !user) {
+    return { error: 'انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مجدداً.' };
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data: merchant, error: merchantError } = await supabase
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  if (merchantError || !merchant) {
+    return { error: 'تعذر العثور على متجر مرتبط بحسابك.' };
+  }
+
+  const submittedMerchantId = (formData.get('merchant_id') as string | null)?.trim();
+  if (submittedMerchantId && submittedMerchantId !== merchant.id) {
+    return { error: 'لا يمكنك إرسال طلب دفع لمتجر آخر.' };
+  }
+
+  const planTier = (formData.get('plan_tier') as string | null) || 'basic';
+  const planPrices: Record<string, number> = {
+    basic: 1000,
+    growth: 1800,
+    scale: 2500,
+  };
+  const amountDzd = planPrices[planTier];
+  if (!amountDzd) {
+    return { error: 'الباقة المحددة غير صالحة.' };
+  }
+
   const paymentMethod = (formData.get('payment_method') as string) || 'baridimob';
   const transactionRef = (formData.get('transaction_ref') as string)?.trim() || null;
   const paymentProofUrl = (formData.get('payment_proof_url') as string)?.trim() || null;
 
-  if (!merchantId) return { error: 'معرّف المتجر غير موجود' };
   if (!transactionRef && !paymentProofUrl) {
     return { error: 'يرجى إدخال رقم العملية المرجعي أو رابط صورة الوصل' };
   }
 
-  const supabase = getSupabaseAdminClient();
-
   const { error } = await supabase.from('subscription_payments').insert({
-    merchant_id: merchantId,
+    merchant_id: merchant.id,
     plan_tier: planTier,
     amount_dzd: amountDzd,
     payment_method: paymentMethod,
