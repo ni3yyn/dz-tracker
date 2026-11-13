@@ -136,8 +136,10 @@ function maskPhone(value: string | null | undefined): string {
 function gatewayFreshness(lastSeen: string | null | undefined): { label: string; tone: string } {
   if (!lastSeen) return { label: 'لم يتصل بعد', tone: 'offline' };
   const age = Date.now() - new Date(lastSeen).getTime();
-  if (!Number.isFinite(age) || age > 180_000) return { label: 'غير متصل', tone: 'offline' };
-  if (age > 45_000) return { label: 'اتصال متأخر', tone: 'warning' };
+  // The native Android relay polls every 10–30 seconds; allow for mobile-network
+  // latency before warning or marking the paired phone inactive.
+  if (!Number.isFinite(age) || age > 300_000) return { label: 'غير نشط حالياً', tone: 'offline' };
+  if (age > 90_000) return { label: 'النبض متأخر', tone: 'warning' };
   return { label: 'متصل', tone: 'online' };
 }
 
