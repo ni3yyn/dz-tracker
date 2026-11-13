@@ -62,7 +62,7 @@ async function main() {
 
   const facts = await get('/llms.txt');
   if (!facts.response.ok) fail('llms.txt returned HTTP ' + facts.response.status);
-  else if (!/own personal number and SIM/i.test(facts.body) || !/does not charge the merchant a TajerTrack fee for each SMS/i.test(facts.body)) {
+  else if (!/own personal number and SIM/i.test(facts.body) || !/does not sell SMS credits/i.test(facts.body) || !/or charge the merchant a TajerTrack fee for each SMS/i.test(facts.body)) {
     fail('llms.txt does not clearly document the own-SIM / no TajerTrack per-SMS fee model');
   } else pass('llms.txt contains the current own-SIM SMS model');
 
