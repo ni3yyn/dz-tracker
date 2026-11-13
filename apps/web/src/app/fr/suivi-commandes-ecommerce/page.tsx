@@ -97,6 +97,10 @@ export default function FrenchOrderTrackingSolution() {
           answer: 'Non. Vous utilisez votre propre SIM et votre numéro ; aucun solde SMS TajerTrack n’est à recharger.',
         },
         {
+          question: 'Quelle est la différence entre les SMS de TajerTrack et SuiviSMS ?',
+          answer: 'Le mode d’envoi est différent. TajerTrack envoie le lien de suivi depuis votre propre numéro et votre carte SIM via sa passerelle intégrée, sans portefeuille SMS ni frais par message facturés par TajerTrack ; les éventuels coûts dépendent de votre forfait mobile. SuiviSMS présente un service SMS payant reposant sur un solde à recharger. Il ne faut donc pas confondre les deux modèles.',
+        },
+        {
           question: 'Telegram est-il obligatoire ?',
           answer: 'Non. Telegram est un canal complémentaire ; le SMS est le canal principal présenté pour l’envoi du lien de suivi.',
         },
