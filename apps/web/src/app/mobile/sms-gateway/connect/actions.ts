@@ -5,11 +5,16 @@ import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
 import { createClient } from '../../../../lib/supabase-server';
 import { isAuthorizedAdmin } from '../../../../lib/admin-auth';
+import { LEGAL_TERMS_VERSION, LEGAL_PRIVACY_VERSION } from '../../../../lib/legal';
 
 const PAIRING_PATH = '/mobile/sms-gateway/connect';
 const APP_REDIRECT = 'tajertrack-sms://pair';
 
-export async function approveNativeSmsDevice() {
+function connectErrorUrl(error: string) {
+  return `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(APP_REDIRECT)}&error=${encodeURIComponent(error)}`;
+}
+
+export async function approveNativeSmsDevice(formData: FormData) {
   const supabaseAuth = await createClient();
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
@@ -21,6 +26,10 @@ export async function approveNativeSmsDevice() {
     redirect('/admin');
   }
 
+  if (formData.get('acceptTerms') !== 'yes' || formData.get('acceptPrivacy') !== 'yes') {
+    redirect(connectErrorUrl('legal_required'));
+  }
+
   const supabase = getSupabaseAdminClient() as any;
   const { data: merchant, error: merchantError } = await supabase
     .from('merchants')
@@ -29,7 +38,25 @@ export async function approveNativeSmsDevice() {
     .maybeSingle();
 
   if (merchantError || !merchant?.id) {
-    redirect(`${PAIRING_PATH}?error=merchant_unavailable`);
+    redirect(connectErrorUrl('merchant_unavailable'));
+  }
+
+  const { error: acceptanceError } = await supabase
+    .from('merchant_legal_acceptances')
+    .upsert({
+      user_id: user.id,
+      merchant_id: merchant.id,
+      terms_version: LEGAL_TERMS_VERSION,
+      privacy_version: LEGAL_PRIVACY_VERSION,
+      accepted_at: new Date().toISOString(),
+      acceptance_source: 'native_sms_gateway_pairing',
+    }, {
+      onConflict: 'user_id,terms_version,privacy_version',
+    });
+
+  if (acceptanceError) {
+    console.error('[NativeSmsGateway] Could not save legal acceptance:', acceptanceError.message);
+    redirect(connectErrorUrl('legal_acceptance_unavailable'));
   }
 
   // The one-time code is high entropy, expires in five minutes, and only its
@@ -49,7 +76,7 @@ export async function approveNativeSmsDevice() {
 
   if (insertError) {
     console.error('[NativeSmsGateway] Could not create a pairing code:', insertError.message);
-    redirect(`${PAIRING_PATH}?error=pairing_unavailable`);
+    redirect(connectErrorUrl('pairing_unavailable'));
   }
 
   redirect(`${APP_REDIRECT}?code=${encodeURIComponent(code)}`);
