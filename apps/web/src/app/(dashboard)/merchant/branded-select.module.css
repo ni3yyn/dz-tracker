@@ -99,7 +99,8 @@
 
 .menu {
   position: fixed;
-  z-index: 2500;
+  /* Dropdowns are portaled to body and must render above the 2147483000 drawer backdrop. */
+  z-index: 2147483002;
   height: 0;
   overflow: hidden;
   overscroll-behavior: contain;
