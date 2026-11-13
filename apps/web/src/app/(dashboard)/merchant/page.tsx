@@ -295,22 +295,17 @@ const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim() || nul
     starter: 30,
     basic: 100,
     growth: 200,
-    scale: 999999,
+    scale: 500,
   };
   const defaultPlanLimit = tierLimits[currentTier] || 30;
-  const resolvedLimit = currentTier === 'scale'
-    ? 999999
-    : (merchant.max_orders_limit && merchant.max_orders_limit >= defaultPlanLimit
-        ? merchant.max_orders_limit
-        : defaultPlanLimit);
+  // Keep an already-issued higher allowance (including legacy unlimited subscriptions)
+  // until the current subscription ends; new scale activations are capped at 500.
+  const resolvedLimit = merchant.max_orders_limit && merchant.max_orders_limit >= defaultPlanLimit
+    ? merchant.max_orders_limit
+    : defaultPlanLimit;
 
   // تصحيح سقف الطلبات في قاعدة البيانات تلقائياً إذا كان قديماً أو متخلفاً عن الباقة المحددة
-  if (currentTier === 'scale' && merchant.max_orders_limit !== 999999) {
-    await supabaseAdmin
-      .from('merchants')
-      .update({ max_orders_limit: 999999 })
-      .eq('id', merchant.id);
-  } else if (merchant.max_orders_limit && merchant.max_orders_limit < defaultPlanLimit) {
+  if (!merchant.max_orders_limit || merchant.max_orders_limit < defaultPlanLimit) {
     await supabaseAdmin
       .from('merchants')
       .update({ max_orders_limit: defaultPlanLimit })
