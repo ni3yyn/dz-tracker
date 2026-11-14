@@ -87,6 +87,12 @@ export const metadata: Metadata = {
     title: 'تاجر تراك',
   },
   icons: {
+    icon: [
+      { url: '/favicon.svg?v=2', type: 'image/svg+xml', sizes: 'any' },
+    ],
+    shortcut: [
+      { url: '/favicon.svg?v=2', type: 'image/svg+xml' },
+    ],
     apple: '/icons/apple-touch-icon.png',
   },
   openGraph: {
