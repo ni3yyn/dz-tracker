@@ -88,10 +88,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.svg?v=2', type: 'image/svg+xml', sizes: 'any' },
+      { url: '/favicon.svg?v=3', type: 'image/svg+xml', sizes: 'any' },
     ],
     shortcut: [
-      { url: '/favicon.svg?v=2', type: 'image/svg+xml' },
+      { url: '/favicon.svg?v=3', type: 'image/svg+xml' },
     ],
     apple: '/icons/apple-touch-icon.png',
   },
