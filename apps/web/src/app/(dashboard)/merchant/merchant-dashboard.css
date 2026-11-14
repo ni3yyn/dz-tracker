@@ -5694,3 +5694,109 @@
     font-size: 15px;
   }
 }
+
+/* Viewport-fit dashboard shell: keep the side rail usable on short laptop screens. */
+.dz-admin-root {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: 100dvh;
+}
+
+@media (min-width: 1025px) {
+  .dz-sidebar {
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .dz-product-brand,
+  .dz-brand,
+  .dz-sidebar-footer {
+    flex: 0 0 auto;
+  }
+
+  .dz-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-gutter: stable;
+  }
+
+  .dz-nav::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .dz-nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dz-nav::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+  }
+
+  .dz-main {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* Compact the fixed parts of the rail before relying on its scroll area. */
+@media (min-width: 1025px) and (max-height: 820px) {
+  .dz-sidebar {
+    padding: 16px 16px 12px;
+  }
+
+  .dz-brand {
+    margin-bottom: 18px;
+  }
+
+  .dz-nav {
+    gap: 2px;
+  }
+
+  .dz-nav-item {
+    padding-block: 8px;
+  }
+
+  .dz-sidebar-footer {
+    padding-top: 11px;
+    gap: 8px;
+  }
+}
+
+/* Keep the existing compact horizontal rail on tablet/mobile, with the content
+   taking only the height left below it instead of another full viewport. */
+@media (max-width: 1024px) {
+  .dz-admin-root {
+    overflow: hidden;
+  }
+
+  .dz-sidebar {
+    flex: 0 0 auto;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .dz-main {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+  }
+}
