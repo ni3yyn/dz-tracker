@@ -75,6 +75,9 @@ const structuredData = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: 'تاجر تراك | تتبّع طلبات المتاجر الجزائرية عبر SMS', template: '%s | تاجر تراك' },
+  verification: {
+    google: 'AFnzXBtqTfOnsmNvNGZVw3u-WbUcjaeg-yj0sH2T7N4', // <-- Paste only the content string here
+  },
   description: 'تاجر تراك منصة جزائرية لتتبّع طلبات المتاجر الإلكترونية. ترسل رابط التتبّع عبر SMS من رقم التاجر وشريحته، دون رسوم لكل رسالة من تاجر تراك؛ وتبقى أي تكلفة حسب باقة متعامل الهاتف.',
   applicationName: 'تاجر تراك',
   manifest: '/manifest.webmanifest',
