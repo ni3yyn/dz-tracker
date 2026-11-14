@@ -1091,9 +1091,7 @@
 
 @media (prefers-reduced-motion: reduce) { .mobileMenuToggle span, .sideRail { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 
-@keyframes adminPanelFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.mainContent > div:not(.toast) { animation: adminPanelFadeUp .52s cubic-bezier(.2, .65, .25, 1) both; }
-@media (prefers-reduced-motion: reduce) { .mainContent > div:not(.toast) { animation-duration: .01ms !important; } }
+/* Keep content stable on first paint; tab content does not need a global mount animation. */
 
 /* Tighten the dashboard header to the top edge and keep mobile navigation visually clean. */
 .adminLayout .mainContent { padding-top: 0; }

@@ -33,7 +33,7 @@ export function DashboardHeader({
             onMenuToggle={onMenuToggle}
             menuId="dz-merchant-sidebar"
           >
-            <div key={activeTab} className="dz-header-titles dz-header-titles-enter">
+            <div className="dz-header-titles">
               <h1>
                 {activeTab === 'overview' && 'نظرة عامة'}
                 {activeTab === 'orders' && 'الشحنات'}

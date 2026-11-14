@@ -17,6 +17,7 @@ export function DashboardPanelTransition({
   const animationFrameRef = useRef<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
   const [direction, setDirection] = useState<'next' | 'previous'>('next');
+  const [hasTabTransitioned, setHasTabTransitioned] = useState(false);
 
   const measure = useCallback(() => {
     const content = measureRef.current;
@@ -53,6 +54,7 @@ export function DashboardPanelTransition({
         : 'next'
     );
     previousKeyRef.current = transitionKey;
+    setHasTabTransitioned(true);
 
     if (animationFrameRef.current !== null) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -75,7 +77,7 @@ export function DashboardPanelTransition({
       <div ref={measureRef} className="dz-dashboard-transition-measure">
         <div
           key={transitionKey}
-          className="dz-dashboard-transition-content"
+          className={'dz-dashboard-transition-content' + (hasTabTransitioned ? ' is-animated' : '')}
           data-direction={direction}
         >
           {children}
