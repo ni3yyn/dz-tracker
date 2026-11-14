@@ -5837,9 +5837,8 @@
 .dz-image-upload-row {
   display: flex;
   align-items: stretch;
-  gap: 1px;
+  gap: 8px;
   min-width: 0;
-  background: var(--border-soft);
 }
 .dz-image-upload-control {
   appearance: none;
@@ -5851,7 +5850,6 @@
   min-height: 76px;
   padding: 10px 12px !important;
   border: 0;
-  border-bottom: 1px solid var(--border-soft);
   border-radius: 0 !important;
   background: #f7f8f3;
   color: var(--ink-main);
@@ -5863,7 +5861,6 @@
 .dz-image-upload-control:hover,
 .dz-image-upload-control.is-drag-over {
   background: #eef2eb;
-  border-bottom-color: #829786;
 }
 .dz-image-upload-control:focus-visible {
   outline: 2px solid rgba(53, 88, 70, .3);
@@ -5927,7 +5924,6 @@
   flex: 0 0 auto;
   min-width: 54px;
   padding-inline: 9px;
-  border-inline-start: 1px solid var(--border-soft);
   color: #355846;
   font-size: 10px;
   font-weight: 850;
@@ -5939,7 +5935,6 @@
   flex: 0 0 42px;
   padding: 0 !important;
   border: 0;
-  border-bottom: 1px solid var(--border-soft);
   border-radius: 0 !important;
   background: #f7f8f3;
   color: #8b6258;
