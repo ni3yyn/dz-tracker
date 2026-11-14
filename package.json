@@ -13,7 +13,10 @@
     "start:telegram-worker": "node apps/telegram-worker/dist/main.js",
     "seo:indexnow": "node tools/seo/submit-indexnow.mjs",
     "seo:check": "node tools/seo/check-public-discovery.mjs",
-    "seo:benchmark": "node tools/seo/create-ai-visibility-run.mjs"
+    "seo:benchmark": "node tools/seo/benchmark.mjs run",
+    "seo:benchmark:import": "node tools/seo/benchmark.mjs import",
+    "seo:benchmark:report": "node tools/seo/benchmark.mjs report",
+    "seo:benchmark:test": "node tools/seo/benchmark.mjs test"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

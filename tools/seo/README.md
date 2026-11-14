@@ -1,95 +1,69 @@
 # TajerTrack search and AI discovery
 
-This toolkit supports ordinary search discovery and AI answer-engine visibility. It does not promise ranking or recommendation placement.
+## AI visibility benchmark
 
-## Principles
+This benchmark measures the actual consumer-facing products: ChatGPT Search, Google AI Overviews / AI Mode, Perplexity and Microsoft Copilot. Answers are captured manually; developer APIs are not substituted for those consumer interfaces. The CLI automates run creation, validation, scoring and reporting—not querying the apps.
 
-- Keep product facts accurate and consistent across the homepage, solution pages, About page, metadata and structured data.
-- Publish material that helps Algerian merchants make real decisions. Prefer verified screenshots, firsthand demonstrations, customer-approved case studies and original observations over generic SEO articles.
-- Earn genuine references from relevant directories, publications, communities and creators. Do not buy fake reviews, manufacture Reddit recommendations, coordinate votes or mass-publish near-duplicate pages.
-- Treat `llms.txt` as an optional product fact sheet, not a ranking signal or a requirement for Google or ChatGPT.
-- Do not add schema merely to target AI systems. Structured data must match visible facts.
-
-## Local commands
-
-### Check the live public discovery surface
-
-After deployment, run:
-
-```bash
-pnpm seo:check
-```
-
-The checker makes read-only requests to the live website. It verifies the OAI-SearchBot robots group, private-path exclusions, sitemap entries, the product fact sheet, canonical URLs, indexability and language markers on the public Arabic/French pages. It does not verify Google/Bing indexing, crawler IP allowlisting or AI recommendations.
-
-You can point it to a staging deployment with:
-
-```bash
-TAJERTRACK_SITE_URL=https://your-preview.example pnpm seo:check
-```
-
-### Generate an AI visibility benchmark worksheet
+### 1. Create a run
 
 ```bash
 pnpm seo:benchmark
 ```
 
-This creates a dated CSV under `tools/seo/benchmark-runs/` with 28 buyer questions prepared for ChatGPT Search, Google AI Overviews/AI Mode (when shown), Perplexity and Microsoft Copilot.
+Creates a unique folder under tools/seo/benchmark-runs/ containing:
+- manifest.json: date, market, run ID and prompt-set hash.
+- prompts.json: frozen copy of the 28 prompts.
+- manual-capture.csv: 112 rows (28 prompts × 4 platforms).
+- report.md and summary.json: initial coverage report.
+- results.jsonl: captured answers after import.
 
-For a fair comparison:
-1. Use a fresh conversation or session for each query; do not seed it with previous TajerTrack context.
-2. Keep the prompt, language, market context and platform consistent between runs.
-3. Record whether TajerTrack was mentioned, recommended, cited, which competitors appeared, and whether the own-SIM/no-TajerTrack-SMS-fee model was described accurately.
-4. Mark experiences that do not show an AI answer or citations as `not_available`, not as a negative result.
-5. Retain cited URLs and short evidence excerpts so results can be reviewed later.
+Use --limit=7 for a smaller test run.
 
-The benchmark is observational. It does not reveal internal model rankings and should not be treated as a statistically representative market survey from a single run.
+### 2. Capture real answers
 
-## IndexNow
+For each row, open the named platform in a fresh session, paste the exact prompt, and paste the returned answer in response_text. Copy only URLs actually cited by the platform into citation_urls, separated by |. Use status answered, not_available or blocked; leave untested rows as pending.
 
-IndexNow is configured for the public website at `https://tajertrack.vercel.app`.
+Review these fields from the actual answer:
+- recommended: yes, no or not_assessed.
+- own_sim_accuracy and exchange_accuracy: accurate, inaccurate, not_mentioned, not_applicable or not_assessed.
 
-After the corresponding URLs have been deployed and are publicly reachable, submit the changed pages from the repository root:
+Do not count an unavailable/blocked answer as a brand non-mention. Discovery prompts do not name TajerTrack; these are especially important for measuring unsolicited recommendations.
+
+### 3. Import and report
 
 ```bash
+pnpm seo:benchmark:import -- --run=RUN_ID
+pnpm seo:benchmark:report -- --run=RUN_ID
+pnpm seo:benchmark:test
+```
+
+Import validates the prompt/platform IDs, statuses, review values and HTTP(S) citation URLs. Pending rows are skipped. Duplicate answers are rejected unless --replace is supplied. The report includes answers/captured/planned, mention rate, category-discovery mention rate, citation rates, human-reviewed fact accuracy, competitors, citation domains and changes against the latest run with the same prompt-set hash.
+
+Rates use answered rows only. Recommendation and product-fact accuracy are human-reviewed. First mention order is only relative to the small tracked competitor set; it is not a general search ranking. One run is a directional snapshot, not a statistically representative survey.
+
+### Measurement limitation
+
+This does not pretend that developer APIs reproduce ChatGPT Search, Google AI Overviews, the Perplexity consumer app or Microsoft Copilot. Actual consumer-app measurements require manual capture. Import, scoring, evidence storage and comparisons are automated locally. No API credentials or paid API calls are required.
+
+## Live discovery checks
+
+After deploying public-page changes run:
+
+```bash
+pnpm seo:check
 pnpm seo:indexnow
 ```
 
-For later content changes, pass only the exact URLs that were added, updated or deleted:
-
-```bash
-pnpm seo:indexnow -- https://tajertrack.vercel.app/solutions/sms-order-tracking-algeria
-```
-
-The public key verification file lives in `apps/web/public/`. IndexNow acceptance confirms that a notification was received; it does not guarantee crawling or indexing.
-
-## One-time webmaster setup
-
-An owner of the website should:
-
-1. Verify `https://tajertrack.vercel.app/` in [Google Search Console](https://search.google.com/search-console).
-2. Submit `https://tajertrack.vercel.app/sitemap.xml` in Search Console.
-3. Verify the same site in [Bing Webmaster Tools](https://www.bing.com/webmasters) and inspect its IndexNow and AI Performance reports.
-4. Use URL Inspection for the homepage and public solution pages to review indexing, canonical selection and rendered HTML.
-5. Review Google Search Console's AI-related performance reporting when available for the property.
-
-These steps require access to the relevant Google and Microsoft accounts. A successful deployment or IndexNow notification is not proof that a URL was indexed or cited.
-
-## Crawler access and privacy
-
-- `OAI-SearchBot` is allowed on public marketing and solution pages. OpenAI also recommends allowing requests from its published SearchBot IP ranges; review the [official crawler documentation](https://developers.openai.com/api/docs/bots) and check hosting/WAF logs if crawl access is uncertain.
-- Merchant/admin dashboards, APIs, sign-in, registration and SMS-device pairing paths are excluded in `robots.txt`.
-- Customer-specific tracking pages and order-confirmation token pages emit `noindex` metadata. Do not add customer order URLs, merchant dashboards, device pairing URLs or tokenized confirmation links to public sitemaps or AI-readable product summaries.
-- Public marketing pages should not require a customer session. The middleware skips the Supabase auth lookup for public routes to avoid unnecessary work for visitors and crawlers.
+The checker verifies live robots rules, sitemap, canonical URLs, indexability, language markers and AI-readable product facts. IndexNow notifies participating search engines that URLs changed; acceptance does not guarantee crawling or indexing.
 
 ## Product facts
 
-The maintained factual summary for AI assistants is served from `/llms.txt`. Update it whenever public product capabilities, limitations or pricing materially change. It is an optional plain-text reference, not a ranking control or an OpenAI indexing requirement.
+TajerTrack is an Algerian e-commerce order-tracking and post-purchase platform. It sends tracking links by SMS from the merchant's own phone number and SIM through its integrated Android gateway. TajerTrack does not sell SMS credits or charge a per-message TajerTrack fee; any SMS cost or allowance depends on the merchant's mobile operator and plan. Telegram is optional. Exchange requests are merchant-enabled and merchant-reviewed.
 
-## External discovery
+## Data handling
 
-See [external-discovery-kit.md](./external-discovery-kit.md) for accurate, submission-ready company descriptions and editorial outreach drafts for relevant Algerian e-commerce directories. These are drafts only; a human must review and submit them through the publishers' official channels.
+Run folders and captured answers are local and git-ignored at tools/seo/benchmark-runs/. Review answers before sharing them; never commit captured content or credentials.
 
-## Current positioning
+## AEO principles
 
-TajerTrack is an Algerian e-commerce order-tracking and post-purchase platform. It sends tracking links by SMS from the merchant's own phone number and SIM through its integrated Android gateway. TajerTrack does not sell SMS credits or charge a TajerTrack per-message fee; any SMS cost or allowance depends on the merchant's mobile operator and plan. Telegram is an optional additional channel. Exchange requests are merchant-enabled and merchant-reviewed.
+Keep product facts consistent across public pages, metadata, structured data and llms.txt. Publish useful evidence for Algerian merchants: verified product walkthroughs, screenshots, limitations and customer-approved case studies. Earn genuine citations and directory listings; never fabricate reviews, mentions or community recommendations. llms.txt is an optional fact sheet, not a ranking mechanism.

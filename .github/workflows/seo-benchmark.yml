@@ -1,0 +1,51 @@
+name: SEO benchmark
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/seo/**'
+      - 'package.json'
+      - '.github/workflows/seo-benchmark.yml'
+  pull_request:
+    paths:
+      - 'tools/seo/**'
+      - 'package.json'
+      - '.github/workflows/seo-benchmark.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: Validate benchmark workflow
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check JavaScript syntax
+        run: node --check tools/seo/benchmark.mjs
+      - name: Run benchmark unit tests
+        run: node tools/seo/benchmark.mjs test
+      - name: Smoke-test create, import and report
+        shell: bash
+        run: |
+          RUN_ID="ci-benchmark-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          node tools/seo/benchmark.mjs run --limit=2 --run-id="$RUN_ID"
+          node tools/seo/benchmark.mjs import --run="$RUN_ID"
+          node tools/seo/benchmark.mjs report --run="$RUN_ID"
+          node --input-type=module -e '
+            import { readFile } from "node:fs/promises";
+            const id = process.env.RUN_ID;
+            const summary = JSON.parse(await readFile("tools/seo/benchmark-runs/" + id + "/summary.json", "utf8"));
+            if (summary.resultCount !== 0 || summary.promptCount !== 2 || summary.metrics.length !== 4) {
+              throw new Error("Benchmark smoke-test summary is invalid.");
+            }
+            if (summary.metrics.some((item) => item.planned !== 2 || item.captured !== 0 || item.mentionRate !== null)) {
+              throw new Error("Empty capture rows must remain unscored.");
+            }
+          '
+        env:
+          RUN_ID: ci-benchmark-${{ github.run_id }}-${{ github.run_attempt }}
