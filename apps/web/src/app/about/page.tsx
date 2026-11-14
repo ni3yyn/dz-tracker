@@ -4,6 +4,9 @@ import LegalDocument from '../LegalDocument';
 export const metadata: Metadata = {
   title: 'عن تاجر تراك',
   description: 'تعرّف على تاجر تراك، منصة جزائرية لتتبّع طلبات المتاجر عبر SMS من رقم التاجر وشريحته، دون رسوم SMS لكل رسالة من المنصة.',
+  alternates: {
+    canonical: 'https://tajertrack.vercel.app/about',
+  },
 };
 
 export default function AboutPage() {
