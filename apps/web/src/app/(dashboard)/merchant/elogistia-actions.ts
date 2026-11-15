@@ -9,8 +9,6 @@ import { parseElogistiaWilayas } from '@saas/orchestrator';
 const API = 'https://api.elogistia.com';
 const REQUEST_TIMEOUT_MS = 15000;
 
-type ElogistiaRow = Record<string, any>;
-
 function providerError(body: any): string {
   const value = body?.body ?? body?.data ?? body;
   const message = value?.Message ?? value?.message ?? value?.error ?? body?.Message ?? body?.message ?? body?.error;
