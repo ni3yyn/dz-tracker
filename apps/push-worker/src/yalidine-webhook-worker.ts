@@ -61,7 +61,7 @@ export function normalizeGuepexParcelList(response: any): Record<string, any>[] 
 function parseGuepexDate(value: unknown): string | null {
   const raw = asText(value);
   if (!raw) return null;
-  const local = raw.match(/^(\\d{4}-\\d{2}-\\d{2})[ T](\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d{1,3})?)?)$/);
+  const local = raw.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?)$/);
   const normalized = local ? `${local[1]}T${local[2]}+01:00` : raw;
   const timestamp = Date.parse(normalized);
   return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
