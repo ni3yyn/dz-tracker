@@ -1,12 +1,14 @@
 'use strict';
 importScripts('capture-parser.js');
 
-const EXTENSION_VERSION = '1.0.0';
+const EXTENSION_VERSION = '1.1.0';
 const PRODUCTION_ORIGIN = 'https://tajertrack.vercel.app';
 const ALLOWED_PAGE_ORIGINS = new Set([PRODUCTION_ORIGIN, 'http://localhost:3000']);
 const CAPTURE_URLS = [
   'https://api.guepex.app/v1/parcels*',
-  'https://api.yalidine.app/v1/parcels*'
+  'https://api.yalidine.app/v1/parcels*',
+  'https://guepex.app/app/colis/ajouter-ecommerce.php*',
+  'https://*.guepex.app/app/colis/ajouter-ecommerce.php*'
 ];
 
 function getSenderOrigin(sender) {
