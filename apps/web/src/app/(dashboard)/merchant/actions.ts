@@ -1251,6 +1251,53 @@ export async function createManualOrder(formData: FormData) {
 
   let dispatch: ManualYalidineDispatchResult | null = null;
   let carrierTrackingNumber = suppliedTrackingNumber;
+  const orchestrator = new TrackingOrchestrator();
+
+  // Save the customer's complete order in TajerTrack first. The carrier quota,
+  // subscription and merchant checks therefore happen before any live carrier
+  // parcel is created. A failed carrier request leaves the order ready to retry.
+  let result = await orchestrator.processEvent({
+    merchantId,
+    sourceProvider: dispatchRequested || !suppliedTrackingNumber ? 'manual' : (isYalidine ? 'yalidine' : 'manual'),
+    externalOrderId,
+    customerName,
+    customerPhone,
+    productName: productName || undefined,
+    carrierName: isYalidine ? 'Yalidine Express' : carrierName || undefined,
+    carrierTrackingNumber: suppliedTrackingNumber || undefined,
+    statusRaw: dispatchRequested ? 'order_placed' : statusRaw,
+    description: dispatchRequested
+      ? 'تم حفظ بيانات الطلب في تاجر تراك تمهيداً لإنشاء شحنة Yalidine / Guepex.'
+      : 'تم تسجيل الطلب يدوياً من لوحة التاجر',
+  });
+
+  if (!result.success) {
+    return { error: result.message || 'حدث خطأ أثناء إضافة الطلب' };
+  }
+
+  if (result.message === 'exchange_replacement_linked' || result.message === 'exchange_replacement_needs_confirmation') {
+    revalidatePath('/merchant');
+    return {
+      success: true,
+      trackingUuid: result.trackingUuid || '',
+      externalOrderId,
+      exchangeReplacement: true,
+      exchangeReplacementNeedsConfirmation: result.message === 'exchange_replacement_needs_confirmation',
+      carrierTrackingNumber: suppliedTrackingNumber || '',
+      carrierLabelUrl: '',
+      carrierShipmentCreated: false,
+      carrierShipmentReused: false,
+      confirmationQueued: false,
+      confirmationQueueError: false,
+      telegramTrackingQueued: false,
+      telegramTrackingQueueCheckFailed: false,
+    };
+  }
+
+  if (!result.orderId) {
+    return { error: 'تم استلام الطلب لكن تعذّر تأكيد حفظه في تاجر تراك. لم نرسل أي شحنة إلى شركة التوصيل.' };
+  }
+
   if (dispatchRequested) {
     try {
       dispatch = await dispatchManualYalidineParcel(
@@ -1264,59 +1311,45 @@ export async function createManualOrder(formData: FormData) {
       );
       carrierTrackingNumber = dispatch.trackingNumber;
     } catch (error: any) {
-      return { error: error?.message || 'تعذّر إرسال الشحنة إلى Yalidine / Guepex.' };
+      return {
+        error: 'تم حفظ بيانات الطلب في تاجر تراك، لكن لم يتم تأكيد إنشاء الشحنة في Yalidine / Guepex. ' +
+          (error?.message || 'تحقق من إعدادات API ثم أعد المحاولة بنفس رقم الطلب.'),
+      };
     }
-  }
 
-  const orchestrator = new TrackingOrchestrator();
-  const result = await orchestrator.processEvent({
-    merchantId,
-    sourceProvider: isYalidine ? 'yalidine' : 'manual',
-    externalOrderId,
-    customerName: customerName || undefined,
-    customerPhone: customerPhone || undefined,
-    productName: productName || undefined,
-    carrierName: isYalidine ? 'Yalidine Express' : carrierName || undefined,
-    carrierTrackingNumber: carrierTrackingNumber || undefined,
-    carrierMetadata: dispatch ? {
-      yalidine_manual_dispatch: true,
-      yalidine_import_id: dispatch.importId,
-      yalidine_label_url: dispatch.labelUrl,
-      yalidine_manual_dispatch_reused: dispatch.reused,
-      yalidine_delivery_type: String(formData.get('delivery_type') || 'home'),
-    } : undefined,
-    statusRaw: dispatch ? 'processing' : statusRaw,
-    description: dispatch
-      ? (dispatch.reused
-          ? 'تم ربط الشحنة الموجودة في حساب Yalidine / Guepex بطلبك في تاجر تراك.'
-          : 'تم إنشاء الشحنة مباشرة في حساب Yalidine / Guepex من تاجر تراك.')
-      : 'تم تسجيل الطلب يدوياً من لوحة التاجر',
-  });
-
-  if (!result.success) {
-    const suffix = dispatch
-      ? ' الشحنة مؤكدة في حساب شركة التوصيل ورقم تتبعها ' + dispatch.trackingNumber + '. أعد حفظ نفس رقم الطلب لإكمال ربطها في تاجر تراك دون إنشاء شحنة ثانية.'
-      : '';
-    return { error: (result.message || 'حدث خطأ أثناء إضافة الطلب') + suffix };
-  }
-
-  if (result.message === 'exchange_replacement_linked' || result.message === 'exchange_replacement_needs_confirmation') {
-    revalidatePath('/merchant');
-    return {
-      success: true,
-      trackingUuid: result.trackingUuid || '',
+    // Attach the confirmed carrier tracking number to the already-saved order.
+    // If this database update fails, the idempotent carrier reservation retains
+    // the tracking number so the same order reference can safely complete later.
+    const carrierResult = await orchestrator.processEvent({
+      merchantId,
+      sourceProvider: 'yalidine',
       externalOrderId,
-      exchangeReplacement: true,
-      exchangeReplacementNeedsConfirmation: result.message === 'exchange_replacement_needs_confirmation',
-      carrierTrackingNumber: dispatch?.trackingNumber || suppliedTrackingNumber || '',
-      carrierLabelUrl: dispatch?.labelUrl || '',
-      carrierShipmentCreated: Boolean(dispatch),
-      carrierShipmentReused: Boolean(dispatch?.reused),
-      confirmationQueued: false,
-      confirmationQueueError: false,
-      telegramTrackingQueued: false,
-      telegramTrackingQueueCheckFailed: false,
-    };
+      customerName,
+      customerPhone,
+      productName: productName || undefined,
+      carrierName: 'Yalidine Express',
+      carrierTrackingNumber: dispatch.trackingNumber,
+      carrierMetadata: {
+        yalidine_manual_dispatch: true,
+        yalidine_import_id: dispatch.importId,
+        yalidine_label_url: dispatch.labelUrl,
+        yalidine_manual_dispatch_reused: dispatch.reused,
+        yalidine_delivery_type: String(formData.get('delivery_type') || 'home'),
+      },
+      statusRaw: 'processing',
+      description: dispatch.reused
+        ? 'تم ربط الشحنة الموجودة في حساب Yalidine / Guepex بطلبك في تاجر تراك.'
+        : 'تم إنشاء الشحنة مباشرة في حساب Yalidine / Guepex من تاجر تراك.',
+    });
+
+    if (!carrierResult.success) {
+      return {
+        error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
+          '، لكن تعذّر تحديث ربطها في تاجر تراك. أعد حفظ نفس رقم الطلب لإكمال الربط دون إنشاء شحنة ثانية. ' +
+          (carrierResult.message || ''),
+      };
+    }
+    result = carrierResult;
   }
 
   if (!result.orderId) {
