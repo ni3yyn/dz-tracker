@@ -266,9 +266,9 @@ export class TrackingOrchestrator {
           if (event.customerPhone) updatePayload.customer_phone = event.customerPhone;
           const incomingNameIsRedacted =
             (event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') &&
-            Boolean(event.customerName && /\*{2,}/.test(event.customerName));
+            Boolean(event.customerName && /\*/.test(event.customerName));
           const existingNameIsRedacted = Boolean(
-            existingOrder.customer_name && /\*{2,}/.test(existingOrder.customer_name)
+            existingOrder.customer_name && /\*/.test(existingOrder.customer_name)
           );
           // Keep a real name; use the provider's masked display name only when
           // TajerTrack has no customer name to show.
