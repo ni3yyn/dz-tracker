@@ -14,7 +14,7 @@ This is a developer-mode ZIP package, not a Chrome Web Store listing. The manife
 
 ## What it captures
 
-The extension observes POST requests to the Guepex/Yalidine parcel creation API route (/v1/parcels). It extracts an order reference, customer name, unmasked phone, optional tracking reference, and optional product name. The original request body is never forwarded or stored. Masked identity fragments are discarded.
+The extension observes POST requests to the Guepex/Yalidine parcel-creation API route (/v1/parcels) and the Guepex ecommerce form endpoint (/app/colis/ajouter-ecommerce.php). For the Guepex form, it parses multipart/form-data fields such as firstname, familyname, contact_phone_1, and order_id. It extracts an order reference, customer name, unmasked phone, optional tracking reference, and optional product name. The original request body, CSRF token, files, and unrelated fields are never forwarded or stored. Masked identity fragments are discarded.
 
 ## Security
 
@@ -26,4 +26,4 @@ The extension observes POST requests to the Guepex/Yalidine parcel creation API 
 
 ## Limitations
 
-The extension can capture only data present in an observed browser POST request. If the Guepex dashboard changes its API route or creates parcels server-side, the parser must be adapted. It cannot retrieve old masked records or reverse Guepex's masking. Live validation against the actual Guepex dashboard is still required before relying on capture in production.
+The extension can capture only data present in an observed browser POST request. If the Guepex dashboard changes its form fields or creates parcels server-side, the parser must be adapted. It cannot retrieve old masked records or reverse Guepex's masking. Live validation against the actual Guepex dashboard is still required before relying on capture in production.
