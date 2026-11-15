@@ -299,6 +299,7 @@ export async function saveYalidineApiCredentials(
         base_url: 'https://api.guepex.app/v1/',
         credentials_encrypted: encrypted,
         api_sync_enabled: true,
+        sync_enabled: Boolean(existing?.sync_enabled),
         last_api_sync_at: null,
         api_last_error: null,
         api_last_error_at: null,
