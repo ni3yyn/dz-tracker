@@ -187,7 +187,7 @@ export function YalidineConnectionPanel() {
   }
 
   async function handleDisconnect() {
-    if (!window.confirm('هل فصلت Webhook أو عطّلته من لوحة شركة التوصيل؟ سيؤدي هذا إلى حذف رابط الاستقبال ومفتاحه المحفوظ في تاجر تراك.')) return;
+    if (!window.confirm('سيؤدي هذا إلى حذف بيانات API ومفتاح Webhook ورابط الاستقبال المحفوظة في تاجر تراك. هل تريد المتابعة؟')) return;
     setDisconnecting(true);
     setMessage('');
     setMessageIsError(false);
@@ -200,7 +200,9 @@ export function YalidineConnectionPanel() {
       }
       setStatus(emptyStatus);
       setSecret('');
-      setMessage('تم حذف إعدادات الربط من تاجر تراك. تأكد من تعطيل Webhook من لوحة شركة التوصيل أيضاً.');
+      setApiId('');
+      setApiToken('');
+      setMessage('تم حذف بيانات ربط Yalidine / Guepex من تاجر تراك. تأكد من تعطيل Webhook من لوحة شركة التوصيل أيضاً.');
     } catch {
       setMessage('تعذر فصل الربط. حاول مجدداً.');
       setMessageIsError(true);
@@ -323,7 +325,7 @@ export function YalidineConnectionPanel() {
               <ol className="dz-int-guided-steps">
                 <li>افتح لوحة حساب Yalidine / Guepex، ثم صفحة <strong>Webhooks</strong>.</li>
                 <li>اضغط <strong>Ajouter</strong>، واكتب اسماً مثل <strong>TajerTrack</strong>، ثم الصق رابط الاستقبال أعلاه وأضف بريد التنبيهات المطلوب.</li>
-                <li>فعّل الحدثين <code dir="ltr">parcel_created</code> و<code dir="ltr">parcel_status_updated</code>. هذان الحدثان هما المستخدمان حالياً لإنشاء سجل الشحنة وتحديث مسارها.</li>
+                <li>فعّل الأحداث <code dir="ltr">parcel_created</code> و<code dir="ltr">parcel_edited</code> و<code dir="ltr">parcel_status_updated</code> حتى تصل بيانات الإنشاء والتعديلات والحالات.</li>
                 <li>احفظ Webhook. ستتحقق لوحة الشركة من الرابط عبر CRC تلقائياً، وسيظهر مفتاح التوقيع على بطاقة Webhook.</li>
                 <li>انسخ مفتاح التوقيع من البطاقة والصقه في الخانة أدناه، ثم فعّل وضع الاختبار الآمن أعلاه. شغّل <strong>Faire des tests</strong> من لوحة الشركة. بعد نجاح الاختبار، أوقف وضع الاختبار ثم غيّر حالة Webhook إلى <strong>Actif</strong>.</li>
               </ol>
@@ -351,7 +353,7 @@ export function YalidineConnectionPanel() {
                 </button>
               </form>
 
-              {status.connected && (
+              {(status.connected || status.apiConnected) && (
                 <button type="button" className="dz-support-copy" disabled={disconnecting} onClick={handleDisconnect}>
                   {disconnecting ? 'جارٍ فصل الربط...' : 'فصل Yalidine من تاجر تراك'}
                 </button>
