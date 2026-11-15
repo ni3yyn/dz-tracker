@@ -946,7 +946,7 @@ export class YalidineWebhookWorker {
 
         await this.renewApiSyncLease(integration.id);
         await this.waitForApiRateLimit();
-        const url = nextPageUrl || buildGuepexParcelListUrl(
+        const url: URL = nextPageUrl || buildGuepexParcelListUrl(
           page,
           getGuepexSyncCursor(integration.last_api_sync_at, manualRequestAt),
           now
@@ -1012,7 +1012,7 @@ export class YalidineWebhookWorker {
 
         const nextLink = typeof body?.links?.next === 'string' ? body.links.next : '';
         if (nextLink) {
-          const candidate = new URL(nextLink, url);
+          const candidate: URL = new URL(nextLink, url);
           const apiOrigin = new URL(API_BASE_URL).origin;
           if (candidate.origin !== apiOrigin || candidate.pathname !== '/v1/parcels/') {
             throw new Error('Guepex returned an unsafe or unexpected next-page URL.');
@@ -1152,7 +1152,7 @@ export class YalidineWebhookWorker {
         throw new Error('Guepex history recovery exceeded the per-cycle pagination safety limit.');
       }
 
-      const url = nextPageUrl || buildGuepexHistoriesUrl(linkedTrackings, page);
+      const url: URL = nextPageUrl || buildGuepexHistoriesUrl(linkedTrackings, page);
       nextPageUrl = null;
       await this.waitForApiRateLimit();
 
@@ -1272,7 +1272,7 @@ export class YalidineWebhookWorker {
 
       const nextLink = typeof body?.links?.next === 'string' ? body.links.next : '';
       if (nextLink) {
-        const candidate = new URL(nextLink, url);
+        const candidate: URL = new URL(nextLink, url);
         const apiOrigin = new URL(API_BASE_URL).origin;
         if (candidate.origin !== apiOrigin || candidate.pathname !== '/v1/histories/') {
           throw new Error('Guepex returned an unsafe or unexpected history next-page URL.');
