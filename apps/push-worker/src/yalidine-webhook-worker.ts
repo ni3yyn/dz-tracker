@@ -144,6 +144,15 @@ export function buildGuepexParcelUrl(tracking: string): URL {
   return url;
 }
 
+export function buildGuepexParcelsByOrderIdsUrl(orderIds: string[]): URL {
+  const url = new URL('parcels/', API_BASE_URL);
+  url.searchParams.set('order_id', Array.from(new Set(orderIds.map(asText).filter(Boolean))).join(','));
+  url.searchParams.set('page', '1');
+  url.searchParams.set('page_size', '100');
+  url.searchParams.set('fields', GUEPEX_PARCEL_FIELDS.join(','));
+  return url;
+}
+
 export function normalizeGuepexParcel(response: any, expectedTracking = ''): Record<string, any> | null {
   const queue: any[] = [response?.data, response?.body, response?.parcel, response];
   const visited = new Set<any>();
@@ -421,7 +430,7 @@ export class YalidineWebhookWorker {
 
   private async recordBackfillCheck(
     order: { id: string; carrier_metadata: Record<string, unknown> | null },
-    outcome: 'not_found' | 'no_details'
+    outcome: 'not_found' | 'no_details' | 'ambiguous'
   ): Promise<void> {
     const metadata = order.carrier_metadata && typeof order.carrier_metadata === 'object' && !Array.isArray(order.carrier_metadata)
       ? order.carrier_metadata
@@ -500,6 +509,127 @@ export class YalidineWebhookWorker {
       if (enqueueError) throw new Error('Could not queue existing Yalidine order for detail enrichment: ' + enqueueError.message);
       queued += 1;
     }
+    return { checked, queued };
+  }
+
+  private async backfillExistingOrdersByOrderId(
+    integration: YalidineIntegration,
+    apiId: string,
+    apiToken: string
+  ): Promise<{ checked: number; queued: number }> {
+    const BATCH_SIZE = 20;
+    const columns = 'id, external_order_id, carrier_tracking_number, carrier_name, carrier_metadata';
+    const baseQuery = () => (this.supabase as any)
+      .from('orders')
+      .select(columns)
+      .eq('merchant_id', integration.merchant_id)
+      .is('carrier_tracking_number', null)
+      .not('external_order_id', 'is', null)
+      .is('carrier_metadata->>yalidine_api_details_checked_at', null)
+      .order('created_at', { ascending: true })
+      .limit(BATCH_SIZE);
+
+    const [unassigned, yalidineLinked] = await Promise.all([
+      baseQuery().is('carrier_name', null),
+      baseQuery().in('carrier_name', ['Yalidine Express', 'Guepex', 'Yalidine']),
+    ]);
+    if (unassigned.error) throw new Error('Could not find unlinked TajerTrack orders for Guepex reference backfill: ' + unassigned.error.message);
+    if (yalidineLinked.error) throw new Error('Could not find unlinked Yalidine orders for Guepex reference backfill: ' + yalidineLinked.error.message);
+
+    const ordersById = new Map<string, {
+      id: string;
+      external_order_id: string;
+      carrier_tracking_number: string | null;
+      carrier_name: string | null;
+      carrier_metadata: Record<string, unknown> | null;
+    }>();
+    for (const order of [...(unassigned.data || []), ...(yalidineLinked.data || [])]) {
+      if (order?.id && order?.external_order_id) ordersById.set(order.id, order);
+    }
+    const orders = Array.from(ordersById.values()).slice(0, BATCH_SIZE);
+    if (!orders.length) return { checked: 0, queued: 0 };
+
+    const orderIds = Array.from(new Set(orders.map((order) => asText(order.external_order_id)).filter(Boolean)));
+    const url = buildGuepexParcelsByOrderIdsUrl(orderIds);
+    await this.waitForApiRateLimit();
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'X-API-ID': apiId,
+          'X-API-TOKEN': apiToken,
+        },
+        redirect: 'error',
+        signal: AbortSignal.timeout(20_000),
+      });
+    } catch (error: any) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+        throw new Error('Guepex order-reference backfill request timed out.');
+      }
+      throw new Error('Guepex order-reference backfill request could not reach the API.');
+    }
+
+    if (response.status === 401 || response.status === 403) throw new Error('Guepex rejected the saved API ID or API Token.');
+    if (response.status === 429) throw new Error('Guepex API rate limit reached during order-reference backfill.');
+    if (!response.ok) throw new Error(`Guepex order-reference lookup failed (HTTP ${response.status}).`);
+
+    let body: any;
+    try { body = await response.json(); } catch {
+      throw new Error('Guepex returned invalid JSON for order-reference backfill.');
+    }
+    if (body?.success === false || body?.error) throw new Error('Guepex rejected the order-reference lookup.');
+
+    const parcels = normalizeGuepexParcelList(body);
+    const parcelsByOrderId = new Map<string, Record<string, any>[]>();
+    for (const parcel of parcels) {
+      const reference = asText(parcel.order_id).toLowerCase();
+      if (!reference) continue;
+      const list = parcelsByOrderId.get(reference) || [];
+      list.push(parcel);
+      parcelsByOrderId.set(reference, list);
+    }
+
+    let checked = 0;
+    let queued = 0;
+    for (const order of orders) {
+      if (!this.running) break;
+      checked += 1;
+      const reference = asText(order.external_order_id);
+      const matches = parcelsByOrderId.get(reference.toLowerCase()) || [];
+      if (matches.length === 0) {
+        await this.recordBackfillCheck(order, 'not_found');
+        continue;
+      }
+      if (matches.length > 1) {
+        // A reused store reference can represent multiple parcels. Do not
+        // attach one arbitrarily; keep the original TajerTrack order untouched.
+        await this.recordBackfillCheck(order, 'ambiguous');
+        continue;
+      }
+
+      const event = createGuepexApiEnrichmentEvent(
+        integration.merchant_id,
+        matches[0],
+        '',
+        reference
+      );
+      if (!event) {
+        await this.recordBackfillCheck(order, 'no_details');
+        continue;
+      }
+      const { error: enqueueError } = await (this.supabase as any)
+        .from('yalidine_webhook_events')
+        .upsert([event], {
+          onConflict: 'merchant_id,event_id',
+          ignoreDuplicates: true,
+        });
+      if (enqueueError) throw new Error('Could not queue reference-matched TajerTrack order for enrichment: ' + enqueueError.message);
+      queued += 1;
+    }
+
     return { checked, queued };
   }
 
@@ -740,7 +870,12 @@ export class YalidineWebhookWorker {
         page += 1;
       }
 
-      const backfill = await this.backfillExistingOrders(integration, apiId, apiToken);
+      const trackingBackfill = await this.backfillExistingOrders(integration, apiId, apiToken);
+      const referenceBackfill = await this.backfillExistingOrdersByOrderId(integration, apiId, apiToken);
+      const backfill = {
+        checked: trackingBackfill.checked + referenceBackfill.checked,
+        queued: trackingBackfill.queued + referenceBackfill.queued,
+      };
 
       const syncedAt = new Date().toISOString();
       const { data: savedSyncState, error: updateError } = await (this.supabase as any)
