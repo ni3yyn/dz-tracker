@@ -141,9 +141,18 @@ const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim() || nul
     extendedOrdersQuery.error &&
     /carrier_order_id|carrier_metadata|carrier_last_event_at/i.test(extendedOrdersQuery.error.message || '')
   ) {
+    // Keep carrier_metadata whenever that column exists: Yalidine's masked
+    // phone display fallback and other carrier details live there.
+    const metadataAvailable = !/carrier_metadata/i.test(extendedOrdersQuery.error.message || '');
+    const fallbackOrderFields = [
+      'id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, carrier_last_event_at',
+      metadataAvailable ? 'carrier_metadata' : null,
+      'tracking_uuid, created_at, confirmation_status',
+    ].filter(Boolean).join(', ');
+
     const fallbackOrdersQuery = await supabaseAdmin
       .from('orders')
-      .select('id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, carrier_last_event_at, tracking_uuid, created_at, confirmation_status')
+      .select(fallbackOrderFields)
       .eq('merchant_id', merchant.id)
       .order('created_at', { ascending: false });
     orders = fallbackOrdersQuery.data;
@@ -152,9 +161,14 @@ const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim() || nul
       fallbackOrdersQuery.error &&
       /carrier_last_event_at/i.test(fallbackOrdersQuery.error.message || '')
     ) {
+      const minimalOrderFields = [
+        'id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number',
+        metadataAvailable ? 'carrier_metadata' : null,
+        'tracking_uuid, created_at, confirmation_status',
+      ].filter(Boolean).join(', ');
       const minimalOrdersQuery = await supabaseAdmin
         .from('orders')
-        .select('id, external_order_id, customer_name, customer_phone, product_name, current_status, carrier_name, carrier_tracking_number, tracking_uuid, created_at, confirmation_status')
+        .select(minimalOrderFields)
         .eq('merchant_id', merchant.id)
         .order('created_at', { ascending: false });
       orders = minimalOrdersQuery.data;
