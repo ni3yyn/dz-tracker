@@ -35,6 +35,13 @@ function isRedactedValue(value: unknown): boolean {
   return typeof value === 'string' && /\*{2,}/.test(value);
 }
 
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, '\\function isRedactedValue(value: unknown): boolean {
+  return typeof value === 'string' && /\*{2,}/.test(value);
+}
+');
+}
+
 async function enqueueTrackingLinkNotifications(
   supabase: any,
   merchantId: string,
@@ -86,16 +93,29 @@ async function processYalidineParcelEdit(
     .limit(1)
     .maybeSingle();
 
-  if (!order && !lookupError && normalized.externalOrderId) {
+  if (
+    !order &&
+    !lookupError &&
+    normalized.externalOrderId &&
+    normalized.externalOrderId.toLowerCase() !== trackingNumber.toLowerCase()
+  ) {
+    // Guepex order_id is the merchant's original order reference. Older
+    // imports may differ only by letter casing or surrounding whitespace, so
+    // try an exact case-insensitive match before allowing a new order insert.
+    const reference = normalized.externalOrderId.trim();
     const byExternalId = await supabase
       .from('orders')
       .select(selectedFields)
       .eq('merchant_id', merchantId)
-      .eq('external_order_id', normalized.externalOrderId)
-      .limit(1)
-      .maybeSingle();
-    order = byExternalId.data;
-    lookupError = byExternalId.error;
+      .ilike('external_order_id', escapeLikePattern(reference))
+      .limit(2);
+    if (byExternalId.error) {
+      lookupError = byExternalId.error;
+    } else if ((byExternalId.data || []).length === 1) {
+      order = byExternalId.data[0];
+    } else if ((byExternalId.data || []).length > 1) {
+      throw new Error('The Yalidine order reference matches multiple TajerTrack orders; refusing an ambiguous automatic merge.');
+    }
   }
 
   if (lookupError) {
@@ -121,10 +141,11 @@ async function processYalidineParcelEdit(
   const updates: Record<string, unknown> = {};
   if (
     normalized.customerName &&
+    !isRedactedValue(normalized.customerName) &&
     (!order.customer_name || isRedactedValue(order.customer_name))
   ) {
-    // A masked carrier name is acceptable as a display fallback, but it never
-    // replaces a complete customer name already saved in TajerTrack.
+    // Only unmasked names may replace missing/redacted values. A GET response
+    // containing M*****d is not a customer identity.
     updates.customer_name = normalized.customerName;
   }
   if (normalized.customerPhone && (!order.customer_phone || isRedactedValue(order.customer_phone))) {
