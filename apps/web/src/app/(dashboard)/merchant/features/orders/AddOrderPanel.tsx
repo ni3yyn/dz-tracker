@@ -72,7 +72,7 @@ export function AddOrderPanel({
   );
 
   useEffect(() => {
-    if (!isAddOrderPanelOpen || !shouldDispatchToYalidine || parcelOptions || parcelOptionsLoading) return;
+    if (!isAddOrderPanelOpen || !shouldDispatchToYalidine || parcelOptions) return;
     let active = true;
     setParcelOptionsLoading(true);
     setParcelOptionsError('');
@@ -96,7 +96,7 @@ export function AddOrderPanel({
         if (active) setParcelOptionsLoading(false);
       });
     return () => { active = false; };
-  }, [isAddOrderPanelOpen, shouldDispatchToYalidine, parcelOptions, parcelOptionsLoading]);
+  }, [isAddOrderPanelOpen, shouldDispatchToYalidine, parcelOptions]);
 
   if (!isAddOrderPanelMounted || typeof document === 'undefined') return null;
 
