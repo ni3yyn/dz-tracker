@@ -443,6 +443,7 @@ export class YalidineWebhookWorker {
           ...metadata,
           yalidine_api_details_checked_at: now,
           yalidine_api_details_result: outcome,
+          yalidine_api_details_version: 2,
         },
         updated_at: now,
       })
@@ -456,21 +457,30 @@ export class YalidineWebhookWorker {
     apiToken: string
   ): Promise<{ checked: number; queued: number }> {
     const BACKFILL_BATCH_SIZE = 20;
-    const { data: orders, error } = await (this.supabase as any)
+    const trackingQuery = () => (this.supabase as any)
       .from('orders')
       .select('id, external_order_id, carrier_tracking_number, carrier_metadata')
       .eq('merchant_id', integration.merchant_id)
-      .in('carrier_name', ['Yalidine Express', 'Guepex', 'Yalidine'])
       .not('carrier_tracking_number', 'is', null)
-      .is('carrier_metadata->>yalidine_api_details_checked_at', null)
+      .is('carrier_metadata->>yalidine_api_details_version', null)
       .order('created_at', { ascending: true })
       .limit(BACKFILL_BATCH_SIZE);
 
-    if (error) throw new Error('Could not find existing Yalidine orders for detail backfill: ' + error.message);
+    const [yalidineOrders, unassignedOrders] = await Promise.all([
+      trackingQuery().in('carrier_name', ['Yalidine Express', 'Guepex', 'Yalidine']),
+      trackingQuery().is('carrier_name', null),
+    ]);
+    if (yalidineOrders.error) throw new Error('Could not find existing Yalidine orders for detail backfill: ' + yalidineOrders.error.message);
+    if (unassignedOrders.error) throw new Error('Could not find unassigned tracked orders for Guepex detail backfill: ' + unassignedOrders.error.message);
+    const ordersById = new Map<string, any>();
+    for (const order of [...(yalidineOrders.data || []), ...(unassignedOrders.data || [])]) {
+      if (order?.id) ordersById.set(order.id, order);
+    }
+    const orders = Array.from(ordersById.values()).slice(0, BACKFILL_BATCH_SIZE);
 
     let checked = 0;
     let queued = 0;
-    for (const order of (orders || []) as Array<{
+    for (const order of orders as Array<{
       id: string;
       external_order_id: string;
       carrier_tracking_number: string;
@@ -525,7 +535,7 @@ export class YalidineWebhookWorker {
       .eq('merchant_id', integration.merchant_id)
       .is('carrier_tracking_number', null)
       .not('external_order_id', 'is', null)
-      .is('carrier_metadata->>yalidine_api_details_checked_at', null)
+      .is('carrier_metadata->>yalidine_api_details_version', null)
       .order('created_at', { ascending: true })
       .limit(BATCH_SIZE);
 
