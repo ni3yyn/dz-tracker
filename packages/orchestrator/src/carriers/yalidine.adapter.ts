@@ -68,7 +68,7 @@ function extractYalidineCarrierMetadata(payload: Record<string, unknown>): Recor
   // Keep the masked fragment as display-only metadata; never put it in the
   // canonical customer_phone column or use it for SMS/Telegram/WhatsApp.
   const maskedPhone = safeString(payload.contact_phone);
-  if (maskedPhone && /\\*/.test(maskedPhone)) {
+  if (maskedPhone && /\*/.test(maskedPhone)) {
     metadata.yalidine_masked_contact_phone = maskedPhone;
   }
 
