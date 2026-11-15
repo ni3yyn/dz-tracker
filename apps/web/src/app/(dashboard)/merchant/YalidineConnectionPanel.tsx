@@ -113,7 +113,7 @@ export function YalidineConnectionPanel() {
       active = false;
       window.clearInterval(timer);
     };
-  }, [status.apiSyncRequestedAt]);
+  }, [status.apiSyncRequestedAt, status.apiLastError, syncingApi]);
 
   async function handleRefreshApi() {
     if (!status.apiConnected || syncingApi) return;
