@@ -42,6 +42,14 @@ function asText(value: unknown): string {
   return value === null || value === undefined ? '' : String(value).trim();
 }
 
+type GuepexIdentityFieldState = 'absent' | 'masked' | 'present';
+
+export function classifyGuepexIdentityField(value: unknown): GuepexIdentityFieldState {
+  const text = asText(value);
+  if (!text) return 'absent';
+  return /\\*/.test(text) ? 'masked' : 'present';
+}
+
 export function normalizeGuepexParcelList(response: any): Record<string, any>[] {
   const candidates = [response?.data, response?.body, response?.parcels, response];
   for (const candidate of candidates) {
@@ -722,6 +730,28 @@ export class YalidineWebhookWorker {
     }
 
     return { checked, queued };
+  }
+
+  /**
+   * Show what the carrier actually supplied without logging customer PII.
+   * API-generated snapshots are deliberately excluded; this is for signed
+   * carrier webhook deliveries only.
+   */
+  private logWebhookIdentityShape(job: YalidineWebhookJob): void {
+    if (!['parcel_created', 'parcel_edited', 'parcel_status_updated'].includes(job.event_type)) return;
+    const payload = job.payload as Record<string, any>;
+    const data = payload?.data;
+    if (!data || typeof data !== 'object' || Array.isArray(data) || data.__guepex_api_lookup === true) return;
+
+    console.info(
+      '[YalidineWebhook]: ' + job.event_type + ' (' + job.event_id.slice(0, 10) +
+      ') identity fields: firstname=' + classifyGuepexIdentityField(data.firstname) +
+      ', familyname=' + classifyGuepexIdentityField(data.familyname) +
+      ', contact_phone=' + classifyGuepexIdentityField(data.contact_phone) +
+      ', customer_name=' + classifyGuepexIdentityField(data.customer_name) +
+      ', customer_phone=' + classifyGuepexIdentityField(data.customer_phone) +
+      '; order_id=' + (Boolean(asText(data.order_id)) ? 'present' : 'absent') + '.'
+    );
   }
 
   private async enrichWebhookEventFromApi(job: YalidineWebhookJob): Promise<void> {
@@ -1465,6 +1495,10 @@ export class YalidineWebhookWorker {
       ) {
         throw new Error('Queued Yalidine event envelope is inconsistent.');
       }
+
+      // Record the field availability from the signed webhook before any masked GET
+      // response is merged into it. The diagnostic contains no customer values.
+      this.logWebhookIdentityShape(job);
 
       // Look up the exact parcel immediately when a signed webhook carries its tracking ID.
       // This is best-effort: the verified webhook is still processed if Guepex is temporarily unavailable.
