@@ -160,7 +160,7 @@ export class YalidineAdapter {
     // firstname/familyname fetched from Guepex. Otherwise use the combined
     // API name (including its masked fallback) when no full value exists.
     const rawCustomerName =
-      directCustomerName && !/\\*/.test(directCustomerName)
+      directCustomerName && !/\*/.test(directCustomerName)
         ? directCustomerName
         : combinedName || directCustomerName ||
           extractFirst(payload, ['firstname', 'familyname']);
