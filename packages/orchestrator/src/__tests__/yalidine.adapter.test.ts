@@ -105,6 +105,7 @@ test('does not treat a masked Guepex phone as a deliverable customer number', ()
     },
   });
 
-  assert.equal(event.customerName, undefined);
+  assert.equal(event.customerName, 'M*****d E* A****');
   assert.equal(event.customerPhone, undefined);
+  assert.equal(event.carrierMetadata?.yalidine_masked_contact_phone, '0********9');
 });
