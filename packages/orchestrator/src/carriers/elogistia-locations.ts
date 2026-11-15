@@ -67,7 +67,7 @@ export function parseElogistiaWilayas(payload: unknown): ElogistiaWilaya[] {
       row.wilayaLabel ?? row.wilayaName ?? row.wilaya_name ?? row.name ?? row.nom ?? row.wilaya ?? row.label,
     );
 
-    if (!/^\\d{1,3}$/.test(id) || Number(id) < 1 || !name) continue;
+    if (!/^\d{1,3}$/.test(id) || Number(id) < 1 || !name) continue;
     const identity = String(Number(id));
     if (seen.has(identity)) continue;
     seen.add(identity);
