@@ -63,6 +63,15 @@ function extractYalidineCarrierMetadata(payload: Record<string, unknown>): Recor
       metadata[key] = value;
     }
   }
+
+  // Guepex deliberately masks recipient phone numbers in GET/PATCH responses.
+  // Keep the masked fragment as display-only metadata; never put it in the
+  // canonical customer_phone column or use it for SMS/Telegram/WhatsApp.
+  const maskedPhone = safeString(payload.contact_phone);
+  if (maskedPhone && /\\*/.test(maskedPhone)) {
+    metadata.yalidine_masked_contact_phone = maskedPhone;
+  }
+
   return Object.keys(metadata).length > 0 ? metadata : undefined;
 }
 
@@ -135,28 +144,27 @@ export class YalidineAdapter {
     )!;
 
     // 2. استخراج بيانات العميل مع تنظيف الهاتف
-    const combinedName =
-      payload.firstname && payload.familyname
-        ? `${payload.firstname} ${payload.familyname}`.trim()
-        : null;
+    const nameParts = [payload.firstname, payload.familyname]
+      .map((value) => safeString(value))
+      .filter(Boolean);
+    const combinedName = nameParts.length ? nameParts.join(' ') : undefined;
 
     const rawCustomerName =
       combinedName ||
       extractFirst(payload, [
         'customer_name',
         'firstname',
+        'familyname',
         'client_name',
         'partner_name', // Odoo Partner
         'recipient_name',
         'nom',
         'client',
       ]);
-    // Guepex masks recipient names in every GET/PATCH response. Do not turn
-    // masked fragments into a customer's saved identity; keep the original
-    // TajerTrack order name when the parcel is linked by its order reference.
-    const customerName = rawCustomerName && !/\*/.test(rawCustomerName)
-      ? rawCustomerName
-      : undefined;
+    // Guepex masks recipient names in every GET/PATCH response. Preserve the
+    // partial masked name as a display fallback when no real TajerTrack name
+    // exists; the processor always prefers an unmasked original-order value.
+    const customerName = rawCustomerName ? safeString(rawCustomerName) : undefined;
 
     const rawPhone = extractFirst(payload, [
       'customer_phone',
