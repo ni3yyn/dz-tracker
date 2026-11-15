@@ -12,6 +12,9 @@ import {
 type YalidineWebhookStatus = {
   prepared: boolean;
   connected: boolean;
+  apiConnected: boolean;
+  lastApiSyncAt: string | null;
+  apiLastError: string | null;
   endpointUrl: string | null;
   connectedAt: string | null;
   lastWebhookReceivedAt: string | null;
@@ -62,7 +65,7 @@ async function loadIntegration(merchantId: string) {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await (supabase as any)
     .from('merchant_carrier_integrations')
-    .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error')
+    .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error')
     .eq('merchant_id', merchantId)
     .eq('provider', 'yalidine')
     .maybeSingle();
@@ -72,6 +75,7 @@ async function loadIntegration(merchantId: string) {
 
 function statusFromRow(row: any): YalidineWebhookStatus {
   let hasSecret = false;
+  let hasApiCredentials = false;
   try {
     if (row?.credentials_encrypted) {
       const credentials = decryptYalidineWebhookCredentials(
@@ -80,14 +84,19 @@ function statusFromRow(row: any): YalidineWebhookStatus {
         process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || ''
       );
       hasSecret = Boolean(credentials.webhookSecret);
+      hasApiCredentials = Boolean(credentials.apiId && credentials.apiToken);
     }
   } catch {
     hasSecret = false;
+    hasApiCredentials = false;
   }
   const prepared = Boolean(row?.webhook_endpoint_token);
   return {
     prepared,
     connected: Boolean(row?.sync_enabled) && hasSecret,
+    apiConnected: Boolean(row?.api_sync_enabled) && hasApiCredentials,
+    lastApiSyncAt: row?.last_api_sync_at || null,
+    apiLastError: row?.api_last_error || null,
     endpointUrl: prepared ? endpointUrl(row.webhook_endpoint_token) : null,
     connectedAt: row?.connected_at || null,
     lastWebhookReceivedAt: row?.last_webhook_received_at || null,
@@ -110,6 +119,9 @@ export async function getYalidineWebhookStatus(): Promise<{
       status: row ? statusFromRow({ ...row, merchant_id: merchantId }) : {
         prepared: false,
         connected: false,
+        apiConnected: false,
+        lastApiSyncAt: null,
+        apiLastError: null,
         endpointUrl: null,
         connectedAt: null,
         lastWebhookReceivedAt: null,
@@ -124,6 +136,9 @@ export async function getYalidineWebhookStatus(): Promise<{
       status: {
         prepared: false,
         connected: false,
+        apiConnected: false,
+        lastApiSyncAt: null,
+        apiLastError: null,
         endpointUrl: null,
         connectedAt: null,
         lastWebhookReceivedAt: null,
@@ -160,8 +175,11 @@ export async function prepareYalidineWebhookEndpoint(): Promise<{
     }
 
     const token = randomBytes(32).toString('base64url');
+    const previousCredentials = existing?.credentials_encrypted
+      ? decryptYalidineWebhookCredentials(existing.credentials_encrypted, merchantId, encryptionKey)
+      : { webhookSecret: '' };
     const encryptedPendingSecret = encryptYalidineWebhookCredentials(
-      { webhookSecret: '' },
+      previousCredentials,
       merchantId,
       encryptionKey
     );
@@ -190,6 +208,113 @@ export async function prepareYalidineWebhookEndpoint(): Promise<{
   }
 }
 
+export async function saveYalidineApiCredentials(
+  apiIdInput: string,
+  apiTokenInput: string
+): Promise<{
+  success: boolean;
+  status?: YalidineWebhookStatus;
+  error?: string;
+}> {
+  try {
+    const merchantId = await authenticatedMerchantId();
+    const apiId = String(apiIdInput || '').trim();
+    const apiToken = String(apiTokenInput || '').trim();
+    if (!/^[A-Za-z0-9_-]{8,128}$/.test(apiId)) {
+      throw new Error('API ID غير صالح. تحقق من القيمة المنسوخة من لوحة Guepex.');
+    }
+    if (apiToken.length < 16 || apiToken.length > 512) {
+      throw new Error('API Token غير صالح. تحقق من القيمة المنسوخة من لوحة Guepex.');
+    }
+
+    const encryptionKey = process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '';
+    if (encryptionKey.length < 32) {
+      throw new Error('إعداد التشفير غير مكتمل على الخادم. يرجى التواصل مع الدعم.');
+    }
+
+    // Verify the credentials against the read-only parcel endpoint before saving.
+    const probeUrl = new URL('parcels/', 'https://api.guepex.app/v1/');
+    probeUrl.searchParams.set('page_size', '1');
+    let response: Response;
+    try {
+      response = await fetch(probeUrl, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'X-API-ID': apiId,
+          'X-API-TOKEN': apiToken,
+        },
+        redirect: 'error',
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch (error: any) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+        throw new Error('انتهت مهلة الاتصال بـ Guepex أثناء التحقق من بيانات API.');
+      }
+      throw new Error('تعذر الاتصال بواجهة Guepex API. حاول مجدداً.');
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('رفضت Guepex بيانات API ID أو API Token. تحقق منهما ثم أعد المحاولة.');
+    }
+    if (response.status === 429) {
+      throw new Error('وصلت Guepex إلى حد الطلبات. انتظر قليلاً ثم أعد المحاولة.');
+    }
+    if (!response.ok) {
+      throw new Error('تعذر التحقق من Guepex API (HTTP ' + response.status + ').');
+    }
+
+    let payload: any;
+    try { payload = await response.json(); } catch {
+      throw new Error('أعادت Guepex استجابة غير صالحة أثناء التحقق من بيانات API.');
+    }
+    const parcelRows = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.body)
+        ? payload.body
+        : Array.isArray(payload?.data?.data)
+          ? payload.data.data
+          : null;
+    if (!parcelRows || payload?.success === false || payload?.error) {
+      throw new Error('لم تتعرف Guepex على استجابة قائمة الطرود. تحقق من صلاحيات API.');
+    }
+
+    const existing = await loadIntegration(merchantId);
+    const previousCredentials = existing?.credentials_encrypted
+      ? decryptYalidineWebhookCredentials(existing.credentials_encrypted, merchantId, encryptionKey)
+      : { webhookSecret: '' };
+    const encrypted = encryptYalidineWebhookCredentials(
+      { ...previousCredentials, apiId, apiToken },
+      merchantId,
+      encryptionKey
+    );
+
+    const now = new Date().toISOString();
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await (supabase as any)
+      .upsert({
+        merchant_id: merchantId,
+        provider: 'yalidine',
+        base_url: 'https://api.guepex.app/v1/',
+        credentials_encrypted: encrypted,
+        api_sync_enabled: true,
+        last_api_sync_at: null,
+        api_last_error: null,
+        api_last_error_at: null,
+        connected_at: existing?.connected_at || now,
+        updated_at: now,
+      }, { onConflict: 'merchant_id,provider' })
+      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error')
+      .single();
+
+    if (error || !data) throw new Error('تم التحقق من بيانات API لكن تعذر حفظها. حاول مجدداً.');
+    revalidatePath('/merchant');
+    return { success: true, status: statusFromRow({ ...data, merchant_id: merchantId }) };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'تعذر ربط حساب Guepex API.' };
+  }
+}
+
 export async function saveYalidineWebhookSecret(secretInput: string): Promise<{
   success: boolean;
   status?: YalidineWebhookStatus;
@@ -213,7 +338,12 @@ export async function saveYalidineWebhookSecret(secretInput: string): Promise<{
     }
 
     const encrypted = encryptYalidineWebhookCredentials(
-      { webhookSecret: secret },
+      {
+        ...(existing?.credentials_encrypted
+          ? decryptYalidineWebhookCredentials(existing.credentials_encrypted, merchantId, encryptionKey)
+          : { webhookSecret: '' }),
+        webhookSecret: secret,
+      },
       merchantId,
       encryptionKey
     );
