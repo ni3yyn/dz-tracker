@@ -95,6 +95,18 @@ async function recordOrderedCarrierStatus(
     });
   }
 
+  if (event.sourceProvider === 'elogistia') {
+    return supabase.rpc('record_elogistia_order_status_change', {
+      p_order_id: orderId,
+      p_merchant_id: event.merchantId,
+      p_event_id: event.sourceEventId || null,
+      p_status_raw: event.statusRaw,
+      p_status_title: displayStatus,
+      p_description: event.description || null,
+      p_occurred_at: event.sourceOccurredAt,
+    });
+  }
+
   return supabase.rpc('record_order_status_change_ordered', {
     p_order_id: orderId,
     p_status_raw: event.statusRaw,
