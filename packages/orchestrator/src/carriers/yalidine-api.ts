@@ -129,7 +129,8 @@ async function requestJson(
 ): Promise<any> {
   let response: Response;
   try {
-    response = await fetchImpl(endpoint(baseUrl, path), {
+    const requestUrl = /^https:\/\//i.test(path) ? new URL(path) : endpoint(baseUrl, path);
+    response = await fetchImpl(requestUrl, {
       ...init,
       redirect: 'error',
       signal: init.signal ?? AbortSignal.timeout(15_000),
@@ -266,7 +267,7 @@ export async function findYalidineParcelsByOrderId(
   url.searchParams.set('page_size', '20');
   url.searchParams.set('fields', 'tracking,order_id,label,import_id,last_status');
 
-  const payload = await requestJson(baseUrl, credentials, url.pathname + url.search, {
+  const payload = await requestJson(baseUrl, credentials, url.toString(), {
     method: 'GET',
   }, fetchImpl);
 
@@ -326,7 +327,7 @@ async function fetchAll(
     const url = endpoint(baseUrl, resource + '/');
     url.searchParams.set('page', String(page));
     url.searchParams.set('page_size', '1000');
-    const payload = await requestJson(baseUrl, credentials, url.pathname + url.search, {
+    const payload = await requestJson(baseUrl, credentials, url.toString(), {
       method: 'GET',
     }, fetchImpl);
     const rows = responseRows(payload);
