@@ -41,6 +41,18 @@ const YALIDINE_CARRIER_METADATA_FIELDS = [
   'current_center_name',
   'current_wilaya_name',
   'payment_status',
+  'payment_id',
+  'freeshipping',
+  'to_wilaya_id',
+  'to_commune_id',
+  'current_center_id',
+  'current_commune_name',
+  'current_commune_id',
+  'has_exchange',
+  'product_to_collect',
+  'parcel_type',
+  'parcel_sub_type',
+  'economic',
 ] as const;
 
 function extractYalidineCarrierMetadata(payload: Record<string, unknown>): Record<string, unknown> | undefined {
