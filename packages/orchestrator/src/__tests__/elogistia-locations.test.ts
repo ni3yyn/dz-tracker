@@ -26,7 +26,7 @@ test('accepts compatible aliases but rejects invalid and duplicate rows', () => 
     { wilaya_id: '16', wilaya_name: 'Algiers duplicate' },
     { wilayaID: '0', wilayaLabel: 'Invalid zero' },
     { wilayaID: '17', wilayaLabel: '' },
-    { wilayaID: '18', wilayaLabel: 'No numeric id' },
+    { wilayaID: 'abc', wilayaLabel: 'Invalid non-numeric id' },
     { wilayaID: 'x', wilayaLabel: 'Invalid id' },
   ]), [{ id: '16', name: 'Alger' }]);
 });
