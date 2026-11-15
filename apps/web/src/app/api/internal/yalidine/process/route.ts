@@ -102,7 +102,7 @@ async function processYalidineParcelEdit(
     // replaces a complete customer name already saved in TajerTrack.
     updates.customer_name = normalized.customerName;
   }
-  if (normalized.customerPhone && !order.customer_phone) {
+  if (normalized.customerPhone && (!order.customer_phone || isRedactedValue(order.customer_phone))) {
     updates.customer_phone = normalized.customerPhone;
   }
   if (normalized.productName && !order.product_name) {
