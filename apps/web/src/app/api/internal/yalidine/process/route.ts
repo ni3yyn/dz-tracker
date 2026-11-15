@@ -308,7 +308,10 @@ export async function POST(req: Request) {
     }
 
     let trackingNotifications: unknown = null;
-    if (job.event_type === 'parcel_created' && event.carrierTrackingNumber) {
+    if (
+      (job.event_type === 'parcel_created' || job.event_type === 'parcel_edited') &&
+      event.carrierTrackingNumber
+    ) {
       try {
         trackingNotifications = await enqueueTrackingLinkNotifications(
           supabase as any,
