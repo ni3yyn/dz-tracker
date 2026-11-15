@@ -6,6 +6,7 @@ import {
   buildGuepexHistoriesUrl,
   buildGuepexParcelListUrl,
   buildGuepexParcelUrl,
+  classifyGuepexIdentityField,
   buildGuepexParcelsByOrderIdsUrl,
   getGuepexSyncCursor,
   createGuepexApiEnrichmentEvent,
@@ -49,6 +50,15 @@ test('normalizes Guepex top-level data, body and nested data parcel lists', () =
   assert.deepEqual(normalizeGuepexParcelList({ data: { data: [baseParcel] } }), [baseParcel]);
   assert.deepEqual(normalizeGuepexParcelList({ has_more: false, data: [] }), []);
   assert.throws(() => normalizeGuepexParcelList({ success: false, message: 'unauthorized' }));
+});
+
+test('classifies webhook identity field presence without exposing customer values', () => {
+  assert.equal(classifyGuepexIdentityField(undefined), 'absent');
+  assert.equal(classifyGuepexIdentityField('   '), 'absent');
+  assert.equal(classifyGuepexIdentityField('M*****d'), 'masked');
+  assert.equal(classifyGuepexIdentityField('0********9'), 'masked');
+  assert.equal(classifyGuepexIdentityField('CUSTOMER_NAME_VALUE'), 'present');
+  assert.equal(classifyGuepexIdentityField('CUSTOMER_PHONE_VALUE'), 'present');
 });
 
 test('forces full account reconciliation on manual refresh while keeping scheduled sync incremental', () => {
