@@ -6,11 +6,18 @@ test('maps documented Elogistia French statuses without guessing unknown labels'
   assert.equal(mapElogistiaStatus('Livré').statusRaw, 'delivered');
   assert.equal(mapElogistiaStatus('Livrée & réglée').statusRaw, 'delivered');
   assert.equal(mapElogistiaStatus('En cours livraison').statusRaw, 'out_for_delivery');
+  assert.equal(mapElogistiaStatus('En cours de livraison').statusRaw, 'out_for_delivery');
+  assert.equal(mapElogistiaStatus('En cours de ramassage').statusRaw, 'processing');
+  assert.equal(mapElogistiaStatus('À ramasser').statusRaw, 'processing');
+  assert.equal(mapElogistiaStatus('Ramassage à relancer').statusRaw, 'attempt_failed');
+  assert.equal(mapElogistiaStatus('En hub').statusRaw, 'at_local_hub');
+  assert.equal(mapElogistiaStatus('Suspendue').statusRaw, 'postponed');
   assert.equal(mapElogistiaStatus('Ramassée').statusRaw, 'dispatched');
   assert.equal(mapElogistiaStatus('En transit').statusRaw, 'in_transit');
   assert.equal(mapElogistiaStatus('Retour en transit').statusRaw, 'returning');
   assert.equal(mapElogistiaStatus('Retour remis').statusRaw, 'returned');
   assert.equal(mapElogistiaStatus('Annulée').statusRaw, 'cancelled');
+  assert.equal(mapElogistiaStatus('Annulé').statusRaw, 'cancelled');
   assert.equal(mapElogistiaStatus('Custom status').statusRaw, 'unknown');
 });
 
@@ -70,4 +77,22 @@ test('imports Elogistia draft snapshots without treating them as dispatched', ()
   assert.equal(event.suppressTriggers, true);
   assert.equal((event.carrierMetadata?.elogistiaOrderSnapshot as any)?.validationElogistia, 5);
   assert.equal((event.carrierMetadata?.elogistiaOrderSnapshot as any)?.address, 'Algiers');
+});
+
+
+test('normalizes the exact Elogistia cancellation history label into a cancelled order update', () => {
+  const event = ElogistiaAdapter.normalize('merchant-1', {
+    tracking: 'ELO-CANCEL-1',
+    IdCommande: 'STORE-ORDER-CANCEL-1',
+    Date: '15/11/2026 16:05:00',
+    Statut: 'Annulé',
+    Tracking: 'ELO-CANCEL-1',
+    logID: 85156866,
+  });
+
+  assert.equal(event.externalOrderId, 'STORE-ORDER-CANCEL-1');
+  assert.equal(event.carrierTrackingNumber, 'ELO-CANCEL-1');
+  assert.equal(event.statusRaw, 'cancelled');
+  assert.match(event.statusTitle || '', /إلغاء/);
+  assert.equal(event.sourceProvider, 'elogistia');
 });

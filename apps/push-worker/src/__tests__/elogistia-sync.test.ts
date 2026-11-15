@@ -15,6 +15,10 @@ test('generates stable, tracking-scoped identifiers for history events', () => {
   assert.equal(createElogistiaEventId('ELO-1', event), createElogistiaEventId('ELO-1', event));
   assert.notEqual(createElogistiaEventId('ELO-1', event), createElogistiaEventId('ELO-2', event));
   assert.notEqual(createElogistiaEventId('ELO-1', event), createElogistiaEventId('ELO-1', { ...event, Log: 'Autre journal' }));
+  assert.notEqual(
+    createElogistiaEventId('ELO-1', { ...event, logID: 101 }),
+    createElogistiaEventId('ELO-1', { ...event, logID: 102 }),
+  );
 });
 
 

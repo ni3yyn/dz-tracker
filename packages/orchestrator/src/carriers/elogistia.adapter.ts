@@ -31,11 +31,19 @@ export function mapElogistiaStatus(status: unknown, log?: unknown): { statusRaw:
   if (/livr[eé]|delivered/.test(normalized) && !/livreur|livraison/.test(normalized)) {
     return { statusRaw: 'delivered', statusTitle: 'تم تسليم الشحنة', description: 'أكدت Elogistia تسليم الشحنة.' };
   }
-  if (/en cours livraison|sortie en livraison|en livraison|livreur|out for delivery/.test(normalized)) {
+  // Elogistia documents both "En cours livraison" and "En cours de livraison".
+  // Match the longer label before the generic "en cours" fallback below.
+  if (/en cours de livraison|en cours livraison|sortie en livraison|en livraison|livreur|out for delivery/.test(normalized)) {
     return { statusRaw: 'out_for_delivery', statusTitle: 'خرجت الشحنة للتوصيل', description: 'الشحنة مع مندوب التوصيل لدى Elogistia.' };
   }
-  if (/echec|tentative|suspendue|refus/.test(normalized)) {
-    return { statusRaw: 'attempt_failed', statusTitle: 'تعذرت محاولة التوصيل', description: 'سجلت Elogistia محاولة توصيل غير ناجحة أو تعذراً في التسليم.' };
+  if (/suspendue|suspendu|postponed/.test(normalized)) {
+    return { statusRaw: 'postponed', statusTitle: 'تم تعليق الشحنة مؤقتاً', description: 'سجلت Elogistia تعليق الشحنة مؤقتاً.' };
+  }
+  if (/ramassage a relancer|echec|tentative|refus|perdue|cassee|lost|damaged/.test(normalized)) {
+    return { statusRaw: 'attempt_failed', statusTitle: 'تعذرت خطوة من خطوات الشحن', description: 'سجلت Elogistia تعذراً أو مشكلة تتطلب متابعة الشحنة.' };
+  }
+  if (/en cours de ramassage|a ramasser|a remettre/.test(normalized)) {
+    return { statusRaw: 'processing', statusTitle: 'الشحنة بانتظار استلام شركة التوصيل', description: 'لم تؤكد Elogistia استلام الشحنة من المرسل بعد.' };
   }
   if (/ramassee|receptionnee|picked up/.test(normalized)) {
     return { statusRaw: 'dispatched', statusTitle: 'تم استلام الشحنة', description: 'سجلت Elogistia استلام الشحنة.' };
@@ -43,11 +51,11 @@ export function mapElogistiaStatus(status: unknown, log?: unknown): { statusRaw:
   if (/attente|cree|nouveau|pending|a expedie|a expedier|preparation/.test(normalized)) {
     return { statusRaw: 'processing', statusTitle: 'الشحنة قيد المعالجة', description: 'الشحنة مسجلة وتنتظر استكمال إجراءات Elogistia.' };
   }
-  if (/transit|hub|expedi|dispatch|vers wilaya|en cours/.test(normalized)) {
-    return { statusRaw: 'in_transit', statusTitle: 'الشحنة قيد النقل', description: 'تواصل الشحنة مسارها عبر شبكة Elogistia.' };
+  if (/en hub|at hub/.test(normalized)) {
+    return { statusRaw: 'at_local_hub', statusTitle: 'وصلت الشحنة إلى مركز Elogistia', description: 'وصلت الشحنة إلى أحد مراكز Elogistia.' };
   }
-  if (/perdue|lost/.test(normalized)) {
-    return { statusRaw: 'attempt_failed', statusTitle: 'تحتاج الشحنة إلى متابعة', description: 'سجلت Elogistia حالة فقدان أو تعذر تتطلب متابعة.' };
+  if (/transit|expedi|dispatch|vers wilaya|en cours/.test(normalized)) {
+    return { statusRaw: 'in_transit', statusTitle: 'الشحنة قيد النقل', description: 'تواصل الشحنة مسارها عبر شبكة Elogistia.' };
   }
   return { statusRaw: 'unknown', statusTitle: 'تحديث جديد من Elogistia (' + raw + ')', description: 'وصلت حالة غير معروفة من Elogistia: ' + raw + '. لم يتم تخمين معناها.' };
 }

@@ -111,7 +111,9 @@ function parseDate(value: unknown): number {
 }
 
 export function createElogistiaEventId(tracking: string, event: Record<string, any>): string {
-  const stable = [tracking, event.Date ?? event.date ?? event.created_at ?? event.timestamp, event.Statut ?? event.statut ?? event.status, event.Log ?? event.log].map(asText).join('|');
+  // Elogistia exposes logID on getTracking history rows; include it so distinct
+  // provider events cannot collide when their status and timestamp are equal.
+  const stable = [tracking, event.logID ?? event.logId, event.Date ?? event.date ?? event.created_at ?? event.timestamp, event.Statut ?? event.statut ?? event.status, event.Log ?? event.log].map(asText).join('|');
   return createHash('sha256').update(stable, 'utf8').digest('hex');
 }
 
