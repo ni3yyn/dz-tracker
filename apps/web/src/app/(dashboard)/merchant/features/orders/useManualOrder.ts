@@ -9,6 +9,10 @@ export interface ManualOrderSuccess {
   telegramQueueCheckFailed: boolean;
   exchangeReplacement: boolean;
   exchangeReplacementNeedsConfirmation: boolean;
+  carrierTrackingNumber: string;
+  carrierLabelUrl: string;
+  carrierShipmentCreated: boolean;
+  carrierShipmentReused: boolean;
 }
 
 interface UseManualOrderOptions {
@@ -58,10 +62,18 @@ export function useManualOrder({
           telegramTrackingEnabled: telegramEnabled,
           exchangeReplacement: Boolean(res.exchangeReplacement),
           exchangeReplacementNeedsConfirmation: Boolean(res.exchangeReplacementNeedsConfirmation),
+          carrierTrackingNumber: res.carrierTrackingNumber || '',
+          carrierLabelUrl: res.carrierLabelUrl || '',
+          carrierShipmentCreated: Boolean(res.carrierShipmentCreated),
+          carrierShipmentReused: Boolean(res.carrierShipmentReused),
           telegramTrackingQueued: Boolean(res.telegramTrackingQueued),
           telegramQueueCheckFailed: Boolean(res.telegramTrackingQueueCheckFailed),
         });
-        if (res.telegramTrackingQueueCheckFailed) {
+        if (res.carrierShipmentCreated && res.carrierShipmentReused) {
+          showToast('تم ربط الشحنة الموجودة في Guepex بطلب تاجر تراك دون إنشاء شحنة مكررة.');
+        } else if (res.carrierShipmentCreated) {
+          showToast('تم إنشاء الشحنة في Guepex وحفظ رقم التتبع في تاجر تراك.');
+        } else if (res.telegramTrackingQueueCheckFailed) {
           showToast('تم إنشاء الطلب، لكن تعذّر التحقق من جدولة رابط التتبع عبر تيليجرام.');
         } else if (res.confirmationQueueError && res.telegramTrackingQueued) {
           showToast('تم إنشاء الطلب وجدولة رابط التتبع، لكن تعذرت جدولة رسالة التأكيد.');
