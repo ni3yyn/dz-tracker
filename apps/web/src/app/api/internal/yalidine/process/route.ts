@@ -68,7 +68,8 @@ async function enqueueTrackingLinkNotifications(
 async function processYalidineParcelEdit(
   supabase: any,
   merchantId: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
+  apiEnriched = false
 ): Promise<Record<string, unknown>> {
   const normalized = YalidineAdapter.normalize(merchantId, data);
   const trackingNumber = normalized.carrierTrackingNumber;
@@ -76,21 +77,42 @@ async function processYalidineParcelEdit(
     return { success: true, ignored: true, reason: 'parcel_edit_without_tracking' };
   }
 
-  const { data: order, error: lookupError } = await supabase
+  const selectedFields = 'id, external_order_id, carrier_name, carrier_tracking_number, customer_name, customer_phone, product_name, carrier_metadata';
+  let { data: order, error: lookupError } = await supabase
     .from('orders')
-    .select('id, customer_name, customer_phone, product_name, carrier_metadata')
+    .select(selectedFields)
     .eq('merchant_id', merchantId)
     .eq('carrier_tracking_number', trackingNumber)
     .limit(1)
     .maybeSingle();
 
+  if (!order && !lookupError && normalized.externalOrderId) {
+    const byExternalId = await supabase
+      .from('orders')
+      .select(selectedFields)
+      .eq('merchant_id', merchantId)
+      .eq('external_order_id', normalized.externalOrderId)
+      .limit(1)
+      .maybeSingle();
+    order = byExternalId.data;
+    lookupError = byExternalId.error;
+  }
+
   if (lookupError) {
     throw new Error(`Could not find the TajerTrack order for edited Yalidine parcel: ${lookupError.message}`);
   }
   if (!order) {
-    // Do not create a second order from an edit event; parcel_created is the
-    // authoritative creation signal and is processed independently.
-    return { success: true, ignored: true, reason: 'parcel_not_linked_yet' };
+    // Never create a second order from an edit or API-enrichment event.
+    return { success: true, ignored: true, reason: 'parcel_not_linked_yet', linkedOrder: false };
+  }
+
+  if (order.carrier_name && order.carrier_name !== 'Yalidine Express') {
+    return {
+      success: true,
+      ignored: true,
+      reason: 'order_linked_to_another_carrier',
+      linkedOrder: false,
+    };
   }
 
   const updates: Record<string, unknown> = {};
@@ -105,14 +127,29 @@ async function processYalidineParcelEdit(
   if (normalized.customerPhone && (!order.customer_phone || isRedactedValue(order.customer_phone))) {
     updates.customer_phone = normalized.customerPhone;
   }
-  if (normalized.productName && !order.product_name) {
+  if (normalized.productName && !String(order.product_name || '').trim()) {
     updates.product_name = normalized.productName;
   }
-  if (normalized.carrierMetadata) {
-    const existingMetadata = order.carrier_metadata && typeof order.carrier_metadata === 'object' && !Array.isArray(order.carrier_metadata)
-      ? order.carrier_metadata
-      : {};
-    updates.carrier_metadata = { ...existingMetadata, ...normalized.carrierMetadata };
+  if (!order.carrier_tracking_number) {
+    updates.carrier_tracking_number = trackingNumber;
+  }
+  if (!order.carrier_name) {
+    updates.carrier_name = 'Yalidine Express';
+  }
+
+  const existingMetadata = order.carrier_metadata && typeof order.carrier_metadata === 'object' && !Array.isArray(order.carrier_metadata)
+    ? order.carrier_metadata
+    : {};
+  const incomingMetadata = normalized.carrierMetadata || {};
+  if (Object.keys(incomingMetadata).length > 0 || apiEnriched) {
+    updates.carrier_metadata = {
+      ...existingMetadata,
+      ...incomingMetadata,
+      ...(apiEnriched ? {
+        yalidine_api_details_checked_at: new Date().toISOString(),
+        yalidine_api_details_result: 'found',
+      } : {}),
+    };
   }
 
   if (Object.keys(updates).length > 0) {
@@ -122,16 +159,15 @@ async function processYalidineParcelEdit(
       .eq('id', order.id)
       .eq('merchant_id', merchantId);
     if (updateError) {
-      throw new Error(`Could not apply recipient details from Yalidine parcel edit: ${updateError.message}`);
+      throw new Error(`Could not apply details from Yalidine parcel to existing order: ${updateError.message}`);
     }
   }
 
-  // This also recovers a notification missed at creation, but never re-sends
-  // jobs already sent/submitted or jobs whose send outcome is ambiguous.
+  // The notification RPC is idempotent; it recovers missed tracking-link jobs
+  // without resending messages that were already sent or have an ambiguous outcome.
   const notifications = await enqueueTrackingLinkNotifications(supabase, merchantId, trackingNumber);
-  return { success: true, edited: true, notifications };
+  return { success: true, edited: true, linkedOrder: true, orderId: order.id, notifications };
 }
-
 export async function POST(req: Request) {
   const rawBody = await req.text().catch(() => '');
   if (!rawBody || Buffer.byteLength(rawBody, 'utf8') > 2048) {
@@ -203,7 +239,8 @@ export async function POST(req: Request) {
         const editResult = await processYalidineParcelEdit(
           supabase as any,
           job.merchant_id,
-          payload.data as Record<string, unknown>
+          payload.data as Record<string, unknown>,
+          payload.data.__guepex_api_lookup === true
         );
         return NextResponse.json(editResult);
       } catch (error: any) {
@@ -244,6 +281,34 @@ export async function POST(req: Request) {
       }, { status: 422 });
     }
 
+    // A parcel_created webhook often refers to an order that already exists in
+    // TajerTrack. Link and enrich that order by tracking/order reference instead
+    // of asking the orchestrator to create another record.
+    if (job.event_type === 'parcel_created') {
+      const existingResult = await processYalidineParcelEdit(
+        supabase as any,
+        job.merchant_id,
+        payload.data as Record<string, unknown>,
+        payload.data.__guepex_api_lookup === true
+      );
+      if (existingResult.linkedOrder === true) {
+        return NextResponse.json({
+          success: true,
+          isNewOrder: false,
+          deduplicated: true,
+          existingOrderEnriched: true,
+          trackingNotifications: existingResult.notifications || null,
+        });
+      }
+      if (existingResult.reason === 'order_linked_to_another_carrier') {
+        return NextResponse.json({
+          success: true,
+          ignored: true,
+          reason: 'order_linked_to_another_carrier',
+        });
+      }
+    }
+
     // Status webhooks carry only the carrier tracking reference. If a status
     // arrives before its parcel_created event has been processed (possible
     // with concurrent queue workers), do not let the orchestrator create a
@@ -273,6 +338,17 @@ export async function POST(req: Request) {
           error: 'Parcel has not been registered yet; retrying after its parcel_created event.',
         }, { status: 503 });
       }
+
+      // Status events remain authoritative for shipment state, while the
+      // parcel API lookup fills in any customer/product details first.
+      if (payload.data.__guepex_api_lookup === true) {
+        await processYalidineParcelEdit(
+          supabase as any,
+          job.merchant_id,
+          payload.data as Record<string, unknown>,
+          true
+        );
+      }
     }
 
     const orchestrator = new TrackingOrchestrator();
@@ -294,6 +370,19 @@ export async function POST(req: Request) {
         retryable: !permanent,
         error: errorCode || result.message || 'TajerTrack could not process the Yalidine event.',
       }, { status: permanent ? 422 : 500 });
+    }
+
+    if (job.event_type === 'parcel_created' && payload.data.__guepex_api_lookup === true) {
+      try {
+        await processYalidineParcelEdit(
+          supabase as any,
+          job.merchant_id,
+          payload.data as Record<string, unknown>,
+          true
+        );
+      } catch (error: any) {
+        console.warn('[YalidineProcessor]: Post-create API detail enrichment failed:', error?.message || error);
+      }
     }
 
     if (result.isNewOrder && result.orderId) {
