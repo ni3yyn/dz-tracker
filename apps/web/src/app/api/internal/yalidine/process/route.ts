@@ -96,22 +96,36 @@ async function processYalidineParcelEdit(
     normalized.externalOrderId &&
     normalized.externalOrderId.toLowerCase() !== trackingNumber.toLowerCase()
   ) {
-    // Guepex order_id is the merchant's original order reference. Older
-    // imports may differ only by letter casing or surrounding whitespace, so
-    // try an exact case-insensitive match before allowing a new order insert.
+    // order_id is the merchant's original order reference. Compare case-
+    // insensitively, and prefer the unique existing row that already holds
+    // the customer's real identity if old duplicate references exist.
     const reference = normalized.externalOrderId.trim();
     const byExternalId = await supabase
       .from('orders')
       .select(selectedFields)
       .eq('merchant_id', merchantId)
       .ilike('external_order_id', escapeLikePattern(reference))
-      .limit(2);
+      .limit(20);
+
     if (byExternalId.error) {
       lookupError = byExternalId.error;
-    } else if ((byExternalId.data || []).length === 1) {
-      order = byExternalId.data[0];
-    } else if ((byExternalId.data || []).length > 1) {
-      throw new Error('The Yalidine order reference matches multiple TajerTrack orders; refusing an ambiguous automatic merge.');
+    } else {
+      const candidates = (byExternalId.data || []) as any[];
+      if (candidates.length === 1) {
+        order = candidates[0];
+      } else if (candidates.length > 1) {
+        const score = (candidate: any) =>
+          (candidate.customer_phone && !isRedactedValue(candidate.customer_phone) ? 2 : 0) +
+          (candidate.customer_name && !isRedactedValue(candidate.customer_name) ? 1 : 0);
+        const ranked = candidates.map((candidate) => ({ candidate, score: score(candidate) }));
+        const highest = Math.max(...ranked.map((entry) => entry.score));
+        const best = ranked.filter((entry) => entry.score === highest);
+        if (highest > 0 && best.length === 1) {
+          order = best[0].candidate;
+        } else {
+          throw new Error('The Yalidine order reference matches multiple TajerTrack orders without a unique customer identity; refusing an ambiguous automatic merge.');
+        }
+      }
     }
   }
 
