@@ -85,6 +85,7 @@ test('extracts unmasked recipient and parcel details when Guepex includes them i
 
   assert.equal(event.customerName, 'Brahim Mohamed');
   assert.equal(event.customerPhone, '213550123456');
+  assert.equal(event.carrierMetadata?.yalidine_masked_contact_phone, undefined);
   assert.equal(event.productName, 'Machine à café');
   assert.equal(event.carrierMetadata?.import_id, 233);
   assert.equal(event.carrierMetadata?.delivery_fee, 500);
