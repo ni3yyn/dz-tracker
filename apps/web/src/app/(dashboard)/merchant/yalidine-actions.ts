@@ -394,7 +394,7 @@ export async function setYalidineWebhookTestMode(enabled: boolean): Promise<{
       .update({ webhook_test_mode: enabled, updated_at: new Date().toISOString() })
       .eq('merchant_id', merchantId)
       .eq('provider', 'yalidine')
-      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error')
+      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error')
       .single();
     if (error || !data) throw new Error('تعذر تغيير وضع الاختبار.');
     revalidatePath('/merchant');
