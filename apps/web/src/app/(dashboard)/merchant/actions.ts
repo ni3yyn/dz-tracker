@@ -1029,6 +1029,12 @@ async function dispatchManualYalidineParcel(
       if (reservation.payload_hash !== payloadHash) {
         throw new Error('تم إنشاء شحنة بهذا المرجع من قبل لكن بياناتها مختلفة. لن ننشئ شحنة ثانية بنفس رقم الطلب.');
       }
+      if (
+        existingOrder?.carrier_tracking_number &&
+        existingOrder.carrier_tracking_number !== reservation.tracking_number
+      ) {
+        throw new Error('رقم التتبع المسجل في تاجر تراك لا يطابق حجز الشحنة. راجع الطلب قبل المتابعة.');
+      }
       if (!reservation.tracking_number) {
         throw new Error('حالة إرسال الشحنة غير مكتملة. تحقق من المرجع في لوحة Guepex قبل أي محاولة أخرى.');
       }
