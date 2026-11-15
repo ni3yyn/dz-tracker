@@ -103,7 +103,7 @@ async function applyPendingCompanionCapture(
     : '';
   const capturePhone = typeof capture.customer_phone === 'string' &&
     !isRedactedValue(capture.customer_phone) &&
-    capture.customer_phone.replace(/\\D/g, '').length >= 8
+    capture.customer_phone.replace(/\D/g, '').length >= 8
     ? capture.customer_phone.trim()
     : '';
 
