@@ -3,6 +3,7 @@
 import { createHash, createPublicKey, randomBytes, verify as verifySignature } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { getSupabaseAdminClient } from '@saas/database';
+import { getYalidineManualParcelOptions as fetchYalidineManualParcelOptions } from '@saas/orchestrator';
 import { createClient } from '../../../lib/supabase-server';
 import {
   decryptYalidineWebhookCredentials,
@@ -377,6 +378,44 @@ async function loadIntegration(merchantId: string) {
     throw new Error('تعذر قراءة إعدادات Yalidine. تأكد من تطبيق تحديث قاعدة البيانات.');
   }
   return data;
+}
+
+/**
+ * Fetch official Yalidine / Guepex locations for the authenticated merchant's
+ * parcel-creation form. Credentials never leave this server action.
+ */
+export async function getYalidineManualParcelOptions(): Promise<{
+  success: boolean;
+  options?: Awaited<ReturnType<typeof fetchYalidineManualParcelOptions>>;
+  error?: string;
+}> {
+  try {
+    const merchantId = await authenticatedMerchantId();
+    const integration = await loadIntegration(merchantId);
+    if (!integration?.api_sync_enabled || !integration?.credentials_encrypted) {
+      throw new Error('اربط حساب Yalidine / Guepex API أولاً من صفحة التكاملات لإنشاء الشحنات مباشرة.');
+    }
+
+    const credentials = decryptYalidineWebhookCredentials(
+      integration.credentials_encrypted,
+      merchantId,
+      process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || ''
+    );
+    if (!credentials.apiId || !credentials.apiToken) {
+      throw new Error('بيانات API غير مكتملة. أعد ربط حساب Yalidine / Guepex.');
+    }
+
+    const options = await fetchYalidineManualParcelOptions(
+      integration.base_url || 'https://api.guepex.app/v1/',
+      { apiId: credentials.apiId, apiToken: credentials.apiToken }
+    );
+    return { success: true, options };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || 'تعذر تحميل ولايات وبلديات ومكاتب Yalidine / Guepex.',
+    };
+  }
 }
 
 function statusFromRow(row: any): YalidineWebhookStatus {
