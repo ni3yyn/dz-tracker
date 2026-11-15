@@ -296,7 +296,12 @@ export function OrdersTab({
                             <td>
                               <strong style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>{order.customer_name || 'عميل'}</strong>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <span style={{ fontSize: '10px', color: 'var(--ink-muted)', direction: 'ltr' }}>{order.customer_phone || 'لا يوجد هاتف'}</span>
+                                <span
+                                  title={!order.customer_phone && order.carrier_metadata?.yalidine_masked_contact_phone ? 'Guepex يحجب رقم الهاتف في ردود API' : undefined}
+                                  style={{ fontSize: '10px', color: 'var(--ink-muted)', direction: 'ltr' }}
+                                >
+                                  {order.customer_phone || order.carrier_metadata?.yalidine_masked_contact_phone || 'لا يوجد هاتف'}
+                                </span>
                                 {order.customer_phone && <button type="button" aria-label="نسخ رقم العميل" className="dz-icon-btn" onClick={() => onCopyToClipboard(order.customer_phone!, `ph_${order.id}`)}>{copiedKey === `ph_${order.id}` ? <Icons.Check /> : <Icons.Copy />}</button>}
                               </div>
                             </td>
@@ -413,7 +418,9 @@ export function OrdersTab({
                       </div>
                       <div className="dz-order-mobile-customer">{order.customer_name || 'عميل'}</div>
                       <div className="dz-order-mobile-phone">
-                        <span>{order.customer_phone || 'لا يوجد رقم هاتف'}</span>
+                        <span title={!order.customer_phone && order.carrier_metadata?.yalidine_masked_contact_phone ? 'Guepex يحجب رقم الهاتف في ردود API' : undefined}>
+                          {order.customer_phone || order.carrier_metadata?.yalidine_masked_contact_phone || 'لا يوجد رقم هاتف'}
+                        </span>
                         {order.customer_phone && <button type="button" aria-label="نسخ رقم العميل" className="dz-icon-btn" onClick={() => onCopyToClipboard(order.customer_phone!, `mobile-ph_${order.id}`)}>{copiedKey === `mobile-ph_${order.id}` ? <Icons.Check /> : <Icons.Copy />}</button>}
                       </div>
                       <div className="dz-order-mobile-meta">
