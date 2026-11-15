@@ -294,6 +294,9 @@ export function YalidineConnectionPanel() {
             <button type="submit" className="dz-btn" disabled={saving || !apiId.trim() || !apiToken.trim()}>
               {saving ? 'جارٍ التحقق والحفظ...' : status.apiConnected ? 'تحديث بيانات API' : 'التحقق وربط Guepex API'}
             </button>
+            <p className="dz-int-guided-note" style={{ fontSize: '13px', lineHeight: 1.8 }}>
+              تنبيه الخصوصية: Guepex يحجب الاسم الكامل ورقم الهاتف والعنوان في ردود قراءة API. يمكن مزامنة اسم محجوب والمنتج والحالة، لكن رقم الهاتف الحقيقي يجب أن يكون محفوظاً في الطلب الأصلي داخل تاجر تراك؛ لا يمكن إرسال SMS أو Telegram إلى رقم محجوب.
+            </p>
           </form>
 
           {!status.prepared ? (
