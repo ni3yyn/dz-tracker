@@ -38,6 +38,18 @@ async function authenticatedMerchantId(): Promise<string> {
   return merchant.id;
 }
 
+const MANUAL_REFRESH_MIGRATION = 'apps/web/src/app/migrations/20261115_yalidine_manual_api_refresh.sql';
+const MANUAL_REFRESH_SCHEMA_ERROR =
+  'تحديث قاعدة البيانات الخاص بالتحديث اليدوي غير مطبق. شغّل الملف ' +
+  MANUAL_REFRESH_MIGRATION +
+  ' في Supabase SQL Editor ثم أعد المحاولة.';
+
+function isMissingManualRefreshColumn(error: any): boolean {
+  const message = String(error?.message || '');
+  return error?.code === '42703' ||
+    /api_sync_requested_at/i.test(message) && /(does not exist|schema cache|could not find)/i.test(message);
+}
+
 function webhookBaseUrl(): URL {
   const configured = process.env.NEXT_PUBLIC_SITE_URL || 'https://tajertrack.vercel.app';
   let base: URL;
@@ -70,7 +82,10 @@ async function loadIntegration(merchantId: string) {
     .eq('merchant_id', merchantId)
     .eq('provider', 'yalidine')
     .maybeSingle();
-  if (error) throw new Error('تعذر قراءة إعدادات Yalidine. تأكد من تطبيق تحديث قاعدة البيانات.');
+  if (error) {
+    if (isMissingManualRefreshColumn(error)) throw new Error(MANUAL_REFRESH_SCHEMA_ERROR);
+    throw new Error('تعذر قراءة إعدادات Yalidine. تأكد من تطبيق تحديث قاعدة البيانات.');
+  }
   return data;
 }
 
@@ -187,7 +202,10 @@ export async function requestYalidineApiSync(): Promise<{
       .select('id')
       .maybeSingle();
 
-    if (error) throw new Error('تعذر إرسال طلب تحديث Guepex.');
+    if (error) {
+      if (isMissingManualRefreshColumn(error)) throw new Error(MANUAL_REFRESH_SCHEMA_ERROR);
+      throw new Error('تعذر إرسال طلب تحديث Guepex.');
+    }
     if (!data?.id) throw new Error('حساب Guepex غير متصل أو أن المزامنة متوقفة.');
 
     revalidatePath('/merchant');
