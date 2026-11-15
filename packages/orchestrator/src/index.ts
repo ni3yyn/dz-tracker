@@ -264,7 +264,10 @@ export class TrackingOrchestrator {
           }
           if (event.productImage) updatePayload.product_image = event.productImage;
           if (event.customerPhone) updatePayload.customer_phone = event.customerPhone;
-          if (event.customerName) updatePayload.customer_name = event.customerName;
+          const incomingNameIsRedacted =
+            (event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') &&
+            Boolean(event.customerName && /\*{2,}/.test(event.customerName));
+          if (event.customerName && !incomingNameIsRedacted) updatePayload.customer_name = event.customerName;
           if (event.productName) updatePayload.product_name = event.productName;
         } else {
           if (event.carrierTrackingNumber && !existingOrder.carrier_tracking_number) {

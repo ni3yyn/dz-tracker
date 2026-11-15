@@ -59,3 +59,52 @@ test('rejects invalid provider event timestamps', () => {
     data: { tracking: 'YAL-004' },
   }));
 });
+
+
+test('extracts unmasked recipient and parcel details when Guepex includes them in webhook data', () => {
+  const event = YalidineAdapter.normalizeWebhookEvent('merchant-1', {
+    event_id: 'evt-created-rich-1',
+    occurred_at: '2026-11-15 10:30:00',
+    type: 'parcel_created',
+    data: {
+      order_id: 'STORE-ORDER-77',
+      tracking: 'yal-077AAA',
+      firstname: 'Brahim',
+      familyname: 'Mohamed',
+      contact_phone: '0550123456',
+      product_list: 'Machine à café',
+      import_id: 233,
+      price: 2400,
+      delivery_fee: 500,
+      to_wilaya_name: 'Alger',
+      to_commune_name: 'Bordj El Kiffan',
+      last_status: 'Pas encore expédié',
+      label: 'https://guepex.app/app/bordereau.php?tracking=yal-077AAA',
+    },
+  });
+
+  assert.equal(event.customerName, 'Brahim Mohamed');
+  assert.equal(event.customerPhone, '213550123456');
+  assert.equal(event.productName, 'Machine à café');
+  assert.equal(event.carrierMetadata?.import_id, 233);
+  assert.equal(event.carrierMetadata?.delivery_fee, 500);
+  assert.equal(event.carrierMetadata?.to_wilaya_name, 'Alger');
+});
+
+test('does not treat a masked Guepex phone as a deliverable customer number', () => {
+  const event = YalidineAdapter.normalizeWebhookEvent('merchant-1', {
+    event_id: 'evt-created-masked-1',
+    occurred_at: '2026-11-15 10:30:00',
+    type: 'parcel_created',
+    data: {
+      order_id: 'STORE-ORDER-78',
+      tracking: 'yal-078AAA',
+      firstname: 'M*****d',
+      familyname: 'E* A****',
+      contact_phone: '0********9',
+    },
+  });
+
+  assert.equal(event.customerName, 'M*****d E* A****');
+  assert.equal(event.customerPhone, undefined);
+});

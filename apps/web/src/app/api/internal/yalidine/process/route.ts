@@ -31,6 +31,106 @@ function verifyWorkerRequest(rawBody: string, timestamp: string | null, signatur
   }
 }
 
+function isRedactedValue(value: unknown): boolean {
+  return typeof value === 'string' && /\*{2,}/.test(value);
+}
+
+async function enqueueTrackingLinkNotifications(
+  supabase: any,
+  merchantId: string,
+  trackingNumber: string
+): Promise<unknown> {
+  const { data: order, error: lookupError } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('merchant_id', merchantId)
+    .eq('carrier_tracking_number', trackingNumber)
+    .limit(1)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(`Could not resolve the Yalidine-linked TajerTrack order: ${lookupError.message}`);
+  }
+  if (!order?.id) {
+    throw new Error('The Yalidine parcel was processed but its TajerTrack order could not be found by tracking number.');
+  }
+
+  const { data, error } = await supabase.rpc('enqueue_yalidine_tracking_notifications', {
+    p_merchant_id: merchantId,
+    p_order_id: order.id,
+  });
+  if (error) {
+    throw new Error(`Could not enqueue Yalidine tracking notifications: ${error.message}`);
+  }
+  return data;
+}
+
+async function processYalidineParcelEdit(
+  supabase: any,
+  merchantId: string,
+  data: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const normalized = YalidineAdapter.normalize(merchantId, data);
+  const trackingNumber = normalized.carrierTrackingNumber;
+  if (!trackingNumber) {
+    return { success: true, ignored: true, reason: 'parcel_edit_without_tracking' };
+  }
+
+  const { data: order, error: lookupError } = await supabase
+    .from('orders')
+    .select('id, customer_name, customer_phone, product_name, carrier_metadata')
+    .eq('merchant_id', merchantId)
+    .eq('carrier_tracking_number', trackingNumber)
+    .limit(1)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(`Could not find the TajerTrack order for edited Yalidine parcel: ${lookupError.message}`);
+  }
+  if (!order) {
+    // Do not create a second order from an edit event; parcel_created is the
+    // authoritative creation signal and is processed independently.
+    return { success: true, ignored: true, reason: 'parcel_not_linked_yet' };
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (
+    normalized.customerName &&
+    !isRedactedValue(normalized.customerName) &&
+    (!order.customer_name || isRedactedValue(order.customer_name))
+  ) {
+    updates.customer_name = normalized.customerName;
+  }
+  if (normalized.customerPhone && !order.customer_phone) {
+    updates.customer_phone = normalized.customerPhone;
+  }
+  if (normalized.productName && !order.product_name) {
+    updates.product_name = normalized.productName;
+  }
+  if (normalized.carrierMetadata) {
+    const existingMetadata = order.carrier_metadata && typeof order.carrier_metadata === 'object' && !Array.isArray(order.carrier_metadata)
+      ? order.carrier_metadata
+      : {};
+    updates.carrier_metadata = { ...existingMetadata, ...normalized.carrierMetadata };
+  }
+
+  if (Object.keys(updates).length > 0) {
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', order.id)
+      .eq('merchant_id', merchantId);
+    if (updateError) {
+      throw new Error(`Could not apply recipient details from Yalidine parcel edit: ${updateError.message}`);
+    }
+  }
+
+  // This also recovers a notification missed at creation, but never re-sends
+  // jobs already sent/submitted or jobs whose send outcome is ambiguous.
+  const notifications = await enqueueTrackingLinkNotifications(supabase, merchantId, trackingNumber);
+  return { success: true, edited: true, notifications };
+}
+
 export async function POST(req: Request) {
   const rawBody = await req.text().catch(() => '');
   if (!rawBody || Buffer.byteLength(rawBody, 'utf8') > 2048) {
@@ -95,8 +195,28 @@ export async function POST(req: Request) {
       throw new Error('Queued Yalidine event envelope is inconsistent.');
     }
 
-    // These events are retained and acknowledged for auditability, but only
-    // creation and status changes currently alter the TajerTrack timeline.
+    // Parcel edits can contain additional recipient fields. Apply them only
+    // to an already-linked order; never create an order or change its status.
+    if (job.event_type === 'parcel_edited') {
+      try {
+        const editResult = await processYalidineParcelEdit(
+          supabase as any,
+          job.merchant_id,
+          payload.data as Record<string, unknown>
+        );
+        return NextResponse.json(editResult);
+      } catch (error: any) {
+        console.error('[YalidineProcessor]: Parcel edit enrichment failed:', error?.message || error);
+        return NextResponse.json({
+          success: false,
+          retryable: true,
+          error: error?.message || 'Yalidine parcel edit could not be applied.',
+        }, { status: 500 });
+      }
+    }
+
+    // Payment and deletion events are retained for auditability but do not
+    // alter shipment status or customer tracking delivery.
     if (job.event_type !== 'parcel_created' && job.event_type !== 'parcel_status_updated') {
       return NextResponse.json({ success: true, ignored: true, eventType: job.event_type });
     }
@@ -187,11 +307,30 @@ export async function POST(req: Request) {
       }
     }
 
+    let trackingNotifications: unknown = null;
+    if (job.event_type === 'parcel_created' && event.carrierTrackingNumber) {
+      try {
+        trackingNotifications = await enqueueTrackingLinkNotifications(
+          supabase as any,
+          job.merchant_id,
+          event.carrierTrackingNumber
+        );
+      } catch (error: any) {
+        console.error('[YalidineProcessor]: Tracking notification enqueue failed:', error?.message || error);
+        return NextResponse.json({
+          success: false,
+          retryable: true,
+          error: error?.message || 'Yalidine tracking notifications could not be queued.',
+        }, { status: 500 });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       isNewOrder: Boolean(result.isNewOrder),
       deduplicated: Boolean(result.deduplicated),
       status: event.statusRaw,
+      trackingNotifications,
     });
   } catch (error: any) {
     console.error('[YalidineProcessor]: Event processing failed:', error?.message || error);

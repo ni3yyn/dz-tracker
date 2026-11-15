@@ -25,6 +25,35 @@ function parseYalidineEventTime(value: string): string {
   return new Date(timestamp).toISOString();
 }
 
+const YALIDINE_CARRIER_METADATA_FIELDS = [
+  'label',
+  'import_id',
+  'price',
+  'delivery_fee',
+  'product_list',
+  'last_status',
+  'date_creation',
+  'date_last_status',
+  'to_wilaya_name',
+  'to_commune_name',
+  'is_stopdesk',
+  'stopdesk_name',
+  'current_center_name',
+  'current_wilaya_name',
+  'payment_status',
+] as const;
+
+function extractYalidineCarrierMetadata(payload: Record<string, unknown>): Record<string, unknown> | undefined {
+  const metadata: Record<string, unknown> = {};
+  for (const key of YALIDINE_CARRIER_METADATA_FIELDS) {
+    const value = payload[key];
+    if (value !== undefined && value !== null && value !== '') {
+      metadata[key] = value;
+    }
+  }
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
+}
+
 export class YalidineAdapter {
   static normalizeWebhookEvent(
     merchantId: string,
@@ -121,6 +150,13 @@ export class YalidineAdapter {
       'mobile',
     ]);
     const customerPhone = normalizeAlgerianPhone(rawPhone);
+    const productName = extractFirst(payload, [
+      'product_name',
+      'product_list',
+      'product',
+      'content',
+    ]);
+    const carrierMetadata = extractYalidineCarrierMetadata(payload);
 
     // 3. استخراج الحالة والمبرر (Motif / Reason) وتنظيف الحروف اللاتينية
     const rawStatus = extractFirst(payload, [
@@ -147,10 +183,12 @@ export class YalidineAdapter {
       externalOrderId: safeString(externalOrderId),
       customerName: customerName ? safeString(customerName).replace(/[-_]$/, '').trim() : undefined,
       customerPhone: customerPhone || undefined,
+      productName: productName || undefined,
       statusRaw: parsed.statusRaw,
       description: parsed.description,
       carrierName: 'Yalidine Express',
       carrierTrackingNumber: trackingNumber || undefined,
+      carrierMetadata,
     };
   }
 
