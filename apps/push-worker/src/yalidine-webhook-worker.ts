@@ -1110,35 +1110,79 @@ export class YalidineWebhookWorker {
     const trackingNumbers = Array.from(new Set(
       parcels.map((parcel) => asText(parcel.tracking)).filter(Boolean)
     ));
+    const externalOrderIds = Array.from(new Set(
+      parcels.map((parcel) => asText(parcel.order_id)).filter(Boolean)
+    ));
     if (!trackingNumbers.length) return 0;
 
-    const { data: existingOrders, error: lookupError } = await (this.supabase as any)
-      .from('orders')
-      .select('id, external_order_id, carrier_name, carrier_tracking_number')
-      .eq('merchant_id', merchantId)
-      .in('carrier_tracking_number', trackingNumbers)
-      .in('carrier_name', ['Yalidine Express', 'Guepex', 'Yalidine']);
+    const [trackingMatches, referenceMatches] = await Promise.all([
+      (this.supabase as any)
+        .from('orders')
+        .select('id, external_order_id, carrier_name, carrier_tracking_number')
+        .eq('merchant_id', merchantId)
+        .in('carrier_tracking_number', trackingNumbers),
+      externalOrderIds.length
+        ? (this.supabase as any)
+            .from('orders')
+            .select('id, external_order_id, carrier_name, carrier_tracking_number')
+            .eq('merchant_id', merchantId)
+            .in('external_order_id', externalOrderIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
-    if (lookupError) {
-      throw new Error('Could not match existing Yalidine orders for history recovery: ' + lookupError.message);
+    if (trackingMatches.error || referenceMatches.error) {
+      throw new Error(
+        'Could not match existing Yalidine orders for history recovery: ' +
+        (trackingMatches.error?.message || referenceMatches.error?.message)
+      );
     }
 
-    const ordersByTracking = new Map<string, {
+    type HistoryOrderMatch = {
       id: string;
       external_order_id: string;
-      carrier_tracking_number: string;
-    }>();
-    for (const order of (existingOrders || []) as Array<{
-      id: string;
-      external_order_id: string;
-      carrier_tracking_number: string;
       carrier_name: string | null;
-    }>) {
+      carrier_tracking_number: string | null;
+    };
+    const ordersByTracking = new Map<string, HistoryOrderMatch[]>();
+    const ordersByExternalId = new Map<string, HistoryOrderMatch[]>();
+    const seenOrderIds = new Set<string>();
+    const compatibleCarrier = (name: string | null) =>
+      !name || ['Yalidine Express', 'Guepex', 'Yalidine'].includes(name);
+
+    for (const order of [
+      ...((trackingMatches.data || []) as HistoryOrderMatch[]),
+      ...((referenceMatches.data || []) as HistoryOrderMatch[]),
+    ]) {
+      if (!order?.id || seenOrderIds.has(order.id) || !compatibleCarrier(order.carrier_name)) continue;
+      seenOrderIds.add(order.id);
       const tracking = asText(order.carrier_tracking_number).toLowerCase();
-      if (tracking) ordersByTracking.set(tracking, order);
+      if (tracking) {
+        const matches = ordersByTracking.get(tracking) || [];
+        matches.push(order);
+        ordersByTracking.set(tracking, matches);
+      }
+      const reference = asText(order.external_order_id).toLowerCase();
+      if (reference) {
+        const matches = ordersByExternalId.get(reference) || [];
+        matches.push(order);
+        ordersByExternalId.set(reference, matches);
+      }
     }
 
-    const linkedTrackings = Array.from(ordersByTracking.keys());
+    const externalIdByTracking = new Map<string, string>();
+    for (const parcel of parcels) {
+      const tracking = asText(parcel.tracking).toLowerCase();
+      const reference = asText(parcel.order_id);
+      if (tracking && reference) externalIdByTracking.set(tracking, reference.toLowerCase());
+    }
+
+    const linkedTrackings = trackingNumbers.filter((tracking) => {
+      const normalized = tracking.toLowerCase();
+      const directMatches = ordersByTracking.get(normalized) || [];
+      if (directMatches.length === 1) return true;
+      const reference = externalIdByTracking.get(normalized);
+      return Boolean(reference && (ordersByExternalId.get(reference) || []).length === 1);
+    });
     if (!linkedTrackings.length) return 0;
 
     const receivedAt = new Date().toISOString();
@@ -1199,7 +1243,14 @@ export class YalidineWebhookWorker {
 
       for (const history of histories) {
         const tracking = asText(history.tracking).toLowerCase();
-        const order = ordersByTracking.get(tracking);
+        const directMatches = ordersByTracking.get(tracking) || [];
+        const reference = externalIdByTracking.get(tracking);
+        const referenceMatchesForParcel = reference ? ordersByExternalId.get(reference) || [] : [];
+        const order = directMatches.length === 1
+          ? directMatches[0]
+          : directMatches.length === 0 && referenceMatchesForParcel.length === 1
+            ? referenceMatchesForParcel[0]
+            : null;
         const status = asText(history.status);
         const occurredAt = parseGuepexDate(history.date_status);
         if (!order || !status || !occurredAt) continue;
