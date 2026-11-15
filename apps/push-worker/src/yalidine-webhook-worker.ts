@@ -262,6 +262,9 @@ export function createGuepexApiEvent(
   }
   data.tracking = tracking;
   data.order_id = orderReference;
+  // This snapshot already came from the authenticated API list endpoint.
+  // Do not perform a second GET when the queued event is processed.
+  data.__guepex_api_lookup = true;
   if (data.last_status && eventType === 'parcel_status_updated') {
     data.status = data.last_status;
   }
@@ -648,6 +651,8 @@ export class YalidineWebhookWorker {
     const eventPayload = job.payload as Record<string, any>;
     const originalData = eventPayload?.data;
     if (!originalData || typeof originalData !== 'object' || Array.isArray(originalData)) return;
+    // API list/backfill events already contain the requested parcel payload.
+    if (originalData.__guepex_api_lookup === true) return;
     const tracking = asText(originalData.tracking || originalData.tracking_number || originalData.Tracking);
     if (!tracking) return;
 
