@@ -861,6 +861,55 @@ export class YalidineWebhookWorker {
     }
   }
 
+  /**
+   * A manual refresh is not complete when snapshots are merely inserted.
+   * Wait until the existing webhook processor has applied every API-generated
+   * parcel/history event from this request before advancing the sync timestamp.
+   */
+  private async waitForManualApiEvents(
+    integration: YalidineIntegration,
+    requestedAt: string
+  ): Promise<{ completed: number }> {
+    const deadline = Date.now() + 8 * 60 * 1000;
+    while (this.running && Date.now() < deadline) {
+      await this.renewApiSyncLease(integration.id);
+      const { data, error } = await (this.supabase as any)
+        .from('yalidine_webhook_events')
+        .select('id, event_id, status, last_error')
+        .eq('merchant_id', integration.merchant_id)
+        .gte('created_at', requestedAt)
+        .or('event_id.like.api:%,event_id.like.api-history:%,event_id.like.api-enrichment:%')
+        .in('status', ['pending', 'processing', 'retry', 'dead_letter'])
+        .order('created_at', { ascending: true })
+        .limit(500);
+
+      if (error) {
+        throw new Error('Could not verify Guepex refresh event completion: ' + error.message);
+      }
+
+      const rows = (data || []) as Array<{
+        id: string;
+        event_id: string;
+        status: string;
+        last_error: string | null;
+      }>;
+      const deadLetter = rows.filter((row) => row.status === 'dead_letter');
+      if (deadLetter.length) {
+        const detail = deadLetter.find((row) => row.last_error)?.last_error;
+        throw new Error(
+          'Guepex refresh queued ' + deadLetter.length +
+          ' event(s) that reached dead letter' + (detail ? ': ' + detail : '.')
+        );
+      }
+
+      if (rows.length === 0) return { completed: 0 };
+      await this.sleep(2000);
+    }
+
+    if (!this.running) throw new Error('Guepex refresh stopped before queued order updates completed.');
+    throw new Error('Guepex API scan finished, but queued order updates did not finish within 8 minutes.');
+  }
+
   private async syncApiAccount(
     integration: YalidineIntegration,
     manualRequestAt?: string
@@ -984,6 +1033,12 @@ export class YalidineWebhookWorker {
         queued: trackingBackfill.queued + referenceBackfill.queued,
       };
 
+      let processedApiEvents = 0;
+      if (manualRequestAt) {
+        const completion = await this.waitForManualApiEvents(integration, manualRequestAt);
+        processedApiEvents = completion.completed;
+      }
+
       const syncedAt = new Date().toISOString();
       const { data: savedSyncState, error: updateError } = await (this.supabase as any)
         .from('merchant_carrier_integrations')
@@ -1004,7 +1059,9 @@ export class YalidineWebhookWorker {
         '[YalidineApiSync]: Merchant ' + integration.merchant_id.slice(0, 8) +
         ' read ' + parcelsRead + ' parcels in ' + pagesRead + ' pages; queued ' +
         eventsQueued + ' linked snapshots; backfilled ' + backfill.checked + ' existing orders and queued ' + backfill.queued + ' detail lookups' +
-        (manualRequestAt ? '; replayed ' + historyEventsQueued + ' history events (manual full refresh)' : '') +
+        (manualRequestAt
+          ? '; replayed ' + historyEventsQueued + ' history events; all newly queued API updates were applied before completion'
+          : '') +
         (missingTracking ? '; skipped ' + missingTracking + ' rows without tracking' : '') + '.'
       );
     } catch (error: any) {
