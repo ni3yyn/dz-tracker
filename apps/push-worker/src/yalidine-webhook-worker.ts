@@ -229,7 +229,10 @@ export function createGuepexApiEvent(
     existingOrder.carrier_tracking_number &&
     existingOrder.carrier_tracking_number.toLowerCase() === tracking.toLowerCase()
   );
-  if (existingOrder.carrier_name && existingOrder.carrier_name !== 'Yalidine Express') {
+  if (
+    existingOrder.carrier_name &&
+    !['Yalidine Express', 'Guepex', 'Yalidine'].includes(existingOrder.carrier_name)
+  ) {
     return null;
   }
 
