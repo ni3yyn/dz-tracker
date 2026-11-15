@@ -1076,7 +1076,11 @@ async function dispatchManualYalidineParcel(
     }
 
     if (!ownsPost && reservation?.status === 'created') {
-      if (reservation.payload_hash !== payloadHash || !reservation.tracking_number) {
+      if (
+        reservation.payload_hash !== payloadHash ||
+        !reservation.tracking_number ||
+        (existingOrder?.carrier_tracking_number && existingOrder.carrier_tracking_number !== reservation.tracking_number)
+      ) {
         throw new Error('مرجع الطلب مربوط بشحنة أخرى أو ببيانات مختلفة. لن نرسل شحنة إضافية.');
       }
       return {
