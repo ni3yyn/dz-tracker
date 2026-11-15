@@ -68,12 +68,14 @@ function parseGuepexDate(value: unknown): string | null {
 }
 
 function algeriaDate(value: Date): string {
-  return new Intl.DateTimeFormat('en-CA', {
+  const parts = new Intl.DateTimeFormat('en', {
     timeZone: 'Africa/Algiers',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(value);
+  }).formatToParts(value);
+  const part = (type: string) => parts.find((item) => item.type === type)?.value || '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
 const GUEPEX_PARCEL_FIELDS = [
@@ -238,7 +240,11 @@ export class YalidineWebhookWorker {
 
   private async runApiSyncLoop(): Promise<void> {
     while (this.running) {
-      await this.syncApiAccounts();
+      try {
+        await this.syncApiAccounts();
+      } catch (error: any) {
+        console.error('[YalidineApiSync]: Cycle failed:', error?.message || error);
+      }
       if (!this.running) return;
       await new Promise<void>((resolve) => {
         this.apiSyncWake = resolve;
@@ -297,7 +303,7 @@ export class YalidineWebhookWorker {
       let pagesRead = 0;
       let parcelsRead = 0;
       let eventsQueued = 0;
-      let unmatched = 0;
+      let missingTracking = 0;
 
       while (this.running) {
         if (pagesRead >= API_MAX_PAGES_PER_CYCLE) {
@@ -359,10 +365,7 @@ export class YalidineWebhookWorker {
         parcelsRead += parcels.length;
         if (parcels.length) {
           eventsQueued += await this.enqueueApiParcelSnapshots(integration.merchant_id, parcels);
-          unmatched += parcels.filter((parcel) => {
-            const tracking = asText(parcel.tracking);
-            return !tracking;
-          }).length;
+          missingTracking += parcels.filter((parcel) => !asText(parcel.tracking)).length;
         }
 
         const hasMore = body?.has_more === true || body?.hasMore === true || Boolean(body?.links?.next);
@@ -386,7 +389,7 @@ export class YalidineWebhookWorker {
       console.log(
         '[YalidineApiSync]: Merchant ' + integration.merchant_id.slice(0, 8) +
         ' read ' + parcelsRead + ' parcels in ' + pagesRead + ' pages; queued ' +
-        eventsQueued + ' linked snapshots' + (unmatched ? '; skipped ' + unmatched + ' rows without tracking' : '') + '.'
+        eventsQueued + ' linked snapshots' + (missingTracking ? '; skipped ' + missingTracking + ' rows without tracking' : '') + '.'
       );
     } catch (error: any) {
       const message = String(error?.message || 'Guepex API synchronization failed')
