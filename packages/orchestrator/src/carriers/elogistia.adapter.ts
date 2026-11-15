@@ -16,6 +16,9 @@ export function mapElogistiaStatus(status: unknown, log?: unknown): { statusRaw:
   const normalized = normalizeDiacritics(safeLower(raw));
   if (!normalized) return { statusRaw: 'unknown', statusTitle: 'تحديث جديد من Elogistia', description: 'وصل سجل تتبع دون وصف حالة واضح.' };
 
+  if (/brouillon|draft/.test(normalized)) {
+    return { statusRaw: 'processing', statusTitle: 'الطلب في مسودة لدى Elogistia', description: 'الطلب مسجل كمسودة لدى Elogistia ولم تُؤكد جاهزيته للشحن بعد.' };
+  }
   if (/retour|return/.test(normalized)) {
     const returned = /remis|livre|recu|vendeur|client/.test(normalized);
     return returned
@@ -75,10 +78,12 @@ export class ElogistiaAdapter {
   static normalize(merchantId: string, rawPayload: unknown): TrackingEvent {
     const root = rawPayload && typeof rawPayload === 'object' && !Array.isArray(rawPayload) ? rawPayload as Record<string, any> : {};
     const data = root.data && typeof root.data === 'object' && !Array.isArray(root.data) ? root.data : root;
-    const status = first(data.Statut, data.statut, data.status, data.Status);
+    const validationValue = data['Validation Elogistia'] ?? data.validationElogistia ?? data.validation ?? null;
+    const validationText = typeof validationValue === 'string' && !/^\d+$/.test(validationValue.trim()) ? validationValue.trim() : '';
+    const status = first(data.Statut, data.statut, data.status, data.Status, validationText, data.order_snapshot === true ? 'pending' : '');
     const log = first(data.Log, data.log, data.description, data.comment);
     const mapped = mapElogistiaStatus(status, log);
-    const tracking = first(data.tracking, data.Tracking, data.tracking_number, data.trackingNumber, data.tracking_code);
+    const tracking = first(data.tracking, data.Tracking, data.tracking_number, data.trackingNumber, data.tracking_code, data.suivi, data.Suivi);
     const externalOrderId = first(data.IdCommande, data.id_commande, data.order_id, data.external_order_id, data.reference) || tracking;
     const occurredAt = parseElogistiaDate(data.Date ?? data.date ?? data.created_at ?? data.timestamp);
     const eventId = first(data.source_event_id, data.sourceEventId);
@@ -98,13 +103,26 @@ export class ElogistiaAdapter {
       sourceProvider: 'elogistia',
       sourceOccurredAt: occurredAt,
       sourceEventId: eventId || undefined,
-      sourceEventType: 'tracking_history',
+      sourceEventType: first(data.source_event_type, data.sourceEventType) || 'tracking_history',
       suppressTriggers: data.suppressTriggers === true,
       carrierMetadata: {
         elogistiaTrackingNumber: tracking || null,
         rawStatus: status || null,
         log: log || null,
         eventDate: occurredAt || first(data.Date, data.date) || null,
+        ...(data.order_snapshot === true ? {
+          elogistiaOrderSnapshot: {
+            validationElogistia: validationValue,
+            elogistiaClientId: first(data['id de client'], data['id de client ']) || null,
+            customerEmail: first(data['E-mail'], data.Email, data.email, data.mail) || null,
+            address: first(data.address, data.Adresse) || null,
+            commune: first(data['Commuhne '], data.Commuhne, data.Commune, data.commune) || null,
+            deliveryFee: data['Frais de livraison'] ?? data.fraisDeLivraison ?? null,
+            remark: first(data.Remarque, data.remarque) || null,
+            latitude: first(data.Latitude, data.latitude) || null,
+            longitude: first(data.Longitude, data.longitude) || null,
+          },
+        } : {}),
       },
     };
   }

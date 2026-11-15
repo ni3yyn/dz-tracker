@@ -44,3 +44,30 @@ test('parses provider dates and leaves unknown dates unset', () => {
   assert.equal(parseElogistiaDate('2026-11-08 10:30:00'), '2026-11-08T09:30:00.000Z');
   assert.equal(parseElogistiaDate('not a date'), undefined);
 });
+
+
+test('imports Elogistia draft snapshots without treating them as dispatched', () => {
+  const event = ElogistiaAdapter.normalize('merchant-1', {
+    suivi: 'ELO-DRAFT-1',
+    IdCommande: 'ELO-DRAFT-1',
+    customer_name: 'Salhi Amine',
+    phone: '0555555555',
+    Statut: 'Brouillon',
+    'Validation Elogistia': 5,
+    'E-mail': 'customer@example.test',
+    address: 'Algiers',
+    'Commuhne ': 2,
+    'Frais de livraison': 1100,
+    order_snapshot: true,
+    source_event_type: 'order_discovery',
+    suppressTriggers: true,
+  });
+
+  assert.equal(event.statusRaw, 'processing');
+  assert.match(event.statusTitle || '', /مسودة/);
+  assert.equal(event.carrierTrackingNumber, 'ELO-DRAFT-1');
+  assert.equal(event.sourceEventType, 'order_discovery');
+  assert.equal(event.suppressTriggers, true);
+  assert.equal((event.carrierMetadata?.elogistiaOrderSnapshot as any)?.validationElogistia, 5);
+  assert.equal((event.carrierMetadata?.elogistiaOrderSnapshot as any)?.address, 'Algiers');
+});

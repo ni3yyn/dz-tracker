@@ -287,7 +287,7 @@ export function createWebhookHandler(options: WebhookHandlerOptions) {
       }
 
       // 8. إذا كان طلباً جديداً، أنشئ مرحلة انتظار تأكيد العميل وجدول رسالة التأكيد
-      if (result.isNewOrder && result.orderId) {
+      if (result.isNewOrder && result.orderId && normalizedEvent.suppressTriggers !== true) {
         try {
           await enqueueOrderConfirmationForNewOrder({
             merchantId: merchant.id,

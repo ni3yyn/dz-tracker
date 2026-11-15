@@ -21,6 +21,68 @@ type OrderRow = {
 
 function asText(value: unknown): string { return value == null ? '' : String(value).trim(); }
 
+
+function firstText(...values: unknown[]): string {
+  for (const value of values) {
+    const text = asText(value);
+    if (text) return text;
+  }
+  return '';
+}
+
+/** Elogistia getOrders returns an account-level list in the response body array. */
+export function normalizeElogistiaOrderList(response: any): Record<string, any>[] {
+  let value = response?.body ?? response?.data ?? response;
+  for (let depth = 0; depth < 3 && value && !Array.isArray(value); depth++) {
+    if (Array.isArray(value.orders)) value = value.orders;
+    else if (Array.isArray(value.body)) value = value.body;
+    else if (Array.isArray(value.data)) value = value.data;
+    else break;
+  }
+  if (Array.isArray(value)) return value.filter((row) => row && typeof row === 'object' && !Array.isArray(row));
+  return value && typeof value === 'object' && (value.suivi || value.tracking || value.Tracking) ? [value] : [];
+}
+
+/**
+ * Turn one getOrders row into a read-only order snapshot for the existing
+ * ingestion pipeline. The client ID is not an order identity; suivi is the
+ * stable fallback identity when Elogistia omits IdCommande.
+ */
+export function normalizeElogistiaOrderForImport(order: Record<string, any>): Record<string, unknown> | null {
+  const tracking = firstText(order.suivi, order.Suivi, order.Tracking, order.tracking, order.tracking_number, order.trackingNumber);
+  if (!tracking) return null;
+
+  const validation = order['Validation Elogistia'] ?? order.validationElogistia ?? order.validation;
+  const validationText = typeof validation === 'string' && !/^\d+$/.test(validation.trim()) ? validation.trim() : '';
+  const explicitStatus = firstText(order.Statut, order.statut, order.status, order.Status, validationText);
+  const status = explicitStatus || 'pending';
+  const firstName = firstText(order.firstname, order.first_name, order.prenom, order['Prénom']);
+  const familyName = firstText(order.name, order.lastname, order.last_name, order.nom, order.Nom);
+  const customerName = firstText(order.customer_name, [firstName, familyName].filter(Boolean).join(' '));
+  const externalOrderId = firstText(order.IdCommande, order.id_commande, order.external_order_id, order.order_reference, order.reference) || tracking;
+  const sourceEventId = createElogistiaEventId(tracking, {
+    Date: firstText(order.updated_at, order.updatedAt, order.Date, order.date, 'account-snapshot'),
+    Statut: status,
+    Log: asText(validation),
+  });
+
+  return {
+    ...order,
+    tracking,
+    IdCommande: externalOrderId,
+    customer_name: customerName,
+    phone: firstText(order['Téléphone'], order.telephone, order.phone, order.customer_phone),
+    product_name: firstText(order.product_name, order.product, order.article, order.Article, order.Produit),
+    Statut: status,
+    source_event_id: sourceEventId,
+    source_event_type: 'order_discovery',
+    order_snapshot: true,
+    // Account discovery is a historical import, not a fresh checkout event.
+    // Do not replay confirmation or customer-notification automations.
+    suppressTriggers: true,
+  };
+}
+
 export function normalizeElogistiaHistory(body: any): Record<string, any>[] {
   let value = body?.body ?? body?.data ?? body;
   if (value && !Array.isArray(value) && Array.isArray(value.data)) value = value.data;
@@ -107,6 +169,89 @@ export class ElogistiaSyncWorker {
     this.lastApiRequestAt = Date.now();
   }
 
+
+  private async discoverAccountOrders(merchantId: string, apiKey: string, merchantApiKey: string): Promise<number> {
+    await this.waitForRateLimit();
+    const url = new URL('getOrders/', API + '/');
+    // Elogistia's account-wide list uses key, unlike getTracking's apiKey.
+    url.searchParams.set('key', apiKey);
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        redirect: 'error',
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+    } catch (error: any) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') throw new Error('Elogistia order-list request timed out.');
+      throw new Error('Elogistia order-list request could not reach the API.');
+    }
+    if (response.status === 401 || response.status === 403) throw new Error('Elogistia rejected the saved API Key while listing orders. Reconnect the account.');
+    if (response.status === 429) throw new Error('Elogistia rate limit reached while listing orders; the next cycle will retry.');
+
+    let body: any;
+    try { body = await response.json(); }
+    catch { throw new Error('Elogistia getOrders returned invalid JSON (HTTP ' + response.status + ').'); }
+
+    if (!response.ok || body?.success === false || body?.error) {
+      const providerMessage = asText(body?.Message || body?.message || body?.error);
+      throw new Error('Elogistia getOrders failed (HTTP ' + response.status + ')' + (providerMessage ? ': ' + providerMessage.slice(0, 180) : '.'));
+    }
+
+    const payload = body?.body ?? body?.data ?? body;
+    const hasList = Array.isArray(payload) || Array.isArray(payload?.body) || Array.isArray(payload?.data) || Array.isArray(payload?.orders);
+    if (!hasList) throw new Error('Elogistia getOrders returned an unexpected order-list format.');
+
+    const providerOrders = normalizeElogistiaOrderList(body);
+    const snapshots = providerOrders
+      .map((row) => normalizeElogistiaOrderForImport(row))
+      .filter((row): row is Record<string, unknown> => Boolean(row));
+
+    // Read all existing Elogistia tracking numbers so each account-list row is
+    // only imported once. Tracking numbers are compared case-insensitively.
+    const known = new Set<string>();
+    let offset = 0;
+    while (this.running) {
+      const { data, error } = await (this.supabase as any).from('orders')
+        .select('carrier_tracking_number')
+        .eq('merchant_id', merchantId)
+        .eq('carrier_name', 'Elogistia')
+        .not('carrier_tracking_number', 'is', null)
+        .range(offset, offset + 999);
+      if (error) throw new Error('Could not load existing Elogistia orders before discovery: ' + error.message);
+      const rows = data || [];
+      for (const row of rows) {
+        const tracking = asText(row.carrier_tracking_number).toUpperCase();
+        if (tracking) known.add(tracking);
+      }
+      if (rows.length < 1000) break;
+      offset += 1000;
+    }
+
+    const unseen: Record<string, unknown>[] = [];
+    for (const snapshot of snapshots) {
+      const tracking = asText(snapshot.tracking).toUpperCase();
+      if (!tracking || known.has(tracking)) continue;
+      known.add(tracking);
+      unseen.push(snapshot);
+    }
+
+    for (let index = 0; index < unseen.length; index += 50) {
+      if (!this.running) break;
+      await this.ingest(unseen.slice(index, index + 50), merchantApiKey);
+    }
+
+    const missingTracking = providerOrders.length - snapshots.length;
+    console.log(
+      '[ElogistiaSync]: Merchant ' + merchantId.slice(0, 8) +
+      ' account list returned ' + providerOrders.length +
+      ' orders; imported ' + unseen.length +
+      ' new orders' + (missingTracking ? '; skipped ' + missingTracking + ' without tracking numbers' : '') + '.'
+    );
+    return unseen.length;
+  }
+
   private async syncAccount(integration: Integration): Promise<void> {
     let apiKey = '';
     try {
@@ -116,6 +261,7 @@ export class ElogistiaSyncWorker {
         .from('merchants').select('api_key').eq('id', integration.merchant_id).maybeSingle();
       if (merchantError || !merchant?.api_key) throw new Error('Merchant API key could not be loaded.');
 
+      const discovered = await this.discoverAccountOrders(integration.merchant_id, apiKey, merchant.api_key);
       let offset = 0;
       let checked = 0;
       let ingested = 0;
@@ -185,7 +331,7 @@ export class ElogistiaSyncWorker {
         .update({ last_sync_at: now, last_success_at: now, last_error: null, last_error_at: null, updated_at: now })
         .eq('id', integration.id);
       if (updateError) throw new Error('Could not save Elogistia sync state: ' + updateError.message);
-      console.log('[ElogistiaSync]: Merchant ' + integration.merchant_id.slice(0, 8) + ' checked ' + checked + ' known tracking numbers; sent ' + ingested + ' history events.');
+      console.log('[ElogistiaSync]: Merchant ' + integration.merchant_id.slice(0, 8) + ' checked ' + checked + ' known tracking numbers; discovered ' + discovered + ' new account orders; sent ' + ingested + ' history events.');
     } catch (error: any) {
       const rawMessage = String(error?.message || 'Elogistia synchronization failed');
       const message = (apiKey ? rawMessage.replaceAll(apiKey, '[redacted]') : rawMessage).slice(0, 500);
