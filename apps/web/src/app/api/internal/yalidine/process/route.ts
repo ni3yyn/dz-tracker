@@ -309,7 +309,7 @@ export async function POST(req: Request) {
 
     let trackingNotifications: unknown = null;
     if (
-      (job.event_type === 'parcel_created' || job.event_type === 'parcel_edited') &&
+      ['parcel_created', 'parcel_edited', 'parcel_status_updated'].includes(job.event_type) &&
       event.carrierTrackingNumber
     ) {
       try {
