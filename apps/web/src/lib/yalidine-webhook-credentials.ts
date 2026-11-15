@@ -2,6 +2,8 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:
 
 export interface YalidineWebhookCredentials {
   webhookSecret: string;
+  apiId?: string;
+  apiToken?: string;
 }
 
 function keyFromSecret(secret: string): Buffer {
@@ -47,8 +49,17 @@ export function decryptYalidineWebhookCredentials(
     decipher.final(),
   ]).toString('utf8');
   const parsed = JSON.parse(clear) as Partial<YalidineWebhookCredentials>;
-  if (typeof parsed.webhookSecret !== 'string') {
-    throw new Error('Stored Yalidine webhook credentials are incomplete.');
+  if (
+    (parsed.webhookSecret !== undefined && typeof parsed.webhookSecret !== 'string') ||
+    (parsed.apiId !== undefined && typeof parsed.apiId !== 'string') ||
+    (parsed.apiToken !== undefined && typeof parsed.apiToken !== 'string')
+  ) {
+    throw new Error('Stored Yalidine credentials are malformed.');
   }
-  return parsed as YalidineWebhookCredentials;
+  // Existing webhook-only records remain readable after API credentials are added.
+  return {
+    webhookSecret: parsed.webhookSecret || '',
+    ...(parsed.apiId ? { apiId: parsed.apiId } : {}),
+    ...(parsed.apiToken ? { apiToken: parsed.apiToken } : {}),
+  };
 }
