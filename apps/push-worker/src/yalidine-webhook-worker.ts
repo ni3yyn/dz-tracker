@@ -115,6 +115,29 @@ const GUEPEX_PARCEL_FIELDS = [
   'economic',
 ] as const;
 
+export function buildGuepexParcelListUrl(
+  page: number,
+  lastApiSyncAt: string | null,
+  now = new Date()
+): URL {
+  const url = new URL('parcels/', API_BASE_URL);
+  url.searchParams.set('page_size', String(API_PAGE_SIZE));
+  url.searchParams.set('page', String(page));
+  url.searchParams.set('order_by', 'date_last_status');
+  url.searchParams.set('desc', '');
+  // Explicit field selection avoids depending on the API's default projection.
+  // Yalidine masks recipient PII in GET responses, but product_list and the
+  // non-personal shipment metadata remain available. Never request address,
+  // QR text or label PIN as part of routine synchronization.
+  url.searchParams.set('fields', GUEPEX_PARCEL_FIELDS.join(','));
+  if (lastApiSyncAt) {
+    const fromDate = algeriaDate(new Date(Math.max(0, Date.parse(lastApiSyncAt) - 48 * 60 * 60 * 1000)));
+    const toDate = algeriaDate(now);
+    url.searchParams.set('date_last_status', `${fromDate},${toDate}`);
+  }
+  return url;
+}
+
 export function createGuepexApiEvent(
   merchantId: string,
   parcel: Record<string, any>,
@@ -352,10 +375,6 @@ export class YalidineWebhookWorker {
       apiToken = credentials.apiToken;
 
       const now = new Date();
-      const fromDate = integration.last_api_sync_at
-        ? algeriaDate(new Date(Math.max(0, Date.parse(integration.last_api_sync_at) - 48 * 60 * 60 * 1000)))
-        : algeriaDate(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
-      const toDate = algeriaDate(now);
       let page = 1;
       let pagesRead = 0;
       let parcelsRead = 0;
@@ -369,17 +388,7 @@ export class YalidineWebhookWorker {
 
         await this.renewApiSyncLease(integration.id);
         await this.waitForApiRateLimit();
-        const url = new URL('parcels/', API_BASE_URL);
-        url.searchParams.set('page_size', String(API_PAGE_SIZE));
-        url.searchParams.set('page', String(page));
-        url.searchParams.set('order_by', 'date_last_status');
-        url.searchParams.set('desc', '');
-        if (integration.last_api_sync_at) {
-          url.searchParams.set('date_last_status', `${fromDate},${toDate}`);
-        } else {
-          // One initial account scan establishes the baseline; subsequent cycles
-          // use a two-day date_last_status overlap for missed-event recovery.
-        }
+        const url = buildGuepexParcelListUrl(page, integration.last_api_sync_at, now);
 
         let response: Response;
         try {
