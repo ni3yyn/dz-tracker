@@ -92,6 +92,42 @@ test('extracts unmasked recipient and parcel details when Guepex includes them i
   assert.equal(event.carrierMetadata?.to_wilaya_name, 'Alger');
 });
 
+test('prefers a full webhook customer name and phone over masked parcel API fragments', () => {
+  const event = YalidineAdapter.normalizeWebhookEvent('merchant-1', {
+    event_id: 'evt-created-full-identity-1',
+    occurred_at: '2026-11-15 10:30:00',
+    type: 'parcel_created',
+    data: {
+      order_id: 'STORE-ORDER-79',
+      tracking: 'yal-079AAA',
+      customer_name: 'Brahim Mohamed',
+      customer_phone: '0550123456',
+      firstname: 'M*****d',
+      familyname: 'E* A****',
+      contact_phone: '0********9',
+    },
+  });
+
+  assert.equal(event.customerName, 'Brahim Mohamed');
+  assert.equal(event.customerPhone, '213550123456');
+  assert.equal(event.carrierMetadata?.yalidine_masked_contact_phone, '0********9');
+});
+
+test('keeps a one-part masked recipient name instead of dropping it', () => {
+  const event = YalidineAdapter.normalizeWebhookEvent('merchant-1', {
+    event_id: 'evt-created-partial-name-1',
+    occurred_at: '2026-11-15 10:30:00',
+    type: 'parcel_created',
+    data: {
+      order_id: 'STORE-ORDER-80',
+      tracking: 'yal-080AAA',
+      firstname: 'M*****d',
+    },
+  });
+
+  assert.equal(event.customerName, 'M*****d');
+});
+
 test('does not treat a masked Guepex phone as a deliverable customer number', () => {
   const event = YalidineAdapter.normalizeWebhookEvent('merchant-1', {
     event_id: 'evt-created-masked-1',
