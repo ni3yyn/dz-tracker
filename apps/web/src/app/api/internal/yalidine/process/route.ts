@@ -36,10 +36,7 @@ function isRedactedValue(value: unknown): boolean {
 }
 
 function escapeLikePattern(value: string): string {
-  return value.replace(/[\\%_]/g, '\\function isRedactedValue(value: unknown): boolean {
-  return typeof value === 'string' && /\*{2,}/.test(value);
-}
-');
+  return value.replace(/[\\%_]/g, '\\$&');
 }
 
 async function enqueueTrackingLinkNotifications(
