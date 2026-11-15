@@ -48,6 +48,7 @@ test('classifies an existing tracked parcel with a newer provider timestamp as a
   assert.equal(row?.merchant_id, 'merchant-1');
   assert.equal((row?.payload as any).data.tracking, 'yal-123456');
   assert.equal((row?.payload as any).data.status, 'En transit');
+  assert.equal(row?.occurred_at, '2026-11-15T09:00:00.000Z');
 });
 
 test('classifies an order-reference match without an attached tracking number as parcel creation', () => {
@@ -64,9 +65,10 @@ test('classifies an order-reference match without an attached tracking number as
 test('classifies an unchanged or older tracked parcel as data-only edit', () => {
   const row = createGuepexApiEvent('merchant-1', {
     ...baseParcel,
-    date_last_status: '2026-11-15 09:00:00',
+    date_last_status: '2026-11-15 08:30:00',
   }, linkedOrder);
   assert.ok(row);
+  assert.equal(row?.occurred_at, '2026-11-15T07:30:00.000Z');
   assert.equal(row?.event_type, 'parcel_edited');
 });
 
