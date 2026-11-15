@@ -140,7 +140,7 @@ export class YalidineAdapter {
         ? `${payload.firstname} ${payload.familyname}`.trim()
         : null;
 
-    const customerName =
+    const rawCustomerName =
       combinedName ||
       extractFirst(payload, [
         'customer_name',
@@ -151,6 +151,12 @@ export class YalidineAdapter {
         'nom',
         'client',
       ]);
+    // Guepex masks recipient names in every GET/PATCH response. Do not turn
+    // masked fragments into a customer's saved identity; keep the original
+    // TajerTrack order name when the parcel is linked by its order reference.
+    const customerName = rawCustomerName && !/\*{2,}/.test(rawCustomerName)
+      ? rawCustomerName
+      : undefined;
 
     const rawPhone = extractFirst(payload, [
       'customer_phone',
