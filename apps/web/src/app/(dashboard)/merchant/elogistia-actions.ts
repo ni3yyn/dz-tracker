@@ -4,18 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { getSupabaseAdminClient } from '@saas/database';
 import { createClient } from '../../../lib/supabase-server';
 import { decryptElogistiaApiKey, encryptElogistiaApiKey } from '../../../lib/elogistia-credentials';
+import { parseElogistiaWilayas } from '@saas/orchestrator';
 
 const API = 'https://api.elogistia.com';
 const REQUEST_TIMEOUT_MS = 15000;
 
 type ElogistiaRow = Record<string, any>;
-
-function rowsFrom(body: any): ElogistiaRow[] {
-  let value = body?.body ?? body?.data ?? body;
-  if (value && !Array.isArray(value) && Array.isArray(value.data)) value = value.data;
-  if (Array.isArray(value)) return value.filter((row) => row && typeof row === 'object');
-  return value && typeof value === 'object' ? [value] : [];
-}
 
 function providerError(body: any): string {
   const value = body?.body ?? body?.data ?? body;
@@ -77,6 +71,12 @@ async function apiRequest(path: string, authName: 'key' | 'apiKey', apiKey: stri
     error.providerRejected = true;
     throw error;
   }
+  if (response.status === 404 && authName === 'key' && /fee not found/i.test(providerError(body))) {
+    const error: any = new Error('لم تتمكن Elogistia من العثور على جدول أسعار التوصيل. تحقق من API Key ومن تفعيل خدمة API على حسابك.');
+    error.statusCode = response.status;
+    error.providerRejected = true;
+    throw error;
+  }
   if (response.status === 429) {
     const error: any = new Error('وصل حساب Elogistia إلى حد الطلبات. انتظر قليلاً ثم أعد المحاولة.');
     error.statusCode = response.status;
@@ -95,11 +95,13 @@ async function apiRequest(path: string, authName: 'key' | 'apiKey', apiKey: stri
 }
 
 async function verifyApiKey(apiKey: string): Promise<void> {
-  const body = await apiRequest('getWilayas/', 'key', apiKey);
-  const rows = rowsFrom(body);
-  if (!rows.length || !rows.some((row) => (row.id ?? row.code) != null && String(row.name ?? row.nom ?? row.wilaya ?? '').trim())) {
+  // Elogistia exposes its wilaya list as the shipping-cost grid. The native
+  // response uses wilayaID/wilayaLabel, not the generic id/name fields.
+  const body = await apiRequest('getShippingCost/', 'key', apiKey);
+  const wilayas = parseElogistiaWilayas(body);
+  if (!wilayas.length) {
     const message = providerError(body);
-    throw new Error(message || 'لم تُرجع Elogistia قائمة ولايات صالحة. لم يتم حفظ الربط.');
+    throw new Error(message || 'لم تُرجع Elogistia قائمة ولايات صالحة عبر جدول أسعار التوصيل. لم يتم حفظ الربط.');
   }
 }
 
