@@ -292,6 +292,7 @@ export async function saveYalidineApiCredentials(
     const now = new Date().toISOString();
     const supabase = getSupabaseAdminClient();
     const { data, error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
       .upsert({
         merchant_id: merchantId,
         provider: 'yalidine',
@@ -360,7 +361,7 @@ export async function saveYalidineWebhookSecret(secretInput: string): Promise<{
       })
       .eq('merchant_id', merchantId)
       .eq('provider', 'yalidine')
-      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error')
+      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error')
       .single();
 
     if (error || !data) throw new Error('تعذر حفظ مفتاح Webhook. تحقق من تحديث قاعدة البيانات ثم حاول مجدداً.');
