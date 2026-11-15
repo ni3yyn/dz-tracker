@@ -6,12 +6,14 @@
     firstName: ['firstname','first_name','firstName','prenom','prénom'],
     lastName: ['familyname','family_name','familyName','lastname','last_name','lastName','nom_famille'],
     fullName: ['customer_name','customername','client_name','clientname','recipient_name','recipientname','receiver_name','receivername','full_name','fullname','nom_complet','nomcomplet'],
-    phone: ['contact_phone','contactphone','customer_phone','customerphone','recipient_phone','recipientphone','receiver_phone','receiverphone','phone','telephone','mobile','tel'],
+    phone: ['contact_phone','contactphone','contact_phone_1','contactphone1','contact_phone_2','contactphone2','customer_phone','customerphone','recipient_phone','recipientphone','receiver_phone','receiverphone','phone','telephone','mobile','tel'],
     productName: ['product_name','productname','item_name','itemname','designation','product','contenu']
   };
+
   function normalizeKey(value) {
     return String(value).toLowerCase().replace(/[\s.-]/g, '').replace(/_/g, '');
   }
+
   function asString(value) {
     if (typeof value === 'string' || typeof value === 'number') {
       const text = String(value).trim();
@@ -20,6 +22,7 @@
     if (Array.isArray(value) && value.length) return asString(value[0]);
     return '';
   }
+
   function findValue(source, aliases) {
     const wanted = new Set(aliases.map(normalizeKey));
     const queue = [{ value: source, depth: 0 }];
@@ -41,18 +44,48 @@
     }
     return '';
   }
-  function decodeRequestBody(requestBody) {
-    if (!requestBody || typeof requestBody !== 'object') return null;
-    if (requestBody.formData && typeof requestBody.formData === 'object') {
-      const form = {};
-      for (const [key, values] of Object.entries(requestBody.formData)) {
-        form[key] = Array.isArray(values) ? values[0] : values;
-      }
-      return form;
+
+  function parseMultipartForm(text) {
+    const lineEnd = text.search(/\r?\n/);
+    if (lineEnd <= 0) return null;
+    const boundary = text.slice(0, lineEnd).replace(/\r$/, '');
+    if (!boundary.startsWith('--') || boundary.length < 4) return null;
+
+    const form = {};
+    for (const part of text.slice(lineEnd).split(boundary)) {
+      if (!part || /^--\s*$/.test(part.trim())) continue;
+      const separator = part.includes('\r\n\r\n') ? '\r\n\r\n' : '\n\n';
+      const separatorIndex = part.indexOf(separator);
+      if (separatorIndex < 0) continue;
+
+      const headers = part.slice(0, separatorIndex);
+      const disposition = headers.match(/content-disposition:\s*form-data;\s*name="([^"]+)"/i);
+      if (!disposition || /filename\s*=/i.test(headers)) continue;
+
+      const key = disposition[1];
+      const value = part.slice(separatorIndex + separator.length).replace(/\r?\n$/, '');
+      if (value.length <= 4096 && !(key in form)) form[key] = value;
     }
-    if (!Array.isArray(requestBody.raw)) return null;
+    return Object.keys(form).length ? form : null;
+  }
+
+  function parseUrlEncodedForm(text) {
+    if (!text.includes('=') || text.includes('\n')) return null;
     try {
-      const chunks = requestBody.raw.map((part) => {
+      const params = new URLSearchParams(text);
+      const form = {};
+      for (const [key, value] of params.entries()) {
+        if (!(key in form)) form[key] = value;
+      }
+      return Object.keys(form).length ? form : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function decodeRawBody(rawParts) {
+    try {
+      const chunks = rawParts.map((part) => {
         if (!part || !part.bytes) return new Uint8Array();
         return new Uint8Array(part.bytes);
       });
@@ -64,10 +97,28 @@
         bytes.set(chunk, offset);
         offset += chunk.length;
       }
+
       const decoded = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-      try { return JSON.parse(decoded); } catch { return null; }
-    } catch { return null; }
+      try { return JSON.parse(decoded); } catch { /* Continue with form encodings. */ }
+      return parseMultipartForm(decoded) || parseUrlEncodedForm(decoded);
+    } catch {
+      return null;
+    }
   }
+
+  function decodeRequestBody(requestBody) {
+    if (!requestBody || typeof requestBody !== 'object') return null;
+    if (requestBody.formData && typeof requestBody.formData === 'object') {
+      const form = {};
+      for (const [key, values] of Object.entries(requestBody.formData)) {
+        form[key] = Array.isArray(values) ? values[0] : values;
+      }
+      return form;
+    }
+    if (!Array.isArray(requestBody.raw)) return null;
+    return decodeRawBody(requestBody.raw);
+  }
+
   function extractParcelIdentity(requestBody) {
     const source = decodeRequestBody(requestBody);
     if (!source) return null;
@@ -93,5 +144,6 @@
       capturedAt: new Date().toISOString()
     };
   }
+
   root.TTCompanionParser = Object.freeze({ decodeRequestBody, extractParcelIdentity });
 })(globalThis);
