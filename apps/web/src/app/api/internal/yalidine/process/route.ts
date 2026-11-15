@@ -96,9 +96,10 @@ async function processYalidineParcelEdit(
   const updates: Record<string, unknown> = {};
   if (
     normalized.customerName &&
-    !isRedactedValue(normalized.customerName) &&
     (!order.customer_name || isRedactedValue(order.customer_name))
   ) {
+    // A masked carrier name is acceptable as a display fallback, but it never
+    // replaces a complete customer name already saved in TajerTrack.
     updates.customer_name = normalized.customerName;
   }
   if (normalized.customerPhone && !order.customer_phone) {
