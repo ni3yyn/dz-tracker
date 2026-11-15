@@ -6,6 +6,21 @@ import { TriggerResult } from './triggers/types';
 export { IdempotencyEngine } from './idempotency';
 export { ShopifyAdapter } from './sources/shopify.adapter';
 export { YalidineAdapter } from './carriers/yalidine.adapter';
+export {
+  YalidineApiError,
+  buildYalidineCreateParcelData,
+  createYalidineParcel,
+  findYalidineParcelsByOrderId,
+  getYalidineManualParcelOptions,
+  normalizeYalidineApiBaseUrl,
+} from './carriers/yalidine-api';
+export type {
+  YalidineApiCredentials,
+  YalidineCreateParcelInput,
+  YalidineCreateParcelData,
+  YalidineManualParcelOptions,
+  YalidineParcelMatch,
+} from './carriers/yalidine-api';
 export { EcoTrackAdapter } from './carriers/ecotrack.adapter';
 export { ZRExpressAdapter, ProcolisAdapter } from './carriers/zrexpress.adapter';
 export { ZRExpressWebhookAdapter, ZR_EXPRESS_WEBHOOK_EVENT_TYPES, verifyZRExpressWebhook, isZRExpressWebhookEvent } from './carriers/zrexpress-webhook.adapter';
