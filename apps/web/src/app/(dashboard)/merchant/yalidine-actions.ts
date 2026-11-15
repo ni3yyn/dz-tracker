@@ -46,8 +46,8 @@ const MANUAL_REFRESH_SCHEMA_ERROR =
 
 function isMissingManualRefreshColumn(error: any): boolean {
   const message = String(error?.message || '');
-  return error?.code === '42703' ||
-    /api_sync_requested_at/i.test(message) && /(does not exist|schema cache|could not find)/i.test(message);
+  return /api_sync_requested_at/i.test(message) &&
+    (error?.code === '42703' || /(does not exist|schema cache|could not find)/i.test(message));
 }
 
 function webhookBaseUrl(): URL {
