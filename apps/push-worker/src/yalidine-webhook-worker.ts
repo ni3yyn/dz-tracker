@@ -869,7 +869,7 @@ export class YalidineWebhookWorker {
   private async waitForManualApiEvents(
     integration: YalidineIntegration,
     requestedAt: string
-  ): Promise<{ completed: number }> {
+  ): Promise<void> {
     const deadline = Date.now() + 8 * 60 * 1000;
     while (this.running && Date.now() < deadline) {
       await this.renewApiSyncLease(integration.id);
@@ -902,7 +902,7 @@ export class YalidineWebhookWorker {
         );
       }
 
-      if (rows.length === 0) return { completed: 0 };
+      if (rows.length === 0) return;
       await this.sleep(2000);
     }
 
@@ -1033,10 +1033,8 @@ export class YalidineWebhookWorker {
         queued: trackingBackfill.queued + referenceBackfill.queued,
       };
 
-      let processedApiEvents = 0;
       if (manualRequestAt) {
-        const completion = await this.waitForManualApiEvents(integration, manualRequestAt);
-        processedApiEvents = completion.completed;
+        await this.waitForManualApiEvents(integration, manualRequestAt);
       }
 
       const syncedAt = new Date().toISOString();
