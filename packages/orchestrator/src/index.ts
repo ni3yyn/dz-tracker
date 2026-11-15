@@ -289,6 +289,19 @@ export class TrackingOrchestrator {
           .update(updatePayload)
           .eq('id', orderId);
 
+        // Guepex webhook and API reconciliation may report the same parcel
+        // snapshot independently. Ignore only an exact status/timestamp replay;
+        // later events with the same normalized category still reach the ordered
+        // ledger when their provider timestamp advances.
+        const exactYalidineReplay =
+          (event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') &&
+          Boolean(existingOrder.carrier_last_event_at && event.sourceOccurredAt) &&
+          existingOrder.current_status === event.statusRaw &&
+          Date.parse(existingOrder.carrier_last_event_at) === Date.parse(event.sourceOccurredAt || '');
+        if (exactYalidineReplay) {
+          return { success: true, trackingUuid, deduplicated: true, isNewOrder: false };
+        }
+
         // ZR Express deliveries may arrive out of order. The database RPC locks the
         // order, rejects stale provider timestamps, and records every verified
         // state/situation/return event (including same-category situations).
@@ -772,7 +785,7 @@ export class TrackingOrchestrator {
     if (event.carrierOrderId && event.carrierName) {
       const { data } = await this.supabase
         .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_name, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
+        .select('id, tracking_uuid, current_status, carrier_name, carrier_tracking_number, carrier_last_event_at, customer_phone, customer_name, product_name, carrier_metadata')
         .eq('merchant_id', event.merchantId)
         .eq('carrier_name', event.carrierName)
         .eq('carrier_order_id', event.carrierOrderId)
