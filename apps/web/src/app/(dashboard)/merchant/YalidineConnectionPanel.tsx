@@ -56,6 +56,7 @@ export function YalidineConnectionPanel() {
   const [saving, setSaving] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [syncingApi, setSyncingApi] = useState(false);
+  const [activeRefreshRequestedAt, setActiveRefreshRequestedAt] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState('');
   const [messageIsError, setMessageIsError] = useState(false);
@@ -65,8 +66,12 @@ export function YalidineConnectionPanel() {
     getYalidineWebhookStatus()
       .then((result) => {
         if (!active) return;
-        if (result.success) setStatus(result.status);
-        else {
+        if (result.success) {
+          setStatus(result.status);
+          if (result.status.apiSyncRequestedAt) {
+            setActiveRefreshRequestedAt(result.status.apiSyncRequestedAt);
+          }
+        } else {
           setMessage(result.error || 'تعذر تحميل حالة الربط.');
           setMessageIsError(true);
         }
@@ -82,28 +87,45 @@ export function YalidineConnectionPanel() {
   }, []);
 
   useEffect(() => {
-    if (!status.apiSyncRequestedAt) {
-      if (syncingApi) {
-        setSyncingApi(false);
-        if (status.apiLastError) {
-          setMessage('فشلت مزامنة Guepex: ' + status.apiLastError);
-          setMessageIsError(true);
-        } else {
-          setMessage('اكتملت مزامنة Guepex API بنجاح.');
-          setMessageIsError(false);
-        }
-      }
-      return;
-    }
+    if (!activeRefreshRequestedAt) return;
 
     setSyncingApi(true);
     let active = true;
+    let requestInFlight = false;
     const refreshStatus = async () => {
+      if (requestInFlight) return;
+      requestInFlight = true;
       try {
         const result = await getYalidineWebhookStatus();
-        if (active && result.success) setStatus(result.status);
+        if (!active || !result.success) return;
+
+        setStatus(result.status);
+        if (result.status.apiSyncRequestedAt) return;
+
+        const requestedAtMs = Date.parse(activeRefreshRequestedAt);
+        const completedAtMs = Date.parse(result.status.lastApiSyncAt || '');
+        const completedSuccessfully =
+          Number.isFinite(requestedAtMs) &&
+          Number.isFinite(completedAtMs) &&
+          completedAtMs >= requestedAtMs;
+
+        if (completedSuccessfully) {
+          setMessage('اكتمل تحديث Guepex وتم تطبيق تحديثات الطلبات وسجل الحالات.');
+          setMessageIsError(false);
+        } else {
+          const detail = result.status.apiLastError;
+          setMessage(detail
+            ? 'فشل تحديث Guepex: ' + detail
+            : 'انتهى طلب التحديث دون تسجيل مزامنة ناجحة. راجع سجل العامل وحاول مجدداً.');
+          setMessageIsError(true);
+        }
+
+        setSyncingApi(false);
+        setActiveRefreshRequestedAt(null);
       } catch {
         // Keep showing the pending state; the next poll will retry.
+      } finally {
+        requestInFlight = false;
       }
     };
 
@@ -113,7 +135,7 @@ export function YalidineConnectionPanel() {
       active = false;
       window.clearInterval(timer);
     };
-  }, [status.apiSyncRequestedAt, status.apiLastError, syncingApi]);
+  }, [activeRefreshRequestedAt]);
 
   async function handleRefreshApi() {
     if (!status.apiConnected || syncingApi) return;
@@ -130,12 +152,13 @@ export function YalidineConnectionPanel() {
         return;
       }
 
+      setActiveRefreshRequestedAt(result.requestedAt);
       setStatus((current) => ({
         ...current,
         apiSyncRequestedAt: result.requestedAt!,
         apiLastError: null,
       }));
-      setMessage('تم إرسال طلب تحديث الطرود. ستظهر النتيجة هنا تلقائياً بعد انتهاء المزامنة.');
+      setMessage('تم إرسال طلب التحديث. سيبقى قيد المعالجة حتى يطبق العامل تغييرات الطرود وسجل الحالات.');
     } catch {
       setSyncingApi(false);
       setMessage('تعذر طلب تحديث Guepex. تحقق من الاتصال وحاول مجدداً.');
@@ -184,6 +207,9 @@ export function YalidineConnectionPanel() {
         return;
       }
       setStatus(result.status);
+      if (result.status.apiSyncRequestedAt) {
+        setActiveRefreshRequestedAt(result.status.apiSyncRequestedAt);
+      }
       setApiId('');
       setApiToken('');
       setMessage('تم التحقق من بيانات Guepex وحفظها مشفّرة. ستبدأ مزامنة الطرود تلقائياً كل بضع دقائق.');
