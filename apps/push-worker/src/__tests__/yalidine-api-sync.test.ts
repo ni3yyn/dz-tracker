@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { createCipheriv, createHash, randomBytes } from 'node:crypto';
 import test from 'node:test';
+import { decryptYalidineApiCredentials } from '../yalidine-credentials.js';
 import {
   createGuepexApiEvent,
   normalizeGuepexParcelList,
@@ -97,4 +99,36 @@ test('ignores a Guepex parcel assigned to a different carrier in TajerTrack', ()
 test('ignores malformed API parcel records without tracking or a usable event timestamp', () => {
   assert.equal(createGuepexApiEvent('merchant-1', { ...baseParcel, tracking: '' }, linkedOrder), null);
   assert.equal(createGuepexApiEvent('merchant-1', { ...baseParcel, date_last_status: '', date_creation: '' }, linkedOrder), null);
+});
+
+
+test('decrypts API credentials using the same merchant-scoped AES-GCM envelope as the web app', () => {
+  const merchantId = 'merchant-guepex-1';
+  const encryptionSecret = 'test-encryption-secret-with-at-least-32-characters';
+  const credentials = {
+    webhookSecret: 'webhook-test-secret',
+    apiId: '08467949173865045243',
+    apiToken: 'test-api-token-long-enough-for-validation',
+  };
+  const iv = randomBytes(12);
+  const key = createHash('sha256').update(encryptionSecret, 'utf8').digest();
+  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  cipher.setAAD(Buffer.from(`${merchantId}:yalidine-webhook:v1`, 'utf8'));
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify(credentials), 'utf8'),
+    cipher.final(),
+  ]);
+  const encrypted = [
+    'v1',
+    iv.toString('base64'),
+    cipher.getAuthTag().toString('base64'),
+    ciphertext.toString('base64'),
+  ].join('.');
+
+  assert.deepEqual(
+    decryptYalidineApiCredentials(encrypted, merchantId, encryptionSecret),
+    { apiId: credentials.apiId, apiToken: credentials.apiToken }
+  );
+  assert.throws(() => decryptYalidineApiCredentials(encrypted, 'another-merchant', encryptionSecret));
+  assert.throws(() => decryptYalidineApiCredentials(encrypted, merchantId, 'wrong-encryption-secret'));
 });
