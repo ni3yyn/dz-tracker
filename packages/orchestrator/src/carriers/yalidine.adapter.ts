@@ -148,22 +148,22 @@ export class YalidineAdapter {
       .map((value) => safeString(value))
       .filter(Boolean);
     const combinedName = nameParts.length ? nameParts.join(' ') : undefined;
-
+    const directCustomerName = extractFirst(payload, [
+      'customer_name',
+      'client_name',
+      'partner_name', // Odoo Partner
+      'recipient_name',
+      'nom',
+      'client',
+    ]);
+    // Prefer a full name already present in the webhook over the masked
+    // firstname/familyname fetched from Guepex. Otherwise use the combined
+    // API name (including its masked fallback) when no full value exists.
     const rawCustomerName =
-      combinedName ||
-      extractFirst(payload, [
-        'customer_name',
-        'firstname',
-        'familyname',
-        'client_name',
-        'partner_name', // Odoo Partner
-        'recipient_name',
-        'nom',
-        'client',
-      ]);
-    // Guepex masks recipient names in every GET/PATCH response. Preserve the
-    // partial masked name as a display fallback when no real TajerTrack name
-    // exists; the processor always prefers an unmasked original-order value.
+      directCustomerName && !/\\*/.test(directCustomerName)
+        ? directCustomerName
+        : combinedName || directCustomerName ||
+          extractFirst(payload, ['firstname', 'familyname']);
     const customerName = rawCustomerName ? safeString(rawCustomerName) : undefined;
 
     const rawPhone = extractFirst(payload, [
