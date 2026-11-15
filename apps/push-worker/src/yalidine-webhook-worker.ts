@@ -281,10 +281,67 @@ export class YalidineWebhookWorker {
     }
   }
 
+  private async claimApiSyncLease(integrationId: string): Promise<boolean> {
+    const now = new Date().toISOString();
+    const leaseUntil = new Date(Date.now() + 3 * 60 * 1000).toISOString();
+    const { data, error } = await (this.supabase as any)
+      .from('merchant_carrier_integrations')
+      .update({
+        api_sync_locked_by: this.workerId,
+        api_sync_lease_expires_at: leaseUntil,
+        updated_at: now,
+      })
+      .eq('id', integrationId)
+      .or(`api_sync_lease_expires_at.is.null,api_sync_lease_expires_at.lt.${now}`)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw new Error('Could not claim Guepex API synchronization lease: ' + error.message);
+    return Boolean(data?.id);
+  }
+
+  private async renewApiSyncLease(integrationId: string): Promise<void> {
+    const now = new Date().toISOString();
+    const leaseUntil = new Date(Date.now() + 3 * 60 * 1000).toISOString();
+    const { data, error } = await (this.supabase as any)
+      .from('merchant_carrier_integrations')
+      .update({
+        api_sync_lease_expires_at: leaseUntil,
+        updated_at: now,
+      })
+      .eq('id', integrationId)
+      .eq('api_sync_locked_by', this.workerId)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw new Error('Could not renew Guepex API synchronization lease: ' + error.message);
+    if (!data?.id) throw new Error('Guepex API synchronization lease was lost.');
+  }
+
+  private async releaseApiSyncLease(integrationId: string): Promise<void> {
+    const { error } = await (this.supabase as any)
+      .from('merchant_carrier_integrations')
+      .update({
+        api_sync_locked_by: null,
+        api_sync_lease_expires_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', integrationId)
+      .eq('api_sync_locked_by', this.workerId);
+
+    if (error) {
+      console.warn('[YalidineApiSync]: Could not release merchant API sync lease:', error.message);
+    }
+  }
+
   private async syncApiAccount(integration: YalidineIntegration): Promise<void> {
     let apiId = '';
     let apiToken = '';
+    let leaseAcquired = false;
     try {
+      leaseAcquired = await this.claimApiSyncLease(integration.id);
+      if (!leaseAcquired) return;
+
       const { decryptYalidineApiCredentials } = await import('./yalidine-credentials.js');
       const credentials = decryptYalidineApiCredentials(
         integration.credentials_encrypted,
@@ -310,6 +367,7 @@ export class YalidineWebhookWorker {
           throw new Error('Guepex API synchronization exceeded the per-cycle pagination safety limit. The sync cursor was not advanced.');
         }
 
+        await this.renewApiSyncLease(integration.id);
         await this.waitForApiRateLimit();
         const url = new URL('parcels/', API_BASE_URL);
         url.searchParams.set('page_size', String(API_PAGE_SIZE));
@@ -383,7 +441,8 @@ export class YalidineWebhookWorker {
           api_last_error_at: null,
           updated_at: syncedAt,
         })
-        .eq('id', integration.id);
+        .eq('id', integration.id)
+        .eq('api_sync_locked_by', this.workerId);
       if (updateError) throw new Error('Could not save Guepex API synchronization state: ' + updateError.message);
 
       console.log(
@@ -407,6 +466,7 @@ export class YalidineWebhookWorker {
         })
         .eq('id', integration.id);
     } finally {
+      if (leaseAcquired) await this.releaseApiSyncLease(integration.id);
       apiId = '';
       apiToken = '';
     }
