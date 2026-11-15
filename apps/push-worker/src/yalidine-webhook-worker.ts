@@ -47,7 +47,7 @@ type GuepexIdentityFieldState = 'absent' | 'masked' | 'present';
 export function classifyGuepexIdentityField(value: unknown): GuepexIdentityFieldState {
   const text = asText(value);
   if (!text) return 'absent';
-  return /\\*/.test(text) ? 'masked' : 'present';
+  return /\*/.test(text) ? 'masked' : 'present';
 }
 
 export function normalizeGuepexParcelList(response: any): Record<string, any>[] {
