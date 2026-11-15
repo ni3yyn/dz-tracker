@@ -1318,7 +1318,7 @@ export async function createManualOrder(formData: FormData) {
 
   let trackingNotificationQueueError = false;
   if (isYalidine && carrierTrackingNumber) {
-    const { error: notificationError } = await supabase.rpc('enqueue_yalidine_tracking_notifications', {
+    const { error: notificationError } = await (supabase as any).rpc('enqueue_yalidine_tracking_notifications', {
       p_merchant_id: merchantId,
       p_order_id: result.orderId,
     });
