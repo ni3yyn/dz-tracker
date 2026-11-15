@@ -5,6 +5,7 @@ import {
   disconnectYalidineWebhook,
   getYalidineWebhookStatus,
   prepareYalidineWebhookEndpoint,
+  saveYalidineApiCredentials,
   saveYalidineWebhookSecret,
   setYalidineWebhookTestMode,
 } from './yalidine-actions';
@@ -12,6 +13,9 @@ import {
 type Status = {
   prepared: boolean;
   connected: boolean;
+  apiConnected: boolean;
+  lastApiSyncAt: string | null;
+  apiLastError: string | null;
   endpointUrl: string | null;
   connectedAt: string | null;
   lastWebhookReceivedAt: string | null;
@@ -23,6 +27,9 @@ type Status = {
 const emptyStatus: Status = {
   prepared: false,
   connected: false,
+  apiConnected: false,
+  lastApiSyncAt: null,
+  apiLastError: null,
   endpointUrl: null,
   connectedAt: null,
   lastWebhookReceivedAt: null,
@@ -37,6 +44,8 @@ const formatDate = (value?: string | null) => value
 
 export function YalidineConnectionPanel() {
   const [status, setStatus] = useState<Status>(emptyStatus);
+  const [apiId, setApiId] = useState('');
+  const [apiToken, setApiToken] = useState('');
   const [secret, setSecret] = useState('');
   const [loading, setLoading] = useState(true);
   const [preparing, setPreparing] = useState(false);
@@ -92,6 +101,30 @@ export function YalidineConnectionPanel() {
       setMessageIsError(true);
     } finally {
       setPreparing(false);
+    }
+  }
+
+  async function handleSaveApi(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage('');
+    setMessageIsError(false);
+    try {
+      const result = await saveYalidineApiCredentials(apiId, apiToken);
+      if (!result.success || !result.status) {
+        setMessage(result.error || 'تعذر ربط حساب Guepex API.');
+        setMessageIsError(true);
+        return;
+      }
+      setStatus(result.status);
+      setApiId('');
+      setApiToken('');
+      setMessage('تم التحقق من بيانات Guepex وحفظها مشفّرة. ستبدأ مزامنة الطرود تلقائياً كل بضع دقائق.');
+    } catch {
+      setMessage('تعذر ربط حساب Guepex API. تحقق من البيانات وحاول مجدداً.');
+      setMessageIsError(true);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -181,9 +214,9 @@ export function YalidineConnectionPanel() {
       <div className="dz-int-guided-panel-title">
         <span className="dz-int-guided-number">02</span>
         <div>
-          <h4>ربط تحديثات Yalidine</h4>
+          <h4>ربط Yalidine / Guepex</h4>
           <p style={{ fontSize: '16px', lineHeight: 1.8 }}>
-            أنشئ Webhook في لوحة شركة التوصيل. يتحقق تاجر تراك من توقيع كل إشعار ويحفظه قبل معالجته.
+            اربط API للمزامنة الدورية وWebhook للتحديثات الفورية. كلاهما يعملان معاً لمنع فقدان الشحنات أو حالاتها.
           </p>
         </div>
       </div>
@@ -193,8 +226,22 @@ export function YalidineConnectionPanel() {
       ) : (
         <>
           <div className="dz-int-guided-meta">
-            <span>إعداد تاجر تراك</span>
-            <strong>{status.connected ? 'مفتاح التوقيع محفوظ' : status.prepared ? 'الرابط جاهز — بانتظار مفتاح التوقيع' : 'لم يتم إعداد الرابط'}</strong>
+            <span>حالة حساب Guepex API</span>
+            <strong>{status.apiConnected ? 'متصل — المزامنة التلقائية مفعّلة' : 'لم يتم ربط API ID و API Token'}</strong>
+            {status.apiConnected && (
+              <>
+                <span>آخر مزامنة من API</span>
+                <strong>{formatDate(status.lastApiSyncAt)}</strong>
+              </>
+            )}
+            {status.apiLastError && (
+              <>
+                <span>آخر خطأ في مزامنة API</span>
+                <strong style={{ color: '#b42318' }}>{status.apiLastError}</strong>
+              </>
+            )}
+            <span>حالة Webhook</span>
+            <strong>{status.connected ? 'مفتاح التوقيع محفوظ' : status.prepared ? 'الرابط جاهز — بانتظار مفتاح التوقيع' : 'غير مربوط'}</strong>
             {status.prepared && (
               <>
                 <span>آخر إشعار استلمه تاجر تراك</span>
@@ -206,6 +253,46 @@ export function YalidineConnectionPanel() {
               </>
             )}
           </div>
+
+          <form onSubmit={handleSaveApi} style={{ display: 'grid', gap: '10px', margin: '14px 0 20px' }}>
+            <div>
+              <strong>بيانات Guepex API</strong>
+              <p className="dz-int-guided-note" style={{ fontSize: '14px', lineHeight: 1.8 }}>
+                أدخل API ID و API Token من لوحة التطوير. يتحقق تاجر تراك منهما عبر قراءة الطرود فقط، ويحفظهما مشفّرين. تُستخدم المزامنة لاكتشاف الشحنات ومراجعة الحالات عند فوات Webhook.
+              </p>
+            </div>
+            <label style={{ display: 'grid', gap: '7px', fontSize: '16px', lineHeight: 1.6 }}>
+              <span><b>API ID</b></span>
+              <input
+                className="input"
+                type="password"
+                required
+                maxLength={128}
+                value={apiId}
+                onChange={(event) => setApiId(event.target.value)}
+                placeholder="API ID"
+                dir="ltr"
+                autoComplete="new-password"
+              />
+            </label>
+            <label style={{ display: 'grid', gap: '7px', fontSize: '16px', lineHeight: 1.6 }}>
+              <span><b>API Token</b></span>
+              <input
+                className="input"
+                type="password"
+                required
+                maxLength={512}
+                value={apiToken}
+                onChange={(event) => setApiToken(event.target.value)}
+                placeholder="API Token"
+                dir="ltr"
+                autoComplete="new-password"
+              />
+            </label>
+            <button type="submit" className="dz-btn" disabled={saving || !apiId.trim() || !apiToken.trim()}>
+              {saving ? 'جارٍ التحقق والحفظ...' : status.apiConnected ? 'تحديث بيانات API' : 'التحقق وربط Guepex API'}
+            </button>
+          </form>
 
           {!status.prepared ? (
             <button type="button" className="dz-btn" disabled={preparing} onClick={handlePrepare}>
