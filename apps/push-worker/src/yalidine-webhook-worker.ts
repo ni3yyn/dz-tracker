@@ -138,6 +138,80 @@ export function buildGuepexParcelListUrl(
   return url;
 }
 
+export function buildGuepexParcelUrl(tracking: string): URL {
+  const url = new URL(`parcels/${encodeURIComponent(tracking)}`, API_BASE_URL);
+  url.searchParams.set('fields', GUEPEX_PARCEL_FIELDS.join(','));
+  return url;
+}
+
+export function normalizeGuepexParcel(response: any, expectedTracking = ''): Record<string, any> | null {
+  const queue: any[] = [response?.data, response?.body, response?.parcel, response];
+  const visited = new Set<any>();
+  while (queue.length) {
+    const candidate = queue.shift();
+    if (!candidate || typeof candidate !== 'object' || visited.has(candidate)) continue;
+    visited.add(candidate);
+
+    if (Array.isArray(candidate)) {
+      queue.push(...candidate);
+      continue;
+    }
+
+    const tracking = asText(candidate.tracking || candidate.Tracking || candidate.tracking_number) || expectedTracking;
+    const hasParcelFields = GUEPEX_PARCEL_FIELDS.some((key) => candidate[key] !== undefined);
+    if (tracking && hasParcelFields) {
+      return { ...candidate, tracking };
+    }
+
+    for (const key of ['data', 'body', 'parcel']) {
+      if (candidate[key] && typeof candidate[key] === 'object') queue.push(candidate[key]);
+    }
+  }
+  return null;
+}
+
+export function createGuepexApiEnrichmentEvent(
+  merchantId: string,
+  parcel: Record<string, any>,
+  fallbackTracking = '',
+  fallbackOrderId = '',
+  receivedAt = new Date().toISOString()
+): Record<string, unknown> | null {
+  const tracking = asText(parcel.tracking || parcel.Tracking || fallbackTracking);
+  if (!tracking) return null;
+
+  const data: Record<string, unknown> = {};
+  for (const key of GUEPEX_PARCEL_FIELDS) {
+    const value = parcel[key];
+    if (value !== undefined && value !== null && value !== '') data[key] = value;
+  }
+  data.tracking = tracking;
+  const orderId = asText(parcel.order_id || fallbackOrderId);
+  if (orderId) data.order_id = orderId;
+  data.__guepex_api_lookup = true;
+
+  const occurredAt = parseGuepexDate(parcel.date_last_status || parcel.date_creation) || receivedAt;
+  const digest = createHash('sha256')
+    .update(JSON.stringify(Object.keys(data).sort().map((key) => [key, data[key]])), 'utf8')
+    .digest('hex');
+  const eventId = `api-enrichment:${digest}`;
+
+  return {
+    merchant_id: merchantId,
+    event_id: eventId,
+    event_type: 'parcel_edited',
+    occurred_at: occurredAt,
+    payload: {
+      type: 'parcel_edited',
+      event_id: eventId,
+      occurred_at: occurredAt,
+      data,
+    },
+    status: 'pending',
+    available_at: receivedAt,
+  };
+}
+
 export function createGuepexApiEvent(
   merchantId: string,
   parcel: Record<string, any>,
@@ -280,10 +354,230 @@ export class YalidineWebhookWorker {
     }
   }
 
+  private apiRateLimitTail: Promise<void> = Promise.resolve();
+
   private async waitForApiRateLimit(): Promise<void> {
-    const waitMs = Math.max(0, API_MIN_REQUEST_INTERVAL_MS - (Date.now() - this.lastApiRequestAt));
-    if (waitMs > 0) await this.sleep(waitMs);
-    this.lastApiRequestAt = Date.now();
+    const previous = this.apiRateLimitTail;
+    let release!: () => void;
+    this.apiRateLimitTail = new Promise<void>((resolve) => { release = resolve; });
+    await previous;
+    try {
+      const waitMs = Math.max(0, API_MIN_REQUEST_INTERVAL_MS - (Date.now() - this.lastApiRequestAt));
+      if (waitMs > 0) await this.sleep(waitMs);
+      this.lastApiRequestAt = Date.now();
+    } finally {
+      release();
+    }
+  }
+
+  private async fetchGuepexParcel(
+    apiId: string,
+    apiToken: string,
+    tracking: string
+  ): Promise<Record<string, any> | null> {
+    await this.waitForApiRateLimit();
+    let response: Response;
+    try {
+      response = await fetch(buildGuepexParcelUrl(tracking), {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'X-API-ID': apiId,
+          'X-API-TOKEN': apiToken,
+        },
+        redirect: 'error',
+        signal: AbortSignal.timeout(20_000),
+      });
+    } catch (error: any) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+        throw new Error('Guepex single-parcel request timed out.');
+      }
+      throw new Error('Guepex single-parcel request could not reach the API.');
+    }
+
+    if (response.status === 404) return null;
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Guepex rejected the saved API ID or API Token.');
+    }
+    if (response.status === 429) {
+      throw new Error('Guepex API rate limit reached during single-parcel lookup.');
+    }
+    if (!response.ok) {
+      throw new Error(`Guepex single-parcel request failed (HTTP ${response.status}).`);
+    }
+
+    let body: any;
+    try { body = await response.json(); } catch {
+      throw new Error('Guepex returned invalid JSON for a single-parcel lookup.');
+    }
+    if (body?.success === false || body?.error) {
+      throw new Error('Guepex rejected the single-parcel lookup.');
+    }
+    return normalizeGuepexParcel(body, tracking);
+  }
+
+  private async recordBackfillCheck(
+    order: { id: string; carrier_metadata: Record<string, unknown> | null },
+    outcome: 'not_found' | 'no_details'
+  ): Promise<void> {
+    const metadata = order.carrier_metadata && typeof order.carrier_metadata === 'object' && !Array.isArray(order.carrier_metadata)
+      ? order.carrier_metadata
+      : {};
+    const now = new Date().toISOString();
+    const { error } = await (this.supabase as any)
+      .from('orders')
+      .update({
+        carrier_metadata: {
+          ...metadata,
+          yalidine_api_details_checked_at: now,
+          yalidine_api_details_result: outcome,
+        },
+        updated_at: now,
+      })
+      .eq('id', order.id);
+    if (error) throw new Error('Could not save Yalidine detail-backfill state: ' + error.message);
+  }
+
+  private async backfillExistingOrders(
+    integration: YalidineIntegration,
+    apiId: string,
+    apiToken: string
+  ): Promise<{ checked: number; queued: number }> {
+    const BACKFILL_BATCH_SIZE = 20;
+    const { data: orders, error } = await (this.supabase as any)
+      .from('orders')
+      .select('id, external_order_id, carrier_tracking_number, carrier_metadata')
+      .eq('merchant_id', integration.merchant_id)
+      .eq('carrier_name', 'Yalidine Express')
+      .not('carrier_tracking_number', 'is', null)
+      .is('carrier_metadata->>yalidine_api_details_checked_at', null)
+      .order('created_at', { ascending: true })
+      .limit(BACKFILL_BATCH_SIZE);
+
+    if (error) throw new Error('Could not find existing Yalidine orders for detail backfill: ' + error.message);
+
+    let checked = 0;
+    let queued = 0;
+    for (const order of (orders || []) as Array<{
+      id: string;
+      external_order_id: string;
+      carrier_tracking_number: string;
+      carrier_metadata: Record<string, unknown> | null;
+    }>) {
+      if (!this.running) break;
+      const tracking = asText(order.carrier_tracking_number);
+      if (!tracking) continue;
+
+      const parcel = await this.fetchGuepexParcel(apiId, apiToken, tracking);
+      checked += 1;
+      if (!parcel) {
+        await this.recordBackfillCheck(order, 'not_found');
+        continue;
+      }
+
+      const event = createGuepexApiEnrichmentEvent(
+        integration.merchant_id,
+        parcel,
+        tracking,
+        order.external_order_id || ''
+      );
+      if (!event) {
+        await this.recordBackfillCheck(order, 'no_details');
+        continue;
+      }
+
+      const { error: enqueueError } = await (this.supabase as any)
+        .from('yalidine_webhook_events')
+        .upsert([event], {
+          onConflict: 'merchant_id,event_id',
+          ignoreDuplicates: true,
+        });
+      if (enqueueError) throw new Error('Could not queue existing Yalidine order for detail enrichment: ' + enqueueError.message);
+      queued += 1;
+    }
+    return { checked, queued };
+  }
+
+  private async enrichWebhookEventFromApi(job: YalidineWebhookJob): Promise<void> {
+    if (!['parcel_created', 'parcel_edited', 'parcel_status_updated'].includes(job.event_type)) return;
+    const eventPayload = job.payload as Record<string, any>;
+    const originalData = eventPayload?.data;
+    if (!originalData || typeof originalData !== 'object' || Array.isArray(originalData)) return;
+    const tracking = asText(originalData.tracking || originalData.tracking_number || originalData.Tracking);
+    if (!tracking) return;
+
+    const { data: integration, error } = await (this.supabase as any)
+      .from('merchant_carrier_integrations')
+      .select('id, merchant_id, credentials_encrypted')
+      .eq('provider', 'yalidine')
+      .eq('merchant_id', job.merchant_id)
+      .eq('api_sync_enabled', true)
+      .maybeSingle();
+    if (error) {
+      console.warn('[YalidineApiLookup]: Could not load API integration for webhook:', error.message);
+      return;
+    }
+    if (!integration?.credentials_encrypted) return;
+
+    let apiId = '';
+    let apiToken = '';
+    try {
+      const { decryptYalidineApiCredentials } = await import('./yalidine-credentials.js');
+      const credentials = decryptYalidineApiCredentials(
+        integration.credentials_encrypted,
+        job.merchant_id,
+        this.config.credentialsEncryptionKey
+      );
+      apiId = credentials.apiId;
+      apiToken = credentials.apiToken;
+
+      const parcel = await this.fetchGuepexParcel(apiId, apiToken, tracking);
+      if (!parcel) {
+        console.log('[YalidineApiLookup]: No API parcel found for webhook tracking ' + tracking.slice(0, 8) + '.');
+        return;
+      }
+
+      const returnedTracking = asText(parcel.tracking);
+      if (returnedTracking && returnedTracking.toLowerCase() !== tracking.toLowerCase()) {
+        console.warn('[YalidineApiLookup]: Guepex returned a different tracking number; ignored lookup result.');
+        return;
+      }
+
+      const enrichedData: Record<string, unknown> = { ...originalData };
+      for (const key of GUEPEX_PARCEL_FIELDS) {
+        const value = parcel[key];
+        if (value !== undefined && value !== null && value !== '') enrichedData[key] = value;
+      }
+      enrichedData.tracking = tracking;
+      enrichedData.__guepex_api_lookup = true;
+
+      const enrichedPayload = { ...eventPayload, data: enrichedData };
+      const { error: updateError } = await (this.supabase as any)
+        .from('yalidine_webhook_events')
+        .update({ payload: enrichedPayload, updated_at: new Date().toISOString() })
+        .eq('id', job.id)
+        .eq('status', 'processing')
+        .eq('locked_by', this.workerId);
+      if (updateError) throw new Error('Could not save Guepex lookup details to the queued webhook: ' + updateError.message);
+      job.payload = enrichedPayload;
+      console.log('[YalidineApiLookup]: Enriched ' + job.event_type + ' from Guepex API for tracking ' + tracking.slice(0, 8) + '.');
+    } catch (error: any) {
+      let message = String(error?.message || 'Guepex single-parcel lookup failed');
+      if (apiId) message = message.replaceAll(apiId, '[redacted]');
+      if (apiToken) message = message.replaceAll(apiToken, '[redacted]');
+      console.warn('[YalidineApiLookup]: Best-effort lookup failed; webhook payload will still be processed: ' + message.slice(0, 300));
+      await (this.supabase as any)
+        .from('merchant_carrier_integrations')
+        .update({
+          api_last_error: message.slice(0, 500),
+          api_last_error_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', integration.id);
+    } finally {
+      apiId = '';
+      apiToken = '';
+    }
   }
 
   private async syncApiAccounts(): Promise<void> {
@@ -441,6 +735,8 @@ export class YalidineWebhookWorker {
         page += 1;
       }
 
+      const backfill = await this.backfillExistingOrders(integration, apiId, apiToken);
+
       const syncedAt = new Date().toISOString();
       const { data: savedSyncState, error: updateError } = await (this.supabase as any)
         .from('merchant_carrier_integrations')
@@ -460,7 +756,8 @@ export class YalidineWebhookWorker {
       console.log(
         '[YalidineApiSync]: Merchant ' + integration.merchant_id.slice(0, 8) +
         ' read ' + parcelsRead + ' parcels in ' + pagesRead + ' pages; queued ' +
-        eventsQueued + ' linked snapshots' + (missingTracking ? '; skipped ' + missingTracking + ' rows without tracking' : '') + '.'
+        eventsQueued + ' linked snapshots; backfilled ' + backfill.checked + ' existing orders and queued ' + backfill.queued + ' detail lookups' +
+        (missingTracking ? '; skipped ' + missingTracking + ' rows without tracking' : '') + '.'
       );
     } catch (error: any) {
       let safeMessage = String(error?.message || 'Guepex API synchronization failed');
@@ -575,6 +872,10 @@ export class YalidineWebhookWorker {
       ) {
         throw new Error('Queued Yalidine event envelope is inconsistent.');
       }
+
+      // Look up the exact parcel immediately when a signed webhook carries its tracking ID.
+      // This is best-effort: the verified webhook is still processed if Guepex is temporarily unavailable.
+      await this.enrichWebhookEventFromApi(job);
 
       const timestamp = String(Math.floor(Date.now() / 1000));
       const body = JSON.stringify({ eventId: job.id, workerId: this.workerId });
