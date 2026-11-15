@@ -1383,7 +1383,9 @@ export async function createManualOrder(formData: FormData) {
 
   let confirmationQueued = false;
   let confirmationQueueError = false;
-  if (result.isNewOrder) {
+  // A retry that completes a previously saved manual Yalidine order should
+  // still queue its confirmation once; the outbox key makes this idempotent.
+  if (result.isNewOrder || dispatch) {
     try {
       const confirmationResult = await enqueueOrderConfirmationForNewOrder({
         merchantId,
