@@ -93,6 +93,7 @@ export function normalizeYalidineApiBaseUrl(value: string): URL {
   if (
     url.protocol !== 'https:' ||
     !ALLOWED_API_HOSTS.has(url.hostname.toLowerCase()) ||
+    url.port ||
     url.username ||
     url.password ||
     url.search ||
@@ -271,8 +272,15 @@ export async function findYalidineParcelsByOrderId(
     method: 'GET',
   }, fetchImpl);
 
-  return responseRows(payload)
-    .filter((row) => asText(row?.order_id) === orderId)
+  const matchingRows = responseRows(payload).filter((row) => asText(row?.order_id) === orderId);
+  if (matchingRows.some((row) => !asText(row?.tracking))) {
+    throw new YalidineApiError(
+      'عثر Guepex على مرجع الطلب لكن لم يرجع رقم تتبع صالحاً. لن نعيد إنشاء الشحنة تلقائياً.',
+      'ambiguous'
+    );
+  }
+
+  return matchingRows
     .map((row) => ({
       order_id: asText(row.order_id),
       tracking: asText(row.tracking),
