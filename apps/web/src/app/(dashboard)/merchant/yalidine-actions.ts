@@ -15,6 +15,7 @@ type YalidineWebhookStatus = {
   apiConnected: boolean;
   lastApiSyncAt: string | null;
   apiLastError: string | null;
+  apiSyncRequestedAt: string | null;
   endpointUrl: string | null;
   connectedAt: string | null;
   lastWebhookReceivedAt: string | null;
@@ -65,7 +66,7 @@ async function loadIntegration(merchantId: string) {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await (supabase as any)
     .from('merchant_carrier_integrations')
-    .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error')
+    .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error, api_sync_requested_at')
     .eq('merchant_id', merchantId)
     .eq('provider', 'yalidine')
     .maybeSingle();
@@ -97,6 +98,7 @@ function statusFromRow(row: any): YalidineWebhookStatus {
     apiConnected: Boolean(row?.api_sync_enabled) && hasApiCredentials,
     lastApiSyncAt: row?.last_api_sync_at || null,
     apiLastError: row?.api_last_error || null,
+    apiSyncRequestedAt: row?.api_sync_requested_at || null,
     endpointUrl: prepared ? endpointUrl(row.webhook_endpoint_token) : null,
     connectedAt: row?.connected_at || null,
     lastWebhookReceivedAt: row?.last_webhook_received_at || null,
@@ -122,6 +124,7 @@ export async function getYalidineWebhookStatus(): Promise<{
         apiConnected: false,
         lastApiSyncAt: null,
         apiLastError: null,
+        apiSyncRequestedAt: null,
         endpointUrl: null,
         connectedAt: null,
         lastWebhookReceivedAt: null,
@@ -139,6 +142,7 @@ export async function getYalidineWebhookStatus(): Promise<{
         apiConnected: false,
         lastApiSyncAt: null,
         apiLastError: null,
+        apiSyncRequestedAt: null,
         endpointUrl: null,
         connectedAt: null,
         lastWebhookReceivedAt: null,
@@ -148,6 +152,48 @@ export async function getYalidineWebhookStatus(): Promise<{
       },
       error: error?.message || 'تعذر تحميل حالة ربط Yalidine.',
     };
+  }
+}
+
+/**
+ * Queue an immediate, merchant-scoped Guepex refresh for the existing Railway worker.
+ * The worker claims its normal per-account lease before consuming this request.
+ */
+export async function requestYalidineApiSync(): Promise<{
+  success: boolean;
+  requestedAt?: string;
+  error?: string;
+}> {
+  try {
+    const merchantId = await authenticatedMerchantId();
+    const existing = await loadIntegration(merchantId);
+    if (!existing?.api_sync_enabled || !existing?.credentials_encrypted) {
+      throw new Error('اربط Guepex API أولاً قبل طلب تحديث الطرود.');
+    }
+
+    const requestedAt = new Date().toISOString();
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await (supabase as any)
+      .from('merchant_carrier_integrations')
+      .update({
+        api_sync_requested_at: requestedAt,
+        api_last_error: null,
+        api_last_error_at: null,
+        updated_at: requestedAt,
+      })
+      .eq('merchant_id', merchantId)
+      .eq('provider', 'yalidine')
+      .eq('api_sync_enabled', true)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw new Error('تعذر إرسال طلب تحديث Guepex.');
+    if (!data?.id) throw new Error('حساب Guepex غير متصل أو أن المزامنة متوقفة.');
+
+    revalidatePath('/merchant');
+    return { success: true, requestedAt };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'تعذر طلب تحديث Guepex.' };
   }
 }
 
@@ -303,10 +349,11 @@ export async function saveYalidineApiCredentials(
         last_api_sync_at: null,
         api_last_error: null,
         api_last_error_at: null,
+        api_sync_requested_at: now,
         connected_at: existing?.connected_at || now,
         updated_at: now,
       }, { onConflict: 'merchant_id,provider' })
-      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error')
+      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error, api_sync_requested_at')
       .single();
 
     if (error || !data) throw new Error('تم التحقق من بيانات API لكن تعذر حفظها. حاول مجدداً.');
@@ -362,7 +409,7 @@ export async function saveYalidineWebhookSecret(secretInput: string): Promise<{
       })
       .eq('merchant_id', merchantId)
       .eq('provider', 'yalidine')
-      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error')
+      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error, api_sync_requested_at')
       .single();
 
     if (error || !data) throw new Error('تعذر حفظ مفتاح Webhook. تحقق من تحديث قاعدة البيانات ثم حاول مجدداً.');
@@ -394,7 +441,7 @@ export async function setYalidineWebhookTestMode(enabled: boolean): Promise<{
       .update({ webhook_test_mode: enabled, updated_at: new Date().toISOString() })
       .eq('merchant_id', merchantId)
       .eq('provider', 'yalidine')
-      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error')
+      .select('id, base_url, credentials_encrypted, webhook_endpoint_token, connected_at, sync_enabled, last_webhook_received_at, last_webhook_processed_at, webhook_test_mode, last_error, api_sync_enabled, last_api_sync_at, api_last_error, api_sync_requested_at')
       .single();
     if (error || !data) throw new Error('تعذر تغيير وضع الاختبار.');
     revalidatePath('/merchant');
