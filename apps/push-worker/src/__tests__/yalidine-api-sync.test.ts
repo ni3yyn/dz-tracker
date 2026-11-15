@@ -5,6 +5,7 @@ import { decryptYalidineApiCredentials } from '../yalidine-credentials.js';
 import {
   buildGuepexParcelListUrl,
   buildGuepexParcelUrl,
+  buildGuepexParcelsByOrderIdsUrl,
   createGuepexApiEnrichmentEvent,
   createGuepexApiEvent,
   normalizeGuepexParcel,
@@ -50,6 +51,21 @@ test('normalizes Guepex top-level data, body and nested data parcel lists', () =
 test('builds a direct Guepex parcel lookup URL with an explicit safe field projection', () => {
   const url = buildGuepexParcelUrl('yal-123456');
   assert.equal(url.pathname, '/v1/parcels/yal-123456');
+  const fields = (url.searchParams.get('fields') || '').split(',');
+  assert.ok(fields.includes('tracking'));
+  assert.ok(fields.includes('order_id'));
+  assert.ok(fields.includes('product_list'));
+  assert.equal(fields.includes('address'), false);
+  assert.equal(fields.includes('qr_text'), false);
+  assert.equal(fields.includes('pin'), false);
+});
+
+test('looks up existing TajerTrack orders in one Guepex request by their original order references', () => {
+  const url = buildGuepexParcelsByOrderIdsUrl(['STORE-001', 'STORE-002', 'STORE-001']);
+  assert.equal(url.pathname, '/v1/parcels/');
+  assert.equal(url.searchParams.get('order_id'), 'STORE-001,STORE-002');
+  assert.equal(url.searchParams.get('page'), '1');
+  assert.equal(url.searchParams.get('page_size'), '100');
   const fields = (url.searchParams.get('fields') || '').split(',');
   assert.ok(fields.includes('tracking'));
   assert.ok(fields.includes('order_id'));
