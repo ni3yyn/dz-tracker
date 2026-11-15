@@ -297,9 +297,7 @@ export class TrackingOrchestrator {
           (event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') &&
           Boolean(existingOrder.carrier_last_event_at && event.sourceOccurredAt) &&
           existingOrder.current_status === event.statusRaw &&
-          Number.isFinite(Date.parse(existingOrder.carrier_last_event_at)) &&
-          Number.isFinite(Date.parse(event.sourceOccurredAt || '')) &&
-          Math.abs(Date.parse(existingOrder.carrier_last_event_at) - Date.parse(event.sourceOccurredAt || '')) <= 120_000;
+          Date.parse(existingOrder.carrier_last_event_at) === Date.parse(event.sourceOccurredAt || '');
         if (exactYalidineReplay) {
           return { success: true, trackingUuid, deduplicated: true, isNewOrder: false };
         }
