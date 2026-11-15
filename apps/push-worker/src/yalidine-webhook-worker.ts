@@ -749,7 +749,12 @@ export class YalidineWebhookWorker {
       ', familyname=' + classifyGuepexIdentityField(data.familyname) +
       ', contact_phone=' + classifyGuepexIdentityField(data.contact_phone) +
       ', customer_name=' + classifyGuepexIdentityField(data.customer_name) +
+      ', client_name=' + classifyGuepexIdentityField(data.client_name) +
+      ', recipient_name=' + classifyGuepexIdentityField(data.recipient_name) +
+      ', nom=' + classifyGuepexIdentityField(data.nom) +
       ', customer_phone=' + classifyGuepexIdentityField(data.customer_phone) +
+      ', phone=' + classifyGuepexIdentityField(data.phone) +
+      ', telephone=' + classifyGuepexIdentityField(data.telephone) +
       '; order_id=' + (Boolean(asText(data.order_id)) ? 'present' : 'absent') + '.'
     );
   }
