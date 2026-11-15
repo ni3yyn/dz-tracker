@@ -225,7 +225,7 @@ export function mergeGuepexApiParcelIntoWebhookData(
     const existing = asText(originalData[key]);
     const isPersonalIdentityField = GUEPEX_PERSONAL_IDENTITY_FIELDS.has(key);
     const hasUnmaskedWebhookValue =
-      Boolean(existing) && (!isPersonalIdentityField || !/\\*/.test(existing));
+      Boolean(existing) && (!isPersonalIdentityField || !/\*/.test(existing));
 
     if (hasUnmaskedWebhookValue) continue;
     enrichedData[key] = value;
