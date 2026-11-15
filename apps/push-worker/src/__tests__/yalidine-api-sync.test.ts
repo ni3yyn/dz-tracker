@@ -107,7 +107,7 @@ test('decrypts API credentials using the same merchant-scoped AES-GCM envelope a
   const encryptionSecret = 'test-encryption-secret-with-at-least-32-characters';
   const credentials = {
     webhookSecret: 'webhook-test-secret',
-    apiId: '08467949173865045243',
+    apiId: '12345678901234567890',
     apiToken: 'test-api-token-long-enough-for-validation',
   };
   const iv = randomBytes(12);
