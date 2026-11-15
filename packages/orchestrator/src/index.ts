@@ -297,7 +297,9 @@ export class TrackingOrchestrator {
           (event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') &&
           Boolean(existingOrder.carrier_last_event_at && event.sourceOccurredAt) &&
           existingOrder.current_status === event.statusRaw &&
-          Date.parse(existingOrder.carrier_last_event_at) === Date.parse(event.sourceOccurredAt || '');
+          Number.isFinite(Date.parse(existingOrder.carrier_last_event_at)) &&
+          Number.isFinite(Date.parse(event.sourceOccurredAt || '')) &&
+          Math.abs(Date.parse(existingOrder.carrier_last_event_at) - Date.parse(event.sourceOccurredAt || '')) <= 120_000;
         if (exactYalidineReplay) {
           return { success: true, trackingUuid, deduplicated: true, isNewOrder: false };
         }
@@ -806,7 +808,7 @@ export class TrackingOrchestrator {
     ) {
       const { data } = await this.supabase
         .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_name, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
+        .select('id, tracking_uuid, current_status, carrier_name, carrier_tracking_number, carrier_last_event_at, customer_phone, customer_name, product_name, carrier_metadata')
         .eq('merchant_id', event.merchantId)
         .eq('external_order_id', event.externalOrderId)
         .maybeSingle();
@@ -819,7 +821,7 @@ export class TrackingOrchestrator {
     if (event.carrierTrackingNumber) {
       let query = this.supabase
         .from('orders')
-        .select('id, tracking_uuid, current_status, carrier_name, carrier_tracking_number, customer_phone, customer_name, product_name, carrier_metadata')
+        .select('id, tracking_uuid, current_status, carrier_name, carrier_tracking_number, carrier_last_event_at, customer_phone, customer_name, product_name, carrier_metadata')
         .eq('merchant_id', event.merchantId)
         .eq('carrier_tracking_number', event.carrierTrackingNumber);
 
