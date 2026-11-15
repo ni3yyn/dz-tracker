@@ -3,6 +3,7 @@ import { createCipheriv, createHash, randomBytes } from 'node:crypto';
 import test from 'node:test';
 import { decryptYalidineApiCredentials } from '../yalidine-credentials.js';
 import {
+  buildGuepexParcelListUrl,
   createGuepexApiEvent,
   normalizeGuepexParcelList,
 } from '../yalidine-webhook-worker.js';
@@ -131,4 +132,25 @@ test('decrypts API credentials using the same merchant-scoped AES-GCM envelope a
   );
   assert.throws(() => decryptYalidineApiCredentials(encrypted, 'another-merchant', encryptionSecret));
   assert.throws(() => decryptYalidineApiCredentials(encrypted, merchantId, 'wrong-encryption-secret'));
+});
+
+
+test('requests the non-personal product and shipment fields explicitly from Guepex', () => {
+  const initial = buildGuepexParcelListUrl(1, null, new Date('2026-11-15T10:00:00.000Z'));
+  const fields = (initial.searchParams.get('fields') || '').split(',');
+  assert.ok(fields.includes('product_list'));
+  assert.ok(fields.includes('tracking'));
+  assert.ok(fields.includes('order_id'));
+  assert.ok(fields.includes('firstname'));
+  assert.ok(fields.includes('familyname'));
+  assert.ok(fields.includes('contact_phone'));
+  assert.ok(fields.includes('last_status'));
+  assert.equal(fields.includes('address'), false);
+  assert.equal(fields.includes('qr_text'), false);
+  assert.equal(fields.includes('pin'), false);
+  assert.equal(initial.searchParams.has('date_last_status'), false);
+
+  const incremental = buildGuepexParcelListUrl(2, '2026-11-14T10:00:00.000Z', new Date('2026-11-15T10:00:00.000Z'));
+  assert.equal(incremental.searchParams.get('page'), '2');
+  assert.equal(incremental.searchParams.get('date_last_status'), '2026-11-12,2026-11-15');
 });
