@@ -217,13 +217,18 @@ async function processYalidineParcelEdit(
     }
   }
 
+  const originalOrderPhone = identitySource?.customer_phone && !isRedactedValue(identitySource.customer_phone)
+    ? identitySource.customer_phone
+    : undefined;
   const phoneResolution = order.customer_phone && !isRedactedValue(order.customer_phone)
     ? 'already_saved_on_order'
-    : sourcePhone
+    : originalOrderPhone
       ? 'recovered_from_original_order'
-      : incomingMetadata.yalidine_masked_contact_phone
-        ? 'masked_by_guepex_api'
-        : 'not_returned_by_provider';
+      : normalized.customerPhone
+        ? 'received_unmasked_from_carrier_payload'
+        : incomingMetadata.yalidine_masked_contact_phone
+          ? 'masked_by_guepex_api'
+          : 'not_returned_by_provider';
 
   if (apiEnriched) {
     const nameResolution = order.customer_name && !isRedactedValue(order.customer_name)
