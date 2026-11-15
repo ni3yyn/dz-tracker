@@ -125,6 +125,7 @@ test('creates a data-only enrichment event for an existing order without sending
   assert.equal(payload.data.order_id, 'STORE-ORDER-123');
   assert.equal(payload.data.product_list, 'Machine à café');
   assert.equal(payload.data.__guepex_api_lookup, true);
+  assert.equal(payload.data.__guepex_api_lookup_version, 3);
   assert.equal('address' in payload.data, false);
   assert.equal('pin' in payload.data, false);
   assert.equal('qr_text' in payload.data, false);
@@ -138,6 +139,7 @@ test('classifies an existing tracked parcel with a newer provider timestamp as a
   assert.equal((row?.payload as any).data.tracking, 'yal-123456');
   assert.equal((row?.payload as any).data.status, 'En transit');
   assert.equal((row?.payload as any).data.__guepex_api_lookup, true);
+  assert.equal((row?.payload as any).data.__guepex_api_lookup_version, 3);
   assert.equal(row?.occurred_at, '2026-11-15T09:00:00.000Z');
 });
 
