@@ -154,7 +154,7 @@ export class YalidineAdapter {
     // Guepex masks recipient names in every GET/PATCH response. Do not turn
     // masked fragments into a customer's saved identity; keep the original
     // TajerTrack order name when the parcel is linked by its order reference.
-    const customerName = rawCustomerName && !/\*{2,}/.test(rawCustomerName)
+    const customerName = rawCustomerName && !/\*/.test(rawCustomerName)
       ? rawCustomerName
       : undefined;
 
