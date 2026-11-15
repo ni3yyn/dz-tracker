@@ -374,6 +374,25 @@ export async function POST(req: Request) {
     // phantom order whose external_order_id is the tracking number. Retry
     // until the create event has safely registered the parcel.
     if (job.event_type === 'parcel_status_updated') {
+      // API history rows may identify an original TajerTrack order by order_id
+      // before its tracking number has been attached. Enrich/link that order
+      // first, then apply the historical status to the now-linked shipment.
+      if (payload.data.__guepex_api_lookup === true) {
+        const linkResult = await processYalidineParcelEdit(
+          supabase as any,
+          job.merchant_id,
+          payload.data as Record<string, unknown>,
+          true
+        );
+        if (linkResult.reason === 'order_linked_to_another_carrier') {
+          return NextResponse.json({
+            success: true,
+            ignored: true,
+            reason: 'order_linked_to_another_carrier',
+          });
+        }
+      }
+
       const { data: knownOrder, error: lookupError } = await (supabase as any)
         .from('orders')
         .select('id')
@@ -396,17 +415,6 @@ export async function POST(req: Request) {
           retryable: true,
           error: 'Parcel has not been registered yet; retrying after its parcel_created event.',
         }, { status: 503 });
-      }
-
-      // Status events remain authoritative for shipment state, while the
-      // parcel API lookup fills in any customer/product details first.
-      if (payload.data.__guepex_api_lookup === true) {
-        await processYalidineParcelEdit(
-          supabase as any,
-          job.merchant_id,
-          payload.data as Record<string, unknown>,
-          true
-        );
       }
     }
 
