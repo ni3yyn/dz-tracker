@@ -105,6 +105,6 @@ test('does not treat a masked Guepex phone as a deliverable customer number', ()
     },
   });
 
-  assert.equal(event.customerName, 'M*****d E* A****');
+  assert.equal(event.customerName, undefined);
   assert.equal(event.customerPhone, undefined);
 });
