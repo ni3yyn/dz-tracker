@@ -154,6 +154,30 @@ export function buildGuepexParcelsByOrderIdsUrl(orderIds: string[]): URL {
   return url;
 }
 
+/** Manual refreshes are full reconciliations; scheduled cycles keep the incremental cursor. */
+export function getGuepexSyncCursor(
+  lastApiSyncAt: string | null,
+  manualRequestAt?: string
+): string | null {
+  return manualRequestAt ? null : lastApiSyncAt;
+}
+
+/** Guepex supports comma-separated tracking filters and paginated history results. */
+export function buildGuepexHistoriesUrl(trackings: string[], page = 1): URL {
+  const uniqueTrackings = Array.from(new Set(trackings.map(asText).filter(Boolean)));
+  const url = new URL('histories/', API_BASE_URL);
+  url.searchParams.set('tracking', uniqueTrackings.join(','));
+  url.searchParams.set('page', String(page));
+  url.searchParams.set('page_size', String(API_PAGE_SIZE));
+  url.searchParams.set('order_by', 'date_status');
+  url.searchParams.set('asc', '');
+  url.searchParams.set(
+    'fields',
+    'date_status,tracking,status,reason,center_id,center_name,wilaya_id,wilaya_name,commune_id,commune_name'
+  );
+  return url;
+}
+
 export function normalizeGuepexParcel(response: any, expectedTracking = ''): Record<string, any> | null {
   const queue: any[] = [response?.data, response?.body, response?.parcel, response];
   const visited = new Set<any>();
@@ -862,7 +886,9 @@ export class YalidineWebhookWorker {
       let pagesRead = 0;
       let parcelsRead = 0;
       let eventsQueued = 0;
+      let historyEventsQueued = 0;
       let missingTracking = 0;
+      let nextPageUrl: URL | null = null;
 
       while (this.running) {
         if (pagesRead >= API_MAX_PAGES_PER_CYCLE) {
@@ -871,7 +897,12 @@ export class YalidineWebhookWorker {
 
         await this.renewApiSyncLease(integration.id);
         await this.waitForApiRateLimit();
-        const url = buildGuepexParcelListUrl(page, integration.last_api_sync_at, now);
+        const url = nextPageUrl || buildGuepexParcelListUrl(
+          page,
+          getGuepexSyncCursor(integration.last_api_sync_at, manualRequestAt),
+          now
+        );
+        nextPageUrl = null;
 
         let response: Response;
         try {
@@ -916,12 +947,34 @@ export class YalidineWebhookWorker {
         if (parcels.length) {
           eventsQueued += await this.enqueueApiParcelSnapshots(integration.merchant_id, parcels);
           missingTracking += parcels.filter((parcel) => !asText(parcel.tracking)).length;
+
+          // CodFlow's recovery flow uses /histories to replay status changes
+          // missed while the webhook endpoint or worker was unavailable.
+          // Do this only for an explicit manual refresh to avoid needless polling.
+          if (manualRequestAt) {
+            historyEventsQueued += await this.enqueueApiHistorySnapshots(
+              integration.merchant_id,
+              parcels,
+              apiId,
+              apiToken
+            );
+          }
         }
 
-        const hasMore = body?.has_more === true || body?.hasMore === true || Boolean(body?.links?.next);
-        if (!hasMore && parcels.length < API_PAGE_SIZE) break;
-        if (!hasMore && parcels.length === 0) break;
-        page += 1;
+        const nextLink = typeof body?.links?.next === 'string' ? body.links.next : '';
+        if (nextLink) {
+          const candidate = new URL(nextLink, url);
+          const apiOrigin = new URL(API_BASE_URL).origin;
+          if (candidate.origin !== apiOrigin || candidate.pathname !== '/v1/parcels/') {
+            throw new Error('Guepex returned an unsafe or unexpected next-page URL.');
+          }
+          nextPageUrl = candidate;
+          page += 1;
+        } else if (body?.has_more === true || body?.hasMore === true) {
+          page += 1;
+        } else {
+          break;
+        }
       }
 
       const trackingBackfill = await this.backfillExistingOrders(integration, apiId, apiToken);
@@ -951,6 +1004,7 @@ export class YalidineWebhookWorker {
         '[YalidineApiSync]: Merchant ' + integration.merchant_id.slice(0, 8) +
         ' read ' + parcelsRead + ' parcels in ' + pagesRead + ' pages; queued ' +
         eventsQueued + ' linked snapshots; backfilled ' + backfill.checked + ' existing orders and queued ' + backfill.queued + ' detail lookups' +
+        (manualRequestAt ? '; replayed ' + historyEventsQueued + ' history events (manual full refresh)' : '') +
         (missingTracking ? '; skipped ' + missingTracking + ' rows without tracking' : '') + '.'
       );
     } catch (error: any) {
@@ -990,6 +1044,194 @@ export class YalidineWebhookWorker {
       apiId = '';
       apiToken = '';
     }
+  }
+
+  private async enqueueApiHistorySnapshots(
+    merchantId: string,
+    parcels: Record<string, any>[],
+    apiId: string,
+    apiToken: string
+  ): Promise<number> {
+    const trackingNumbers = Array.from(new Set(
+      parcels.map((parcel) => asText(parcel.tracking)).filter(Boolean)
+    ));
+    if (!trackingNumbers.length) return 0;
+
+    const { data: existingOrders, error: lookupError } = await (this.supabase as any)
+      .from('orders')
+      .select('id, external_order_id, carrier_name, carrier_tracking_number')
+      .eq('merchant_id', merchantId)
+      .in('carrier_tracking_number', trackingNumbers)
+      .in('carrier_name', ['Yalidine Express', 'Guepex', 'Yalidine']);
+
+    if (lookupError) {
+      throw new Error('Could not match existing Yalidine orders for history recovery: ' + lookupError.message);
+    }
+
+    const ordersByTracking = new Map<string, {
+      id: string;
+      external_order_id: string;
+      carrier_tracking_number: string;
+    }>();
+    for (const order of (existingOrders || []) as Array<{
+      id: string;
+      external_order_id: string;
+      carrier_tracking_number: string;
+      carrier_name: string | null;
+    }>) {
+      const tracking = asText(order.carrier_tracking_number).toLowerCase();
+      if (tracking) ordersByTracking.set(tracking, order);
+    }
+
+    const linkedTrackings = Array.from(ordersByTracking.keys());
+    if (!linkedTrackings.length) return 0;
+
+    const receivedAt = new Date().toISOString();
+    let page = 1;
+    let pagesRead = 0;
+    let nextPageUrl: URL | null = null;
+    let queued = 0;
+
+    while (this.running) {
+      if (pagesRead >= API_MAX_PAGES_PER_CYCLE) {
+        throw new Error('Guepex history recovery exceeded the per-cycle pagination safety limit.');
+      }
+
+      const url = nextPageUrl || buildGuepexHistoriesUrl(linkedTrackings, page);
+      nextPageUrl = null;
+      await this.waitForApiRateLimit();
+
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'X-API-ID': apiId,
+            'X-API-TOKEN': apiToken,
+          },
+          redirect: 'error',
+          signal: AbortSignal.timeout(20_000),
+        });
+      } catch (error: any) {
+        if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+          throw new Error('Guepex history recovery request timed out.');
+        }
+        throw new Error('Guepex history recovery request could not reach the API.');
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Guepex rejected the saved API ID or API Token during history recovery.');
+      }
+      if (response.status === 429) {
+        throw new Error('Guepex API rate limit reached during history recovery.');
+      }
+      if (!response.ok) {
+        throw new Error(`Guepex history recovery failed (HTTP ${response.status}).`);
+      }
+
+      let body: any;
+      try { body = await response.json(); } catch {
+        throw new Error('Guepex returned invalid JSON for history recovery.');
+      }
+      if (body?.success === false || body?.error) {
+        throw new Error('Guepex rejected the history recovery request.');
+      }
+
+      const histories = normalizeGuepexParcelList(body);
+      pagesRead += 1;
+      const queueRows: Record<string, unknown>[] = [];
+
+      for (const history of histories) {
+        const tracking = asText(history.tracking).toLowerCase();
+        const order = ordersByTracking.get(tracking);
+        const status = asText(history.status);
+        const occurredAt = parseGuepexDate(history.date_status);
+        if (!order || !status || !occurredAt) continue;
+
+        const data: Record<string, unknown> = {
+          tracking: order.carrier_tracking_number,
+          order_id: order.external_order_id || order.carrier_tracking_number,
+          status,
+          reason: asText(history.reason) || null,
+          __guepex_api_lookup: true,
+        };
+        if (history.center_id !== undefined && history.center_id !== null) {
+          data.current_center_id = history.center_id;
+        }
+        if (history.center_name) data.current_center_name = history.center_name;
+        if (history.wilaya_id !== undefined && history.wilaya_id !== null) {
+          data.current_wilaya_id = history.wilaya_id;
+        }
+        if (history.wilaya_name) data.current_wilaya_name = history.wilaya_name;
+        if (history.commune_id !== undefined && history.commune_id !== null) {
+          data.current_commune_id = history.commune_id;
+        }
+        if (history.commune_name) data.current_commune_name = history.commune_name;
+
+        const digest = createHash('sha256')
+          .update(JSON.stringify([
+            merchantId,
+            tracking,
+            occurredAt,
+            status,
+            data.reason,
+            data.current_center_id,
+            data.current_center_name,
+            data.current_wilaya_id,
+            data.current_wilaya_name,
+            data.current_commune_id,
+            data.current_commune_name,
+          ]), 'utf8')
+          .digest('hex');
+        const eventId = 'api-history:' + digest;
+        queueRows.push({
+          merchant_id: merchantId,
+          event_id: eventId,
+          event_type: 'parcel_status_updated',
+          occurred_at: occurredAt,
+          payload: {
+            type: 'parcel_status_updated',
+            event_id: eventId,
+            occurred_at: occurredAt,
+            data,
+          },
+          status: 'pending',
+          available_at: receivedAt,
+        });
+      }
+
+      for (let index = 0; index < queueRows.length; index += 100) {
+        const batch = queueRows.slice(index, index + 100);
+        const { error: enqueueError } = await (this.supabase as any)
+          .from('yalidine_webhook_events')
+          .upsert(batch, {
+            onConflict: 'merchant_id,event_id',
+            ignoreDuplicates: true,
+          });
+        if (enqueueError) {
+          throw new Error('Could not queue Guepex history recovery events: ' + enqueueError.message);
+        }
+      }
+      queued += queueRows.length;
+
+      const nextLink = typeof body?.links?.next === 'string' ? body.links.next : '';
+      if (nextLink) {
+        const candidate = new URL(nextLink, url);
+        const apiOrigin = new URL(API_BASE_URL).origin;
+        if (candidate.origin !== apiOrigin || candidate.pathname !== '/v1/histories/') {
+          throw new Error('Guepex returned an unsafe or unexpected history next-page URL.');
+        }
+        nextPageUrl = candidate;
+        page += 1;
+      } else if (body?.has_more === true || body?.hasMore === true) {
+        page += 1;
+      } else {
+        break;
+      }
+    }
+
+    return queued;
   }
 
   private async enqueueApiParcelSnapshots(
