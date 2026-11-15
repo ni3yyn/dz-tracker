@@ -12,6 +12,8 @@ export { ZRExpressWebhookAdapter, ZR_EXPRESS_WEBHOOK_EVENT_TYPES, verifyZRExpres
 export type { ZRExpressWebhookEvent, ZRExpressWebhookEventType } from './carriers/zrexpress-webhook.adapter';
 export { ZimouAdapter, mapZimouStatus } from './carriers/zimou.adapter';
 export { ElogistiaAdapter, mapElogistiaStatus, parseElogistiaDate } from './carriers/elogistia.adapter';
+export { parseElogistiaWilayas } from './carriers/elogistia-locations';
+export type { ElogistiaWilaya } from './carriers/elogistia-locations';
 export { EcomV2Adapter, mapEcomV2Status, parseEcomV2Date, ecomV2EventId } from './carriers/ecom-v2.adapter';
 export {
   MaystroAdapter,
