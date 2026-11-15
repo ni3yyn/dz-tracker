@@ -24,6 +24,7 @@ async function bootstrap(): Promise<void> {
     console.log(`[Bootstrap]: EcoTrack read-only sync enabled: ${config.ecoTrackSyncEnabled}`);
     console.log(`[Bootstrap]: ZR Express webhook worker enabled: ${config.zrExpressWebhookWorkerEnabled}`);
     console.log(`[Bootstrap]: Yalidine webhook worker enabled: ${config.yalidineWebhookWorkerEnabled}`);
+    console.log(`[Bootstrap]: Yalidine / Guepex read-only API reconciliation enabled: ${config.yalidineApiSyncEnabled}`);
     console.log(`[Bootstrap]: Zimou read-only status sync enabled: ${config.zimouSyncEnabled}`);
     console.log(`[Bootstrap]: Elogistia status polling enabled: ${config.elogistiaSyncEnabled}`);
     console.log(`[Bootstrap]: E-com Delivery v2 status polling enabled: ${config.ecomV2SyncEnabled}`);
@@ -59,7 +60,9 @@ async function bootstrap(): Promise<void> {
   const health = new PushWorkerHealthMonitor(config.workerId);
   const ecoTrackSync = config.ecoTrackSyncEnabled ? new EcoTrackSyncWorker(config) : null;
   const zrExpressWebhookWorker = config.zrExpressWebhookWorkerEnabled ? new ZRExpressWebhookWorker(config) : null;
-  const yalidineWebhookWorker = config.yalidineWebhookWorkerEnabled ? new YalidineWebhookWorker(config) : null;
+  const yalidineWebhookWorker = (config.yalidineWebhookWorkerEnabled || config.yalidineApiSyncEnabled)
+    ? new YalidineWebhookWorker(config)
+    : null;
   const zimouSync = config.zimouSyncEnabled ? new ZimouSyncWorker(config) : null;
   const elogistiaSync = config.elogistiaSyncEnabled ? new ElogistiaSyncWorker(config) : null;
   const ecomV2Sync = config.ecomV2SyncEnabled ? new EcomV2SyncWorker(config) : null;
@@ -106,7 +109,7 @@ async function bootstrap(): Promise<void> {
   if (yalidineWebhookWorker) {
     yalidineWebhookLoop = yalidineWebhookWorker.start();
   } else {
-    console.log('[Bootstrap]: YALIDINE_WEBHOOK_WORKER_ENABLED=false; Yalidine webhook processing is disabled.');
+    console.log('[Bootstrap]: Yalidine webhook processing and API reconciliation are disabled.');
   }
 
   if (zimouSync) {
@@ -160,7 +163,7 @@ async function bootstrap(): Promise<void> {
   const heartbeat = setInterval(() => {
     const status = health.getStatus();
     console.log(
-      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'} | Yalidine webhooks: ${yalidineWebhookWorker ? 'enabled' : 'disabled'} | Zimou sync: ${zimouSync ? 'enabled' : 'disabled'} | Elogistia sync: ${elogistiaSync ? 'enabled' : 'disabled'} | E-com v2 sync: ${ecomV2Sync ? 'enabled' : 'disabled'} | Procolis read-only sync: ${procolisSync ? 'enabled' : 'disabled'}`
+      `[Heartbeat]: Uptime: ${status.uptimeSeconds}s | Mem: ${status.memoryUsageMb}MB | Push processed: ${status.totalJobsProcessed} (Sent: ${status.successfulSends}, Expired: ${status.expiredCleanups}, Failed: ${status.failedJobs}) | EcoTrack sync: ${ecoTrackSync ? 'enabled' : 'disabled'} | ZR Express webhooks: ${zrExpressWebhookWorker ? 'enabled' : 'disabled'} | Yalidine webhook/API: ${yalidineWebhookWorker ? 'enabled' : 'disabled'} | Zimou sync: ${zimouSync ? 'enabled' : 'disabled'} | Elogistia sync: ${elogistiaSync ? 'enabled' : 'disabled'} | E-com v2 sync: ${ecomV2Sync ? 'enabled' : 'disabled'} | Procolis read-only sync: ${procolisSync ? 'enabled' : 'disabled'}`
     );
   }, 30000);
 
