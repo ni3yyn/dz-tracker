@@ -433,7 +433,7 @@ export class YalidineWebhookWorker {
       }
 
       const syncedAt = new Date().toISOString();
-      const { error: updateError } = await (this.supabase as any)
+      const { data: savedSyncState, error: updateError } = await (this.supabase as any)
         .from('merchant_carrier_integrations')
         .update({
           last_api_sync_at: syncedAt,
@@ -442,8 +442,11 @@ export class YalidineWebhookWorker {
           updated_at: syncedAt,
         })
         .eq('id', integration.id)
-        .eq('api_sync_locked_by', this.workerId);
+        .eq('api_sync_locked_by', this.workerId)
+        .select('id')
+        .maybeSingle();
       if (updateError) throw new Error('Could not save Guepex API synchronization state: ' + updateError.message);
+      if (!savedSyncState?.id) throw new Error('Guepex API synchronization lease was lost before its cursor could be saved.');
 
       console.log(
         '[YalidineApiSync]: Merchant ' + integration.merchant_id.slice(0, 8) +
@@ -464,7 +467,8 @@ export class YalidineWebhookWorker {
           api_last_error_at: failedAt,
           updated_at: failedAt,
         })
-        .eq('id', integration.id);
+        .eq('id', integration.id)
+        .eq('api_sync_locked_by', this.workerId);
     } finally {
       if (leaseAcquired) await this.releaseApiSyncLease(integration.id);
       apiId = '';
