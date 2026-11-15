@@ -91,7 +91,7 @@ async function processYalidineParcelEdit(
     .maybeSingle();
 
   if (trackingLookupError) {
-    throw new Error(\`Could not find the TajerTrack order for Yalidine tracking number: \${trackingLookupError.message}\`);
+    throw new Error(`Could not find the TajerTrack order for Yalidine tracking number: ${trackingLookupError.message}`);
   }
 
   let referenceMatches: any[] = [];
@@ -107,7 +107,7 @@ async function processYalidineParcelEdit(
       .ilike('external_order_id', escapeLikePattern(reference))
       .limit(20);
     if (referenceError) {
-      throw new Error(\`Could not match the original TajerTrack order reference: \${referenceError.message}\`);
+      throw new Error(`Could not match the original TajerTrack order reference: ${referenceError.message}`);
     }
     referenceMatches = (matches || []).filter((candidate: any) =>
       !candidate.carrier_name ||
@@ -211,7 +211,7 @@ async function processYalidineParcelEdit(
       .eq('id', order.id)
       .eq('merchant_id', merchantId);
     if (updateError) {
-      throw new Error(\`Could not apply details from Yalidine parcel to existing order: \${updateError.message}\`);
+      throw new Error(`Could not apply details from Yalidine parcel to existing order: ${updateError.message}`);
     }
   }
 
