@@ -32,7 +32,7 @@ function verifyWorkerRequest(rawBody: string, timestamp: string | null, signatur
 }
 
 function isRedactedValue(value: unknown): boolean {
-  return typeof value === 'string' && /\*{2,}/.test(value);
+  return typeof value === 'string' && /\*/.test(value);
 }
 
 function escapeLikePattern(value: string): string {
