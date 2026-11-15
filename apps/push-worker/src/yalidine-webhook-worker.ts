@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { PushWorkerConfig } from './config.js';
 
@@ -16,6 +16,167 @@ type YalidineWebhookJob = {
 
 const RETRY_DELAYS_SECONDS = [5, 30, 120, 600, 1800, 3600, 7200];
 const DEFAULT_POLL_INTERVAL_MS = 2000;
+const DEFAULT_API_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+const API_BASE_URL = 'https://api.guepex.app/v1/';
+const API_PAGE_SIZE = 100;
+const API_MAX_PAGES_PER_CYCLE = 200;
+const API_MIN_REQUEST_INTERVAL_MS = 1400;
+
+type YalidineIntegration = {
+  id: string;
+  merchant_id: string;
+  credentials_encrypted: string;
+  last_api_sync_at: string | null;
+};
+
+type ExistingYalidineOrder = {
+  id: string;
+  external_order_id: string;
+  carrier_name: string | null;
+  carrier_tracking_number: string | null;
+  carrier_last_event_at: string | null;
+};
+
+function asText(value: unknown): string {
+  return value === null || value === undefined ? '' : String(value).trim();
+}
+
+export function normalizeGuepexParcelList(response: any): Record<string, any>[] {
+  const candidates = [response?.data, response?.body, response?.parcels, response];
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate.filter((row) => row && typeof row === 'object' && !Array.isArray(row));
+    }
+    if (candidate && typeof candidate === 'object') {
+      for (const nested of [candidate.data, candidate.body, candidate.parcels]) {
+        if (Array.isArray(nested)) {
+          return nested.filter((row) => row && typeof row === 'object' && !Array.isArray(row));
+        }
+      }
+    }
+  }
+  throw new Error('Guepex returned an unexpected parcel-list format.');
+}
+
+function parseGuepexDate(value: unknown): string | null {
+  const raw = asText(value);
+  if (!raw) return null;
+  const local = raw.match(/^(\\d{4}-\\d{2}-\\d{2})[ T](\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d{1,3})?)?)$/);
+  const normalized = local ? `${local[1]}T${local[2]}+01:00` : raw;
+  const timestamp = Date.parse(normalized);
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
+}
+
+function algeriaDate(value: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Algiers',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(value);
+}
+
+const GUEPEX_PARCEL_FIELDS = [
+  'tracking',
+  'order_id',
+  'firstname',
+  'familyname',
+  'contact_phone',
+  'product_list',
+  'price',
+  'delivery_fee',
+  'freeshipping',
+  'last_status',
+  'date_creation',
+  'date_last_status',
+  'import_id',
+  'label',
+  'to_wilaya_id',
+  'to_wilaya_name',
+  'to_commune_id',
+  'to_commune_name',
+  'is_stopdesk',
+  'stopdesk_id',
+  'stopdesk_name',
+  'current_center_id',
+  'current_center_name',
+  'current_wilaya_id',
+  'current_wilaya_name',
+  'current_commune_id',
+  'current_commune_name',
+  'payment_status',
+  'payment_id',
+  'has_exchange',
+  'product_to_collect',
+  'parcel_type',
+  'parcel_sub_type',
+  'economic',
+] as const;
+
+export function createGuepexApiEvent(
+  merchantId: string,
+  parcel: Record<string, any>,
+  existingOrder: ExistingYalidineOrder,
+  receivedAt = new Date().toISOString()
+): Record<string, unknown> | null {
+  const tracking = asText(parcel.tracking || parcel.Tracking);
+  if (!tracking) return null;
+
+  const orderReference = asText(parcel.order_id) || tracking;
+  const occurredAt = parseGuepexDate(parcel.date_last_status || parcel.date_creation);
+  if (!occurredAt) return null;
+
+  const linkedByTracking = Boolean(
+    existingOrder.carrier_tracking_number &&
+    existingOrder.carrier_tracking_number.toLowerCase() === tracking.toLowerCase()
+  );
+  if (existingOrder.carrier_name && existingOrder.carrier_name !== 'Yalidine Express') {
+    return null;
+  }
+
+  const previousEventAt = existingOrder.carrier_last_event_at
+    ? Date.parse(existingOrder.carrier_last_event_at)
+    : 0;
+  const eventAt = Date.parse(occurredAt);
+  const eventType = !linkedByTracking
+    ? 'parcel_created'
+    : previousEventAt > 0 && eventAt <= previousEventAt
+      ? 'parcel_edited'
+      : 'parcel_status_updated';
+
+  const data: Record<string, unknown> = {};
+  for (const key of GUEPEX_PARCEL_FIELDS) {
+    const value = parcel[key];
+    if (value !== undefined && value !== null && value !== '') data[key] = value;
+  }
+  data.tracking = tracking;
+  data.order_id = orderReference;
+  if (data.last_status && eventType === 'parcel_status_updated') {
+    data.status = data.last_status;
+  }
+
+  // Exclude address, PIN, QR text and every other nonessential personal/security field.
+  const stableContent = Object.keys(data).sort().map((key) => [key, data[key]]);
+  const digest = createHash('sha256')
+    .update(JSON.stringify([eventType, stableContent]), 'utf8')
+    .digest('hex');
+  const eventId = `api:${digest}`;
+
+  return {
+    merchant_id: merchantId,
+    event_id: eventId,
+    event_type: eventType,
+    occurred_at: occurredAt,
+    payload: {
+      type: eventType,
+      event_id: eventId,
+      occurred_at: occurredAt,
+      data,
+    },
+    status: 'pending',
+    available_at: receivedAt,
+  };
+}
 
 function deriveWorkerSigningKey(rootKey: string): Buffer {
   if (!rootKey || rootKey.length < 32) {
@@ -30,10 +191,15 @@ export class YalidineWebhookWorker {
   private readonly supabase: SupabaseClient;
   private readonly workerId = `yl-webhook-${randomUUID()}`;
   private readonly pollIntervalMs: number;
+  private readonly apiSyncIntervalMs: number;
   private running = false;
+  private lastApiRequestAt = 0;
+  private apiSyncTimer: ReturnType<typeof setTimeout> | null = null;
+  private apiSyncWake: (() => void) | null = null;
 
   constructor(private readonly config: PushWorkerConfig) {
     this.pollIntervalMs = Math.max(1000, config.yalidineWebhookPollIntervalMs || DEFAULT_POLL_INTERVAL_MS);
+    this.apiSyncIntervalMs = Math.max(60_000, config.yalidineApiSyncIntervalMs || DEFAULT_API_SYNC_INTERVAL_MS);
     this.supabase = createClient(config.supabaseUrl, config.supabaseSecretKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -43,7 +209,8 @@ export class YalidineWebhookWorker {
   async start(): Promise<void> {
     if (this.running) return;
     this.running = true;
-    console.log(`[YalidineWebhookWorker]: Started (worker ${this.workerId}, poll ${this.pollIntervalMs}ms).`);
+    console.log(`[YalidineWebhookWorker]: Started (worker ${this.workerId}, queue poll ${this.pollIntervalMs}ms, API sync ${this.config.yalidineApiSyncEnabled ? this.apiSyncIntervalMs + 'ms' : 'disabled'}).`);
+    const apiLoop = this.config.yalidineApiSyncEnabled ? this.runApiSyncLoop() : Promise.resolve();
     while (this.running) {
       try {
         const job = await this.claimNext();
@@ -57,11 +224,255 @@ export class YalidineWebhookWorker {
         if (this.running) await this.sleep(this.pollIntervalMs);
       }
     }
+    await apiLoop;
     console.log('[YalidineWebhookWorker]: Stopped.');
   }
 
   async stop(): Promise<void> {
     this.running = false;
+    if (this.apiSyncTimer) clearTimeout(this.apiSyncTimer);
+    this.apiSyncTimer = null;
+    this.apiSyncWake?.();
+    this.apiSyncWake = null;
+  }
+
+  private async runApiSyncLoop(): Promise<void> {
+    while (this.running) {
+      await this.syncApiAccounts();
+      if (!this.running) return;
+      await new Promise<void>((resolve) => {
+        this.apiSyncWake = resolve;
+        this.apiSyncTimer = setTimeout(() => {
+          this.apiSyncTimer = null;
+          this.apiSyncWake = null;
+          resolve();
+        }, this.apiSyncIntervalMs);
+      });
+    }
+  }
+
+  private async waitForApiRateLimit(): Promise<void> {
+    const waitMs = Math.max(0, API_MIN_REQUEST_INTERVAL_MS - (Date.now() - this.lastApiRequestAt));
+    if (waitMs > 0) await this.sleep(waitMs);
+    this.lastApiRequestAt = Date.now();
+  }
+
+  private async syncApiAccounts(): Promise<void> {
+    const { data, error } = await (this.supabase as any)
+      .from('merchant_carrier_integrations')
+      .select('id, merchant_id, credentials_encrypted, last_api_sync_at')
+      .eq('provider', 'yalidine')
+      .eq('api_sync_enabled', true);
+
+    if (error) {
+      console.error('[YalidineApiSync]: Could not load connected API accounts:', error.message);
+      return;
+    }
+
+    for (const integration of (data || []) as YalidineIntegration[]) {
+      if (!this.running) return;
+      await this.syncApiAccount(integration);
+    }
+  }
+
+  private async syncApiAccount(integration: YalidineIntegration): Promise<void> {
+    let apiId = '';
+    let apiToken = '';
+    try {
+      const { decryptYalidineApiCredentials } = await import('./yalidine-credentials.js');
+      const credentials = decryptYalidineApiCredentials(
+        integration.credentials_encrypted,
+        integration.merchant_id,
+        this.config.credentialsEncryptionKey
+      );
+      apiId = credentials.apiId;
+      apiToken = credentials.apiToken;
+
+      const now = new Date();
+      const fromDate = integration.last_api_sync_at
+        ? algeriaDate(new Date(Math.max(0, Date.parse(integration.last_api_sync_at) - 48 * 60 * 60 * 1000)))
+        : algeriaDate(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+      const toDate = algeriaDate(now);
+      let page = 1;
+      let pagesRead = 0;
+      let parcelsRead = 0;
+      let eventsQueued = 0;
+      let unmatched = 0;
+
+      while (this.running) {
+        if (pagesRead >= API_MAX_PAGES_PER_CYCLE) {
+          throw new Error('Guepex API synchronization exceeded the per-cycle pagination safety limit. The sync cursor was not advanced.');
+        }
+
+        await this.waitForApiRateLimit();
+        const url = new URL('parcels/', API_BASE_URL);
+        url.searchParams.set('page_size', String(API_PAGE_SIZE));
+        url.searchParams.set('page', String(page));
+        url.searchParams.set('order_by', 'date_last_status');
+        url.searchParams.set('desc', '');
+        if (integration.last_api_sync_at) {
+          url.searchParams.set('date_last_status', `${fromDate},${toDate}`);
+        } else {
+          // One initial account scan establishes the baseline; subsequent cycles
+          // use a two-day date_last_status overlap for missed-event recovery.
+        }
+
+        let response: Response;
+        try {
+          response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              'X-API-ID': apiId,
+              'X-API-TOKEN': apiToken,
+            },
+            redirect: 'error',
+            signal: AbortSignal.timeout(20_000),
+          });
+        } catch (error: any) {
+          if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+            throw new Error('Guepex parcel-list request timed out.');
+          }
+          throw new Error('Guepex parcel-list request could not reach the API.');
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Guepex rejected the saved API ID or API Token. Reconnect the account.');
+        }
+        if (response.status === 429) {
+          throw new Error('Guepex API rate limit reached; the next synchronization cycle will retry.');
+        }
+        if (!response.ok) {
+          throw new Error(`Guepex parcel-list request failed (HTTP ${response.status}).`);
+        }
+
+        let body: any;
+        try { body = await response.json(); } catch {
+          throw new Error('Guepex returned invalid JSON for its parcel list.');
+        }
+        if (body?.success === false || body?.error) {
+          throw new Error('Guepex rejected the parcel-list request.');
+        }
+
+        const parcels = normalizeGuepexParcelList(body);
+        pagesRead += 1;
+        parcelsRead += parcels.length;
+        if (parcels.length) {
+          eventsQueued += await this.enqueueApiParcelSnapshots(integration.merchant_id, parcels);
+          unmatched += parcels.filter((parcel) => {
+            const tracking = asText(parcel.tracking);
+            return !tracking;
+          }).length;
+        }
+
+        const hasMore = body?.has_more === true || body?.hasMore === true || Boolean(body?.links?.next);
+        if (!hasMore && parcels.length < API_PAGE_SIZE) break;
+        if (!hasMore && parcels.length === 0) break;
+        page += 1;
+      }
+
+      const syncedAt = new Date().toISOString();
+      const { error: updateError } = await (this.supabase as any)
+        .from('merchant_carrier_integrations')
+        .update({
+          last_api_sync_at: syncedAt,
+          api_last_error: null,
+          api_last_error_at: null,
+          updated_at: syncedAt,
+        })
+        .eq('id', integration.id);
+      if (updateError) throw new Error('Could not save Guepex API synchronization state: ' + updateError.message);
+
+      console.log(
+        '[YalidineApiSync]: Merchant ' + integration.merchant_id.slice(0, 8) +
+        ' read ' + parcelsRead + ' parcels in ' + pagesRead + ' pages; queued ' +
+        eventsQueued + ' linked snapshots' + (unmatched ? '; skipped ' + unmatched + ' rows without tracking' : '') + '.'
+      );
+    } catch (error: any) {
+      const message = String(error?.message || 'Guepex API synchronization failed')
+        .replaceAll(apiId, '[redacted]')
+        .replaceAll(apiToken, '[redacted]')
+        .slice(0, 500);
+      const failedAt = new Date().toISOString();
+      console.error('[YalidineApiSync]: Merchant ' + integration.merchant_id.slice(0, 8) + ' failed: ' + message);
+      await (this.supabase as any)
+        .from('merchant_carrier_integrations')
+        .update({
+          api_last_error: message,
+          api_last_error_at: failedAt,
+          updated_at: failedAt,
+        })
+        .eq('id', integration.id);
+    } finally {
+      apiId = '';
+      apiToken = '';
+    }
+  }
+
+  private async enqueueApiParcelSnapshots(
+    merchantId: string,
+    parcels: Record<string, any>[]
+  ): Promise<number> {
+    const trackingNumbers = Array.from(new Set(parcels.map((parcel) => asText(parcel.tracking)).filter(Boolean)));
+    const externalOrderIds = Array.from(new Set(parcels.map((parcel) => asText(parcel.order_id)).filter(Boolean)));
+    if (trackingNumbers.length === 0 && externalOrderIds.length === 0) return 0;
+
+    const existingByTracking = new Map<string, ExistingYalidineOrder>();
+    const existingByExternalId = new Map<string, ExistingYalidineOrder>();
+
+    if (trackingNumbers.length) {
+      const { data, error } = await (this.supabase as any)
+        .from('orders')
+        .select('id, external_order_id, carrier_name, carrier_tracking_number, carrier_last_event_at')
+        .eq('merchant_id', merchantId)
+        .in('carrier_tracking_number', trackingNumbers);
+      if (error) throw new Error('Could not match Guepex tracking numbers to TajerTrack orders: ' + error.message);
+      for (const order of (data || []) as ExistingYalidineOrder[]) {
+        if (order.carrier_tracking_number) existingByTracking.set(order.carrier_tracking_number.toLowerCase(), order);
+      }
+    }
+
+    if (externalOrderIds.length) {
+      const { data, error } = await (this.supabase as any)
+        .from('orders')
+        .select('id, external_order_id, carrier_name, carrier_tracking_number, carrier_last_event_at')
+        .eq('merchant_id', merchantId)
+        .in('external_order_id', externalOrderIds);
+      if (error) throw new Error('Could not match Guepex order references to TajerTrack orders: ' + error.message);
+      for (const order of (data || []) as ExistingYalidineOrder[]) {
+        if (order.external_order_id) existingByExternalId.set(order.external_order_id, order);
+      }
+    }
+
+    const receivedAt = new Date().toISOString();
+    const queueRows: Record<string, unknown>[] = [];
+    for (const parcel of parcels) {
+      const tracking = asText(parcel.tracking);
+      if (!tracking) continue;
+      const orderReference = asText(parcel.order_id);
+      const existing = existingByTracking.get(tracking.toLowerCase()) ||
+        (orderReference ? existingByExternalId.get(orderReference) : undefined);
+      // API account scans are intentionally reconciliation-only. The webhook
+      // remains responsible for unknown orders so historical account scans do
+      // not import thousands of unrelated or quota-consuming orders.
+      if (!existing) continue;
+
+      const row = createGuepexApiEvent(merchantId, parcel, existing, receivedAt);
+      if (row) queueRows.push(row);
+    }
+
+    for (let index = 0; index < queueRows.length; index += 100) {
+      const batch = queueRows.slice(index, index + 100);
+      const { error } = await (this.supabase as any)
+        .from('yalidine_webhook_events')
+        .upsert(batch, {
+          onConflict: 'merchant_id,event_id',
+          ignoreDuplicates: true,
+        });
+      if (error) throw new Error('Could not queue Guepex API parcel snapshots: ' + error.message);
+    }
+
+    return queueRows.length;
   }
 
   private async claimNext(): Promise<YalidineWebhookJob | null> {
