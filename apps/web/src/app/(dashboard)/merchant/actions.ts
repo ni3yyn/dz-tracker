@@ -6,12 +6,20 @@ import { isIP } from 'node:net';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
-import { TrackingOrchestrator } from '@saas/orchestrator';
+import {
+  TrackingOrchestrator,
+  YalidineApiError,
+  buildYalidineCreateParcelData,
+  createYalidineParcel,
+  findYalidineParcelsByOrderId,
+  getYalidineManualParcelOptions,
+} from '@saas/orchestrator';
 import { enqueueOrderConfirmationForNewOrder } from '../../../lib/order-confirmation';
 import { BrandSettings, DEFAULT_BRAND_SETTINGS } from '@saas/ui';
 
 type PersistedBrandSettings = BrandSettings & { showWhatsAppButton?: boolean; animateBackgroundBlobs?: boolean; backgroundBlur?: boolean; timelineLineStyle?: 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none' };
 import { createClient } from '../../../lib/supabase-server';
+import { decryptYalidineWebhookCredentials } from '../../../lib/yalidine-webhook-credentials';
 
 /**
  * Return the authenticated merchant's API key only when an integration path needs it.
@@ -808,42 +816,479 @@ export async function logout() {
 }
 
 // 7. إنشاء طلب يدوي من لوحة تحكم التاجر (للاختبار والطلبات اليدوية)
-export async function createManualOrder(formData: FormData) {
-  const merchantId = formData.get('merchant_id') as string;
-  const externalOrderId = (formData.get('external_order_id') as string)?.trim() || `ORD-${Date.now().toString().slice(-6)}`;
-  const customerName = (formData.get('customer_name') as string)?.trim() || '';
-  const customerPhone = (formData.get('customer_phone') as string)?.trim() || '';
-  const productName = (formData.get('product_name') as string)?.trim() || '';
-  const carrierName = (formData.get('carrier_name') as string)?.trim() || 'Yalidine Express';
-  const carrierTrackingNumber = (formData.get('carrier_tracking_number') as string)?.trim() || '';
-  const statusRaw = (formData.get('status_raw') as string)?.trim() || 'order_placed';
+type ManualYalidineDispatchResult = {
+  trackingNumber: string;
+  labelUrl: string | null;
+  importId: number | null;
+  reused: boolean;
+};
 
-  if (!merchantId) {
-    return { error: 'معرّف المتجر غير موجود' };
+async function updateManualYalidineDispatch(
+  supabase: any,
+  merchantId: string,
+  externalOrderId: string,
+  updates: Record<string, unknown>
+): Promise<void> {
+  const { error } = await supabase
+    .from('yalidine_manual_dispatches')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('merchant_id', merchantId)
+    .eq('external_order_id', externalOrderId);
+  if (error) {
+    throw new Error('تعذّر حفظ حالة إرسال شحنة Yalidine. لا تعِد إرسال الطلب قبل التحقق من رقم الطلب في لوحة الشركة.');
   }
-  if (!customerPhone) {
-    return { error: 'يرجى إدخال رقم هاتف العميل' };
+}
+
+async function resolveManualYalidineDispatch(
+  supabase: any,
+  merchantId: string,
+  externalOrderId: string,
+  matches: Awaited<ReturnType<typeof findYalidineParcelsByOrderId>>,
+  payloadHash: string
+): Promise<ManualYalidineDispatchResult | null> {
+  if (matches.length > 1) {
+    await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+      status: 'unknown',
+      failure_message: 'More than one carrier parcel returned for the same order_id.',
+    });
+    throw new Error('وجد Guepex أكثر من شحنة بنفس مرجع الطلب. لم يتم اختيار أي شحنة تلقائياً لتجنب ربط تتبع خاطئ.');
   }
+  if (matches.length === 0) return null;
+
+  const match = matches[0];
+  await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+    status: 'created',
+    payload_hash: payloadHash,
+    tracking_number: match.tracking,
+    label_url: match.label,
+    import_id: match.import_id,
+    failure_message: null,
+  });
+  return {
+    trackingNumber: match.tracking,
+    labelUrl: match.label,
+    importId: match.import_id,
+    reused: true,
+  };
+}
+
+/**
+ * One reservation owns the first POST. Any later attempt must first find the
+ * carrier parcel by the exact order_id. An unknown handoff is never POSTed a
+ * second time automatically.
+ */
+async function dispatchManualYalidineParcel(
+  supabase: any,
+  merchantId: string,
+  externalOrderId: string,
+  customerName: string,
+  customerPhone: string,
+  productName: string,
+  formData: FormData
+): Promise<ManualYalidineDispatchResult> {
+  const { data: integration, error: integrationError } = await supabase
+    .from('merchant_carrier_integrations')
+    .select('base_url, credentials_encrypted, api_sync_enabled')
+    .eq('merchant_id', merchantId)
+    .eq('provider', 'yalidine')
+    .maybeSingle();
+
+  if (integrationError) throw new Error('تعذّر قراءة إعدادات Yalidine / Guepex. تحقق من تحديث قاعدة البيانات.');
+  if (!integration?.api_sync_enabled || !integration?.credentials_encrypted) {
+    throw new Error('اربط Guepex API أولاً من صفحة التكاملات قبل إرسال الشحنة مباشرة.');
+  }
+
+  const encryptionKey = process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || '';
+  const credentials = decryptYalidineWebhookCredentials(
+    integration.credentials_encrypted,
+    merchantId,
+    encryptionKey
+  );
+  if (!credentials.apiId || !credentials.apiToken) {
+    throw new Error('بيانات Guepex API غير مكتملة. أعد ربط API ID و API Token من صفحة التكاملات.');
+  }
+
+  const baseUrl = integration.base_url || 'https://api.guepex.app/v1/';
+  const options = await getYalidineManualParcelOptions(baseUrl, {
+    apiId: credentials.apiId,
+    apiToken: credentials.apiToken,
+  });
+
+  const fromWilayaId = Number(formData.get('from_wilaya_id'));
+  const toWilayaId = Number(formData.get('to_wilaya_id'));
+  const toCommuneId = Number(formData.get('to_commune_id'));
+  const fromWilaya = options.wilayas.find((item) => item.id === fromWilayaId);
+  const toWilaya = options.wilayas.find((item) => item.id === toWilayaId && item.is_deliverable);
+  const toCommune = options.communes.find((item) =>
+    item.id === toCommuneId &&
+    item.wilaya_id === toWilayaId &&
+    item.is_deliverable
+  );
+  if (!fromWilaya || !toWilaya || !toCommune) {
+    throw new Error('اختر ولاية الانطلاق وولاية وبلدية مستلماً صالحة من قوائم شركة التوصيل.');
+  }
+
+  const deliveryType = String(formData.get('delivery_type') || 'home');
+  const stopDesk = deliveryType === 'stopdesk';
+  if (!['home', 'stopdesk'].includes(deliveryType)) {
+    throw new Error('نوع التوصيل المحدد غير صالح.');
+  }
+  const stopDeskId = Number(formData.get('stopdesk_id'));
+  const stopDeskCenter = stopDesk
+    ? options.centers.find((item) =>
+        item.center_id === stopDeskId &&
+        item.wilaya_id === toWilayaId &&
+        item.commune_id === toCommuneId
+      )
+    : null;
+  if (stopDesk && !stopDeskCenter) {
+    throw new Error('اختر مكتب استلام تابعاً لنفس بلدية المستلم وولايتها.');
+  }
+  if (stopDesk && !toCommune.has_stop_desk) {
+    throw new Error('لا تعرض الشركة مكتب استلام لهذه البلدية. اختر التوصيل إلى المنزل.');
+  }
+
+  const amountRaw = String(formData.get('shipment_amount') || '').trim();
+  const weightRaw = String(formData.get('shipment_weight') || '1').trim();
+  const deliveryFeePayer = String(formData.get('delivery_fee_payer') || 'receiver');
+  if (!amountRaw || !/^\d+$/.test(amountRaw)) {
+    throw new Error('أدخل مبلغ التحصيل الذي سيأخذه المندوب من العميل بالدينار.');
+  }
+  if (!['sender', 'receiver'].includes(deliveryFeePayer)) {
+    throw new Error('حدد من سيدفع رسوم التوصيل.');
+  }
+
+  const address = String(formData.get('carrier_address') || '').trim();
+  const productDescription = String(formData.get('product_description') || productName || '').trim();
+  const parcel = buildYalidineCreateParcelData({
+    orderId: externalOrderId,
+    customerName,
+    phone: customerPhone,
+    address,
+    fromWilayaName: fromWilaya.name,
+    toWilayaName: toWilaya.name,
+    toCommuneName: toCommune.name,
+    productDescription,
+    amountToCollect: Number(amountRaw),
+    weight: Number(weightRaw),
+    deliveryFeePayer: deliveryFeePayer as 'sender' | 'receiver',
+    stopDesk,
+    stopDeskId: stopDesk ? stopDeskId : null,
+  });
+  const payloadHash = createHash('sha256').update(JSON.stringify(parcel), 'utf8').digest('hex');
+
+  const { data: existingOrders, error: orderLookupError } = await supabase
+    .from('orders')
+    .select('id, carrier_name, carrier_tracking_number')
+    .eq('merchant_id', merchantId)
+    .eq('external_order_id', externalOrderId)
+    .limit(2);
+  if (orderLookupError) throw new Error('تعذّر التحقق من الطلب الموجود في تاجر تراك قبل إرسال الشحنة.');
+  if ((existingOrders || []).length > 1) {
+    throw new Error('يوجد أكثر من طلب في تاجر تراك بنفس المرجع. استخدم رقم طلب فريداً قبل إرسال الشحنة.');
+  }
+  const existingOrder = existingOrders?.[0] || null;
+  if (
+    existingOrder?.carrier_name &&
+    !['Yalidine Express', 'Guepex', 'Yalidine'].includes(existingOrder.carrier_name)
+  ) {
+    throw new Error('هذا الطلب مرتبط بشركة توصيل أخرى. لم نرسل شحنة جديدة ولم نغيّر ربطه.');
+  }
+
+  const dispatchTable = supabase.from('yalidine_manual_dispatches');
+  let reservation: any = null;
+  let ownsPost = false;
+
+  const { data: inserted, error: insertError } = await dispatchTable
+    .insert({
+      merchant_id: merchantId,
+      external_order_id: externalOrderId,
+      status: 'reserved',
+      payload_hash: payloadHash,
+      attempt_count: 1,
+      last_attempt_at: new Date().toISOString(),
+    })
+    .select('id, status, payload_hash, tracking_number, label_url, import_id, attempt_count')
+    .maybeSingle();
+
+  if (!insertError && inserted) {
+    reservation = inserted;
+    ownsPost = true;
+  } else if (insertError?.code === '23505') {
+    const { data: existingReservation, error: reservationLookupError } = await dispatchTable
+      .select('id, status, payload_hash, tracking_number, label_url, import_id, attempt_count')
+      .eq('merchant_id', merchantId)
+      .eq('external_order_id', externalOrderId)
+      .maybeSingle();
+    if (reservationLookupError || !existingReservation) {
+      throw new Error('تعذّر قراءة حجز إرسال الشحنة السابق. لا تعِد المحاولة قبل التحقق من لوحة Guepex.');
+    }
+    reservation = existingReservation;
+
+    if (reservation.status === 'created') {
+      if (reservation.payload_hash !== payloadHash) {
+        throw new Error('تم إنشاء شحنة بهذا المرجع من قبل لكن بياناتها مختلفة. لن ننشئ شحنة ثانية بنفس رقم الطلب.');
+      }
+      if (!reservation.tracking_number) {
+        throw new Error('حالة إرسال الشحنة غير مكتملة. تحقق من المرجع في لوحة Guepex قبل أي محاولة أخرى.');
+      }
+      return {
+        trackingNumber: reservation.tracking_number,
+        labelUrl: reservation.label_url || null,
+        importId: reservation.import_id ?? null,
+        reused: true,
+      };
+    }
+
+    if (reservation.status === 'rejected') {
+      const { data: claimed, error: claimError } = await dispatchTable
+        .update({
+          status: 'reserved',
+          payload_hash: payloadHash,
+          failure_message: null,
+          attempt_count: Number(reservation.attempt_count || 1) + 1,
+          last_attempt_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reservation.id)
+        .eq('merchant_id', merchantId)
+        .eq('status', 'rejected')
+        .select('id, status, payload_hash, tracking_number, label_url, import_id, attempt_count')
+        .maybeSingle();
+      if (claimError) throw new Error('تعذّر إعادة تجهيز إرسال الشحنة بعد رفضها من الشركة.');
+      if (claimed) {
+        reservation = claimed;
+        ownsPost = true;
+      } else {
+        const { data: latest } = await dispatchTable
+          .select('id, status, payload_hash, tracking_number, label_url, import_id, attempt_count')
+          .eq('merchant_id', merchantId)
+          .eq('external_order_id', externalOrderId)
+          .maybeSingle();
+        reservation = latest;
+      }
+    }
+
+    if (!ownsPost && reservation?.status === 'created') {
+      if (reservation.payload_hash !== payloadHash || !reservation.tracking_number) {
+        throw new Error('مرجع الطلب مربوط بشحنة أخرى أو ببيانات مختلفة. لن نرسل شحنة إضافية.');
+      }
+      return {
+        trackingNumber: reservation.tracking_number,
+        labelUrl: reservation.label_url || null,
+        importId: reservation.import_id ?? null,
+        reused: true,
+      };
+    }
+
+    if (!ownsPost) {
+      if (reservation?.payload_hash && reservation.payload_hash !== payloadHash) {
+        throw new Error('هناك محاولة سابقة بهذا المرجع ببيانات مختلفة. يجب تسوية نتيجة الشحنة السابقة أولاً.');
+      }
+      let matches: Awaited<ReturnType<typeof findYalidineParcelsByOrderId>> = [];
+      try {
+        matches = await findYalidineParcelsByOrderId(baseUrl, {
+          apiId: credentials.apiId,
+          apiToken: credentials.apiToken,
+        }, externalOrderId);
+      } catch {
+        await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+          status: 'unknown',
+          failure_message: 'Could not verify the previous carrier handoff.',
+        });
+        throw new Error('نتيجة المحاولة السابقة غير معروفة وتعذّر التحقق من Guepex. لن نرسل طلباً ثانياً لتجنب تكرار الشحنة.');
+      }
+      const recovered = await resolveManualYalidineDispatch(
+        supabase,
+        merchantId,
+        externalOrderId,
+        matches,
+        payloadHash
+      );
+      if (recovered) return recovered;
+      await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+        status: 'unknown',
+        failure_message: 'Previous carrier handoff has no confirmed tracking number.',
+      });
+      throw new Error('لم تؤكد Guepex نتيجة محاولة الإرسال السابقة. لم نعد إرسال الطلب تلقائياً لتجنب إنشاء شحنة مكررة. تحقق من الطلب في لوحة Guepex.');
+    }
+  } else {
+    throw new Error('تعذّر حجز إرسال الشحنة في قاعدة البيانات. تحقق من تطبيق تحديث قاعدة البيانات ثم حاول مجدداً.');
+  }
+
+  let preflightMatches: Awaited<ReturnType<typeof findYalidineParcelsByOrderId>>;
+  try {
+    preflightMatches = await findYalidineParcelsByOrderId(baseUrl, {
+      apiId: credentials.apiId,
+      apiToken: credentials.apiToken,
+    }, externalOrderId);
+  } catch (error: any) {
+    await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+      status: 'rejected',
+      failure_message: error?.message || 'Carrier lookup failed before parcel creation; no POST was sent.',
+    });
+    throw new Error('تعذّر التحقق من مرجع الطلب في Guepex قبل الإنشاء. لم نرسل الشحنة؛ تحقق من الاتصال ثم أعد المحاولة.');
+  }
+
+  if (preflightMatches.length > 1) {
+    await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+      status: 'unknown',
+      failure_message: 'More than one carrier parcel already uses this order_id.',
+    });
+    throw new Error('يوجد أكثر من طرد في Guepex بنفس مرجع الطلب. لم نرسل طرداً جديداً.');
+  }
+  if (preflightMatches.length === 1) {
+    const recovered = await resolveManualYalidineDispatch(
+      supabase,
+      merchantId,
+      externalOrderId,
+      preflightMatches,
+      payloadHash
+    );
+    if (existingOrder?.carrier_tracking_number && existingOrder.carrier_tracking_number !== recovered?.trackingNumber) {
+      throw new Error('رقم تتبع الطلب الحالي لا يطابق الشحنة التي عثرنا عليها في Guepex. راجع الطلب قبل الربط.');
+    }
+    return recovered!;
+  }
+  if (existingOrder?.carrier_tracking_number) {
+    await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+      status: 'rejected',
+      failure_message: 'The TajerTrack order already has a carrier tracking number; no POST was sent.',
+    });
+    throw new Error('هذا الطلب مرتبط مسبقاً برقم تتبع آخر. لم نرسل شحنة إضافية.');
+  }
+
+  try {
+    const created = await createYalidineParcel(baseUrl, {
+      apiId: credentials.apiId,
+      apiToken: credentials.apiToken,
+    }, parcel);
+    await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+      status: 'created',
+      tracking_number: created.tracking,
+      label_url: created.label,
+      import_id: created.import_id,
+      payload_hash: payloadHash,
+      failure_message: null,
+    });
+    return {
+      trackingNumber: created.tracking,
+      labelUrl: created.label,
+      importId: created.import_id,
+      reused: false,
+    };
+  } catch (error: any) {
+    const isDefiniteRejection = error instanceof YalidineApiError && error.kind === 'rejected';
+    if (isDefiniteRejection) {
+      await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+        status: 'rejected',
+        failure_message: error.message,
+      });
+      throw new Error(error.message);
+    }
+
+    let matches: Awaited<ReturnType<typeof findYalidineParcelsByOrderId>> = [];
+    try {
+      matches = await findYalidineParcelsByOrderId(baseUrl, {
+        apiId: credentials.apiId,
+        apiToken: credentials.apiToken,
+      }, externalOrderId);
+    } catch {
+      // Keep the reservation as unknown; an operator must resolve the carrier handoff.
+    }
+    const recovered = matches.length === 1
+      ? await resolveManualYalidineDispatch(supabase, merchantId, externalOrderId, matches, payloadHash)
+      : null;
+    if (recovered) return recovered;
+
+    await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+      status: 'unknown',
+      failure_message: error?.message || 'Carrier creation outcome is unknown.',
+    });
+    throw new Error('لم نتمكن من تأكيد نتيجة إنشاء الشحنة. لم نكرر طلب الإرسال. تحقق من لوحة Guepex باستخدام رقم الطلب ' + externalOrderId + ' قبل أي إعادة محاولة.');
+  }
+}
+
+export async function createManualOrder(formData: FormData) {
+  const authSupabase = await createClient();
+  const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+  if (authError || !user) return { error: 'انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مجدداً.' };
 
   const supabase = getSupabaseAdminClient();
+  const { data: merchant, error: merchantError } = await supabase
+    .from('merchants')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+  if (merchantError || !merchant) return { error: 'تعذّر العثور على متجر مرتبط بحسابك.' };
+  const merchantId = merchant.id;
+
+  const externalOrderId = String(formData.get('external_order_id') || '').trim();
+  const customerName = String(formData.get('customer_name') || '').trim();
+  const customerPhone = String(formData.get('customer_phone') || '').trim();
+  const productName = String(formData.get('product_name') || '').trim();
+  const carrierName = String(formData.get('carrier_name') || 'Yalidine Express').trim();
+  const suppliedTrackingNumber = String(formData.get('carrier_tracking_number') || '').trim();
+  const statusRaw = String(formData.get('status_raw') || 'order_placed').trim();
+  const dispatchRequested = formData.get('send_to_yalidine') === 'on' && !suppliedTrackingNumber;
+  const isYalidine = ['Yalidine Express', 'Yalidine', 'Guepex'].includes(carrierName);
+
+  if (!externalOrderId) return { error: 'يرجى إدخال رقم طلب فريد قبل حفظ الطلب.' };
+  if (externalOrderId.length > 100) return { error: 'رقم الطلب يجب ألا يتجاوز 100 حرف.' };
+  if (!customerName) return { error: 'يرجى إدخال اسم العميل.' };
+  if (!customerPhone) return { error: 'يرجى إدخال رقم هاتف العميل.' };
+  if (dispatchRequested && !isYalidine) return { error: 'الإرسال المباشر متاح حالياً مع Yalidine / Guepex فقط.' };
+
+  let dispatch: ManualYalidineDispatchResult | null = null;
+  let carrierTrackingNumber = suppliedTrackingNumber;
+  if (dispatchRequested) {
+    try {
+      dispatch = await dispatchManualYalidineParcel(
+        supabase,
+        merchantId,
+        externalOrderId,
+        customerName,
+        customerPhone,
+        productName,
+        formData
+      );
+      carrierTrackingNumber = dispatch.trackingNumber;
+    } catch (error: any) {
+      return { error: error?.message || 'تعذّر إرسال الشحنة إلى Yalidine / Guepex.' };
+    }
+  }
 
   const orchestrator = new TrackingOrchestrator();
   const result = await orchestrator.processEvent({
     merchantId,
-    sourceProvider: 'manual',
+    sourceProvider: isYalidine ? 'yalidine' : 'manual',
     externalOrderId,
     customerName: customerName || undefined,
     customerPhone: customerPhone || undefined,
     productName: productName || undefined,
-    carrierName: carrierName || undefined,
+    carrierName: isYalidine ? 'Yalidine Express' : carrierName || undefined,
     carrierTrackingNumber: carrierTrackingNumber || undefined,
-    statusRaw,
-    description: 'تم تسجيل الطلب يدوياً من لوحة التاجر',
+    carrierMetadata: dispatch ? {
+      yalidine_manual_dispatch: true,
+      yalidine_import_id: dispatch.importId,
+      yalidine_label_url: dispatch.labelUrl,
+      yalidine_manual_dispatch_reused: dispatch.reused,
+      yalidine_delivery_type: String(formData.get('delivery_type') || 'home'),
+    } : undefined,
+    statusRaw: dispatch ? 'processing' : statusRaw,
+    description: dispatch
+      ? (dispatch.reused
+          ? 'تم ربط الشحنة الموجودة في حساب Yalidine / Guepex بطلبك في تاجر تراك.'
+          : 'تم إنشاء الشحنة مباشرة في حساب Yalidine / Guepex من تاجر تراك.')
+      : 'تم تسجيل الطلب يدوياً من لوحة التاجر',
   });
 
   if (!result.success) {
-  return { error: result.message || 'حدث خطأ أثناء إضافة الطلب' };
-}
+    const suffix = dispatch
+      ? ' الشحنة مؤكدة في حساب شركة التوصيل ورقم تتبعها ' + dispatch.trackingNumber + '. أعد حفظ نفس رقم الطلب لإكمال ربطها في تاجر تراك دون إنشاء شحنة ثانية.'
+      : '';
+    return { error: (result.message || 'حدث خطأ أثناء إضافة الطلب') + suffix };
+  }
 
   if (result.message === 'exchange_replacement_linked' || result.message === 'exchange_replacement_needs_confirmation') {
     revalidatePath('/merchant');
@@ -853,6 +1298,10 @@ export async function createManualOrder(formData: FormData) {
       externalOrderId,
       exchangeReplacement: true,
       exchangeReplacementNeedsConfirmation: result.message === 'exchange_replacement_needs_confirmation',
+      carrierTrackingNumber: dispatch?.trackingNumber || suppliedTrackingNumber || '',
+      carrierLabelUrl: dispatch?.labelUrl || '',
+      carrierShipmentCreated: Boolean(dispatch),
+      carrierShipmentReused: Boolean(dispatch?.reused),
       confirmationQueued: false,
       confirmationQueueError: false,
       telegramTrackingQueued: false,
@@ -860,14 +1309,25 @@ export async function createManualOrder(formData: FormData) {
     };
   }
 
-  if (!result.isNewOrder || !result.orderId) {
-    return {
-      error: 'هذا الطلب موجود بالفعل ولم يتم إنشاء طلب جديد.',
-    };
+  if (!result.orderId) {
+    const suffix = dispatch
+      ? ' الشحنة موجودة لدى شركة التوصيل برقم ' + dispatch.trackingNumber + '. أعد المحاولة بنفس المرجع؛ لن يتم إرسال نسخة ثانية.'
+      : '';
+    return { error: (result.message || 'تعذّر حفظ الطلب في تاجر تراك.') + suffix };
   }
 
-  // Read the insert-trigger result instead of guessing from UI state.
-  // An outbox row exists only when the merchant enabled Telegram tracking.
+  let trackingNotificationQueueError = false;
+  if (isYalidine && carrierTrackingNumber) {
+    const { error: notificationError } = await supabase.rpc('enqueue_yalidine_tracking_notifications', {
+      p_merchant_id: merchantId,
+      p_order_id: result.orderId,
+    });
+    if (notificationError) {
+      trackingNotificationQueueError = true;
+      console.warn('[ManualYalidineNotifications]: Could not enqueue tracking notifications:', notificationError.message);
+    }
+  }
+
   const { data: telegramTrackingJob, error: telegramTrackingQueueLookupError } = await supabase
     .from('telegram_tracking_outbox')
     .select('id')
@@ -878,37 +1338,40 @@ export async function createManualOrder(formData: FormData) {
     console.warn('[ManualOrderTelegram]: Could not verify tracking-link queue job:', telegramTrackingQueueLookupError.message);
   }
 
-  // Queue confirmation and mark the customer-confirmation stage without changing carrier status.
   let confirmationQueued = false;
   let confirmationQueueError = false;
-
-  try {
-    const confirmationResult = await enqueueOrderConfirmationForNewOrder({
-      merchantId,
-      orderId: result.orderId,
-      customerPhone,
-    });
-    confirmationQueued = confirmationResult.queued;
-  } catch (confirmErr: any) {
-    // The order was already created; do not report creation failure or encourage duplicate retries.
-    confirmationQueueError = true;
-    console.error(
-      '[ManualOrderConfirmEnqueue]: Failed to enqueue confirmation job:',
-      confirmErr?.message || confirmErr
-    );
+  if (result.isNewOrder) {
+    try {
+      const confirmationResult = await enqueueOrderConfirmationForNewOrder({
+        merchantId,
+        orderId: result.orderId,
+        customerPhone,
+      });
+      confirmationQueued = confirmationResult.queued;
+    } catch (confirmErr: any) {
+      confirmationQueueError = true;
+      console.error(
+        '[ManualOrderConfirmEnqueue]: Failed to enqueue confirmation job:',
+        confirmErr?.message || confirmErr
+      );
+    }
   }
 
   revalidatePath('/merchant');
   return {
     success: true,
-    trackingUuid: result.trackingUuid,
+    trackingUuid: result.trackingUuid || '',
     externalOrderId,
     exchangeReplacement: false,
     exchangeReplacementNeedsConfirmation: false,
+    carrierTrackingNumber: dispatch?.trackingNumber || suppliedTrackingNumber || '',
+    carrierLabelUrl: dispatch?.labelUrl || '',
+    carrierShipmentCreated: Boolean(dispatch),
+    carrierShipmentReused: Boolean(dispatch?.reused),
     confirmationQueued,
     confirmationQueueError,
     telegramTrackingQueued: Boolean(telegramTrackingJob),
-    telegramTrackingQueueCheckFailed: Boolean(telegramTrackingQueueLookupError),
+    telegramTrackingQueueCheckFailed: Boolean(telegramTrackingQueueLookupError || trackingNotificationQueueError),
   };
 }
 
