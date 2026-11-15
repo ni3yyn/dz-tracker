@@ -10,6 +10,7 @@ import {
   getGuepexSyncCursor,
   createGuepexApiEnrichmentEvent,
   createGuepexApiEvent,
+  mergeGuepexApiParcelIntoWebhookData,
   normalizeGuepexParcel,
   normalizeGuepexParcelList,
 } from '../yalidine-webhook-worker.js';
@@ -98,6 +99,44 @@ test('looks up existing TajerTrack orders in one Guepex request by their origina
   assert.equal(fields.includes('address'), false);
   assert.equal(fields.includes('qr_text'), false);
   assert.equal(fields.includes('pin'), false);
+});
+
+test('never overwrites full customer identity received in a signed webhook with masked GET fields', () => {
+  const webhookData = {
+    tracking: 'yal-123456',
+    order_id: 'STORE-ORDER-123',
+    firstname: 'Brahim',
+    familyname: 'Mohamed',
+    contact_phone: '0550123456',
+    customer_name: 'Brahim Mohamed',
+    customer_phone: '0550123456',
+  };
+  const merged = mergeGuepexApiParcelIntoWebhookData(
+    webhookData,
+    baseParcel,
+    'yal-123456'
+  );
+
+  assert.equal(merged.firstname, 'Brahim');
+  assert.equal(merged.familyname, 'Mohamed');
+  assert.equal(merged.contact_phone, '0550123456');
+  assert.equal(merged.customer_name, 'Brahim Mohamed');
+  assert.equal(merged.customer_phone, '0550123456');
+  assert.equal(merged.product_list, 'Machine à café');
+  assert.equal(merged.__guepex_api_lookup, true);
+  assert.equal(merged.__guepex_api_lookup_version, 3);
+});
+
+test('fills omitted webhook identity with Guepex masked fragments without turning them into a real phone', () => {
+  const merged = mergeGuepexApiParcelIntoWebhookData(
+    { tracking: 'yal-123456', order_id: 'STORE-ORDER-123' },
+    baseParcel,
+    'yal-123456'
+  );
+
+  assert.equal(merged.firstname, 'M*****d');
+  assert.equal(merged.familyname, 'E* A****');
+  assert.equal(merged.contact_phone, '0********9');
 });
 
 test('normalizes single-parcel API response shapes and preserves the requested tracking fallback', () => {
