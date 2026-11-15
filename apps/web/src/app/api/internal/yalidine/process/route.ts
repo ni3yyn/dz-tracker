@@ -36,7 +36,110 @@ function isRedactedValue(value: unknown): boolean {
 }
 
 function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, '\\function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, '\\$&');
+}
+');
+}
+
+async function applyPendingCompanionCapture(
+  supabase: any,
+  merchantId: string,
+  orderId: string,
+  externalOrderId: string | null | undefined
+): Promise<{ applied: boolean; reason?: string }> {
+  const reference = String(externalOrderId || '').trim();
+  if (!reference) return { applied: false, reason: 'missing_order_reference' };
+
+  const now = new Date().toISOString();
+  const { data: captures, error: captureLookupError } = await supabase
+    .from('yalidine_companion_captures')
+    .select('id, customer_name, customer_phone, product_name, captured_at, received_at')
+    .eq('merchant_id', merchantId)
+    .eq('external_order_id', reference)
+    .gt('expires_at', now)
+    .order('received_at', { ascending: false })
+    .limit(1);
+
+  if (captureLookupError) {
+    throw new Error('Could not load the pending TajerTrack Companion identity capture.');
+  }
+  const capture = captures?.[0];
+  if (!capture) return { applied: false, reason: 'no_pending_capture' };
+
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('id, customer_name, customer_phone, product_name, carrier_name, carrier_metadata')
+    .eq('id', orderId)
+    .eq('merchant_id', merchantId)
+    .maybeSingle();
+
+  if (orderError || !order) {
+    throw new Error('Could not resolve the TajerTrack order for its Companion capture.');
+  }
+
+  if (
+    order.carrier_name &&
+    !['Yalidine Express', 'Guepex', 'Yalidine'].includes(order.carrier_name)
+  ) {
+    await supabase
+      .from('yalidine_companion_captures')
+      .delete()
+      .eq('id', capture.id)
+      .eq('merchant_id', merchantId);
+    return { applied: false, reason: 'order_linked_to_another_carrier' };
+  }
+
+  const updates: Record<string, unknown> = {};
+  const captureName = typeof capture.customer_name === 'string' && !isRedactedValue(capture.customer_name)
+    ? capture.customer_name.trim()
+    : '';
+  const capturePhone = typeof capture.customer_phone === 'string' &&
+    !isRedactedValue(capture.customer_phone) &&
+    capture.customer_phone.replace(/\\D/g, '').length >= 8
+    ? capture.customer_phone.trim()
+    : '';
+
+  if (captureName && (!order.customer_name || isRedactedValue(order.customer_name))) {
+    updates.customer_name = captureName;
+  }
+  if (capturePhone && (!order.customer_phone || isRedactedValue(order.customer_phone))) {
+    updates.customer_phone = capturePhone;
+  }
+  if (capture.product_name && !String(order.product_name || '').trim()) {
+    updates.product_name = capture.product_name;
+  }
+
+  const existingMetadata = order.carrier_metadata && typeof order.carrier_metadata === 'object' && !Array.isArray(order.carrier_metadata)
+    ? order.carrier_metadata
+    : {};
+  updates.carrier_metadata = {
+    ...existingMetadata,
+    yalidine_companion_captured_at: capture.captured_at || capture.received_at,
+    yalidine_companion_identity_source: 'browser_parcel_creation',
+  };
+
+  const { error: updateError } = await supabase
+    .from('orders')
+    .update({ ...updates, updated_at: now })
+    .eq('id', orderId)
+    .eq('merchant_id', merchantId);
+  if (updateError) {
+    throw new Error('Could not apply the Companion capture to its TajerTrack order.');
+  }
+
+  // The capture contains personal data and is only a short-lived staging record.
+  // Delete it once it has been applied or the existing customer identity is already complete.
+  const { error: deleteError } = await supabase
+    .from('yalidine_companion_captures')
+    .delete()
+    .eq('id', capture.id)
+    .eq('merchant_id', merchantId);
+  if (deleteError) {
+    throw new Error('Could not clear the applied Companion capture.');
+  }
+
+  return { applied: true };
 }
 
 async function enqueueTrackingLinkNotifications(
@@ -243,6 +346,15 @@ async function processYalidineParcelEdit(
       ' from Guepex (name=' + nameResolution + ', phone=' + phoneResolution + ').'
     );
   }
+
+  // A browser capture may arrive before the API/webhook creates the matching order.
+  // Match strictly by this merchant's original order_id; never guess from names or phone numbers.
+  await applyPendingCompanionCapture(
+    supabase,
+    merchantId,
+    order.id,
+    normalized.externalOrderId
+  );
 
   // The notification RPC is idempotent; it recovers missed tracking-link jobs
   // without resending messages that were already sent or have an ambiguous outcome.
@@ -479,6 +591,19 @@ export async function POST(req: Request) {
         );
       } catch (error: any) {
         console.warn('[YalidineProcessor]: Post-create API detail enrichment failed:', error?.message || error);
+      }
+    }
+
+    if (result.orderId) {
+      try {
+        await applyPendingCompanionCapture(
+          supabase as any,
+          job.merchant_id,
+          result.orderId,
+          event.externalOrderId
+        );
+      } catch (error: any) {
+        console.warn('[YalidineProcessor]: Companion identity enrichment failed:', error?.message || error);
       }
     }
 

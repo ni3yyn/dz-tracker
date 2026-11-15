@@ -3,14 +3,24 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import {
+  completeYalidineCompanionPairing,
+  createYalidineCompanionPairingChallenge,
   disconnectYalidineWebhook,
+  getYalidineCompanionStatus,
   getYalidineWebhookStatus,
+  recordYalidineCompanionHeartbeat,
   prepareYalidineWebhookEndpoint,
   requestYalidineApiSync,
   saveYalidineApiCredentials,
   saveYalidineWebhookSecret,
   setYalidineWebhookTestMode,
 } from './yalidine-actions';
+import {
+  activateCompanionPairing,
+  getCompanionPresence,
+  signCompanionPairing,
+  signCompanionProof,
+} from '../../../lib/yalidine-companion-client';
 
 type Status = {
   prepared: boolean;
@@ -60,6 +70,72 @@ export function YalidineConnectionPanel() {
   const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState('');
   const [messageIsError, setMessageIsError] = useState(false);
+  const [companion, setCompanion] = useState<{ installed: boolean; paired: boolean; installationId: string | null; version: string | null; note: string }>({ installed: false, paired: false, installationId: null, version: null, note: '' });
+  const [checkingCompanion, setCheckingCompanion] = useState(true);
+  const [pairingCompanion, setPairingCompanion] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function inspectCompanion() {
+      setCheckingCompanion(true);
+      try {
+        const presence = await getCompanionPresence();
+        if (!active) return;
+        if (!presence?.installationId) {
+          setCompanion({ installed: false, paired: false, installationId: null, version: null, note: '' });
+          return;
+        }
+
+        const serverState = await getYalidineCompanionStatus(presence.installationId);
+        if (!active) return;
+        if (!serverState.success) {
+          setCompanion({
+            installed: true,
+            paired: false,
+            installationId: presence.installationId,
+            version: presence.version || null,
+            note: serverState.error || 'تعذر التحقق من ربط الإضافة.',
+          });
+          return;
+        }
+
+        if (!serverState.paired) {
+          setCompanion({
+            installed: true,
+            paired: false,
+            installationId: presence.installationId,
+            version: presence.version || null,
+            note: 'الإضافة مثبتة، لكنها غير مربوطة بهذا المتجر.',
+          });
+          return;
+        }
+
+        const proof = await signCompanionProof('status');
+        const heartbeat = await recordYalidineCompanionHeartbeat(proof);
+        if (!active) return;
+        setCompanion({
+          installed: true,
+          paired: Boolean(heartbeat.success && heartbeat.installationId === presence.installationId),
+          installationId: presence.installationId,
+          version: presence.version || serverState.version || null,
+          note: heartbeat.success ? 'تم التحقق من الإضافة وتوقيعها بنجاح.' : (heartbeat.error || 'تعذر التحقق من توقيع الإضافة.'),
+        });
+      } catch (error: any) {
+        if (!active) return;
+        setCompanion({
+          installed: false,
+          paired: false,
+          installationId: null,
+          version: null,
+          note: error?.message || 'لم يتم العثور على إضافة TajerTrack Companion.',
+        });
+      } finally {
+        if (active) setCheckingCompanion(false);
+      }
+    }
+    void inspectCompanion();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -137,6 +213,68 @@ export function YalidineConnectionPanel() {
     };
   }, [activeRefreshRequestedAt]);
 
+  async function handlePairCompanion() {
+    setPairingCompanion(true);
+    setMessage('');
+    setMessageIsError(false);
+    try {
+      const presence = await getCompanionPresence();
+      if (!presence?.installationId) throw new Error('لم يتم العثور على إضافة TajerTrack Companion.');
+      const challengeResult = await createYalidineCompanionPairingChallenge();
+      if (!challengeResult.success || !challengeResult.challenge || !challengeResult.merchantId) {
+        throw new Error(challengeResult.error || 'تعذر إنشاء طلب ربط الإضافة.');
+      }
+
+      const signed = await signCompanionPairing(challengeResult.challenge, challengeResult.merchantId);
+      if (signed.installationId !== presence.installationId) {
+        throw new Error('تغيّر تثبيت الإضافة أثناء عملية الربط. أعد المحاولة.');
+      }
+      const completed = await completeYalidineCompanionPairing({
+        installationId: signed.installationId,
+        publicKey: signed.publicKey,
+        signature: signed.signature,
+        challenge: challengeResult.challenge,
+        version: signed.version,
+      });
+      if (!completed.success) throw new Error(completed.error || 'تعذر إكمال ربط الإضافة.');
+
+      const activated = await activateCompanionPairing(challengeResult.merchantId);
+      if (!activated?.success) throw new Error('تم حفظ الربط، لكن تعذر تفعيل الإضافة. أعد تحميل الصفحة وتحقق من حالتها.');
+
+      const proof = await signCompanionProof('status');
+      const heartbeat = await recordYalidineCompanionHeartbeat(proof);
+      if (!heartbeat.success) throw new Error(heartbeat.error || 'تم الربط لكن فشل التحقق الأخير من الإضافة.');
+
+      setCompanion({
+        installed: true,
+        paired: true,
+        installationId: signed.installationId,
+        version: signed.version || null,
+        note: 'الإضافة مثبتة ومربوطة بهذا المتجر.',
+      });
+      setMessage('تم ربط TajerTrack Companion بنجاح. يمكنك الآن ربط Guepex API وWebhook.');
+      setMessageIsError(false);
+    } catch (error: any) {
+      setCompanion((current) => ({ ...current, paired: false, note: error?.message || 'تعذر ربط الإضافة.' }));
+      setMessage(error?.message || 'تعذر ربط إضافة TajerTrack Companion.');
+      setMessageIsError(true);
+    } finally {
+      setPairingCompanion(false);
+    }
+  }
+
+  async function getVerifiedCompanionProof(purpose: string) {
+    if (!companion.installed || !companion.paired) {
+      throw new Error('ثبّت إضافة TajerTrack Companion واربطها بهذا المتجر أولاً.');
+    }
+    const proof = await signCompanionProof(purpose);
+    if (proof.installationId !== companion.installationId) {
+      setCompanion((current) => ({ ...current, paired: false, note: 'تغيّر تثبيت الإضافة. أعد التحقق والربط.' }));
+      throw new Error('تثبيت الإضافة الحالي لا يطابق التثبيت المربوط. أعد التحقق من الإضافة.');
+    }
+    return proof;
+  }
+
   async function handleRefreshApi() {
     if (!status.apiConnected || syncingApi) return;
     setSyncingApi(true);
@@ -167,11 +305,13 @@ export function YalidineConnectionPanel() {
   }
 
   async function handlePrepare() {
+    if (!companion.paired) { setMessage('ثبّت إضافة TajerTrack Companion واربطها أولاً.'); setMessageIsError(true); return; }
     setPreparing(true);
     setMessage('');
     setMessageIsError(false);
     try {
-      const result = await prepareYalidineWebhookEndpoint();
+      const proof = await getVerifiedCompanionProof('prepare-webhook');
+      const result = await prepareYalidineWebhookEndpoint(proof);
       if (!result.success || !result.endpointUrl) {
         setMessage(result.error || 'تعذر إنشاء رابط الاستقبال.');
         setMessageIsError(true);
@@ -200,7 +340,8 @@ export function YalidineConnectionPanel() {
     setMessage('');
     setMessageIsError(false);
     try {
-      const result = await saveYalidineApiCredentials(apiId, apiToken);
+      const proof = await getVerifiedCompanionProof('save-api');
+      const result = await saveYalidineApiCredentials(apiId, apiToken, proof);
       if (!result.success || !result.status) {
         setMessage(result.error || 'تعذر ربط حساب Guepex API.');
         setMessageIsError(true);
@@ -227,7 +368,8 @@ export function YalidineConnectionPanel() {
     setMessage('');
     setMessageIsError(false);
     try {
-      const result = await saveYalidineWebhookSecret(secret);
+      const proof = await getVerifiedCompanionProof('save-webhook');
+      const result = await saveYalidineWebhookSecret(secret, proof);
       if (!result.success || !result.status) {
         setMessage(result.error || 'تعذر حفظ مفتاح التوقيع.');
         setMessageIsError(true);
@@ -320,6 +462,42 @@ export function YalidineConnectionPanel() {
         <p className="dz-int-guided-note">جارٍ تحميل حالة الربط...</p>
       ) : (
         <>
+          <section style={{ margin: '0 0 18px', padding: '14px 0', borderTop: '1px solid var(--border-soft, #e5e7eb)', borderBottom: '1px solid var(--border-soft, #e5e7eb)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <div>
+                <strong style={{ display: 'block', marginBottom: 4 }}>إضافة TajerTrack Companion</strong>
+                <span className="dz-int-guided-note" style={{ fontSize: 13, margin: 0 }}>
+                  {checkingCompanion ? 'جارٍ التحقق من الإضافة...' : companion.paired ? 'مثبتة ومربوطة بهذا المتجر' : companion.installed ? 'الإضافة مثبتة — يلزم ربطها بهذا المتجر' : 'يجب تثبيت الإضافة وربطها قبل إدخال بيانات API أو إعداد Webhook'}
+                </span>
+                {companion.version && <span className="dz-int-guided-note" style={{ display: 'block', fontSize: 12, marginTop: 4 }} dir="ltr">Version {companion.version}</span>}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" className="dz-support-copy" disabled={checkingCompanion || pairingCompanion} onClick={() => window.location.reload()}>
+                  إعادة التحقق
+                </button>
+                {!companion.installed && (
+                  <a className="dz-btn" href="/downloads/tajertrack-companion.zip" download="tajertrack-companion.zip">
+                    تنزيل الإضافة
+                  </a>
+                )}
+                {companion.installed && !companion.paired && (
+                  <button type="button" className="dz-btn" disabled={checkingCompanion || pairingCompanion} onClick={handlePairCompanion}>
+                    {pairingCompanion ? 'جارٍ ربط الإضافة...' : 'ربط الإضافة بهذا المتجر'}
+                  </button>
+                )}
+              </div>
+            </div>
+            {!companion.installed && !checkingCompanion && (
+              <ol className="dz-int-guided-steps" style={{ marginTop: 12 }}>
+                <li>نزّل الملف وفك ضغطه في مجلد على جهازك.</li>
+                <li>افتح <code dir="ltr">chrome://extensions</code> أو <code dir="ltr">edge://extensions</code> وفعّل <strong>Developer mode</strong>.</li>
+                <li>اضغط <strong>Load unpacked</strong> واختر المجلد الذي يحتوي على <code dir="ltr">manifest.json</code>.</li>
+                <li>ارجع إلى هذه الصفحة واضغط «إعادة التحقق»، ثم اربط الإضافة بالمتجر.</li>
+              </ol>
+            )}
+            {companion.note && <p className="dz-int-guided-note" role="status" style={{ fontSize: 13, margin: '8px 0 0' }}>{companion.note}</p>}
+          </section>
+
           <div className="dz-int-guided-meta">
             <span>حالة حساب Guepex API</span>
             <strong>{status.apiConnected ? 'متصل — المزامنة التلقائية مفعّلة' : 'لم يتم ربط API ID و API Token'}</strong>
@@ -382,6 +560,7 @@ export function YalidineConnectionPanel() {
                 className="input"
                 type="password"
                 required
+                disabled={!companion.paired || saving}
                 maxLength={128}
                 value={apiId}
                 onChange={(event) => setApiId(event.target.value)}
@@ -396,6 +575,7 @@ export function YalidineConnectionPanel() {
                 className="input"
                 type="password"
                 required
+                disabled={!companion.paired || saving}
                 maxLength={512}
                 value={apiToken}
                 onChange={(event) => setApiToken(event.target.value)}
@@ -404,7 +584,7 @@ export function YalidineConnectionPanel() {
                 autoComplete="new-password"
               />
             </label>
-            <button type="submit" className="dz-btn" disabled={saving || !apiId.trim() || !apiToken.trim()}>
+            <button type="submit" className="dz-btn" disabled={!companion.paired || saving || !apiId.trim() || !apiToken.trim()}>
               {saving ? 'جارٍ التحقق والحفظ...' : status.apiConnected ? 'تحديث بيانات API' : 'التحقق وربط Guepex API'}
             </button>
             <p className="dz-int-guided-note" style={{ fontSize: '13px', lineHeight: 1.8 }}>
@@ -413,7 +593,7 @@ export function YalidineConnectionPanel() {
           </form>
 
           {!status.prepared ? (
-            <button type="button" className="dz-btn" disabled={preparing} onClick={handlePrepare}>
+            <button type="button" className="dz-btn" disabled={!companion.paired || checkingCompanion || preparing} onClick={handlePrepare}>
               {preparing ? 'جارٍ تجهيز الرابط...' : 'إنشاء رابط الاستقبال'}
             </button>
           ) : (
@@ -456,6 +636,7 @@ export function YalidineConnectionPanel() {
                     className="input"
                     type="password"
                     required
+                    disabled={!companion.paired || saving}
                     maxLength={512}
                     value={secret}
                     onChange={(event) => setSecret(event.target.value)}
@@ -464,7 +645,7 @@ export function YalidineConnectionPanel() {
                     autoComplete="new-password"
                   />
                 </label>
-                <button type="submit" className="dz-btn" disabled={saving || !secret.trim()}>
+                <button type="submit" className="dz-btn" disabled={!companion.paired || saving || !secret.trim()}>
                   {saving ? 'جارٍ حفظ المفتاح...' : status.connected ? 'تحديث مفتاح التوقيع' : 'حفظ مفتاح التوقيع'}
                 </button>
               </form>
