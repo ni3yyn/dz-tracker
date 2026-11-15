@@ -491,7 +491,7 @@ export class YalidineWebhookWorker {
           ...metadata,
           yalidine_api_details_checked_at: now,
           yalidine_api_details_result: outcome,
-          yalidine_api_details_version: 2,
+          yalidine_api_details_version: 3,
         },
         updated_at: now,
       })
