@@ -8,6 +8,7 @@
   "permissions": ["storage", "webRequest"],
   "host_permissions": [
     "https://api.guepex.app/*",
+    "https://guepex.app/*",
     "https://*.guepex.app/*",
     "https://api.yalidine.app/*",
     "https://*.yalidine.app/*",
