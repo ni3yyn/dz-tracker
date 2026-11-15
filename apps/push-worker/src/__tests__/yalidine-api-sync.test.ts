@@ -112,6 +112,7 @@ test('classifies an existing tracked parcel with a newer provider timestamp as a
   assert.equal(row?.merchant_id, 'merchant-1');
   assert.equal((row?.payload as any).data.tracking, 'yal-123456');
   assert.equal((row?.payload as any).data.status, 'En transit');
+  assert.equal((row?.payload as any).data.__guepex_api_lookup, true);
   assert.equal(row?.occurred_at, '2026-11-15T09:00:00.000Z');
 });
 
