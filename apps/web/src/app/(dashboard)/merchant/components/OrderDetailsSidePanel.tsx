@@ -136,7 +136,12 @@ export const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSid
                 </div>
                 <div className="dz-order-detail-fields">
                   <OrderDetailField label="اسم العميل">{selectedOrder.customer_name || 'غير متوفر'}</OrderDetailField>
-                  <OrderDetailField label="رقم الهاتف" dir="ltr">{selectedOrder.customer_phone || 'غير متوفر'}</OrderDetailField>
+                  <OrderDetailField
+                    label={!selectedOrder.customer_phone && selectedOrder.carrier_metadata?.yalidine_masked_contact_phone ? 'رقم الهاتف (محجوب من Guepex)' : 'رقم الهاتف'}
+                    dir="ltr"
+                  >
+                    {selectedOrder.customer_phone || selectedOrder.carrier_metadata?.yalidine_masked_contact_phone || 'غير متوفر'}
+                  </OrderDetailField>
                   <OrderDetailField label="اسم الطرد / المنتجات">{selectedOrder.product_name || 'غير متوفر'}</OrderDetailField>
                   <OrderDetailField label="شركة الشحن">{selectedOrder.carrier_name || 'غير محددة'}</OrderDetailField>
                   <OrderDetailField label="رقم التتبع">{selectedOrder.carrier_tracking_number || 'غير متوفر'}</OrderDetailField>
