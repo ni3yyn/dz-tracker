@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import {
   disconnectYalidineWebhook,
   getYalidineWebhookStatus,
   prepareYalidineWebhookEndpoint,
+  requestYalidineApiSync,
   saveYalidineApiCredentials,
   saveYalidineWebhookSecret,
   setYalidineWebhookTestMode,
@@ -16,6 +18,7 @@ type Status = {
   apiConnected: boolean;
   lastApiSyncAt: string | null;
   apiLastError: string | null;
+  apiSyncRequestedAt: string | null;
   endpointUrl: string | null;
   connectedAt: string | null;
   lastWebhookReceivedAt: string | null;
@@ -30,6 +33,7 @@ const emptyStatus: Status = {
   apiConnected: false,
   lastApiSyncAt: null,
   apiLastError: null,
+  apiSyncRequestedAt: null,
   endpointUrl: null,
   connectedAt: null,
   lastWebhookReceivedAt: null,
@@ -51,6 +55,7 @@ export function YalidineConnectionPanel() {
   const [preparing, setPreparing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [syncingApi, setSyncingApi] = useState(false);
   const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState('');
   const [messageIsError, setMessageIsError] = useState(false);
@@ -75,6 +80,68 @@ export function YalidineConnectionPanel() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!status.apiSyncRequestedAt) {
+      if (syncingApi) {
+        setSyncingApi(false);
+        if (status.apiLastError) {
+          setMessage('فشلت مزامنة Guepex: ' + status.apiLastError);
+          setMessageIsError(true);
+        } else {
+          setMessage('اكتملت مزامنة Guepex API بنجاح.');
+          setMessageIsError(false);
+        }
+      }
+      return;
+    }
+
+    setSyncingApi(true);
+    let active = true;
+    const refreshStatus = async () => {
+      try {
+        const result = await getYalidineWebhookStatus();
+        if (active && result.success) setStatus(result.status);
+      } catch {
+        // Keep showing the pending state; the next poll will retry.
+      }
+    };
+
+    void refreshStatus();
+    const timer = window.setInterval(() => { void refreshStatus(); }, 3000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [status.apiSyncRequestedAt]);
+
+  async function handleRefreshApi() {
+    if (!status.apiConnected || syncingApi) return;
+    setSyncingApi(true);
+    setMessage('');
+    setMessageIsError(false);
+
+    try {
+      const result = await requestYalidineApiSync();
+      if (!result.success || !result.requestedAt) {
+        setSyncingApi(false);
+        setMessage(result.error || 'تعذر طلب تحديث Guepex.');
+        setMessageIsError(true);
+        return;
+      }
+
+      setStatus((current) => ({
+        ...current,
+        apiSyncRequestedAt: result.requestedAt!,
+        apiLastError: null,
+      }));
+      setMessage('تم إرسال طلب تحديث الطرود. ستظهر النتيجة هنا تلقائياً بعد انتهاء المزامنة.');
+    } catch {
+      setSyncingApi(false);
+      setMessage('تعذر طلب تحديث Guepex. تحقق من الاتصال وحاول مجدداً.');
+      setMessageIsError(true);
+    }
+  }
 
   async function handlePrepare() {
     setPreparing(true);
@@ -255,6 +322,26 @@ export function YalidineConnectionPanel() {
               </>
             )}
           </div>
+
+          {status.apiConnected && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', margin: '12px 0 16px' }}>
+              <button
+                type="button"
+                className="dz-btn"
+                disabled={syncingApi || Boolean(status.apiSyncRequestedAt)}
+                onClick={handleRefreshApi}
+                aria-live="polite"
+              >
+                <RefreshCw size={16} aria-hidden="true" style={{ marginInlineEnd: 7, verticalAlign: 'middle' }} />
+                {syncingApi || status.apiSyncRequestedAt ? 'جارٍ تحديث الطرود...' : 'تحديث الطرود الآن'}
+              </button>
+              {status.apiSyncRequestedAt && (
+                <span className="dz-int-guided-note" role="status" style={{ fontSize: 13, margin: 0 }}>
+                  طلب التحديث قيد المعالجة بواسطة العامل
+                </span>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handleSaveApi} style={{ display: 'grid', gap: '10px', margin: '14px 0 20px' }}>
             <div>
