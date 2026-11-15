@@ -142,6 +142,10 @@ export async function POST(req: Request) {
   }
 
   const supabase = getSupabaseAdminClient();
+  await (supabase as any)
+    .from('yalidine_companion_captures')
+    .delete()
+    .lt('expires_at', new Date().toISOString());
   const { data: device, error: deviceError } = await (supabase as any)
     .from('merchant_companion_devices')
     .select('merchant_id, installation_id, public_key')

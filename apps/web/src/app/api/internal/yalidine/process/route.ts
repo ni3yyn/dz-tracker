@@ -52,20 +52,30 @@ async function applyPendingCompanionCapture(
   if (!reference) return { applied: false, reason: 'missing_order_reference' };
 
   const now = new Date().toISOString();
-  const { data: captures, error: captureLookupError } = await supabase
+  const { error: captureCleanupError } = await supabase
+    .from('yalidine_companion_captures')
+    .delete()
+    .lt('expires_at', now)
+    .eq('merchant_id', merchantId);
+  if (captureCleanupError) {
+    throw new Error('Could not clean expired TajerTrack Companion identity captures.');
+  }
+
+  const { data: pendingCaptures, error: pendingLookupError } = await supabase
     .from('yalidine_companion_captures')
     .select('id, customer_name, customer_phone, product_name, captured_at, received_at')
     .eq('merchant_id', merchantId)
     .eq('external_order_id', reference)
     .gt('expires_at', now)
     .order('received_at', { ascending: false })
-    .limit(1);
+    .limit(2);
 
-  if (captureLookupError) {
+  if (pendingLookupError) {
     throw new Error('Could not load the pending TajerTrack Companion identity capture.');
   }
-  const capture = captures?.[0];
-  if (!capture) return { applied: false, reason: 'no_pending_capture' };
+  if (!pendingCaptures?.length) return { applied: false, reason: 'no_pending_capture' };
+  if (pendingCaptures.length !== 1) return { applied: false, reason: 'ambiguous_pending_captures' };
+  const capture = pendingCaptures[0];
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
