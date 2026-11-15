@@ -267,7 +267,17 @@ export class TrackingOrchestrator {
           const incomingNameIsRedacted =
             (event.sourceProvider === 'yalidine' || event.sourceProvider === 'guepex') &&
             Boolean(event.customerName && /\*{2,}/.test(event.customerName));
-          if (event.customerName && !incomingNameIsRedacted) updatePayload.customer_name = event.customerName;
+          const existingNameIsRedacted = Boolean(
+            existingOrder.customer_name && /\*{2,}/.test(existingOrder.customer_name)
+          );
+          // Keep a real name; use the provider's masked display name only when
+          // TajerTrack has no customer name to show.
+          if (
+            event.customerName &&
+            (!incomingNameIsRedacted || !existingOrder.customer_name || existingNameIsRedacted)
+          ) {
+            updatePayload.customer_name = event.customerName;
+          }
           if (event.productName) updatePayload.product_name = event.productName;
         } else {
           if (event.carrierTrackingNumber && !existingOrder.carrier_tracking_number) {
