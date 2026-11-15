@@ -164,7 +164,9 @@ async function processYalidineParcelEdit(
     ? identitySource.customer_name
     : normalized.customerName && !isRedactedValue(normalized.customerName)
       ? normalized.customerName
-      : undefined;
+      // A masked fragment is useful to identify the recipient visually, but
+      // it is strictly a fallback and must never replace a real saved name.
+      : normalized.customerName || undefined;
   const sourcePhone = identitySource?.customer_phone && !isRedactedValue(identitySource.customer_phone)
     ? identitySource.customer_phone
     : normalized.customerPhone;
@@ -215,6 +217,28 @@ async function processYalidineParcelEdit(
     }
   }
 
+  const phoneResolution = order.customer_phone && !isRedactedValue(order.customer_phone)
+    ? 'already_saved_on_order'
+    : sourcePhone
+      ? 'recovered_from_original_order'
+      : incomingMetadata.yalidine_masked_contact_phone
+        ? 'masked_by_guepex_api'
+        : 'not_returned_by_provider';
+
+  if (apiEnriched) {
+    const nameResolution = order.customer_name && !isRedactedValue(order.customer_name)
+      ? 'real_name_preserved'
+      : sourceName && isRedactedValue(sourceName)
+        ? 'masked_name_saved_as_display_fallback'
+        : sourceName
+          ? 'real_name_saved'
+          : 'not_returned';
+    console.info(
+      '[YalidineProcessor]: Enriched existing order ' + order.id.slice(0, 8) +
+      ' from Guepex (name=' + nameResolution + ', phone=' + phoneResolution + ').'
+    );
+  }
+
   // The notification RPC is idempotent; it recovers missed tracking-link jobs
   // without resending messages that were already sent or have an ambiguous outcome.
   const notifications = await enqueueTrackingLinkNotifications(supabase, merchantId, trackingNumber);
@@ -224,6 +248,7 @@ async function processYalidineParcelEdit(
     linkedOrder: true,
     orderId: order.id,
     identityRecoveredFromOriginalOrder: Boolean(identitySource && identitySource.id !== order.id),
+    customerPhoneResolution: phoneResolution,
     notifications,
   };
 }
