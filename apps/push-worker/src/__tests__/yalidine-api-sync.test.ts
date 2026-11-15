@@ -3,9 +3,11 @@ import { createCipheriv, createHash, randomBytes } from 'node:crypto';
 import test from 'node:test';
 import { decryptYalidineApiCredentials } from '../yalidine-credentials.js';
 import {
+  buildGuepexHistoriesUrl,
   buildGuepexParcelListUrl,
   buildGuepexParcelUrl,
   buildGuepexParcelsByOrderIdsUrl,
+  getGuepexSyncCursor,
   createGuepexApiEnrichmentEvent,
   createGuepexApiEvent,
   normalizeGuepexParcel,
@@ -46,6 +48,29 @@ test('normalizes Guepex top-level data, body and nested data parcel lists', () =
   assert.deepEqual(normalizeGuepexParcelList({ data: { data: [baseParcel] } }), [baseParcel]);
   assert.deepEqual(normalizeGuepexParcelList({ has_more: false, data: [] }), []);
   assert.throws(() => normalizeGuepexParcelList({ success: false, message: 'unauthorized' }));
+});
+
+test('forces full account reconciliation on manual refresh while keeping scheduled sync incremental', () => {
+  assert.equal(getGuepexSyncCursor('2026-11-14T10:00:00.000Z'), '2026-11-14T10:00:00.000Z');
+  assert.equal(getGuepexSyncCursor('2026-11-14T10:00:00.000Z', '2026-11-15T10:00:00.000Z'), null);
+  assert.equal(getGuepexSyncCursor(null, '2026-11-15T10:00:00.000Z'), null);
+});
+
+test('builds a paginated Guepex histories request for unique linked tracking numbers', () => {
+  const url = buildGuepexHistoriesUrl(['yal-001', 'yal-002', 'yal-001'], 3);
+  assert.equal(url.pathname, '/v1/histories/');
+  assert.equal(url.searchParams.get('tracking'), 'yal-001,yal-002');
+  assert.equal(url.searchParams.get('page'), '3');
+  assert.equal(url.searchParams.get('page_size'), '100');
+  assert.equal(url.searchParams.get('order_by'), 'date_status');
+  const fields = (url.searchParams.get('fields') || '').split(',');
+  assert.ok(fields.includes('date_status'));
+  assert.ok(fields.includes('tracking'));
+  assert.ok(fields.includes('status'));
+  assert.ok(fields.includes('reason'));
+  assert.ok(fields.includes('center_name'));
+  assert.ok(fields.includes('wilaya_name'));
+  assert.ok(fields.includes('commune_name'));
 });
 
 test('builds a direct Guepex parcel lookup URL with an explicit safe field projection', () => {
