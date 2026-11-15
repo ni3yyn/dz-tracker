@@ -223,6 +223,9 @@ export function createGuepexApiEnrichmentEvent(
   const orderId = asText(parcel.order_id || fallbackOrderId);
   if (orderId) data.order_id = orderId;
   data.__guepex_api_lookup = true;
+  // Bump the reconciliation event identity when the enrichment rules change,
+  // so previously completed sparse snapshots are safely reprocessed once.
+  data.__guepex_api_lookup_version = 3;
 
   const occurredAt = parseGuepexDate(parcel.date_last_status || parcel.date_creation) || receivedAt;
   const digest = createHash('sha256')
@@ -290,6 +293,7 @@ export function createGuepexApiEvent(
   // This snapshot already came from the authenticated API list endpoint.
   // Do not perform a second GET when the queued event is processed.
   data.__guepex_api_lookup = true;
+  data.__guepex_api_lookup_version = 3;
   if (data.last_status && eventType === 'parcel_status_updated') {
     data.status = data.last_status;
   }
@@ -741,6 +745,7 @@ export class YalidineWebhookWorker {
       }
       enrichedData.tracking = tracking;
       enrichedData.__guepex_api_lookup = true;
+      enrichedData.__guepex_api_lookup_version = 3;
 
       const enrichedPayload = { ...eventPayload, data: enrichedData };
       const { error: updateError } = await (this.supabase as any)
