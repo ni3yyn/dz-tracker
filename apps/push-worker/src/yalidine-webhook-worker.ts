@@ -27,6 +27,7 @@ type YalidineIntegration = {
   merchant_id: string;
   credentials_encrypted: string;
   last_api_sync_at: string | null;
+  api_sync_requested_at: string | null;
 };
 
 type ExistingYalidineOrder = {
@@ -351,20 +352,36 @@ export class YalidineWebhookWorker {
   }
 
   private async runApiSyncLoop(): Promise<void> {
+    let nextScheduledSyncAt = 0;
+
     while (this.running) {
-      try {
-        await this.syncApiAccounts();
-      } catch (error: any) {
-        console.error('[YalidineApiSync]: Cycle failed:', error?.message || error);
+      if (Date.now() >= nextScheduledSyncAt) {
+        try {
+          await this.syncApiAccounts();
+        } catch (error: any) {
+          console.error('[YalidineApiSync]: Scheduled cycle failed:', error?.message || error);
+        }
+        nextScheduledSyncAt = Date.now() + this.apiSyncIntervalMs;
       }
+
       if (!this.running) return;
+
+      try {
+        await this.syncRequestedApiAccounts();
+      } catch (error: any) {
+        console.error('[YalidineApiSync]: Manual refresh queue check failed:', error?.message || error);
+      }
+
+      if (!this.running) return;
+
+      const pollDelayMs = Math.min(5000, Math.max(500, nextScheduledSyncAt - Date.now()));
       await new Promise<void>((resolve) => {
         this.apiSyncWake = resolve;
         this.apiSyncTimer = setTimeout(() => {
           this.apiSyncTimer = null;
           this.apiSyncWake = null;
           resolve();
-        }, this.apiSyncIntervalMs);
+        }, pollDelayMs);
       });
     }
   }
@@ -733,7 +750,7 @@ export class YalidineWebhookWorker {
   private async syncApiAccounts(): Promise<void> {
     const { data, error } = await (this.supabase as any)
       .from('merchant_carrier_integrations')
-      .select('id, merchant_id, credentials_encrypted, last_api_sync_at')
+      .select('id, merchant_id, credentials_encrypted, last_api_sync_at, api_sync_requested_at')
       .eq('provider', 'yalidine')
       .eq('api_sync_enabled', true);
 
@@ -744,7 +761,26 @@ export class YalidineWebhookWorker {
 
     for (const integration of (data || []) as YalidineIntegration[]) {
       if (!this.running) return;
-      await this.syncApiAccount(integration);
+      await this.syncApiAccount(integration, integration.api_sync_requested_at || undefined);
+    }
+  }
+
+  private async syncRequestedApiAccounts(): Promise<void> {
+    const { data, error } = await (this.supabase as any)
+      .from('merchant_carrier_integrations')
+      .select('id, merchant_id, credentials_encrypted, last_api_sync_at, api_sync_requested_at')
+      .eq('provider', 'yalidine')
+      .eq('api_sync_enabled', true)
+      .not('api_sync_requested_at', 'is', null)
+      .order('api_sync_requested_at', { ascending: true })
+      .limit(20);
+
+    if (error) throw new Error('Could not load requested Guepex API refreshes: ' + error.message);
+
+    for (const integration of (data || []) as YalidineIntegration[]) {
+      if (!this.running) return;
+      if (!integration.api_sync_requested_at) continue;
+      await this.syncApiAccount(integration, integration.api_sync_requested_at);
     }
   }
 
@@ -801,7 +837,10 @@ export class YalidineWebhookWorker {
     }
   }
 
-  private async syncApiAccount(integration: YalidineIntegration): Promise<void> {
+  private async syncApiAccount(
+    integration: YalidineIntegration,
+    manualRequestAt?: string
+  ): Promise<void> {
     let apiId = '';
     let apiToken = '';
     let leaseAcquired = false;
@@ -931,6 +970,22 @@ export class YalidineWebhookWorker {
         .eq('id', integration.id)
         .eq('api_sync_locked_by', this.workerId);
     } finally {
+      if (leaseAcquired && manualRequestAt) {
+        const { error: clearRequestError } = await (this.supabase as any)
+          .from('merchant_carrier_integrations')
+          .update({
+            api_sync_requested_at: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', integration.id)
+          .eq('api_sync_locked_by', this.workerId)
+          .eq('api_sync_requested_at', manualRequestAt);
+
+        if (clearRequestError) {
+          console.warn('[YalidineApiSync]: Could not clear completed manual refresh request:', clearRequestError.message);
+        }
+      }
+
       if (leaseAcquired) await this.releaseApiSyncLease(integration.id);
       apiId = '';
       apiToken = '';
