@@ -4,7 +4,10 @@ import test from 'node:test';
 import { decryptYalidineApiCredentials } from '../yalidine-credentials.js';
 import {
   buildGuepexParcelListUrl,
+  buildGuepexParcelUrl,
+  createGuepexApiEnrichmentEvent,
   createGuepexApiEvent,
+  normalizeGuepexParcel,
   normalizeGuepexParcelList,
 } from '../yalidine-webhook-worker.js';
 
@@ -42,6 +45,48 @@ test('normalizes Guepex top-level data, body and nested data parcel lists', () =
   assert.deepEqual(normalizeGuepexParcelList({ data: { data: [baseParcel] } }), [baseParcel]);
   assert.deepEqual(normalizeGuepexParcelList({ has_more: false, data: [] }), []);
   assert.throws(() => normalizeGuepexParcelList({ success: false, message: 'unauthorized' }));
+});
+
+test('builds a direct Guepex parcel lookup URL with an explicit safe field projection', () => {
+  const url = buildGuepexParcelUrl('yal-123456');
+  assert.equal(url.pathname, '/v1/parcels/yal-123456');
+  const fields = (url.searchParams.get('fields') || '').split(',');
+  assert.ok(fields.includes('tracking'));
+  assert.ok(fields.includes('order_id'));
+  assert.ok(fields.includes('product_list'));
+  assert.equal(fields.includes('address'), false);
+  assert.equal(fields.includes('qr_text'), false);
+  assert.equal(fields.includes('pin'), false);
+});
+
+test('normalizes single-parcel API response shapes and preserves the requested tracking fallback', () => {
+  assert.deepEqual(normalizeGuepexParcel({ data: [baseParcel] }, 'yal-123456'), baseParcel);
+  assert.deepEqual(normalizeGuepexParcel({ data: { ...baseParcel, tracking: undefined } }, 'yal-123456'), {
+    ...baseParcel,
+    tracking: 'yal-123456',
+  });
+  assert.equal(normalizeGuepexParcel({ success: true, data: {} }, 'yal-123456'), null);
+});
+
+test('creates a data-only enrichment event for an existing order without sending sensitive fields', () => {
+  const event = createGuepexApiEnrichmentEvent(
+    'merchant-1',
+    baseParcel,
+    'yal-123456',
+    'STORE-ORDER-123',
+    '2026-11-15T10:00:00.000Z'
+  );
+  assert.ok(event);
+  assert.equal(event?.event_type, 'parcel_edited');
+  const payload = event?.payload as any;
+  assert.equal(payload.type, 'parcel_edited');
+  assert.equal(payload.data.tracking, 'yal-123456');
+  assert.equal(payload.data.order_id, 'STORE-ORDER-123');
+  assert.equal(payload.data.product_list, 'Machine à café');
+  assert.equal(payload.data.__guepex_api_lookup, true);
+  assert.equal('address' in payload.data, false);
+  assert.equal('pin' in payload.data, false);
+  assert.equal('qr_text' in payload.data, false);
 });
 
 test('classifies an existing tracked parcel with a newer provider timestamp as a status event', () => {
