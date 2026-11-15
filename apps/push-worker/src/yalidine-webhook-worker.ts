@@ -454,10 +454,10 @@ export class YalidineWebhookWorker {
         eventsQueued + ' linked snapshots' + (missingTracking ? '; skipped ' + missingTracking + ' rows without tracking' : '') + '.'
       );
     } catch (error: any) {
-      const message = String(error?.message || 'Guepex API synchronization failed')
-        .replaceAll(apiId, '[redacted]')
-        .replaceAll(apiToken, '[redacted]')
-        .slice(0, 500);
+      let safeMessage = String(error?.message || 'Guepex API synchronization failed');
+      if (apiId) safeMessage = safeMessage.replaceAll(apiId, '[redacted]');
+      if (apiToken) safeMessage = safeMessage.replaceAll(apiToken, '[redacted]');
+      const message = safeMessage.slice(0, 500);
       const failedAt = new Date().toISOString();
       console.error('[YalidineApiSync]: Merchant ' + integration.merchant_id.slice(0, 8) + ' failed: ' + message);
       await (this.supabase as any)
