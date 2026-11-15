@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { FormEvent } from 'react';
 import { BrandedSelect } from '../../BrandedSelect';
 import { Icons } from '../../components/DashboardIcons';
+import { getYalidineManualParcelOptions } from '../../yalidine-actions';
 import type { ManualOrderSuccess } from './useManualOrder';
 
 interface AddOrderPanelProps {
@@ -37,6 +39,65 @@ export function AddOrderPanel({
   copyToClipboard,
   showToast,
 }: AddOrderPanelProps) {
+  const [carrierName, setCarrierName] = useState('Yalidine Express');
+  const [sendToYalidine, setSendToYalidine] = useState(true);
+  const [manualTrackingNumber, setManualTrackingNumber] = useState('');
+  const [parcelOptions, setParcelOptions] = useState<any>(null);
+  const [parcelOptionsLoading, setParcelOptionsLoading] = useState(false);
+  const [parcelOptionsError, setParcelOptionsError] = useState('');
+  const [fromWilayaId, setFromWilayaId] = useState('');
+  const [toWilayaId, setToWilayaId] = useState('');
+  const [toCommuneId, setToCommuneId] = useState('');
+  const [deliveryType, setDeliveryType] = useState('home');
+  const [stopDeskId, setStopDeskId] = useState('');
+  const shouldDispatchToYalidine =
+    carrierName === 'Yalidine Express' && sendToYalidine && !manualTrackingNumber.trim();
+
+  const destinationWilayas = useMemo(
+    () => (parcelOptions?.wilayas || []).filter((item: any) => item.is_deliverable),
+    [parcelOptions]
+  );
+  const destinationCommunes = useMemo(
+    () => (parcelOptions?.communes || []).filter((item: any) =>
+      item.wilaya_id === Number(toWilayaId) && item.is_deliverable
+    ),
+    [parcelOptions, toWilayaId]
+  );
+  const stopDeskCenters = useMemo(
+    () => (parcelOptions?.centers || []).filter((item: any) =>
+      item.wilaya_id === Number(toWilayaId) &&
+      item.commune_id === Number(toCommuneId)
+    ),
+    [parcelOptions, toCommuneId, toWilayaId]
+  );
+
+  useEffect(() => {
+    if (!isAddOrderPanelOpen || !shouldDispatchToYalidine || parcelOptions || parcelOptionsLoading) return;
+    let active = true;
+    setParcelOptionsLoading(true);
+    setParcelOptionsError('');
+    void getYalidineManualParcelOptions()
+      .then((result) => {
+        if (!active) return;
+        if (!result.success || !result.options) {
+          setParcelOptionsError(result.error || 'تعذّر تحميل مواقع شركة التوصيل.');
+          return;
+        }
+        setParcelOptions(result.options);
+        const defaultSender = result.options.wilayas.find((item: any) =>
+          item.name.toLocaleLowerCase() === 'alger'
+        ) || result.options.wilayas[0];
+        if (defaultSender) setFromWilayaId(String(defaultSender.id));
+      })
+      .catch((error: any) => {
+        if (active) setParcelOptionsError(error?.message || 'تعذّر تحميل مواقع شركة التوصيل.');
+      })
+      .finally(() => {
+        if (active) setParcelOptionsLoading(false);
+      });
+    return () => { active = false; };
+  }, [isAddOrderPanelOpen, shouldDispatchToYalidine, parcelOptions, parcelOptionsLoading]);
+
   if (!isAddOrderPanelMounted || typeof document === 'undefined') return null;
 
   return createPortal((
@@ -75,9 +136,9 @@ export function AddOrderPanel({
                 <div className="dz-order-side-panel-inner dz-order-side-panel-inner--add">
                 <div className="dz-order-detail-head">
                   <div>
-                    <span className="dz-order-detail-kicker">شحنة تجريبية / يدوية</span>
+                    <span className="dz-order-detail-kicker">طلب جديد · شحنة مباشرة</span>
                     <h2 id="add-order-title" style={{ fontSize: '22px', fontWeight: 850 }}>إضافة طلب جديد</h2>
-                    <p>أدخل بيانات الطلب لتجربة التتبع المباشر وإرسال رابط تيليجرام</p>
+                    <p>أدخل بيانات العميل والمنتج مرة واحدة، ثم أنشئ الشحنة في حساب شركة التوصيل.</p>
                   </div>
                   <button
                     type="button"
@@ -111,7 +172,9 @@ export function AddOrderPanel({
                         ? newOrderSuccess.exchangeReplacementNeedsConfirmation
                           ? 'تم استلام الشحنة وتحتاج إلى تأكيد الربط'
                           : 'تم ربط الشحنة بطلب الاستبدال'
-                        : 'تم تسجيل الطلب بنجاح!'}
+                        : newOrderSuccess.carrierShipmentCreated
+                          ? 'تم تسجيل الطلب وإنشاء الشحنة لدى ياليدين'
+                          : 'تم تسجيل الطلب بنجاح!'}
                     </h3>
                     <p style={{ margin: '0 0 18px', fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.7 }}>
                       {newOrderSuccess.exchangeReplacement ? (
@@ -128,6 +191,19 @@ export function AddOrderPanel({
                         </>
                       )}
                     </p>
+
+                    {newOrderSuccess.carrierTrackingNumber && (
+                      <div style={{ display: 'grid', gap: 6, padding: '12px 0', marginBottom: 14, borderTop: '1px solid var(--border-soft)', borderBottom: '1px solid var(--border-soft)' }}>
+                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>رقم تتبع شركة التوصيل</span>
+                        <strong dir="ltr" style={{ fontSize: 18, letterSpacing: '0.04em' }}>{newOrderSuccess.carrierTrackingNumber}</strong>
+                        {newOrderSuccess.carrierShipmentReused && <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>تم ربط الشحنة الموجودة مسبقاً، ولم يتم إنشاء شحنة ثانية.</span>}
+                        {newOrderSuccess.carrierLabelUrl && (
+                          <a href={newOrderSuccess.carrierLabelUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, textAlign: 'start' }}>
+                            فتح بوليصة الشحن لدى ياليدين
+                          </a>
+                        )}
+                      </div>
+                    )}
 
                     {!newOrderSuccess.exchangeReplacement && (
                       <>
@@ -253,10 +329,11 @@ export function AddOrderPanel({
                           <BrandedSelect
                             name="carrier_name"
                             ariaLabel="شركة الشحن"
-                            defaultValue="Yalidine Express"
+                            value={carrierName}
+                            onChange={(value) => setCarrierName(value)}
                             variant="field"
                             options={[
-                              { value: 'Yalidine Express', label: 'Yalidine Express (ياليدين)' },
+                              { value: 'Yalidine Express', label: 'Yalidine / Guepex' },
                               { value: 'ZR Express', label: 'ZR Express' },
                               { value: 'Maystro Delivery', label: 'Maystro Delivery' },
                               { value: 'EcoTrack', label: 'EcoTrack' },
@@ -276,7 +353,9 @@ export function AddOrderPanel({
                           <input
                             type="text"
                             name="carrier_tracking_number"
-                            placeholder="اختياري (YAL-1234)"
+                            value={manualTrackingNumber}
+                            onChange={(event) => setManualTrackingNumber(event.target.value)}
+                            placeholder="أدخل رقم تتبع موجوداً إن كانت الشحنة منشأة مسبقاً"
                             className="dz-input-field"
                             dir="ltr"
                           />
@@ -286,13 +365,14 @@ export function AddOrderPanel({
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                         <div>
                           <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
-                            اسم المنتج (اختياري)
+                            اسم المنتج {shouldDispatchToYalidine ? '*' : '(اختياري)'}
                           </label>
                           <input
                             type="text"
                             name="product_name"
                             placeholder="ساعة ذكية Ultra"
                             className="dz-input-field"
+                            required={shouldDispatchToYalidine}
                           />
                         </div>
 
@@ -314,6 +394,210 @@ export function AddOrderPanel({
                         </div>
                       </div>
 
+                      {carrierName === 'Yalidine Express' && (
+                        <section style={{ display: 'grid', gap: 14, padding: '16px 0', borderTop: '1px solid var(--border-soft)', borderBottom: '1px solid var(--border-soft)' }}>
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              name="send_to_yalidine"
+                              checked={sendToYalidine}
+                              onChange={(event) => setSendToYalidine(event.target.checked)}
+                              style={{ width: 18, height: 18, marginTop: 2, accentColor: '#263b30' }}
+                            />
+                            <span style={{ display: 'grid', gap: 4 }}>
+                              <strong style={{ fontSize: 14 }}>إنشاء الشحنة مباشرة في Yalidine / Guepex</strong>
+                              <span style={{ fontSize: 12, color: 'var(--ink-muted)', lineHeight: 1.7 }}>
+                                يرسل بيانات العميل إلى حسابك وينشئ بوليصة حقيقية فور الضغط على حفظ، وليس مسودة. إذا أدخلت رقم تتبع موجوداً أعلاه فلن تُرسل شحنة ثانية.
+                              </span>
+                            </span>
+                          </label>
+
+                          {manualTrackingNumber.trim() ? (
+                            <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-muted)' }}>
+                              سيتم ربط رقم التتبع الذي أدخلته فقط، دون إنشاء شحنة جديدة.
+                            </p>
+                          ) : sendToYalidine ? (
+                            <>
+                              {parcelOptionsLoading && <p role="status" style={{ margin: 0, fontSize: 13 }}>جارٍ تحميل الولايات والبلديات ومكاتب الاستلام من Guepex...</p>}
+                              {parcelOptionsError && (
+                                <p role="alert" style={{ margin: 0, color: '#b42318', fontSize: 13, lineHeight: 1.7 }}>
+                                  {parcelOptionsError} يمكنك إلغاء خيار الإرسال المباشر لتسجيل الطلب فقط.
+                                </p>
+                              )}
+                              {parcelOptions && (
+                                <>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>ولاية الانطلاق *</label>
+                                      <BrandedSelect
+                                        name="from_wilaya_id"
+                                        ariaLabel="ولاية انطلاق الشحنة"
+                                        value={fromWilayaId}
+                                        onChange={setFromWilayaId}
+                                        variant="field"
+                                        options={[
+                                          { value: '', label: 'اختر الولاية', disabled: true },
+                                          ...parcelOptions.wilayas.map((item: any) => ({ value: String(item.id), label: item.name })),
+                                        ]}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>ولاية المستلم *</label>
+                                      <BrandedSelect
+                                        name="to_wilaya_id"
+                                        ariaLabel="ولاية المستلم"
+                                        value={toWilayaId}
+                                        onChange={(value) => {
+                                          setToWilayaId(value);
+                                          setToCommuneId('');
+                                          setStopDeskId('');
+                                        }}
+                                        variant="field"
+                                        options={[
+                                          { value: '', label: 'اختر الولاية', disabled: true },
+                                          ...destinationWilayas.map((item: any) => ({ value: String(item.id), label: item.name })),
+                                        ]}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>بلدية المستلم *</label>
+                                    <BrandedSelect
+                                      name="to_commune_id"
+                                      ariaLabel="بلدية المستلم"
+                                      value={toCommuneId}
+                                      onChange={(value) => {
+                                        setToCommuneId(value);
+                                        setStopDeskId('');
+                                      }}
+                                      disabled={!toWilayaId}
+                                      variant="field"
+                                      options={[
+                                        { value: '', label: toWilayaId ? 'اختر البلدية' : 'اختر ولاية المستلم أولاً', disabled: true },
+                                        ...destinationCommunes.map((item: any) => ({ value: String(item.id), label: item.name })),
+                                      ]}
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>عنوان المستلم *</label>
+                                    <input
+                                      className="dz-input-field"
+                                      type="text"
+                                      name="carrier_address"
+                                      maxLength={255}
+                                      required={shouldDispatchToYalidine}
+                                      placeholder="الحي، الشارع، رقم المنزل..."
+                                    />
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>طريقة التوصيل *</label>
+                                      <BrandedSelect
+                                        name="delivery_type"
+                                        ariaLabel="طريقة التوصيل"
+                                        value={deliveryType}
+                                        onChange={(value) => {
+                                          setDeliveryType(value);
+                                          setStopDeskId('');
+                                        }}
+                                        variant="field"
+                                        options={[
+                                          { value: 'home', label: 'توصيل إلى المنزل' },
+                                          { value: 'stopdesk', label: 'استلام من المكتب (Stop Desk)' },
+                                        ]}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>الوزن (كغ) *</label>
+                                      <input
+                                        className="dz-input-field"
+                                        type="number"
+                                        name="shipment_weight"
+                                        min={1}
+                                        max={100}
+                                        step={1}
+                                        defaultValue={1}
+                                        required={shouldDispatchToYalidine}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {deliveryType === 'stopdesk' && (
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>مكتب الاستلام *</label>
+                                      <BrandedSelect
+                                        name="stopdesk_id"
+                                        ariaLabel="مكتب الاستلام"
+                                        value={stopDeskId}
+                                        onChange={setStopDeskId}
+                                        variant="field"
+                                        options={[
+                                          { value: '', label: 'اختر مكتب الاستلام', disabled: true },
+                                          ...stopDeskCenters.map((item: any) => ({
+                                            value: String(item.center_id),
+                                            label: item.name + (item.address ? ' — ' + item.address : ''),
+                                          })),
+                                        ]}
+                                      />
+                                      {stopDeskCenters.length === 0 && (
+                                        <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--ink-muted)' }}>
+                                          لا توجد مكاتب استلام لهذه البلدية؛ اختر التوصيل إلى المنزل.
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>المبلغ المطلوب تحصيله من العميل (دج) *</label>
+                                      <input
+                                        className="dz-input-field"
+                                        type="number"
+                                        name="shipment_amount"
+                                        min={0}
+                                        max={150000}
+                                        step={1}
+                                        required={shouldDispatchToYalidine}
+                                        placeholder="4500"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>من يدفع رسوم التوصيل؟ *</label>
+                                      <BrandedSelect
+                                        name="delivery_fee_payer"
+                                        ariaLabel="دافع رسوم التوصيل"
+                                        defaultValue="receiver"
+                                        variant="field"
+                                        options={[
+                                          { value: 'receiver', label: 'العميل عند الاستلام' },
+                                          { value: 'sender', label: 'المتجر (توصيل مجاني للعميل)' },
+                                        ]}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>وصف محتوى الشحنة *</label>
+                                    <input
+                                      className="dz-input-field"
+                                      type="text"
+                                      name="product_description"
+                                      maxLength={255}
+                                      required={shouldDispatchToYalidine}
+                                      defaultValue=""
+                                      placeholder="مثال: ساعة ذكية، لون أسود"
+                                    />
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          ) : null}
+                        </section>
+                      )}
+
                       <div style={{
                         borderInlineStart: '3px solid #52775a',
                         background: '#f3f6f0',
@@ -333,10 +617,10 @@ export function AddOrderPanel({
                       <button
                         type="submit"
                         className="dz-btn"
-                        disabled={isCreatingOrder}
+                        disabled={isCreatingOrder || (shouldDispatchToYalidine && (parcelOptionsLoading || Boolean(parcelOptionsError) || !parcelOptions))}
                         style={{ flex: 2, background: '#263b30', fontSize: '14px', fontWeight: 750, padding: '12px 20px', minHeight: '46px' }}
                       >
-                        {isCreatingOrder ? 'جاري إنشاء الطلب...' : 'إنشاء الطلب وجدولة التتبع'}
+                        {isCreatingOrder ? 'جارٍ حفظ الطلب وإرسال الشحنة...' : shouldDispatchToYalidine ? 'إنشاء الشحنة وحفظ الطلب' : 'حفظ الطلب وجدولة التتبع'}
                       </button>
                       <button
                         type="button"
