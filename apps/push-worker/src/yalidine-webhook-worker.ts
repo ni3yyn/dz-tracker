@@ -448,7 +448,7 @@ export class YalidineWebhookWorker {
       .from('orders')
       .select('id, external_order_id, carrier_tracking_number, carrier_metadata')
       .eq('merchant_id', integration.merchant_id)
-      .eq('carrier_name', 'Yalidine Express')
+      .in('carrier_name', ['Yalidine Express', 'Guepex', 'Yalidine'])
       .not('carrier_tracking_number', 'is', null)
       .is('carrier_metadata->>yalidine_api_details_checked_at', null)
       .order('created_at', { ascending: true })
@@ -468,6 +468,8 @@ export class YalidineWebhookWorker {
       const tracking = asText(order.carrier_tracking_number);
       if (!tracking) continue;
 
+      // Keep the distributed account lease alive during a batch of direct lookups.
+      await this.renewApiSyncLease(integration.id);
       const parcel = await this.fetchGuepexParcel(apiId, apiToken, tracking);
       checked += 1;
       if (!parcel) {
