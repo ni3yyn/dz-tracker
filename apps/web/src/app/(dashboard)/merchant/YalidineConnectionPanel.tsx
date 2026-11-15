@@ -353,12 +353,12 @@ export function YalidineConnectionPanel() {
                 </button>
               </form>
 
-              {(status.connected || status.apiConnected) && (
-                <button type="button" className="dz-support-copy" disabled={disconnecting} onClick={handleDisconnect}>
-                  {disconnecting ? 'جارٍ فصل الربط...' : 'فصل Yalidine من تاجر تراك'}
-                </button>
-              )}
             </>
+          )}
+          {(status.connected || status.apiConnected) && (
+            <button type="button" className="dz-support-copy" disabled={disconnecting} onClick={handleDisconnect}>
+              {disconnecting ? 'جارٍ فصل الربط...' : 'فصل Yalidine من تاجر تراك'}
+            </button>
           )}
         </>
       )}
