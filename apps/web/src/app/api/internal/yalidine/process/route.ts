@@ -201,7 +201,7 @@ async function processYalidineParcelEdit(
       ...(apiEnriched ? {
         yalidine_api_details_checked_at: new Date().toISOString(),
         yalidine_api_details_result: 'found',
-        yalidine_api_details_version: 2,
+        yalidine_api_details_version: 3,
       } : {}),
     };
   }
