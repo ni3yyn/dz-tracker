@@ -36,10 +36,7 @@ function isRedactedValue(value: unknown): boolean {
 }
 
 function escapeLikePattern(value: string): string {
-  return value.replace(/[\\%_]/g, '\\function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, '\\$&');
-}
-');
 }
 
 async function applyPendingCompanionCapture(
