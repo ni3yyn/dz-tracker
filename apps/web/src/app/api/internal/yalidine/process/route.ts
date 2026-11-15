@@ -106,7 +106,10 @@ async function processYalidineParcelEdit(
     return { success: true, ignored: true, reason: 'parcel_not_linked_yet', linkedOrder: false };
   }
 
-  if (order.carrier_name && order.carrier_name !== 'Yalidine Express') {
+  if (
+    order.carrier_name &&
+    !['Yalidine Express', 'Guepex', 'Yalidine'].includes(order.carrier_name)
+  ) {
     return {
       success: true,
       ignored: true,
