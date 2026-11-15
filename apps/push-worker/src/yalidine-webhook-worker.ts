@@ -204,6 +204,39 @@ export function normalizeGuepexParcel(response: any, expectedTracking = ''): Rec
   return null;
 }
 
+const GUEPEX_PERSONAL_IDENTITY_FIELDS = new Set(['firstname', 'familyname', 'contact_phone']);
+
+/**
+ * Merge a masked GET /parcels response into the signed raw webhook event.
+ * Never let Guepex's masked API fields overwrite unmasked identity that was
+ * already supplied by the webhook (including any future extra fields).
+ */
+export function mergeGuepexApiParcelIntoWebhookData(
+  originalData: Record<string, unknown>,
+  parcel: Record<string, any>,
+  tracking: string
+): Record<string, unknown> {
+  const enrichedData: Record<string, unknown> = { ...originalData };
+
+  for (const key of GUEPEX_PARCEL_FIELDS) {
+    const value = parcel[key];
+    if (value === undefined || value === null || value === '') continue;
+
+    const existing = asText(originalData[key]);
+    const isPersonalIdentityField = GUEPEX_PERSONAL_IDENTITY_FIELDS.has(key);
+    const hasUnmaskedWebhookValue =
+      Boolean(existing) && (!isPersonalIdentityField || !/\\*/.test(existing));
+
+    if (hasUnmaskedWebhookValue) continue;
+    enrichedData[key] = value;
+  }
+
+  enrichedData.tracking = tracking;
+  enrichedData.__guepex_api_lookup = true;
+  enrichedData.__guepex_api_lookup_version = 3;
+  return enrichedData;
+}
+
 export function createGuepexApiEnrichmentEvent(
   merchantId: string,
   parcel: Record<string, any>,
@@ -738,14 +771,11 @@ export class YalidineWebhookWorker {
         return;
       }
 
-      const enrichedData: Record<string, unknown> = { ...originalData };
-      for (const key of GUEPEX_PARCEL_FIELDS) {
-        const value = parcel[key];
-        if (value !== undefined && value !== null && value !== '') enrichedData[key] = value;
-      }
-      enrichedData.tracking = tracking;
-      enrichedData.__guepex_api_lookup = true;
-      enrichedData.__guepex_api_lookup_version = 3;
+      const enrichedData = mergeGuepexApiParcelIntoWebhookData(
+        originalData as Record<string, unknown>,
+        parcel,
+        tracking
+      );
 
       const enrichedPayload = { ...eventPayload, data: enrichedData };
       const { error: updateError } = await (this.supabase as any)
