@@ -3,7 +3,7 @@
   "name": "TajerTrack Companion",
   "short_name": "TajerTrack",
   "description": "Captures customer details from authorized Guepex parcel-creation requests and securely links them to TajerTrack.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqVb0yN5uukkexwzCS/O7qFvxlJxA8OAggNn+yf0vCiq9moopK30/J3wwFymlgT0gm3bcZR6JV+XKsDjYAvrrQJlc3SVSZJQnZCRLgZzz92+Cx6DBETweTypaRXwfHtD4rg1SzwfP5SavrifF0Fz39QaAX7Osqw1tKtIF55VQZURjDJYgobqdT66fsVgYHb6m8/v8K6ibK5a1smS3DMj9FZMXUwNhDo4bpVqeAQ05h3CjVPNpKYRJXAHcq468MmzBJDP9mvc7SxztUWmfgos1CCbxvaeArVdk/ZNJPLnPgNU/oxQP4o5pRNjSSF8dIqhu2t/+F5VmzFUg4PSwfs+E0QIDAQAB",
   "permissions": ["storage", "webRequest"],
   "host_permissions": [
