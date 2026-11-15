@@ -82,7 +82,7 @@ async function processYalidineParcelEdit(
   }
 
   const selectedFields = 'id, external_order_id, carrier_name, carrier_tracking_number, customer_name, customer_phone, product_name, carrier_metadata';
-  let { data: order, error: lookupError } = await supabase
+  const { data: trackedOrder, error: trackingLookupError } = await supabase
     .from('orders')
     .select(selectedFields)
     .eq('merchant_id', merchantId)
@@ -90,48 +90,58 @@ async function processYalidineParcelEdit(
     .limit(1)
     .maybeSingle();
 
+  if (trackingLookupError) {
+    throw new Error(\`Could not find the TajerTrack order for Yalidine tracking number: \${trackingLookupError.message}\`);
+  }
+
+  let referenceMatches: any[] = [];
   if (
-    !order &&
-    !lookupError &&
     normalized.externalOrderId &&
     normalized.externalOrderId.toLowerCase() !== trackingNumber.toLowerCase()
   ) {
-    // order_id is the merchant's original order reference. Compare case-
-    // insensitively, and prefer the unique existing row that already holds
-    // the customer's real identity if old duplicate references exist.
     const reference = normalized.externalOrderId.trim();
-    const byExternalId = await supabase
+    const { data: matches, error: referenceError } = await supabase
       .from('orders')
       .select(selectedFields)
       .eq('merchant_id', merchantId)
       .ilike('external_order_id', escapeLikePattern(reference))
       .limit(20);
+    if (referenceError) {
+      throw new Error(\`Could not match the original TajerTrack order reference: \${referenceError.message}\`);
+    }
+    referenceMatches = (matches || []).filter((candidate: any) =>
+      !candidate.carrier_name ||
+      ['Yalidine Express', 'Guepex', 'Yalidine'].includes(candidate.carrier_name)
+    );
+  }
 
-    if (byExternalId.error) {
-      lookupError = byExternalId.error;
-    } else {
-      const candidates = (byExternalId.data || []) as any[];
-      if (candidates.length === 1) {
-        order = candidates[0];
-      } else if (candidates.length > 1) {
-        const score = (candidate: any) =>
-          (candidate.customer_phone && !isRedactedValue(candidate.customer_phone) ? 2 : 0) +
-          (candidate.customer_name && !isRedactedValue(candidate.customer_name) ? 1 : 0);
-        const ranked = candidates.map((candidate) => ({ candidate, score: score(candidate) }));
-        const highest = Math.max(...ranked.map((entry) => entry.score));
-        const best = ranked.filter((entry) => entry.score === highest);
-        if (highest > 0 && best.length === 1) {
-          order = best[0].candidate;
-        } else {
-          throw new Error('The Yalidine order reference matches multiple TajerTrack orders without a unique customer identity; refusing an ambiguous automatic merge.');
-        }
-      }
+  const identityScore = (candidate: any) =>
+    (candidate.customer_phone && !isRedactedValue(candidate.customer_phone) ? 2 : 0) +
+    (candidate.customer_name && !isRedactedValue(candidate.customer_name) ? 1 : 0);
+  const chooseUniqueBest = (candidates: any[]): any | null => {
+    if (candidates.length === 1) return candidates[0];
+    if (!candidates.length) return null;
+    const scored = candidates.map((candidate) => ({ candidate, score: identityScore(candidate) }));
+    const highest = Math.max(...scored.map((item) => item.score));
+    const best = scored.filter((item) => item.score === highest);
+    return highest > 0 && best.length === 1 ? best[0].candidate : null;
+  };
+
+  // Prefer the row already linked to this tracking number as the shipment
+  // record. If an earlier sync created a sparse duplicate, recover the real
+  // customer identity from the unique original order with the same order_id.
+  let order = trackedOrder;
+  let identitySource: any | null = null;
+  if (order) {
+    identitySource = chooseUniqueBest(referenceMatches.filter((candidate) => candidate.id !== order.id));
+  } else {
+    order = chooseUniqueBest(referenceMatches);
+    identitySource = order;
+    if (referenceMatches.length > 1 && !order) {
+      throw new Error('The Yalidine order reference matches multiple TajerTrack orders without a unique customer identity; refusing an ambiguous automatic merge.');
     }
   }
 
-  if (lookupError) {
-    throw new Error(`Could not find the TajerTrack order for edited Yalidine parcel: ${lookupError.message}`);
-  }
   if (!order) {
     // Never create a second order from an edit or API-enrichment event.
     return { success: true, ignored: true, reason: 'parcel_not_linked_yet', linkedOrder: false };
@@ -150,17 +160,23 @@ async function processYalidineParcelEdit(
   }
 
   const updates: Record<string, unknown> = {};
+  const sourceName = identitySource?.customer_name && !isRedactedValue(identitySource.customer_name)
+    ? identitySource.customer_name
+    : normalized.customerName && !isRedactedValue(normalized.customerName)
+      ? normalized.customerName
+      : undefined;
+  const sourcePhone = identitySource?.customer_phone && !isRedactedValue(identitySource.customer_phone)
+    ? identitySource.customer_phone
+    : normalized.customerPhone;
+
   if (
-    normalized.customerName &&
-    !isRedactedValue(normalized.customerName) &&
+    sourceName &&
     (!order.customer_name || isRedactedValue(order.customer_name))
   ) {
-    // Only unmasked names may replace missing/redacted values. A GET response
-    // containing M*****d is not a customer identity.
-    updates.customer_name = normalized.customerName;
+    updates.customer_name = sourceName;
   }
-  if (normalized.customerPhone && (!order.customer_phone || isRedactedValue(order.customer_phone))) {
-    updates.customer_phone = normalized.customerPhone;
+  if (sourcePhone && (!order.customer_phone || isRedactedValue(order.customer_phone))) {
+    updates.customer_phone = sourcePhone;
   }
   if (normalized.productName && !String(order.product_name || '').trim()) {
     updates.product_name = normalized.productName;
@@ -195,14 +211,21 @@ async function processYalidineParcelEdit(
       .eq('id', order.id)
       .eq('merchant_id', merchantId);
     if (updateError) {
-      throw new Error(`Could not apply details from Yalidine parcel to existing order: ${updateError.message}`);
+      throw new Error(\`Could not apply details from Yalidine parcel to existing order: \${updateError.message}\`);
     }
   }
 
   // The notification RPC is idempotent; it recovers missed tracking-link jobs
   // without resending messages that were already sent or have an ambiguous outcome.
   const notifications = await enqueueTrackingLinkNotifications(supabase, merchantId, trackingNumber);
-  return { success: true, edited: true, linkedOrder: true, orderId: order.id, notifications };
+  return {
+    success: true,
+    edited: true,
+    linkedOrder: true,
+    orderId: order.id,
+    identityRecoveredFromOriginalOrder: Boolean(identitySource && identitySource.id !== order.id),
+    notifications,
+  };
 }
 export async function POST(req: Request) {
   const rawBody = await req.text().catch(() => '');
