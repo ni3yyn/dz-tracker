@@ -1284,8 +1284,8 @@ export async function createManualOrder(formData: FormData) {
   const carrierName = String(formData.get('carrier_name') || 'Yalidine Express').trim();
   const suppliedTrackingNumber = String(formData.get('carrier_tracking_number') || '').trim();
   const statusRaw = String(formData.get('status_raw') || 'order_placed').trim();
-  const dispatchRequested = formData.get('send_to_yalidine') === 'on' && !suppliedTrackingNumber;
   const isYalidine = ['Yalidine Express', 'Yalidine', 'Guepex'].includes(carrierName);
+  const dispatchRequested = isYalidine && formData.get('send_to_yalidine') === 'on' && !suppliedTrackingNumber;
 
   if (!externalOrderId) return { error: 'يرجى إدخال رقم طلب فريد قبل حفظ الطلب.' };
   if (externalOrderId.length > 100) return { error: 'رقم الطلب يجب ألا يتجاوز 100 حرف.' };
@@ -1296,7 +1296,6 @@ export async function createManualOrder(formData: FormData) {
   }
   if (!customerName) return { error: 'يرجى إدخال اسم العميل.' };
   if (!customerPhone) return { error: 'يرجى إدخال رقم هاتف العميل.' };
-  if (dispatchRequested && !isYalidine) return { error: 'الإرسال المباشر متاح حالياً مع Yalidine / Guepex فقط.' };
 
   let dispatch: ManualYalidineDispatchResult | null = null;
   let carrierTrackingNumber = suppliedTrackingNumber;
