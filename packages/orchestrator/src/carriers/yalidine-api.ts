@@ -368,6 +368,33 @@ export async function findYalidineParcelsByOrderId(
   })).filter((row) => Boolean(row.tracking));
 }
 
+export async function findYalidineParcelsByTracking(
+  baseUrlInput: string,
+  credentials: YalidineApiCredentials,
+  tracking: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<YalidineParcelMatch[]> {
+  const normalizedTracking = tracking.trim();
+  if (!/^yal-[A-Za-z0-9]+$/i.test(normalizedTracking)) {
+    throw new YalidineApiError('رقم تتبع Yalidine / Guepex غير صالح للبحث.', 'rejected');
+  }
+  const baseUrl = normalizeYalidineApiBaseUrl(baseUrlInput);
+  const url = endpoint(baseUrl, 'parcels/');
+  url.searchParams.set('tracking', normalizedTracking);
+  url.searchParams.set('page', '1');
+  url.searchParams.set('page_size', '20');
+  url.searchParams.set('fields', 'tracking,order_id,label,import_id,last_status');
+  const payload = await requestJson(baseUrl, credentials, url.toString(), { method: 'GET' }, fetchImpl);
+  const rows = responseRows(payload).filter((row) => asText(row?.tracking).toLowerCase() === normalizedTracking.toLowerCase());
+  return rows.map((row) => ({
+    order_id: asText(row.order_id),
+    tracking: asText(row.tracking),
+    label: asText(row.label) || null,
+    import_id: asNumber(row.import_id),
+    last_status: asText(row.last_status) || null,
+  }));
+}
+
 export async function createYalidineParcel(
   baseUrlInput: string,
   credentials: YalidineApiCredentials,
