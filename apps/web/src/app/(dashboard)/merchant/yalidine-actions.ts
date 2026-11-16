@@ -8,6 +8,7 @@ import {
   getYalidineFeeQuote as fetchYalidineFeeQuote,
 } from '@saas/orchestrator';
 import { createClient } from '../../../lib/supabase-server';
+import { normalizeMerchantServerError } from '../../../lib/merchant-error-messages';
 import {
   decryptYalidineWebhookCredentials,
   encryptYalidineWebhookCredentials,
@@ -414,9 +415,14 @@ export async function getYalidineManualParcelOptions(): Promise<{
     );
     return { success: true, options };
   } catch (error: any) {
+    console.error('[YalidineManual] Location lookup failed:', {
+      status: error?.status,
+      kind: error?.kind,
+      message: error?.message,
+    });
     return {
       success: false,
-      error: error?.message || 'تعذر تحميل ولايات وبلديات ومكاتب Yalidine / Guepex.',
+      error: normalizeMerchantServerError(error, 'locations'),
     };
   }
 }
@@ -452,8 +458,15 @@ export async function getYalidineManualFeeQuote(
     );
     return { success: true, quote };
   } catch (error: any) {
-    const retry = error?.retryAfterSeconds ? ' أعد المحاولة بعد ' + error.retryAfterSeconds + ' ثانية.' : '';
-    return { success: false, error: (error?.message || 'تعذر تحميل تسعيرة Yalidine / Guepex.') + retry };
+    console.error('[YalidineManual] Fee quote failed:', {
+      status: error?.status,
+      kind: error?.kind,
+      message: error?.message,
+    });
+    return {
+      success: false,
+      error: normalizeMerchantServerError(error, 'fees'),
+    };
   }
 }
 
