@@ -174,7 +174,7 @@ export function AddOrderPanel({
                   </div>
                   <button
                     type="button"
-                    className="dz-order-detail-close"
+                    className={"dz-order-detail-close " + styles.closeButton}
                     aria-label="إغلاق النافذة"
                     onClick={() => closeAddOrder()}
                     disabled={isCreatingOrder}
@@ -184,54 +184,53 @@ export function AddOrderPanel({
                 </div>
 
                 {newOrderSuccess ? (
-                  <div style={{ padding: '24px 0', textAlign: 'center' }}>
-                    <div style={{
-                      width: '58px',
-                      height: '58px',
-                      borderRadius: '50%',
-                      background: '#dcfce7',
-                      color: '#16a34a',
-                      display: 'grid',
-                      placeItems: 'center',
-                      margin: '0 auto 16px',
-                    }}>
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <div className={styles.successView}>
+                    <div className={styles.successMark} aria-hidden="true">
+                      <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </div>
-                    <h3 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 800, color: 'var(--ink-main)' }}>
+                    <h3 className={styles.successTitle}>
                       {newOrderSuccess.exchangeReplacement
                         ? newOrderSuccess.exchangeReplacementNeedsConfirmation
                           ? 'تم استلام الشحنة وتحتاج إلى تأكيد الربط'
                           : 'تم ربط الشحنة بطلب الاستبدال'
                         : newOrderSuccess.carrierShipmentCreated
-                          ? 'تم تسجيل الطلب وإنشاء الشحنة لدى ياليدين'
-                          : 'تم تسجيل الطلب بنجاح!'}
+                          ? 'تم إنشاء الشحنة بنجاح في Guepex'
+                          : 'تم تسجيل الطلب بنجاح'}
                     </h3>
-                    <p style={{ margin: '0 0 18px', fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.7 }}>
+                    <p className={styles.successCopy}>
                       {newOrderSuccess.exchangeReplacement ? (
                         <>
-                          مرجع الطلب الداخلي: <strong>{newOrderSuccess.externalOrderId}</strong><br />
-                          {newOrderSuccess.exchangeReplacementNeedsConfirmation
-                            ? 'توجد عدة طلبات استبدال مطابقة. راجع قسم طلبات الاستبدال واختر الطلب الصحيح قبل متابعة الشحنة.'
-                            : 'ستظهر تحديثات الشحنة ضمن صفحة التتبع الأصلية. لم يتم إنشاء طلب جديد أو إرسال رابط تتبع إضافي للعميل.'}
+                          مرجع الطلب الداخلي: <strong>{newOrderSuccess.externalOrderId}</strong>
+                          <span>
+                            {newOrderSuccess.exchangeReplacementNeedsConfirmation
+                              ? 'توجد عدة طلبات استبدال مطابقة. راجع طلبات الاستبدال لتأكيد الربط.'
+                              : 'ستظهر تحديثات الشحنة ضمن صفحة التتبع الأصلية.'}
+                          </span>
                         </>
                       ) : (
                         <>
-                          مرجع الطلب في تاجر تراك: <strong>{newOrderSuccess.externalOrderId}</strong><br />
-                          {newOrderSuccess.telegramQueueCheckFailed ? 'تم تسجيل الطلب، لكن تعذّر التحقق من حالة جدولة رابط التتبع.' : newOrderSuccess.telegramTrackingQueued ? 'تم إدراج رابط التتبع في طابور تيليجرام، وسيحاول حساب تاجر تراك إرساله إلى الحساب المرتبط برقم العميل.' : newOrderSuccess.telegramTrackingEnabled ? 'الخدمة مفعّلة، لكن لم تُدرج مهمة الإرسال. تحقق من تطبيق تحديث قاعدة البيانات وسجلات العامل.' : 'خدمة إرسال روابط التتبع عبر تيليجرام متوقفة حالياً. فعّلها من إعدادات المتجر لإرسال روابط الطلبات الجديدة.'}
+                          مرجع الطلب: <strong>{newOrderSuccess.externalOrderId}</strong>
+                          {newOrderSuccess.telegramQueueCheckFailed
+                            ? <span>تعذّر التحقق من جدولة رابط التتبع.</span>
+                            : newOrderSuccess.telegramTrackingQueued
+                              ? <span>تمت جدولة رابط التتبع عبر تيليجرام.</span>
+                              : newOrderSuccess.telegramTrackingEnabled
+                                ? <span>لم تتم جدولة رابط التتبع رغم تفعيل الخدمة.</span>
+                                : null}
                         </>
                       )}
                     </p>
 
                     {newOrderSuccess.carrierTrackingNumber && (
-                      <div style={{ display: 'grid', gap: 6, padding: '12px 0', marginBottom: 14, borderTop: '1px solid var(--border-soft)', borderBottom: '1px solid var(--border-soft)' }}>
-                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>رقم الشحنة / التتبع لدى Yalidine</span>
-                        <strong dir="ltr" style={{ fontSize: 18, letterSpacing: '0.04em' }}>{newOrderSuccess.carrierTrackingNumber}</strong>
-                        {newOrderSuccess.carrierShipmentReused && <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>تم ربط الشحنة الموجودة مسبقاً، ولم يتم إنشاء شحنة ثانية.</span>}
+                      <div className={styles.trackingCode}>
+                        <span>رقم التتبع لدى ياليدين</span>
+                        <strong dir="ltr">{newOrderSuccess.carrierTrackingNumber}</strong>
+                        {newOrderSuccess.carrierShipmentReused && <small>تم ربط الشحنة الموجودة دون إنشاء شحنة ثانية.</small>}
                         {newOrderSuccess.carrierLabelUrl && (
-                          <a href={newOrderSuccess.carrierLabelUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, textAlign: 'start' }}>
-                            فتح بوليصة الشحن لدى ياليدين
+                          <a href={newOrderSuccess.carrierLabelUrl} target="_blank" rel="noreferrer">
+                            فتح بوليصة الشحن
                           </a>
                         )}
                       </div>
@@ -239,52 +238,38 @@ export function AddOrderPanel({
 
                     {!newOrderSuccess.exchangeReplacement && (
                       <>
-                    <div style={{
-                      background: 'var(--bg-base, #f4f5f1)',
-                      padding: '14px',
-                      borderRadius: '10px',
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
-                      wordBreak: 'break-all',
-                      marginBottom: '18px',
-                      border: '1px solid var(--border-soft)',
-                      textAlign: 'left',
-                      direction: 'ltr',
-                    }}>
-                      {`${siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/${newOrderSuccess.trackingUuid}`}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                      <a
-                        href={`/t/${newOrderSuccess.trackingUuid}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="dz-btn"
-                        style={{ flex: 1, textDecoration: 'none', fontSize: '14px', padding: '12px 18px', minHeight: '44px' }}
-                      >
-                        <Icons.ExternalLink /> فتح صفحة التتبع
-                      </a>
-                      <button
-                        type="button"
-                        className="dz-btn dz-btn-outline"
-                        style={{ flex: 1, fontSize: '14px', padding: '12px 18px', minHeight: '44px' }}
-                        onClick={() => {
-                          const url = `${siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/${newOrderSuccess.trackingUuid}`;
-                          copyToClipboard(url, 'new-tracking-link');
-                          showToast('تم نسخ رابط التتبع');
-                        }}
-                      >
-                        <Icons.Copy /> نسخ الرابط
-                      </button>
-                    </div>
+                        <div className={styles.trackingUrl} dir="ltr">
+                          {siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/{newOrderSuccess.trackingUuid}
+                        </div>
+                        <div className={styles.successActions}>
+                          <a
+                            href={`/t/${newOrderSuccess.trackingUuid}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={styles.successPrimary}
+                          >
+                            <Icons.ExternalLink /> فتح صفحة التتبع
+                          </a>
+                          <button
+                            type="button"
+                            className={styles.successSecondary}
+                            onClick={() => {
+                              const url = `${siteUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://tajertrack.vercel.app')}/t/${newOrderSuccess.trackingUuid}`;
+                              copyToClipboard(url, 'new-tracking-link');
+                              showToast('تم نسخ رابط التتبع');
+                            }}
+                          >
+                            <Icons.Copy /> نسخ الرابط
+                          </button>
+                        </div>
                       </>
                     )}
 
                     <button
                       type="button"
-                      className="dz-btn dz-btn-outline"
-                      style={{ width: '100%', marginTop: '14px', fontSize: '14px', padding: '12px', minHeight: '44px' }}
-                      onClick={closeAddOrderSuccess}                    >
+                      className={styles.successClose}
+                      onClick={closeAddOrderSuccess}
+                    >
                       إغلاق
                     </button>
                   </div>
