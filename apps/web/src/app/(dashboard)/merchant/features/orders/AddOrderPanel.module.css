@@ -120,6 +120,27 @@
   transition: border-color .16s ease, background-color .16s ease, box-shadow .16s ease;
 }
 
+.productDescriptionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 68px;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.productQuantitySelect {
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
+}
+
+.productQuantitySelect :global(button) {
+  min-height: 48px;
+  justify-content: center;
+  padding-inline: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
 .input::placeholder {
   color: #a1aaa2;
   font-weight: 450;
