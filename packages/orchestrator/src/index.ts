@@ -11,6 +11,7 @@ export {
   buildYalidineCreateParcelData,
   createYalidineParcel,
   findYalidineParcelsByOrderId,
+  findYalidineParcelsByTracking,
   getYalidineFeeQuote,
   getYalidineManualParcelOptions,
   estimateYalidineFees,
