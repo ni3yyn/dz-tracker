@@ -10,15 +10,6 @@ import { hashNativeSmsCredential } from '../../../../lib/native-sms-gateway-auth
 const PAIRING_PATH = '/mobile/sms-gateway/connect';
 const APP_REDIRECT = 'tajertrack-sms://pair';
 
-function normalizeAlgerianMobileNumber(input: unknown): string | null {
-  if (typeof input !== 'string') return null;
-  let value = input.trim().replace(/[\\s().-]/g, '');
-  if (value.startsWith('00')) value = `+${value.slice(2)}`;
-  if (value.startsWith('213')) value = `+${value}`;
-  if (/^0[5-7]\\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
-  return /^\\+213[5-7]\\d{8}$/.test(value) ? value : null;
-}
-
 function connectErrorUrl(error: string) {
   return `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(APP_REDIRECT)}&error=${encodeURIComponent(error)}`;
 }
@@ -36,10 +27,8 @@ export async function approveNativeSmsDevice() {
     redirect('/admin');
   }
 
-  const merchantPhone = normalizeAlgerianMobileNumber(user.user_metadata?.merchant_phone);
-  if (!merchantPhone) {
-    redirect(connectErrorUrl('phone_unavailable'));
-  }
+  // A merchant account phone number is optional. The sender identity is verified
+  // through the invited Android device's carrier/SIM, not the merchant profile.
 
   const supabase = getSupabaseAdminClient() as any;
   const { data: merchant, error: merchantError } = await supabase
