@@ -1,9 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@saas/database';
-import { createClient } from '../../../../../../lib/supabase-server';
-import { isAuthorizedAdmin } from '../../../../../../lib/admin-auth';
-import { hashNativeSmsCredential } from '../../../../../../lib/native-sms-gateway-auth';
+import { createClient } from '../../../../../lib/supabase-server';
+import { isAuthorizedAdmin } from '../../../../../lib/admin-auth';
+import { hashNativeSmsCredential } from '../../../../../lib/native-sms-gateway-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
