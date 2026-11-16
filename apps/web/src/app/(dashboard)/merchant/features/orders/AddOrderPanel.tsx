@@ -195,9 +195,11 @@ export function AddOrderPanel({
                         ? newOrderSuccess.exchangeReplacementNeedsConfirmation
                           ? 'تم استلام الشحنة وتحتاج إلى تأكيد الربط'
                           : 'تم ربط الشحنة بطلب الاستبدال'
-                        : newOrderSuccess.carrierShipmentCreated
-                          ? 'تم إنشاء الشحنة بنجاح في Guepex'
-                          : 'تم تسجيل الطلب بنجاح'}
+                        : newOrderSuccess.carrierShipmentReused
+                          ? 'تم ربط الشحنة الموجودة بنجاح'
+                          : newOrderSuccess.carrierShipmentCreated
+                            ? 'تم إرسال الشحنة بنجاح إلى Guepex'
+                            : 'تم تسجيل الطلب بنجاح'}
                     </h3>
                     <p className={styles.successCopy}>
                       {newOrderSuccess.exchangeReplacement ? (
@@ -285,7 +287,6 @@ export function AddOrderPanel({
                     <section className={styles.section}>
                       <div className={styles.sectionHeading}>
                         <h3>بيانات العميل</h3>
-                        <span>معلومات الطلب الأساسية</span>
                       </div>
                       <div className={styles.field}>
                         <label className={styles.label}>مرجع الطلب في تاجر تراك *</label>
@@ -322,7 +323,6 @@ export function AddOrderPanel({
                     <section className={styles.section}>
                       <div className={styles.sectionHeading}>
                         <h3>بيانات الشحنة</h3>
-                        <span>شركة التوصيل ومحتويات الطرد</span>
                       </div>
                       <div className={styles.grid}>
                         <div className={styles.field}>
@@ -399,7 +399,6 @@ export function AddOrderPanel({
                           />
                           <span>
                             <strong>إنشاء الشحنة مباشرة في Guepex</strong>
-                            <small>إرسال بيانات العميل وإنشاء بوليصة الشحن الآن.</small>
                           </span>
                         </label>
 
@@ -417,7 +416,6 @@ export function AddOrderPanel({
                               <div className={styles.shippingFields}>
                                 <div className={styles.sectionHeading}>
                                   <h3>عنوان ووجهة التوصيل</h3>
-                                  <span>اختر الولاية والبلدية بدقة</span>
                                 </div>
                                 <div className={styles.grid}>
                                   <div className={styles.field}>
