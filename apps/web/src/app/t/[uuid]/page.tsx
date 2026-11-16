@@ -84,11 +84,18 @@ export default async function TrackingPage({ params }: PageProps) {
     .eq('order_id', order.id)
     .order('created_at', { ascending: false });
 
+  const hasLinkedYalidineShipment =
+    ['Yalidine Express', 'Yalidine', 'Guepex'].includes(order.carrier_name || '') &&
+    Boolean(order.carrier_tracking_number);
+  const pendingYalidineDescription =
+    'تم حفظ بيانات الطلب في تاجر تراك تمهيداً لإنشاء شحنة Yalidine / Guepex.';
   const formattedEvents = (history || []).map((h, index) => ({
     id: h.id,
     title: h.status_title,
     date: h.created_at,
-    description: h.description,
+    description: hasLinkedYalidineShipment && h.description === pendingYalidineDescription
+      ? 'تم تسجيل الشحنة لدى Yalidine / Guepex وربطها بهذا الطلب بنجاح. يمكنك متابعة تحديثات التوصيل من هنا.'
+      : h.description,
     isCurrent: index === 0,
   }));
 
