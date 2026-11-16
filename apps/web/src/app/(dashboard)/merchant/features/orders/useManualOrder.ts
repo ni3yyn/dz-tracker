@@ -1,5 +1,6 @@
 import React, { useCallback, useLayoutEffect, useState } from 'react';
 import { createManualOrder } from '../../actions';
+import { normalizeMerchantServerError } from '../../../../../lib/merchant-error-messages';
 
 export interface ManualOrderSuccess {
   trackingUuid: string;
@@ -55,7 +56,7 @@ export function useManualOrder({
     try {
       const res = await createManualOrder(formData);
       if (res?.error) {
-        setAddOrderError(res.error);
+        setAddOrderError(normalizeMerchantServerError(res.error, 'order'));
       } else if (res?.success) {
         setNewOrderSuccess({
           trackingUuid: res.trackingUuid || '',
@@ -95,7 +96,7 @@ export function useManualOrder({
         }
       }
     } catch (err: any) {
-      setAddOrderError(err?.message || 'حدث خطأ غير متوقع أثناء إضافة الطلب');
+      setAddOrderError(normalizeMerchantServerError(err, 'order'));
     } finally {
       setIsCreatingOrder(false);
     }
