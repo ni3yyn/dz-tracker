@@ -8,6 +8,7 @@ import { Icons } from '../../components/DashboardIcons';
 import { getYalidineManualParcelOptions, getYalidineManualFeeQuote } from '../../yalidine-actions';
 import type { ManualOrderSuccess } from './useManualOrder';
 import { useManualOrder } from './useManualOrder';
+import { normalizeMerchantServerError } from '../../../../../lib/merchant-error-messages';
 import styles from './AddOrderPanel.module.css';
 
 interface AddOrderPanelProps {
@@ -247,13 +248,13 @@ export function AddOrderPanel({
         if (!active) return;
         if (!result.success || !result.quote) {
           setFeeQuote(null);
-          setFeeQuoteError(result.error || 'تعذّر جلب تسعيرة التوصيل الرسمية.');
+          setFeeQuoteError(normalizeMerchantServerError(result.error || 'تعذّر جلب تسعيرة التوصيل الرسمية.', 'fees'));
           return;
         }
         setFeeQuote(result.quote);
       })
       .catch((error: any) => {
-        if (active) setFeeQuoteError(error?.message || 'تعذّر جلب تسعيرة التوصيل الرسمية.');
+        if (active) setFeeQuoteError(normalizeMerchantServerError(error, 'fees'));
       })
       .finally(() => { if (active) setFeeQuoteLoading(false); });
     return () => { active = false; };
@@ -268,7 +269,7 @@ export function AddOrderPanel({
       .then((result) => {
         if (!active) return;
         if (!result.success || !result.options) {
-          setParcelOptionsError(result.error || 'تعذّر تحميل مواقع شركة التوصيل.');
+          setParcelOptionsError(normalizeMerchantServerError(result.error || 'تعذّر تحميل مواقع شركة التوصيل.', 'locations'));
           return;
         }
         setParcelOptions(result.options);
@@ -278,7 +279,7 @@ export function AddOrderPanel({
         if (defaultSender) setFromWilayaId(String(defaultSender.id));
       })
       .catch((error: any) => {
-        if (active) setParcelOptionsError(error?.message || 'تعذّر تحميل مواقع شركة التوصيل.');
+        if (active) setParcelOptionsError(normalizeMerchantServerError(error, 'locations'));
       })
       .finally(() => {
         if (active) setParcelOptionsLoading(false);
