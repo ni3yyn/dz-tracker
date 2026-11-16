@@ -243,6 +243,14 @@ export function AddOrderPanel({
     ),
     [parcelOptions, toWilayaId]
   );
+  const getDeliveryFeeLabel = (type: 'home' | 'stopdesk') => {
+    if (feeQuoteLoading) return 'جارٍ تحديد السعر';
+    if (!feeQuote) return 'السعر غير متاح';
+    const fee = type === 'stopdesk'
+      ? (deliveryTier === 'economic' ? feeQuote.economicDesk : feeQuote.expressDesk)
+      : (deliveryTier === 'economic' ? feeQuote.economicHome : feeQuote.expressHome);
+    return typeof fee === 'number' ? `${fee} دج` : 'غير متاحة';
+  };
 
   useEffect(() => {
     if (!isAddOrderPanelOpen || !shouldDispatchToYalidine || !fromWilayaId || !toWilayaId || !toCommuneId) {
@@ -600,6 +608,9 @@ export function AddOrderPanel({
                               />
                             )}
                           </div>
+                          {Number(productQuantity) > 1 && (
+                            <p className={styles.inlineNote}>أدخل السعر الإجمالي لجميع القطع، وليس سعر القطعة الواحدة.</p>
+                          )}
                         </div>
                         <div className={styles.field}>
                           <label className={styles.label}>الحالة الأولية</label>
@@ -721,8 +732,8 @@ export function AddOrderPanel({
                                       variant="field"
                                       className={styles.select}
                                       options={[
-                                        { value: 'home', label: 'توصيل إلى المنزل' },
-                                        { value: 'stopdesk', label: 'استلام من المكتب' },
+                                        { value: 'home', label: `توصيل إلى المنزل · ${getDeliveryFeeLabel('home')}` },
+                                        { value: 'stopdesk', label: `استلام من المكتب · ${getDeliveryFeeLabel('stopdesk')}` },
                                       ]}
                                     />
                                   </div>
@@ -798,11 +809,6 @@ export function AddOrderPanel({
                                         { value: 'sender', label: 'المتجر (توصيل مجاني)' },
                                       ]}
                                     />
-                                    <p className={styles.inlineNote}>
-                                      {deliveryFeePayer === 'receiver'
-                                        ? 'أدخل ثمن المنتجات فقط. ستضيف Guepex رسوم التوصيل إلى المبلغ الذي يدفعه العميل عند الاستلام.'
-                                        : 'أدخل ثمن المنتجات فقط. يتحمل المتجر رسوم التوصيل بشكل منفصل، ولن تُضاف إلى ما يدفعه العميل.'}
-                                    </p>
                                   </div>
                                   <div className={styles.field}>
                                     <label className={styles.label}>نوع الخدمة *</label>
@@ -870,18 +876,6 @@ export function AddOrderPanel({
                                   </div>
                                 )}
 
-                                {feeQuoteLoading && <p className={styles.inlineNote} role="status">جارٍ جلب تعرفة التوصيل…</p>}
-                                {feeQuote && (
-                                  <div className={styles.feeSummary}>
-                                    <span>تعرفة التوصيل لهذه الوجهة</span>
-                                    <strong>
-                                      {(deliveryType === 'stopdesk'
-                                        ? (deliveryTier === 'economic' ? feeQuote.economicDesk : feeQuote.expressDesk)
-                                        : (deliveryTier === 'economic' ? feeQuote.economicHome : feeQuote.expressHome)
-                                      ) ?? 'غير متاحة'} دج
-                                    </strong>
-                                  </div>
-                                )}
                               </div>
                             )}
                           </>
