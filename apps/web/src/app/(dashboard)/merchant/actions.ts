@@ -12,6 +12,7 @@ import {
   buildYalidineCreateParcelData,
   createYalidineParcel,
   findYalidineParcelsByOrderId,
+  findYalidineParcelsByTracking,
   getYalidineManualParcelOptions,
 } from '@saas/orchestrator';
 import { enqueueOrderConfirmationForNewOrder } from '../../../lib/order-confirmation';
@@ -1249,6 +1250,31 @@ async function dispatchManualYalidineParcel(
       lookupSucceeded = true;
     } catch (lookupError: any) {
       lookupErrorMessage = String(lookupError?.message || 'تعذّر التحقق من مرجع الطلب في Guepex.');
+    }
+
+    const trackingFromDuplicateMessage = message.match(/\byal-[A-Za-z0-9]+\b/i)?.[0];
+    if (matches.length === 0 && duplicateReferenceResponse && trackingFromDuplicateMessage) {
+      try {
+        const trackingMatches = await findYalidineParcelsByTracking(
+          baseUrl,
+          { apiId: credentials.apiId, apiToken: credentials.apiToken },
+          trackingFromDuplicateMessage
+        );
+        const exactReferenceMatches = trackingMatches.filter((match) => match.order_id === externalOrderId);
+        if (exactReferenceMatches.length === 1) matches = exactReferenceMatches;
+        else if (trackingMatches.length > 0 && exactReferenceMatches.length === 0) {
+          await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+            status: 'unknown',
+            failure_message: 'Duplicate response tracking number does not belong to the submitted order_id.',
+          });
+          throw new Error(
+            'أعادت Guepex رقم تتبع موجوداً، لكن رقم الطلب المسجل معه لا يطابق هذا الطلب. لم يتم ربطه لتجنب إسناد شحنة لعميل آخر.'
+          );
+        }
+      } catch (trackingLookupError: any) {
+        if (trackingLookupError?.message?.includes('لا يطابق هذا الطلب')) throw trackingLookupError;
+        lookupErrorMessage = String(trackingLookupError?.message || lookupErrorMessage);
+      }
     }
 
     if (matches.length === 1) {
