@@ -157,8 +157,15 @@ test('distinguishes carrier refusal, uncertain POST response and rate-limit guid
   await assert.rejects(createYalidineParcel(baseUrl, credentials, parcel, async () => response({ success: true })),
     (error: unknown) => error instanceof YalidineApiError && error.kind === 'uncertain');
   await assert.rejects(getYalidineManualParcelOptions(baseUrl, credentials, async () =>
-    response({ message: 'Too many requests' }, 429, { 'Retry-After': '17' })),
-    (error: unknown) => error instanceof YalidineApiError && error.kind === 'rate_limited' && error.retryAfterSeconds === 17);
+    response({ message: 'Rate limit per second exceeded, see header for more details' }, 429, { 'Retry-After': '17' })),
+    (error: unknown) => {
+      assert.ok(error instanceof YalidineApiError);
+      assert.equal(error.kind, 'rate_limited');
+      assert.equal(error.retryAfterSeconds, 17);
+      assert.match(error.message, /بلغ حساب Guepex/);
+      assert.doesNotMatch(error.message, /Rate limit per second exceeded/i);
+      return true;
+    });
 });
 
 test('loads carrier-owned locations and per-commune fees and estimates the real fee components', async () => {
