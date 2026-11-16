@@ -77,6 +77,14 @@ interface Props {
   smsTrackingStorageAvailable?: boolean;
   nativeSmsGatewayStorageAvailable?: boolean;
   nativeSmsDevice?: { display_name: string; enabled: boolean } | null;
+  nativeSmsDevices?: Array<{
+    device_id: string;
+    display_name: string | null;
+    enabled: boolean;
+    operator_code: string | null;
+    last_seen_at: string | null;
+    connected_at: string | null;
+  }>;
   nativeSmsDownloadUrl?: string | null;
   confirmationTelegramEnabled?: boolean;
   initialUpsells?: MerchantUpsellItem[];
@@ -125,6 +133,7 @@ export function MerchantDashboardView({
   smsTrackingStorageAvailable = false,
   nativeSmsGatewayStorageAvailable = false,
   nativeSmsDevice = null,
+  nativeSmsDevices = [],
   nativeSmsDownloadUrl = null,
   confirmationTelegramEnabled = false,
   initialUpsells = [],
@@ -729,6 +738,7 @@ export function MerchantDashboardView({
               onToggleSmsTracking={handleToggleSmsTracking}
               nativeSmsGatewayStorageAvailable={nativeSmsGatewayStorageAvailable}
               nativeSmsDevice={nativeSmsDevice}
+              nativeSmsDevices={nativeSmsDevices}
               nativeSmsDownloadUrl={nativeSmsDownloadUrl}
               confirmationEnabled={confirmationEnabled}
               isSavingConfirmation={isSavingConfirmation}

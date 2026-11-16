@@ -79,23 +79,38 @@ if (merchant) {
 // merchant dashboard usable on deployments where that migration is not live yet.
 let nativeSmsGatewayStorageAvailable = false;
 let nativeSmsDevice: { display_name: string; enabled: boolean } | null = null;
+let nativeSmsDevices: Array<{
+  device_id: string;
+  display_name: string | null;
+  enabled: boolean;
+  operator_code: string | null;
+  last_seen_at: string | null;
+  connected_at: string | null;
+}> = [];
 if (merchant) {
-  const { data: nativeDevice, error: nativeDeviceError } = await (supabaseAdmin as any)
+  const { data: nativeDeviceRows, error: nativeDeviceError } = await (supabaseAdmin as any)
     .from('sms_gateway_devices')
-    .select('display_name, enabled, connected_at')
+    .select('device_id, display_name, enabled, operator_code, last_seen_at, connected_at')
     .eq('merchant_id', merchant.id)
     .is('revoked_at', null)
-    .order('connected_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order('connected_at', { ascending: false });
 
   if (!nativeDeviceError) {
     nativeSmsGatewayStorageAvailable = true;
-    nativeSmsDevice = nativeDevice
-      ? { display_name: nativeDevice.display_name, enabled: Boolean(nativeDevice.enabled) }
+    nativeSmsDevices = (nativeDeviceRows || []).map((device: any) => ({
+      device_id: device.device_id,
+      display_name: device.display_name || null,
+      enabled: Boolean(device.enabled),
+      operator_code: device.operator_code || null,
+      last_seen_at: device.last_seen_at || null,
+      connected_at: device.connected_at || null,
+    }));
+    const legacyDevice = nativeSmsDevices.find((device) => !device.operator_code);
+    nativeSmsDevice = legacyDevice
+      ? { display_name: legacyDevice.display_name || 'هاتف Android', enabled: legacyDevice.enabled }
       : null;
   } else {
-    console.warn('[NativeSmsGateway] Phone status is unavailable until the native SMS migration is applied:', nativeDeviceError.message);
+    console.warn('[NativeSmsGateway] Sender-line status is unavailable until the carrier routing migration is applied:', nativeDeviceError.message);
   }
 }
 
@@ -352,6 +367,7 @@ const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim() || nul
       smsTrackingStorageAvailable={smsTrackingStorageAvailable}
       nativeSmsGatewayStorageAvailable={nativeSmsGatewayStorageAvailable}
       nativeSmsDevice={nativeSmsDevice}
+      nativeSmsDevices={nativeSmsDevices}
       nativeSmsDownloadUrl={nativeSmsDownloadUrl}
       confirmationTelegramEnabled={(merchant as any).confirmation_telegram_enabled ?? false}
       initialUpsells={(upsells || []) as any}

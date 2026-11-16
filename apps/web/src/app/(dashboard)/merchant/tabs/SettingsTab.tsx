@@ -6,6 +6,7 @@ import type { EditableBrandSettings } from '../shared/branding-types';
 import type { PaymentRecord, SubscriptionInfo } from '../shared/subscription-types';
 import type { UpgradeTier } from '../features/settings/settings-types';
 import CustomPlanRequest, { type CustomPlanRequestHandle } from '../../../CustomPlanRequest';
+import { SmsGatewayCarrierLines } from './SmsGatewayCarrierLines';
 
 interface SettingsTabProps {
   merchantId: string;
@@ -26,6 +27,14 @@ interface SettingsTabProps {
   onToggleSmsTracking: () => Promise<void>;
   nativeSmsGatewayStorageAvailable: boolean;
   nativeSmsDevice: { display_name: string; enabled: boolean } | null;
+  nativeSmsDevices: Array<{
+    device_id: string;
+    display_name: string | null;
+    enabled: boolean;
+    operator_code: string | null;
+    last_seen_at: string | null;
+    connected_at: string | null;
+  }>;
   nativeSmsDownloadUrl: string | null;
   confirmationEnabled: boolean;
   isSavingConfirmation: boolean;
@@ -70,6 +79,7 @@ export function SettingsTab({
   onToggleSmsTracking,
   nativeSmsGatewayStorageAvailable,
   nativeSmsDevice,
+  nativeSmsDevices,
   nativeSmsDownloadUrl,
   confirmationEnabled,
   isSavingConfirmation,
@@ -182,42 +192,12 @@ export function SettingsTab({
                 </div>
               </div>
 
-              <section className="dz-settings-section dz-settings-native-sms" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 0, padding: '18px 20px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
-                  <div style={{ minWidth: 0, flex: '1 1 280px' }}>
-                    <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>ANDROID SMS PHONE</span>
-                    <h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>اربط هاتفك لإرسال الرسائل من شريحتك</h2>
-                    <p style={{ margin: '6px 0 0', fontSize: '12px', lineHeight: 1.75, color: 'var(--ink-muted)' }}>استخدم هاتف Android وشريحة الاتصال الخاصة بك. بعد الربط، يرسل التطبيق رابط التتبع مرة واحدة لكل طلب جديد، دون Termux أو إعدادات تقنية.</p>
-                  </div>
-                  <div style={{ flex: '0 0 auto', minWidth: '150px', textAlign: 'start' }}>
-                    <strong style={{ display: 'block', fontSize: '13px', color: nativeSmsDevice ? (nativeSmsDevice.enabled ? '#267548' : '#946b2d') : 'var(--ink-muted)' }}>
-                      {!nativeSmsGatewayStorageAvailable ? 'الربط غير متاح حالياً' : nativeSmsDevice ? (nativeSmsDevice.enabled ? 'الهاتف مرتبط' : 'الهاتف موقوف') : 'لا يوجد هاتف مرتبط'}
-                    </strong>
-                    {nativeSmsDevice && <span style={{ display: 'block', marginTop: '4px', fontSize: '11px', color: 'var(--ink-muted)' }}>{nativeSmsDevice.display_name || 'هاتف Android'}</span>}
-                  </div>
-                </div>
-                {!nativeSmsGatewayStorageAvailable ? (
-                  <p role="status" style={{ margin: '12px 0 0', paddingTop: '11px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '12px', lineHeight: 1.7 }}>سيظهر الربط بعد نشر تحديث خدمة الهاتف وتطبيق ترحيل قاعدة البيانات.</p>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--border-soft)', marginTop: '13px', paddingTop: '12px' }}>
-                    {nativeSmsDevice && !nativeSmsDevice.enabled ? (
-                      <p role="status" style={{ margin: 0, color: '#946b2d', fontSize: '11px', lineHeight: 1.7 }}>تم إيقاف هذا الهاتف من إدارة تاجر تراك. تواصل مع الدعم لإعادة تفعيله.</p>
-                    ) : (
-                      <>
-                        <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: '11px', lineHeight: 1.7 }}>افتح هذه الصفحة من الهاتف الذي ثبّت عليه التطبيق، ثم وافق على ربطه بمتجرك.</p>
-                        <a href="/mobile/sms-gateway/connect?redirect_uri=tajertrack-sms%3A%2F%2Fpair" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: '42px', padding: '0 16px', background: 'var(--ink-main)', color: 'var(--surface)', textDecoration: 'none', fontSize: '12px', fontWeight: 700, borderRadius: 0, whiteSpace: 'nowrap' }}>
-                          {nativeSmsDevice ? 'إعادة ربط الهاتف' : 'ربط الهاتف'}
-                        </a>
-                      </>
-                    )}
-                  </div>
-                )}
-                {nativeSmsDownloadUrl ? (
-                  <a href={nativeSmsDownloadUrl} download style={{ display: 'inline-flex', marginTop: '12px', color: 'var(--ink-main)', fontSize: '12px', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: '3px' }}>تحميل تطبيق TajerTrack Phone</a>
-                ) : (
-                  <p style={{ margin: '10px 0 0', color: 'var(--ink-muted)', fontSize: '11px', lineHeight: 1.6 }}>رابط تنزيل التطبيق سيظهر هنا بعد نشر نسخة Android الموقّعة.</p>
-                )}
-              </section>
+              <SmsGatewayCarrierLines
+                available={nativeSmsGatewayStorageAvailable}
+                devices={nativeSmsDevices}
+                legacyDevice={nativeSmsDevice}
+                downloadUrl={nativeSmsDownloadUrl}
+              />
 
               <div className="dz-settings-section dz-settings-exchange" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 0, padding: '18px 20px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
