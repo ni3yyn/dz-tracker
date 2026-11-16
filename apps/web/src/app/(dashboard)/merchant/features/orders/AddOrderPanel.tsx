@@ -205,7 +205,7 @@ export function AddOrderPanel({
   const [parcelOptions, setParcelOptions] = useState<any>(null);
   const [parcelOptionsLoading, setParcelOptionsLoading] = useState(false);
   const [parcelOptionsError, setParcelOptionsError] = useState('');
-  const parcelOptionsLoadAttemptRef = useRef<string | null>(null);
+  const parcelOptionsLoadAttemptRef = useRef(false);
   const [fromWilayaId, setFromWilayaId] = useState('');
   const [toWilayaId, setToWilayaId] = useState('');
   const [toCommuneId, setToCommuneId] = useState('');
@@ -267,9 +267,9 @@ export function AddOrderPanel({
 
   useEffect(() => {
     if (!isAddOrderPanelOpen || !shouldDispatchToYalidine) return;
-    if (parcelOptionsLoadAttemptRef.current === merchantId) return;
+    if (parcelOptionsLoadAttemptRef.current) return;
 
-    parcelOptionsLoadAttemptRef.current = merchantId;
+    parcelOptionsLoadAttemptRef.current = true;
     let active = true;
     let cachedOptions: any = null;
     let fetchedFreshOptions = false;
@@ -331,16 +331,16 @@ export function AddOrderPanel({
       } finally {
         if (active) {
           setParcelOptionsLoading(false);
-          // Allow close/reopen to retry only when we have no usable cache or live result.
-          if (!cachedOptions && !fetchedFreshOptions) {
-            parcelOptionsLoadAttemptRef.current = null;
-          }
+          parcelOptionsLoadAttemptRef.current = false;
         }
       }
     };
 
     void loadOptions();
-    return () => { active = false; };
+    return () => {
+      active = false;
+      parcelOptionsLoadAttemptRef.current = false;
+    };
   }, [isAddOrderPanelOpen, shouldDispatchToYalidine, merchantId]);
 
   if (!isAddOrderPanelMounted || typeof document === 'undefined') return null;
