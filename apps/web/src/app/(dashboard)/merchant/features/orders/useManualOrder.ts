@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useState } from 'react';
 import { createManualOrder } from '../../actions';
 
 export interface ManualOrderSuccess {
@@ -43,8 +43,9 @@ export function useManualOrder({
     const frame = requestAnimationFrame(() => setIsAddOrderPanelOpen(true));
     return () => cancelAnimationFrame(frame);
   }, [isAddOrderModalOpen]);
-  const handleCreateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateOrder = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isCreatingOrder) return;
     setIsCreatingOrder(true);
     setAddOrderError(null);
 
@@ -98,23 +99,22 @@ export function useManualOrder({
     } finally {
       setIsCreatingOrder(false);
     }
-  };
+  }, [isCreatingOrder, merchantId, showToast, telegramEnabled]);
 
-
-  const openAddOrder = () => {
+  const openAddOrder = useCallback(() => {
     setIsAddOrderModalOpen(true);
     setAddOrderError(null);
     setNewOrderSuccess(null);
-  };
+  }, []);
 
-  const closeAddOrder = () => setIsAddOrderModalOpen(false);
+  const closeAddOrder = useCallback(() => setIsAddOrderModalOpen(false), []);
 
-  const closeAddOrderSuccess = () => {
+  const closeAddOrderSuccess = useCallback(() => {
     setNewOrderSuccess(null);
     setIsAddOrderModalOpen(false);
-  };
+  }, []);
 
-  const finishAddOrderPanelClose = () => setIsAddOrderPanelMounted(false);
+  const finishAddOrderPanelClose = useCallback(() => setIsAddOrderPanelMounted(false), []);
 
   return {
     isAddOrderModalOpen,
