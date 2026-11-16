@@ -1229,35 +1229,75 @@ async function dispatchManualYalidineParcel(
       reused: false,
     };
   } catch (error: any) {
-    const isDefiniteRejection = error instanceof YalidineApiError && (error.kind === 'rejected' || error.kind === 'rate_limited');
-    if (isDefiniteRejection) {
-      await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
-        status: 'rejected',
-        failure_message: error.message,
-      });
-      throw new Error(error.message);
-    }
+    const message = String(error?.message || '');
+    const duplicateReferenceResponse =
+      /\b(already\s+exists?|exists?\s+already|duplicate|already\s+created|order[_ -]?id\s+already)\b/i.test(message) ||
+      /(existe déjà|déjà exist|déjà créé|référence.*موجود|الطلب.*موجود)/i.test(message);
 
+    // The carrier may create the parcel and then return a duplicate/reference
+    // response (or the response may be lost). Always reconcile the exact order_id
+    // before returning a failure; this avoids telling the merchant that a parcel
+    // failed when the carrier has already issued its yal-... tracking number.
     let matches: Awaited<ReturnType<typeof findYalidineParcelsByOrderId>> = [];
+    let lookupSucceeded = false;
+    let lookupErrorMessage = '';
     try {
       matches = await findYalidineParcelsByOrderId(baseUrl, {
         apiId: credentials.apiId,
         apiToken: credentials.apiToken,
       }, externalOrderId);
-    } catch {
-      // Keep the reservation as unknown; an operator must resolve the carrier handoff.
+      lookupSucceeded = true;
+    } catch (lookupError: any) {
+      lookupErrorMessage = String(lookupError?.message || 'تعذّر التحقق من مرجع الطلب في Guepex.');
     }
-    const recovered = matches.length === 1
-      ? await resolveManualYalidineDispatch(supabase, merchantId, externalOrderId, matches, payloadHash)
-      : null;
-    if (recovered) return recovered;
+
+    if (matches.length === 1) {
+      return await resolveManualYalidineDispatch(
+        supabase, merchantId, externalOrderId, matches, payloadHash
+      ) as ManualYalidineDispatchResult;
+    }
+
+    if (matches.length > 1) {
+      await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+        status: 'unknown',
+        failure_message: 'More than one carrier parcel returned while reconciling a parcel-creation response.',
+      });
+      throw new Error('وجد Guepex أكثر من شحنة بنفس مرجع الطلب. لم يتم اختيار أي شحنة تلقائياً؛ راجع لوحة الشركة.');
+    }
+
+    const isDefiniteRejection = error instanceof YalidineApiError &&
+      (error.kind === 'rejected' || error.kind === 'rate_limited');
+
+    // A duplicate response with no matching GET result can be eventual
+    // consistency, not proof that no parcel exists. Keep it unknown and block
+    // another POST; the next safe retry performs the same exact-reference lookup.
+    if (duplicateReferenceResponse || !isDefiniteRejection || !lookupSucceeded) {
+      await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+        status: 'unknown',
+        failure_message: [
+          message || 'Carrier creation outcome is unknown.',
+          lookupErrorMessage,
+        ].filter(Boolean).join(' | ').slice(0, 1000),
+      });
+      if (duplicateReferenceResponse) {
+        throw new Error(
+          'أفادت Guepex أن مرجع الطلب مرتبط بشحنة موجودة، لكن فحص API لم يُرجع رقم التتبع بعد. ' +
+          'لم نرسل شحنة ثانية. أعد فتح الطلب وحاول التحقق مجدداً بعد قليل، أو تأكد من لوحة Guepex بالمرجع ' +
+          externalOrderId + '.'
+        );
+      }
+      throw new Error(
+        'لم نتمكن من تأكيد نتيجة إنشاء الشحنة. لم نكرر الإرسال لتجنب شحنة مزدوجة. ' +
+        (message || lookupErrorMessage || 'تحقق من لوحة Guepex بالمرجع ' + externalOrderId + '.')
+      );
+    }
 
     await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
-      status: 'unknown',
-      failure_message: error?.message || 'Carrier creation outcome is unknown.',
+      status: 'rejected',
+      failure_message: message || 'Carrier definitively rejected parcel creation.',
     });
-    throw new Error('لم نتمكن من تأكيد نتيجة إنشاء الشحنة. لم نكرر طلب الإرسال. تحقق من لوحة Guepex باستخدام رقم الطلب ' + externalOrderId + ' قبل أي إعادة محاولة.');
-  }
+    const retry = error?.retryAfterSeconds ? ' أعد المحاولة بعد ' + error.retryAfterSeconds + ' ثانية.' : '';
+    throw new Error((message || 'رفضت Guepex إنشاء الشحنة.') + retry);
 }
 
 export async function createManualOrder(formData: FormData) {
