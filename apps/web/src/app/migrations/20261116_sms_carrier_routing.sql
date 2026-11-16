@@ -320,7 +320,8 @@ BEGIN
          locked_at = NULL,
          lease_expires_at = NULL,
          updated_at = NOW()
-   WHERE job.status = 'processing'
+   WHERE job.merchant_id = v_merchant_id
+     AND job.status = 'processing'
      AND (
        job.locked_by = 'android-sms-gateway'
        OR job.locked_by IN (

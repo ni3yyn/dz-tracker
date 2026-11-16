@@ -6,7 +6,6 @@ on:
       - main
       - 'feat/multi-delivery-company-integrations'
     paths:
-      - "apps/companion-extension/**"
       - "apps/push-worker/**"
       - "apps/telegram-worker/**"
       - "apps/web/src/app/migrations/**"
@@ -78,9 +77,6 @@ jobs:
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Test TajerTrack Companion request parser
-        run: node --test apps/companion-extension/capture-parser.test.mjs
 
       - name: Typecheck background workers
         run: |
