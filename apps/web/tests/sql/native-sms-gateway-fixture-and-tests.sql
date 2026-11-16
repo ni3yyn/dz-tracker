@@ -333,3 +333,105 @@ BEGIN
     RAISE EXCEPTION 'Legacy reconnect unexpectedly removed a carrier-specific sender line';
   END IF;
 END $;
+
+
+-- Single-use relative invitations and merchant pause/revoke controls.
+DO $$
+DECLARE
+  v_invite RECORD;
+  v_ok BOOLEAN;
+BEGIN
+  INSERT INTO public.sms_gateway_device_invites (
+    token_hash, merchant_id, created_by, operator_code, expires_at
+  )
+  VALUES (
+    encode(digest('one-time-relay-invite', 'sha256'), 'hex'),
+    '10000000-0000-4000-8000-000000000010',
+    '20000000-0000-4000-8000-000000000010',
+    'mobilis',
+    NOW() + INTERVAL '30 minutes'
+  );
+
+  SELECT * INTO v_invite
+    FROM public.redeem_native_sms_gateway_invite(
+      encode(digest('one-time-relay-invite', 'sha256'), 'hex'),
+      encode(digest('one-time-pairing-code', 'sha256'), 'hex')
+    );
+
+  IF NOT FOUND
+     OR v_invite.merchant_id <> '10000000-0000-4000-8000-000000000010'
+     OR v_invite.operator_code <> 'mobilis'
+     OR v_invite.store_name <> 'Native merchant' THEN
+    RAISE EXCEPTION 'Carrier-scoped relative invitation redemption failed: %', row_to_json(v_invite);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.sms_gateway_pairing_codes
+     WHERE code_hash = encode(digest('one-time-pairing-code', 'sha256'), 'hex')
+       AND merchant_id = '10000000-0000-4000-8000-000000000010'
+       AND operator_code = 'mobilis'
+       AND consumed_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Invitation did not create its five-minute scoped pairing code';
+  END IF;
+
+  SELECT * INTO v_invite
+    FROM public.redeem_native_sms_gateway_invite(
+      encode(digest('one-time-relay-invite', 'sha256'), 'hex'),
+      encode(digest('invite-replay-code', 'sha256'), 'hex')
+    );
+  IF FOUND OR EXISTS (
+    SELECT 1 FROM public.sms_gateway_pairing_codes
+     WHERE code_hash = encode(digest('invite-replay-code', 'sha256'), 'hex')
+  ) THEN
+    RAISE EXCEPTION 'A redeemed carrier invitation was accepted more than once';
+  END IF;
+
+  SELECT public.set_native_sms_gateway_device_enabled(
+    '10000000-0000-4000-8000-000000000010',
+    'carrier-device-djezzy',
+    FALSE
+  ) INTO v_ok;
+  IF v_ok IS DISTINCT FROM TRUE OR EXISTS (
+    SELECT 1 FROM public.sms_gateway_devices
+     WHERE device_id = 'carrier-device-djezzy'
+       AND enabled = TRUE
+  ) THEN
+    RAISE EXCEPTION 'Merchant could not pause one carrier line';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.sms_tracking_outbox
+     WHERE order_id = '30000000-0000-4000-8000-000000000013'
+       AND status <> 'unknown'
+  ) THEN
+    RAISE EXCEPTION 'Pausing a sender line did not preserve its uncertain in-flight send as unknown';
+  END IF;
+
+  SELECT public.set_native_sms_gateway_device_enabled(
+    '10000000-0000-4000-8000-000000000010',
+    'carrier-device-djezzy',
+    TRUE
+  ) INTO v_ok;
+  IF v_ok IS DISTINCT FROM TRUE OR NOT EXISTS (
+    SELECT 1 FROM public.sms_gateway_devices
+     WHERE device_id = 'carrier-device-djezzy'
+       AND enabled = TRUE
+       AND revoked_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Merchant could not re-enable its paused carrier line';
+  END IF;
+
+  SELECT public.revoke_native_sms_gateway_device(
+    '10000000-0000-4000-8000-000000000010',
+    'carrier-device-mobilis'
+  ) INTO v_ok;
+  IF v_ok IS DISTINCT FROM TRUE OR NOT EXISTS (
+    SELECT 1 FROM public.sms_gateway_devices
+     WHERE device_id = 'carrier-device-mobilis'
+       AND enabled = FALSE
+       AND revoked_at IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'Merchant revocation did not invalidate the selected carrier device';
+  END IF;
+END $$;
