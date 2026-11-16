@@ -202,6 +202,7 @@ export function AddOrderPanel({
   const [carrierName, setCarrierName] = useState('Yalidine Express');
   const [sendToYalidine, setSendToYalidine] = useState(true);
   const [manualTrackingNumber, setManualTrackingNumber] = useState('');
+  const [deliveryFeePayer, setDeliveryFeePayer] = useState<'receiver' | 'sender'>('receiver');
   const [parcelOptions, setParcelOptions] = useState<any>(null);
   const [parcelOptionsLoading, setParcelOptionsLoading] = useState(false);
   const [parcelOptionsError, setParcelOptionsError] = useState('');
@@ -535,7 +536,10 @@ export function AddOrderPanel({
                             name="carrier_name"
                             ariaLabel="شركة التوصيل"
                             value={carrierName}
-                            onChange={(value) => setCarrierName(value)}
+                            onChange={(value) => {
+                              setCarrierName(value);
+                              if (value === 'Yalidine Express') setManualTrackingNumber('');
+                            }}
                             variant="field"
                             className={styles.select}
                             options={[
@@ -551,18 +555,20 @@ export function AddOrderPanel({
                             ]}
                           />
                         </div>
-                        <div className={styles.field}>
-                          <label className={styles.label}>رقم التتبع لدى شركة التوصيل</label>
-                          <input
-                            type="text"
-                            name="carrier_tracking_number"
-                            value={manualTrackingNumber}
-                            onChange={(event) => setManualTrackingNumber(event.target.value)}
-                            placeholder="أدخل رقم تتبع موجوداً"
-                            className={styles.input}
-                            dir="ltr"
-                          />
-                        </div>
+                        {carrierName !== 'Yalidine Express' && (
+                          <div className={styles.field}>
+                            <label className={styles.label}>رقم التتبع لدى شركة التوصيل</label>
+                            <input
+                              type="text"
+                              name="carrier_tracking_number"
+                              value={manualTrackingNumber}
+                              onChange={(event) => setManualTrackingNumber(event.target.value)}
+                              placeholder="أدخل رقم تتبع موجوداً"
+                              className={styles.input}
+                              dir="ltr"
+                            />
+                          </div>
+                        )}
                         <div className={styles.field}>
                           <label className={styles.label}>المنتج / محتوى الشحنة {shouldDispatchToYalidine ? '*' : '(اختياري)'}</label>
                           <input
@@ -734,7 +740,7 @@ export function AddOrderPanel({
                                 </div>
                                 <div className={styles.grid}>
                                   <div className={styles.field}>
-                                    <label className={styles.label}>المبلغ المطلوب تحصيله من العميل (دج) *</label>
+                                    <label className={styles.label}>قيمة المنتجات المطلوب تحصيلها (دون رسوم التوصيل) (دج) *</label>
                                     <input
                                       className={styles.input}
                                       type="number"
@@ -751,7 +757,8 @@ export function AddOrderPanel({
                                     <BrandedSelect
                                       name="delivery_fee_payer"
                                       ariaLabel="دافع رسوم التوصيل"
-                                      defaultValue="receiver"
+                                      value={deliveryFeePayer}
+                                      onChange={(value) => setDeliveryFeePayer(value === 'sender' ? 'sender' : 'receiver')}
                                       variant="field"
                                       className={styles.select}
                                       options={[
@@ -759,6 +766,11 @@ export function AddOrderPanel({
                                         { value: 'sender', label: 'المتجر (توصيل مجاني)' },
                                       ]}
                                     />
+                                    <p className={styles.inlineNote}>
+                                      {deliveryFeePayer === 'receiver'
+                                        ? 'أدخل ثمن المنتجات فقط. ستضيف Guepex رسوم التوصيل إلى المبلغ الذي يدفعه العميل عند الاستلام.'
+                                        : 'أدخل ثمن المنتجات فقط. يتحمل المتجر رسوم التوصيل بشكل منفصل، ولن تُضاف إلى ما يدفعه العميل.'}
+                                    </p>
                                   </div>
                                   <div className={styles.field}>
                                     <label className={styles.label}>نوع الخدمة *</label>
