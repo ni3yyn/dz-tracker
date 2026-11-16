@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { FormEvent } from 'react';
 import { BrandedSelect } from '../../BrandedSelect';
 import { Icons } from '../../components/DashboardIcons';
 import { getYalidineManualParcelOptions, getYalidineManualFeeQuote } from '../../yalidine-actions';
 import type { ManualOrderSuccess } from './useManualOrder';
+import { useManualOrder } from './useManualOrder';
 import styles from './AddOrderPanel.module.css';
 
 interface AddOrderPanelProps {
@@ -23,7 +24,159 @@ interface AddOrderPanelProps {
   handleCreateOrder: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   copyToClipboard: (text: string, id: string) => void;
   showToast: (message: string) => void;
+  panelNotice: string | null;
 }
+
+
+function AnimatedScreenStage({
+  mode,
+  children,
+}: {
+  mode: 'form' | 'success';
+  children: ReactNode;
+}) {
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const previousModeRef = useRef(mode);
+
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    const content = contentRef.current;
+    const parent = stage?.parentElement;
+    if (!stage || !content || !parent) return;
+
+    let frame = 0;
+    let active = true;
+
+    const measure = () => {
+      if (!active) return;
+      const parentStyle = window.getComputedStyle(parent);
+      const horizontalPadding =
+        (Number.parseFloat(parentStyle.paddingInlineStart) || 0) +
+        (Number.parseFloat(parentStyle.paddingInlineEnd) || 0);
+      const availableWidth = Math.max(0, parent.clientWidth - horizontalPadding);
+      const targetWidth = mode === 'success'
+        ? Math.min(460, availableWidth)
+        : availableWidth;
+      const nextWidth = `${Math.round(targetWidth)}px`;
+
+      if (!stage.dataset.ready) stage.style.transition = 'none';
+      if (stage.style.width !== nextWidth) stage.style.width = nextWidth;
+
+      const nextHeight = `${Math.ceil(content.getBoundingClientRect().height)}px`;
+      if (stage.style.height !== nextHeight) stage.style.height = nextHeight;
+
+      if (!stage.dataset.ready) {
+        void stage.offsetHeight;
+        stage.dataset.ready = 'true';
+        stage.style.removeProperty('transition');
+      }
+    };
+
+    const scheduleMeasure = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(measure);
+    };
+
+    const previousMode = previousModeRef.current;
+    previousModeRef.current = mode;
+    measure();
+
+    if (previousMode !== mode && mode === 'success') {
+      const panel = stage.closest('.dz-order-side-panel');
+      if (panel instanceof HTMLElement) {
+        panel.scrollTo({
+          top: 0,
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        });
+      }
+    }
+
+    const observer = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(scheduleMeasure)
+      : null;
+    observer?.observe(content);
+    observer?.observe(parent);
+    window.addEventListener('resize', scheduleMeasure);
+
+    return () => {
+      active = false;
+      if (frame) window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener('resize', scheduleMeasure);
+    };
+  }, [mode]);
+
+  return (
+    <div ref={stageRef} className={styles.screenStage} data-mode={mode}>
+      <div ref={contentRef} className={styles.screenStageContent}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+interface AddOrderPanelControllerProps {
+  merchantId: string;
+  telegramEnabled: boolean;
+  siteUrl: string;
+}
+
+export const AddOrderPanelController = memo(function AddOrderPanelController({
+  merchantId,
+  telegramEnabled,
+  siteUrl,
+}: AddOrderPanelControllerProps) {
+  const [panelNotice, setPanelNotice] = useState<string | null>(null);
+  const showToast = useCallback((message: string) => setPanelNotice(message), []);
+  const order = useManualOrder({ merchantId, telegramEnabled, showToast });
+
+  useEffect(() => {
+    const handleOpen = () => order.openAddOrder();
+    window.addEventListener('tajertrack:add-order-open', handleOpen);
+    return () => window.removeEventListener('tajertrack:add-order-open', handleOpen);
+  }, [order.openAddOrder]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && order.isAddOrderModalOpen && !order.isCreatingOrder) {
+        order.closeAddOrder();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [order.closeAddOrder, order.isAddOrderModalOpen, order.isCreatingOrder]);
+
+  useEffect(() => {
+    window.dispatchEvent(new Event('tajer-dashboard-back-layer-change'));
+  }, [order.isAddOrderPanelMounted, order.isAddOrderModalOpen]);
+
+  useEffect(() => {
+    if (!panelNotice) return;
+    const timer = window.setTimeout(() => setPanelNotice(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [panelNotice]);
+
+  const copyToClipboard = useCallback((text: string, _id: string) => {
+    if (!navigator.clipboard?.writeText) {
+      showToast('تعذّر نسخ رابط التتبع من هذا المتصفح.');
+      return;
+    }
+    void navigator.clipboard.writeText(text)
+      .then(() => showToast('تم نسخ رابط التتبع'))
+      .catch(() => showToast('تعذّر نسخ رابط التتبع.'));
+  }, [showToast]);
+
+  return (
+    <AddOrderPanel
+      {...order}
+      siteUrl={siteUrl}
+      copyToClipboard={copyToClipboard}
+      showToast={showToast}
+      panelNotice={panelNotice}
+    />
+  );
+});
 
 export function AddOrderPanel({
   isAddOrderPanelMounted,
@@ -39,6 +192,7 @@ export function AddOrderPanel({
   handleCreateOrder,
   copyToClipboard,
   showToast,
+  panelNotice,
 }: AddOrderPanelProps) {
   const [carrierName, setCarrierName] = useState('Yalidine Express');
   const [sendToYalidine, setSendToYalidine] = useState(true);
@@ -58,6 +212,7 @@ export function AddOrderPanel({
   const [hasExchange, setHasExchange] = useState(false);
   const shouldDispatchToYalidine =
     carrierName === 'Yalidine Express' && sendToYalidine && !manualTrackingNumber.trim();
+  const submitFeedback = addOrderError || parcelOptionsError || feeQuoteError;
 
   const destinationWilayas = useMemo(
     () => (parcelOptions?.wilayas || []).filter((item: any) => item.is_deliverable),
@@ -183,7 +338,8 @@ export function AddOrderPanel({
                   </button>
                 </div>
 
-                {newOrderSuccess ? (
+                <AnimatedScreenStage mode={newOrderSuccess ? 'success' : 'form'}>
+                  {newOrderSuccess ? (
                   <div className={styles.successView}>
                     <div className={styles.successMark} aria-hidden="true">
                       <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -277,13 +433,6 @@ export function AddOrderPanel({
                   </div>
                 ) : (
                   <form onSubmit={handleCreateOrder} className={styles.form}>
-                    {addOrderError && (
-                      <div className={styles.error} role="alert">
-                        <Icons.AlertTriangle />
-                        <span>{addOrderError}</span>
-                      </div>
-                    )}
-
                     <section className={styles.section}>
                       <div className={styles.sectionHeading}>
                         <h3>بيانات العميل</h3>
@@ -407,11 +556,6 @@ export function AddOrderPanel({
                         ) : sendToYalidine ? (
                           <>
                             {parcelOptionsLoading && <p className={styles.inlineNote} role="status">جارٍ تحميل خيارات التوصيل…</p>}
-                            {parcelOptionsError && (
-                              <p className={styles.inlineError} role="alert">
-                                {parcelOptionsError}
-                              </p>
-                            )}
                             {parcelOptions && (
                               <div className={styles.shippingFields}>
                                 <div className={styles.sectionHeading}>
@@ -628,7 +772,6 @@ export function AddOrderPanel({
                                 )}
 
                                 {feeQuoteLoading && <p className={styles.inlineNote} role="status">جارٍ جلب تعرفة التوصيل…</p>}
-                                {feeQuoteError && <p className={styles.inlineError} role="alert">{feeQuoteError}</p>}
                                 {feeQuote && (
                                   <div className={styles.feeSummary}>
                                     <span>تعرفة التوصيل لهذه الوجهة</span>
@@ -648,12 +791,29 @@ export function AddOrderPanel({
                     )}
 
                     <div className={styles.formFooter}>
+                      <div
+                        className={styles.footerFeedback}
+                        data-visible={submitFeedback ? 'true' : 'false'}
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
+                        <div className={styles.footerFeedbackInner}>
+                          {submitFeedback && (
+                            <div className={styles.error} role="alert">
+                              <Icons.AlertTriangle />
+                              <span>{submitFeedback}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       <button
                         type="submit"
                         className={styles.submitButton}
                         disabled={isCreatingOrder || (shouldDispatchToYalidine && (parcelOptionsLoading || Boolean(parcelOptionsError) || !parcelOptions))}
+                        aria-busy={isCreatingOrder}
                       >
-                        {isCreatingOrder ? 'جارٍ حفظ الطلب وإرسال الشحنة…' : shouldDispatchToYalidine ? 'إنشاء الشحنة وحفظ الطلب' : 'حفظ الطلب'}
+                        <span>{shouldDispatchToYalidine ? 'إنشاء الشحنة وحفظ الطلب' : 'حفظ الطلب'}</span>
+                        <span className={styles.submitSpinner} data-active={isCreatingOrder ? 'true' : 'false'} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
@@ -665,9 +825,18 @@ export function AddOrderPanel({
                       </button>
                     </div>
                   </form>
-                )}
+                  )}
+                </AnimatedScreenStage>
               </div>
               </aside>
+              <div
+                className={styles.panelNotice}
+                data-visible={panelNotice ? 'true' : 'false'}
+                role="status"
+                aria-live="polite"
+              >
+                {panelNotice}
+              </div>
             </div>
 
   ), document.body);
