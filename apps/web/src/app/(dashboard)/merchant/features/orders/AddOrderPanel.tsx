@@ -80,6 +80,7 @@ export function AddOrderPanel({
     if (!isAddOrderPanelOpen || !shouldDispatchToYalidine || !fromWilayaId || !toWilayaId || !toCommuneId) {
       setFeeQuote(null);
       setFeeQuoteError('');
+      setFeeQuoteLoading(false);
       return;
     }
     let active = true;
@@ -210,14 +211,14 @@ export function AddOrderPanel({
                     <p style={{ margin: '0 0 18px', fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.7 }}>
                       {newOrderSuccess.exchangeReplacement ? (
                         <>
-                          مرجع الشحنة: <strong>{newOrderSuccess.externalOrderId}</strong><br />
+                          مرجع الطلب الداخلي: <strong>{newOrderSuccess.externalOrderId}</strong><br />
                           {newOrderSuccess.exchangeReplacementNeedsConfirmation
                             ? 'توجد عدة طلبات استبدال مطابقة. راجع قسم طلبات الاستبدال واختر الطلب الصحيح قبل متابعة الشحنة.'
                             : 'ستظهر تحديثات الشحنة ضمن صفحة التتبع الأصلية. لم يتم إنشاء طلب جديد أو إرسال رابط تتبع إضافي للعميل.'}
                         </>
                       ) : (
                         <>
-                          رقم الطلب: <strong>{newOrderSuccess.externalOrderId}</strong><br />
+                          مرجع الطلب في تاجر تراك: <strong>{newOrderSuccess.externalOrderId}</strong><br />
                           {newOrderSuccess.telegramQueueCheckFailed ? 'تم تسجيل الطلب، لكن تعذّر التحقق من حالة جدولة رابط التتبع.' : newOrderSuccess.telegramTrackingQueued ? 'تم إدراج رابط التتبع في طابور تيليجرام، وسيحاول حساب تاجر تراك إرساله إلى الحساب المرتبط برقم العميل.' : newOrderSuccess.telegramTrackingEnabled ? 'الخدمة مفعّلة، لكن لم تُدرج مهمة الإرسال. تحقق من تطبيق تحديث قاعدة البيانات وسجلات العامل.' : 'خدمة إرسال روابط التتبع عبر تيليجرام متوقفة حالياً. فعّلها من إعدادات المتجر لإرسال روابط الطلبات الجديدة.'}
                         </>
                       )}
@@ -225,7 +226,7 @@ export function AddOrderPanel({
 
                     {newOrderSuccess.carrierTrackingNumber && (
                       <div style={{ display: 'grid', gap: 6, padding: '12px 0', marginBottom: 14, borderTop: '1px solid var(--border-soft)', borderBottom: '1px solid var(--border-soft)' }}>
-                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>رقم تتبع شركة التوصيل</span>
+                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>رقم الشحنة / التتبع لدى Yalidine</span>
                         <strong dir="ltr" style={{ fontSize: 18, letterSpacing: '0.04em' }}>{newOrderSuccess.carrierTrackingNumber}</strong>
                         {newOrderSuccess.carrierShipmentReused && <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>تم ربط الشحنة الموجودة مسبقاً، ولم يتم إنشاء شحنة ثانية.</span>}
                         {newOrderSuccess.carrierLabelUrl && (
@@ -310,7 +311,7 @@ export function AddOrderPanel({
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
-                          رقم الطلب (Order ID) *
+                          مرجع الطلب في تاجر تراك (يرتبط مع Guepex) *
                         </label>
                         <input
                           type="text"
