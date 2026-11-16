@@ -228,9 +228,14 @@ export function AddOrderPanel({
   );
   const destinationCommunes = useMemo(
     () => (parcelOptions?.communes || []).filter((item: any) =>
-      item.wilaya_id === Number(toWilayaId) && item.is_deliverable
+      item.wilaya_id === Number(toWilayaId) && (
+        item.is_deliverable ||
+        (deliveryType === 'stopdesk' && (parcelOptions?.centers || []).some((center: any) =>
+          center.wilaya_id === Number(toWilayaId) && center.commune_id === item.id
+        ))
+      )
     ),
-    [parcelOptions, toWilayaId]
+    [parcelOptions, toWilayaId, deliveryType]
   );
   const stopDeskCenters = useMemo(
     () => (parcelOptions?.centers || []).filter((item: any) =>
