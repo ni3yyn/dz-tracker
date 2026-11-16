@@ -961,6 +961,8 @@ async function dispatchManualYalidineParcel(
   const deliveryFeePayer = String(formData.get('delivery_fee_payer') || 'receiver');
   const address = String(formData.get('carrier_address') || '').trim();
   const productDescription = productName.trim();
+  const productQuantityRaw = String(formData.get('product_quantity') || '1').trim();
+  const productQuantity = Number(productQuantityRaw);
   const hasExchange = formData.get('has_exchange') === 'on';
   const insurance = formData.get('do_insurance') === 'on';
   const deliveryTier = String(formData.get('delivery_tier') || 'express');
@@ -968,6 +970,9 @@ async function dispatchManualYalidineParcel(
 
   if (!firstName || !lastName) {
     throw new Error('أدخل الاسم الشخصي ولقب العميل كلّاً على حدة كما يظهران في بيانات الشحنة.');
+  }
+  if (!/^\d+$/.test(productQuantityRaw) || !Number.isInteger(productQuantity) || productQuantity < 1 || productQuantity > 20) {
+    throw new Error('اختر عدداً صحيحاً للقطع بين 1 و20.');
   }
   if (!amountRaw || !/^\d+$/.test(amountRaw)) {
     throw new Error('أدخل مبلغ التحصيل الذي سيأخذه المندوب من العميل بالدينار.');
@@ -995,7 +1000,9 @@ async function dispatchManualYalidineParcel(
     fromWilayaName: fromWilaya.name,
     toWilayaName: toWilaya.name,
     toCommuneName: toCommune.name,
-    productDescription,
+    productDescription: productQuantity > 1
+      ? `${productDescription} × ${productQuantity}`
+      : productDescription,
     amountToCollect: Number(amountRaw),
     declaredValue: Number(amountRaw),
     insurance,
@@ -1357,6 +1364,7 @@ export async function createManualOrder(formData: FormData) {
     String(formData.get('customer_name') || '').trim();
   const customerPhone = String(formData.get('customer_phone') || '').trim();
   const productName = String(formData.get('product_name') || '').trim();
+  const yalidineProductQuantity = Number(String(formData.get('product_quantity') || '1'));
   const carrierName = String(formData.get('carrier_name') || 'Yalidine Express').trim();
   const suppliedTrackingNumber = String(formData.get('carrier_tracking_number') || '').trim();
   const statusRaw = String(formData.get('status_raw') || 'order_placed').trim();
@@ -1457,7 +1465,10 @@ export async function createManualOrder(formData: FormData) {
       yalidine_delivery_type: String(formData.get('delivery_type') || 'home'),
       yalidine_delivery_tier: String(formData.get('delivery_tier') || 'express'),
       yalidine_stopdesk_id: formData.get('stopdesk_id') ? Number(formData.get('stopdesk_id')) : null,
-      yalidine_product_description: productName.trim(),
+      yalidine_product_description: yalidineProductQuantity > 1
+        ? `${productName.trim()} × ${yalidineProductQuantity}`
+        : productName.trim(),
+      yalidine_product_quantity: yalidineProductQuantity,
       yalidine_amount_to_collect: Number(formData.get('shipment_amount')),
       yalidine_declared_value: Number(formData.get('shipment_amount')),
       yalidine_do_insurance: formData.get('do_insurance') === 'on',
