@@ -85,9 +85,9 @@ BEGIN
   v_digits := regexp_replace(p_phone, '[^0-9]', '', 'g');
 
   IF v_digits LIKE '00213%' THEN
-    v_digits := substring(v_digits FROM 6);
+    v_digits := '0' || substring(v_digits FROM 6);
   ELSIF v_digits LIKE '213%' THEN
-    v_digits := substring(v_digits FROM 4);
+    v_digits := '0' || substring(v_digits FROM 4);
   END IF;
 
   IF v_digits !~ '^0[5-7][0-9]{8}$' THEN
