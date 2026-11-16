@@ -319,6 +319,14 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Serialize all line-pairing operations for this merchant. Pairing codes
+  -- are individually locked above, but different carrier invites must not
+  -- race each other while replacing or creating a carrier slot.
+  PERFORM 1
+    FROM public.merchants AS merchant
+   WHERE merchant.id = v_merchant_id
+   FOR UPDATE;
+
   -- Do not let the legacy unscoped reconnect flow revoke carrier-specific
   -- lines. Once any operator slot exists, pairing must use a scoped invite.
   IF v_operator_code IS NULL AND EXISTS (

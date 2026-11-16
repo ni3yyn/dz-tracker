@@ -251,10 +251,6 @@ BEGIN
      OR (SELECT result_code FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000016') <> 'unsupported_recipient_network' THEN
     RAISE EXCEPTION 'Unsupported customer number was left pending instead of being explicitly skipped';
   END IF;
-  IF (SELECT status FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000016') <> 'skipped'
-     OR (SELECT result_code FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000016') <> 'unsupported_recipient_network' THEN
-    RAISE EXCEPTION 'Unsupported customer number was left pending instead of being explicitly skipped';
-  END IF;
 
   INSERT INTO public.sms_gateway_pairing_codes (code_hash, merchant_id, created_by, operator_code, expires_at)
   VALUES
