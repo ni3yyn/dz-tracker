@@ -293,6 +293,19 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Do not let the legacy unscoped reconnect flow revoke carrier-specific
+  -- lines. Once any operator slot exists, pairing must use a scoped invite.
+  IF v_operator_code IS NULL AND EXISTS (
+    SELECT 1
+      FROM public.sms_gateway_devices AS device
+     WHERE device.merchant_id = v_merchant_id
+       AND device.operator_code IS NOT NULL
+       AND device.revoked_at IS NULL
+  ) THEN
+    RETURN QUERY SELECT NULL::TEXT, v_merchant_id, v_store_name, TRUE, NULL::TEXT;
+    RETURN;
+  END IF;
+
   -- An administratively disabled line cannot be bypassed by generating a
   -- fresh invite. The admin must explicitly re-enable or revoke that line.
   IF EXISTS (

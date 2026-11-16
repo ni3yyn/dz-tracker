@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const pairing = Array.isArray(data) ? data[0] : data;
     if (pairing?.blocked === true) {
       return NextResponse.json({
-        error: 'تم إيقاف خط هذه الشبكة من إدارة تاجر تراك. أعد تفعيله أو ألغِ ربطه قبل إضافة جهاز بديل.',
+        error: 'تعذر هذا الربط القديم أو تم إيقاف خط الشبكة. استخدم دعوة الشبكة من إعدادات المتجر لإضافة خط جديد.',
       }, { status: 403 });
     }
     if (!pairing?.device_id || !pairing?.merchant_id) {

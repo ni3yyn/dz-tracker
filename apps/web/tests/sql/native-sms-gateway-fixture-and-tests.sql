@@ -304,4 +304,32 @@ BEGIN
          AND revoked_at IS NULL) <> 3 THEN
     RAISE EXCEPTION 'Expected all three independent carrier sender lines to remain active';
   END IF;
-END $$;
+
+  -- The old unscoped reconnect flow must not replace all carrier-specific lines.
+  INSERT INTO public.sms_gateway_pairing_codes (code_hash, merchant_id, created_by, expires_at)
+  VALUES (
+    encode(digest('legacy-reconnect-after-carriers', 'sha256'), 'hex'),
+    '10000000-0000-4000-8000-000000000010',
+    '20000000-0000-4000-8000-000000000010',
+    NOW() + INTERVAL '5 minutes'
+  );
+  SELECT * INTO v_pairing FROM public.complete_native_sms_gateway_pairing(
+    encode(digest('legacy-reconnect-after-carriers', 'sha256'), 'hex'),
+    'legacy-reconnect-device',
+    repeat('8', 64),
+    '8888',
+    'Legacy reconnect phone',
+    'android',
+    '0.2.0'
+  );
+  IF NOT FOUND OR v_pairing.blocked IS DISTINCT FROM TRUE THEN
+    RAISE EXCEPTION 'Legacy unscoped pairing was not blocked after carrier lines were configured';
+  END IF;
+  IF (SELECT COUNT(*) FROM public.sms_gateway_devices
+       WHERE merchant_id = '10000000-0000-4000-8000-000000000010'
+         AND operator_code IS NOT NULL
+         AND enabled = TRUE
+         AND revoked_at IS NULL) <> 3 THEN
+    RAISE EXCEPTION 'Legacy reconnect unexpectedly removed a carrier-specific sender line';
+  END IF;
+END $;
