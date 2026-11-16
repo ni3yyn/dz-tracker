@@ -202,6 +202,7 @@ export function AddOrderPanel({
   const [carrierName, setCarrierName] = useState('Yalidine Express');
   const [sendToYalidine, setSendToYalidine] = useState(true);
   const [manualTrackingNumber, setManualTrackingNumber] = useState('');
+  const [productQuantity, setProductQuantity] = useState('1');
   const [deliveryFeePayer, setDeliveryFeePayer] = useState<'receiver' | 'sender'>('receiver');
   const [parcelOptions, setParcelOptions] = useState<any>(null);
   const [parcelOptionsLoading, setParcelOptionsLoading] = useState(false);
@@ -571,14 +572,30 @@ export function AddOrderPanel({
                         )}
                         <div className={styles.field}>
                           <label className={styles.label}>المنتج / محتوى الشحنة {shouldDispatchToYalidine ? '*' : '(اختياري)'}</label>
-                          <input
-                            type="text"
-                            name="product_name"
-                            maxLength={255}
-                            placeholder="مثال: ساعة ذكية × 2"
-                            className={styles.input}
-                            required={shouldDispatchToYalidine}
-                          />
+                          <div className={styles.productDescriptionRow}>
+                            <input
+                              type="text"
+                              name="product_name"
+                              maxLength={255}
+                              placeholder="مثال: ساعة ذكية"
+                              className={styles.input}
+                              required={shouldDispatchToYalidine}
+                            />
+                            {shouldDispatchToYalidine && (
+                              <BrandedSelect
+                                name="product_quantity"
+                                ariaLabel="عدد القطع"
+                                value={productQuantity}
+                                onChange={setProductQuantity}
+                                variant="field"
+                                className={styles.productQuantitySelect}
+                                options={Array.from({ length: 20 }, (_, index) => ({
+                                  value: String(index + 1),
+                                  label: String(index + 1),
+                                }))}
+                              />
+                            )}
+                          </div>
                         </div>
                         <div className={styles.field}>
                           <label className={styles.label}>الحالة الأولية</label>
@@ -751,6 +768,7 @@ export function AddOrderPanel({
                                       required={shouldDispatchToYalidine}
                                       placeholder="4500"
                                     />
+                                    <p className={styles.inlineNote}>أدخل السعر الإجمالي لجميع القطع، وليس سعر القطعة الواحدة.</p>
                                   </div>
                                   <div className={styles.field}>
                                     <label className={styles.label}>من يدفع رسوم التوصيل؟ *</label>
