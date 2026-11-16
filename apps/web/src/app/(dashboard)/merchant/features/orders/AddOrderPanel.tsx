@@ -608,9 +608,6 @@ export function AddOrderPanel({
                               />
                             )}
                           </div>
-                          {Number(productQuantity) > 1 && (
-                            <p className={styles.inlineNote}>أدخل السعر الإجمالي لجميع القطع، وليس سعر القطعة الواحدة.</p>
-                          )}
                         </div>
                         <div className={styles.field}>
                           <label className={styles.label}>الحالة الأولية</label>
@@ -793,7 +790,9 @@ export function AddOrderPanel({
                                       required={shouldDispatchToYalidine}
                                       placeholder="4500"
                                     />
-                                    <p className={styles.inlineNote}>أدخل السعر الإجمالي لجميع القطع، وليس سعر القطعة الواحدة.</p>
+                                    {Number(productQuantity) > 1 && (
+                                      <p className={styles.inlineNote}>أدخل السعر الإجمالي لجميع القطع، وليس سعر القطعة الواحدة.</p>
+                                    )}
                                   </div>
                                   <div className={styles.field}>
                                     <label className={styles.label}>من يدفع رسوم التوصيل؟ *</label>
