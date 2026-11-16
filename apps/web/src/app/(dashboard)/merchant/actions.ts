@@ -952,7 +952,7 @@ async function dispatchManualYalidineParcel(
   const lastName = String(formData.get('customer_lastname') || '').trim();
   const phone2 = String(formData.get('customer_phone2') || '').trim();
   const amountRaw = String(formData.get('shipment_amount') || '').trim();
-  const declaredValueRaw = String(formData.get('shipment_declared_value') || '').trim();
+  // Guepex requires declared_value; TajerTrack intentionally uses the same amount as COD.
   const weightRaw = String(formData.get('shipment_weight') || '').trim();
   const lengthRaw = String(formData.get('shipment_length') || '').trim();
   const widthRaw = String(formData.get('shipment_width') || '').trim();
@@ -970,9 +970,6 @@ async function dispatchManualYalidineParcel(
   }
   if (!amountRaw || !/^\d+$/.test(amountRaw)) {
     throw new Error('أدخل مبلغ التحصيل الذي سيأخذه المندوب من العميل بالدينار.');
-  }
-  if (!declaredValueRaw || !/^\d+$/.test(declaredValueRaw)) {
-    throw new Error('أدخل القيمة الحقيقية المصرّح بها لمحتويات الطرد بالدينار.');
   }
   if (![weightRaw, lengthRaw, widthRaw, heightRaw].every((value) => /^\d+$/.test(value))) {
     throw new Error('أدخل الوزن والأبعاد بأعداد صحيحة بالسنتيمتر والكيلوغرام.');
@@ -999,7 +996,7 @@ async function dispatchManualYalidineParcel(
     toCommuneName: toCommune.name,
     productDescription,
     amountToCollect: Number(amountRaw),
-    declaredValue: Number(declaredValueRaw),
+    declaredValue: Number(amountRaw),
     insurance,
     length: Number(lengthRaw),
     width: Number(widthRaw),
@@ -1444,7 +1441,7 @@ export async function createManualOrder(formData: FormData) {
       yalidine_stopdesk_id: formData.get('stopdesk_id') ? Number(formData.get('stopdesk_id')) : null,
       yalidine_product_description: productName.trim(),
       yalidine_amount_to_collect: Number(formData.get('shipment_amount')),
-      yalidine_declared_value: Number(formData.get('shipment_declared_value')),
+      yalidine_declared_value: Number(formData.get('shipment_amount')),
       yalidine_do_insurance: formData.get('do_insurance') === 'on',
       yalidine_delivery_fee_payer: String(formData.get('delivery_fee_payer') || 'receiver'),
       yalidine_length_cm: Number(formData.get('shipment_length')),
