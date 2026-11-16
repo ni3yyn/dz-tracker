@@ -276,8 +276,14 @@ async function requestJson(
       : 'rejected';
     throw new YalidineApiError(message || 'رفضت الشركة الطلب (HTTP ' + response.status + ').', kind, response.status);
   }
-  const secondQuotaLeft = Number(response.headers.get('second-quota-left'));
-  if (fetchImpl === fetch && Number.isFinite(secondQuotaLeft) && secondQuotaLeft <= 0) {
+  const secondQuotaHeader = response.headers.get('second-quota-left');
+  const secondQuotaLeft = secondQuotaHeader === null ? null : Number(secondQuotaHeader);
+  if (
+    fetchImpl === fetch &&
+    secondQuotaLeft !== null &&
+    Number.isFinite(secondQuotaLeft) &&
+    secondQuotaLeft <= 0
+  ) {
     deferApiRequests(credentials.apiId, YALIDINE_REQUEST_INTERVAL_MS);
   }
   return payload;
