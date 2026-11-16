@@ -110,7 +110,8 @@ export function useManualOrder({
   const closeAddOrder = useCallback(() => setIsAddOrderModalOpen(false), []);
 
   const closeAddOrderSuccess = useCallback(() => {
-    setNewOrderSuccess(null);
+    // Keep the success screen mounted during the drawer's exit animation.
+    // The next open action clears it before the form is shown again.
     setIsAddOrderModalOpen(false);
   }, []);
 
