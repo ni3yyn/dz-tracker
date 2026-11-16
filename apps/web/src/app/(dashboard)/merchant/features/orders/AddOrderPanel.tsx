@@ -5,13 +5,15 @@ import { createPortal } from 'react-dom';
 import type { FormEvent } from 'react';
 import { BrandedSelect } from '../../BrandedSelect';
 import { Icons } from '../../components/DashboardIcons';
-import { getYalidineManualParcelOptions, getYalidineManualFeeQuote } from '../../yalidine-actions';
+import { getYalidineManualParcelOptions, getYalidineManualParcelOptionsCacheVersion, getYalidineManualFeeQuote } from '../../yalidine-actions';
+import { readManualParcelOptionsCache, writeManualParcelOptionsCache } from './manual-parcel-options-cache';
 import type { ManualOrderSuccess } from './useManualOrder';
 import { useManualOrder } from './useManualOrder';
 import { normalizeMerchantServerError } from '../../../../../lib/merchant-error-messages';
 import styles from './AddOrderPanel.module.css';
 
 interface AddOrderPanelProps {
+  merchantId: string;
   isAddOrderPanelMounted: boolean;
   isAddOrderPanelOpen: boolean;
   isAddOrderModalOpen: boolean;
@@ -171,6 +173,7 @@ export const AddOrderPanelController = memo(function AddOrderPanelController({
   return (
     <AddOrderPanel
       {...order}
+      merchantId={merchantId}
       siteUrl={siteUrl}
       copyToClipboard={copyToClipboard}
       showToast={showToast}
@@ -180,6 +183,7 @@ export const AddOrderPanelController = memo(function AddOrderPanelController({
 });
 
 export function AddOrderPanel({
+  merchantId,
   isAddOrderPanelMounted,
   isAddOrderPanelOpen,
   isAddOrderModalOpen,
@@ -201,6 +205,7 @@ export function AddOrderPanel({
   const [parcelOptions, setParcelOptions] = useState<any>(null);
   const [parcelOptionsLoading, setParcelOptionsLoading] = useState(false);
   const [parcelOptionsError, setParcelOptionsError] = useState('');
+  const parcelOptionsLoadAttemptRef = useRef<string | null>(null);
   const [fromWilayaId, setFromWilayaId] = useState('');
   const [toWilayaId, setToWilayaId] = useState('');
   const [toCommuneId, setToCommuneId] = useState('');
@@ -261,31 +266,82 @@ export function AddOrderPanel({
   }, [isAddOrderPanelOpen, shouldDispatchToYalidine, fromWilayaId, toWilayaId, toCommuneId]);
 
   useEffect(() => {
-    if (!isAddOrderPanelOpen || !shouldDispatchToYalidine || parcelOptions) return;
+    if (!isAddOrderPanelOpen || !shouldDispatchToYalidine) return;
+    if (parcelOptionsLoadAttemptRef.current === merchantId) return;
+
+    parcelOptionsLoadAttemptRef.current = merchantId;
     let active = true;
-    setParcelOptionsLoading(true);
-    setParcelOptionsError('');
-    void getYalidineManualParcelOptions()
-      .then((result) => {
+    let cachedOptions: any = null;
+    let fetchedFreshOptions = false;
+
+    const applyOptions = (options: any) => {
+      setParcelOptions(options);
+      const defaultSender = options.wilayas.find((item: any) =>
+        item.name.toLocaleLowerCase() === 'alger'
+      ) || options.wilayas[0];
+      if (defaultSender) {
+        setFromWilayaId((current) => current || String(defaultSender.id));
+      }
+    };
+
+    const loadOptions = async () => {
+      setParcelOptionsError('');
+      setParcelOptionsLoading(true);
+      try {
+        // This action only checks the active connection and does not call Guepex.
+        const scope = await getYalidineManualParcelOptionsCacheVersion();
+        if (!active) return;
+        if (!scope.success || !scope.cacheVersion) {
+          throw new Error(scope.error || 'تعذّر التحقق من ربط شركة التوصيل.');
+        }
+
+        const cached = readManualParcelOptionsCache<any>(merchantId, scope.cacheVersion);
+        if (cached) {
+          cachedOptions = cached.options;
+          applyOptions(cached.options);
+          // Cached options are usable immediately, including while stale data refreshes.
+          setParcelOptionsLoading(false);
+        }
+
+        // A fresh 24-hour browser cache avoids all three location-list API lookups.
+        if (cached?.isFresh) return;
+
+        const result = await getYalidineManualParcelOptions();
         if (!active) return;
         if (!result.success || !result.options) {
-          setParcelOptionsError(normalizeMerchantServerError(result.error || 'تعذّر تحميل مواقع شركة التوصيل.', 'locations'));
+          if (!cachedOptions) {
+            setParcelOptionsError(normalizeMerchantServerError(
+              result.error || 'تعذّر تحميل مواقع شركة التوصيل.',
+              'locations'
+            ));
+          }
+          // Keep stale cached data when Guepex is rate-limiting or unavailable.
           return;
         }
-        setParcelOptions(result.options);
-        const defaultSender = result.options.wilayas.find((item: any) =>
-          item.name.toLocaleLowerCase() === 'alger'
-        ) || result.options.wilayas[0];
-        if (defaultSender) setFromWilayaId(String(defaultSender.id));
-      })
-      .catch((error: any) => {
-        if (active) setParcelOptionsError(normalizeMerchantServerError(error, 'locations'));
-      })
-      .finally(() => {
-        if (active) setParcelOptionsLoading(false);
-      });
+
+        const currentVersion = result.cacheVersion || scope.cacheVersion;
+        writeManualParcelOptionsCache(merchantId, currentVersion, result.options);
+        applyOptions(result.options);
+        setParcelOptionsError('');
+        fetchedFreshOptions = true;
+      } catch (error: any) {
+        if (active && !cachedOptions) {
+          setParcelOptionsError(normalizeMerchantServerError(error, 'locations'));
+        }
+      } finally {
+        if (active) {
+          setParcelOptionsLoading(false);
+          // Allow close/reopen to retry only when we have no usable cache or live result.
+          if (!cachedOptions && !fetchedFreshOptions) {
+            parcelOptionsLoadAttemptRef.current = null;
+          }
+        }
+      }
+    };
+
+    void loadOptions();
     return () => { active = false; };
-  }, [isAddOrderPanelOpen, shouldDispatchToYalidine, parcelOptions]);
+  }, [isAddOrderPanelOpen, shouldDispatchToYalidine, merchantId]);
 
   if (!isAddOrderPanelMounted || typeof document === 'undefined') return null;
 
