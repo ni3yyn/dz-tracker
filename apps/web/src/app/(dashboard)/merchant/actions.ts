@@ -21,6 +21,7 @@ import { BrandSettings, DEFAULT_BRAND_SETTINGS } from '@saas/ui';
 type PersistedBrandSettings = BrandSettings & { showWhatsAppButton?: boolean; animateBackgroundBlobs?: boolean; backgroundBlur?: boolean; timelineLineStyle?: 'straight' | 'dashed' | 'dotted' | 'curved' | 'wave' | 'none' };
 import { createClient } from '../../../lib/supabase-server';
 import { decryptYalidineWebhookCredentials } from '../../../lib/yalidine-webhook-credentials';
+import { normalizeMerchantServerError } from '../../../lib/merchant-error-messages';
 
 /**
  * Return the authenticated merchant's API key only when an integration path needs it.
@@ -1176,6 +1177,9 @@ async function dispatchManualYalidineParcel(
       status: 'rejected',
       failure_message: error?.message || 'Carrier lookup failed before parcel creation; no POST was sent.',
     });
+    if (error instanceof YalidineApiError && error.kind === 'rate_limited') {
+      throw new Error(normalizeMerchantServerError(error, 'carrier'));
+    }
     throw new Error('تعذّر التحقق من مرجع الطلب في Guepex قبل الإنشاء. لم نرسل الشحنة؛ تحقق من الاتصال ثم أعد المحاولة.');
   }
 
@@ -1228,6 +1232,14 @@ async function dispatchManualYalidineParcel(
     };
   } catch (error: any) {
     const message = String(error?.message || '');
+    if (error instanceof YalidineApiError && error.kind === 'rate_limited') {
+      await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
+        status: 'rejected',
+        failure_message: message || 'Guepex rate limit rejected the parcel request.',
+      });
+      throw new Error(normalizeMerchantServerError(error, 'carrier'));
+    }
+
     const duplicateReferenceResponse =
       /\b(already\s+exists?|exists?\s+already|duplicate|already\s+created|order[_ -]?id\s+already)\b/i.test(message) ||
       /(existe déjà|déjà exist|déjà créé|référence.*موجود|الطلب.*موجود)/i.test(message);
@@ -1384,7 +1396,8 @@ export async function createManualOrder(formData: FormData) {
   });
 
   if (!result.success) {
-    return { error: result.message || 'حدث خطأ أثناء إضافة الطلب' };
+    console.error('[ManualOrder] Order orchestrator rejected the request:', result.message);
+    return { error: normalizeMerchantServerError(result.message, 'order') };
   }
 
   if (result.message === 'exchange_replacement_linked' || result.message === 'exchange_replacement_needs_confirmation') {
@@ -1422,9 +1435,14 @@ export async function createManualOrder(formData: FormData) {
       );
       carrierTrackingNumber = dispatch.trackingNumber;
     } catch (error: any) {
+      console.error('[ManualOrder] Guepex dispatch failed:', {
+        kind: error instanceof YalidineApiError ? error.kind : undefined,
+        status: error instanceof YalidineApiError ? error.status : undefined,
+        message: error?.message,
+      });
       return {
         error: 'تم حفظ بيانات الطلب في تاجر تراك، لكن لم يتم تأكيد إنشاء الشحنة في Yalidine / Guepex. ' +
-          (error?.message || 'تحقق من إعدادات API ثم أعد المحاولة بنفس رقم الطلب.'),
+          normalizeMerchantServerError(error, 'carrier'),
       };
     }
 
