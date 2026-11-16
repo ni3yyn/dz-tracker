@@ -228,6 +228,8 @@ DECLARE
 BEGIN
   IF public.detect_algerian_mobile_operator('0550000099') <> 'ooredoo'
      OR public.detect_algerian_mobile_operator('+213550000099') <> 'ooredoo'
+     OR public.detect_algerian_mobile_operator('00213550000099') <> 'ooredoo'
+     OR public.detect_algerian_mobile_operator('213550000099') <> 'ooredoo'
      OR public.detect_algerian_mobile_operator('00213660000099') <> 'mobilis'
      OR public.detect_algerian_mobile_operator('0770000099') <> 'djezzy'
      OR public.detect_algerian_mobile_operator('12345') IS NOT NULL THEN
@@ -244,6 +246,10 @@ BEGIN
      OR (SELECT recipient_operator FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000014') <> 'mobilis'
      OR (SELECT recipient_operator FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000015') <> 'ooredoo' THEN
     RAISE EXCEPTION 'New SMS outbox jobs were not assigned to the correct carrier';
+  END IF;
+  IF (SELECT status FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000016') <> 'skipped'
+     OR (SELECT result_code FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000016') <> 'unsupported_recipient_network' THEN
+    RAISE EXCEPTION 'Unsupported customer number was left pending instead of being explicitly skipped';
   END IF;
   IF (SELECT status FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000016') <> 'skipped'
      OR (SELECT result_code FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000016') <> 'unsupported_recipient_network' THEN
