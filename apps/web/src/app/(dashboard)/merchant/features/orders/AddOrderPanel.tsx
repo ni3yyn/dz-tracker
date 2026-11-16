@@ -234,10 +234,9 @@ export function AddOrderPanel({
   );
   const stopDeskCenters = useMemo(
     () => (parcelOptions?.centers || []).filter((item: any) =>
-      item.wilaya_id === Number(toWilayaId) &&
-      item.commune_id === Number(toCommuneId)
+      item.wilaya_id === Number(toWilayaId)
     ),
-    [parcelOptions, toCommuneId, toWilayaId]
+    [parcelOptions, toWilayaId]
   );
 
   useEffect(() => {
@@ -733,19 +732,29 @@ export function AddOrderPanel({
                                         name="stopdesk_id"
                                         ariaLabel="مكتب الاستلام"
                                         value={stopDeskId}
-                                        onChange={setStopDeskId}
+                                        onChange={(value) => {
+                                          const selectedCenter = stopDeskCenters.find((item: any) =>
+                                            String(item.center_id) === value
+                                          );
+                                          setStopDeskId(value);
+                                          if (selectedCenter?.commune_id) {
+                                            setToCommuneId(String(selectedCenter.commune_id));
+                                          }
+                                        }}
                                         variant="field"
                                         className={styles.select}
                                         options={[
                                           { value: '', label: 'اختر مكتب الاستلام', disabled: true },
                                           ...stopDeskCenters.map((item: any) => ({
                                             value: String(item.center_id),
-                                            label: item.name + (item.address ? ' — ' + item.address : ''),
+                                            label: item.name +
+                                              (item.commune_name ? ' — ' + item.commune_name : '') +
+                                              (item.address ? ' · ' + item.address : ''),
                                           })),
                                         ]}
                                       />
                                       {stopDeskCenters.length === 0 && (
-                                        <p className={styles.inlineNote}>لا يوجد مكتب استلام متاح لهذه البلدية.</p>
+                                        <p className={styles.inlineNote}>لا توجد مكاتب استلام متاحة في هذه الولاية.</p>
                                       )}
                                     </div>
                                   )}
