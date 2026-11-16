@@ -384,6 +384,58 @@ async function loadIntegration(merchantId: string) {
   return data;
 }
 
+function manualParcelOptionsCacheVersion(integration: any): string {
+  return createHash('sha256')
+    .update([
+      String(integration?.id || ''),
+      String(integration?.base_url || 'https://api.guepex.app/v1/'),
+      String(integration?.credentials_encrypted || ''),
+    ].join('\n'))
+    .digest('hex');
+}
+
+function manualParcelCredentials(integration: any, merchantId: string): {
+  apiId: string;
+  apiToken: string;
+} {
+  if (!integration?.api_sync_enabled || !integration?.credentials_encrypted) {
+    throw new Error('اربط حساب Yalidine / Guepex API أولاً من صفحة التكاملات لإنشاء الشحنات مباشرة.');
+  }
+
+  const credentials = decryptYalidineWebhookCredentials(
+    integration.credentials_encrypted,
+    merchantId,
+    process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || ''
+  );
+  if (!credentials.apiId || !credentials.apiToken) {
+    throw new Error('بيانات API غير مكتملة. أعد ربط حساب Yalidine / Guepex.');
+  }
+  return { apiId: credentials.apiId, apiToken: credentials.apiToken };
+}
+
+/**
+ * Returns an opaque fingerprint for the active carrier connection. This lets
+ * the browser invalidate location data when credentials or the API endpoint
+ * changes, without exposing any credential material.
+ */
+export async function getYalidineManualParcelOptionsCacheVersion(): Promise<{
+  success: boolean;
+  cacheVersion?: string;
+  error?: string;
+}> {
+  try {
+    const merchantId = await authenticatedMerchantId();
+    const integration = await loadIntegration(merchantId);
+    manualParcelCredentials(integration, merchantId);
+    return { success: true, cacheVersion: manualParcelOptionsCacheVersion(integration) };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: normalizeMerchantServerError(error, 'locations'),
+    };
+  }
+}
+
 /**
  * Fetch official Yalidine / Guepex locations for the authenticated merchant's
  * parcel-creation form. Credentials never leave this server action.
@@ -391,29 +443,19 @@ async function loadIntegration(merchantId: string) {
 export async function getYalidineManualParcelOptions(): Promise<{
   success: boolean;
   options?: Awaited<ReturnType<typeof fetchYalidineManualParcelOptions>>;
+  cacheVersion?: string;
   error?: string;
 }> {
   try {
     const merchantId = await authenticatedMerchantId();
     const integration = await loadIntegration(merchantId);
-    if (!integration?.api_sync_enabled || !integration?.credentials_encrypted) {
-      throw new Error('اربط حساب Yalidine / Guepex API أولاً من صفحة التكاملات لإنشاء الشحنات مباشرة.');
-    }
-
-    const credentials = decryptYalidineWebhookCredentials(
-      integration.credentials_encrypted,
-      merchantId,
-      process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || ''
-    );
-    if (!credentials.apiId || !credentials.apiToken) {
-      throw new Error('بيانات API غير مكتملة. أعد ربط حساب Yalidine / Guepex.');
-    }
-
+    const credentials = manualParcelCredentials(integration, merchantId);
+    const cacheVersion = manualParcelOptionsCacheVersion(integration);
     const options = await fetchYalidineManualParcelOptions(
       integration.base_url || 'https://api.guepex.app/v1/',
-      { apiId: credentials.apiId, apiToken: credentials.apiToken }
+      credentials
     );
-    return { success: true, options };
+    return { success: true, options, cacheVersion };
   } catch (error: any) {
     console.error('[YalidineManual] Location lookup failed:', {
       status: error?.status,
