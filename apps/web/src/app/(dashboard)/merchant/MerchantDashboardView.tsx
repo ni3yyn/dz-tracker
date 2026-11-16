@@ -35,7 +35,6 @@ import { useMerchantUpsells } from './features/upsells/useMerchantUpsells';
 import { useMerchantMappings } from './features/mappings/useMerchantMappings';
 import { useBrandingEditor } from './features/branding/useBrandingEditor';
 import { useMerchantSettings } from './features/settings/useMerchantSettings';
-import { useManualOrder } from './features/orders/useManualOrder';
 import { useOrderFilters } from './features/orders/useOrderFilters';
 import { useShipmentAnalytics } from './features/analytics/useShipmentAnalytics';
 import { useOrderSelection } from './features/orders/useOrderSelection';
@@ -48,7 +47,7 @@ import { ExchangeRequestsTab } from './tabs/ExchangeRequestsTab';
 import type { ExchangeShipmentCandidate, MerchantExchangeRequest } from '../../../lib/exchange';
 import { toggleExchangeRequestsEnabled as saveExchangeRequestsSetting } from './exchange-actions';
 import { CustomMappingModal } from './features/mappings/CustomMappingModal';
-import { AddOrderPanel } from './features/orders/AddOrderPanel';
+import { AddOrderPanelController } from './features/orders/AddOrderPanel';
 import type { ShipmentExceptionState } from './shipment-exceptions';
 import { ImageUploadField } from './ImageUploadField';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
@@ -298,23 +297,11 @@ export function MerchantDashboardView({
     showToast,
   });
 
-  const {
-    isAddOrderModalOpen,
-    isAddOrderPanelMounted,
-    isAddOrderPanelOpen,
-    isCreatingOrder,
-    addOrderError,
-    newOrderSuccess,
-    openAddOrder,
-    closeAddOrder,
-    closeAddOrderSuccess,
-    finishAddOrderPanelClose,
-    handleCreateOrder,
-  } = useManualOrder({
-    merchantId,
-    telegramEnabled,
-    showToast,
-  });
+  const openAddOrder = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('tajertrack:add-order-open'));
+    }
+  }, []);
   useMerchantDashboardBackHandler({
     activeTab,
     setActiveTab,
@@ -322,10 +309,6 @@ export function MerchantDashboardView({
     setMobileMenuOpen,
     isCustomMappingModalOpen,
     closeCustomMappingModal,
-    isAddOrderModalOpen,
-    isAddOrderPanelMounted,
-    isCreatingOrder,
-    closeAddOrder,
   });
 
   const {
@@ -792,20 +775,10 @@ export function MerchantDashboardView({
             isAttentionStatus={isAttentionStatus}
           />
 
-          <AddOrderPanel
-            isAddOrderPanelMounted={isAddOrderPanelMounted}
-            isAddOrderPanelOpen={isAddOrderPanelOpen}
-            isAddOrderModalOpen={isAddOrderModalOpen}
-            isCreatingOrder={isCreatingOrder}
-            addOrderError={addOrderError}
-            newOrderSuccess={newOrderSuccess}
+          <AddOrderPanelController
+            merchantId={merchantId}
+            telegramEnabled={telegramEnabled}
             siteUrl={siteUrl}
-            closeAddOrder={closeAddOrder}
-            closeAddOrderSuccess={closeAddOrderSuccess}
-            finishAddOrderPanelClose={finishAddOrderPanelClose}
-            handleCreateOrder={handleCreateOrder}
-            copyToClipboard={copyToClipboard}
-            showToast={showToast}
           />
 
 
