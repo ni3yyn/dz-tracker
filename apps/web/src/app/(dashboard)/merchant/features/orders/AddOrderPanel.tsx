@@ -272,7 +272,6 @@ export function AddOrderPanel({
     parcelOptionsLoadAttemptRef.current = true;
     let active = true;
     let cachedOptions: any = null;
-    let fetchedFreshOptions = false;
 
     const applyOptions = (options: any) => {
       setParcelOptions(options);
@@ -323,7 +322,6 @@ export function AddOrderPanel({
         writeManualParcelOptionsCache(merchantId, currentVersion, result.options);
         applyOptions(result.options);
         setParcelOptionsError('');
-        fetchedFreshOptions = true;
       } catch (error: any) {
         if (active && !cachedOptions) {
           setParcelOptionsError(normalizeMerchantServerError(error, 'locations'));
