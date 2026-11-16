@@ -1554,6 +1554,24 @@ export async function createManualOrder(formData: FormData) {
     }
   }
 
+  if (dispatch && result.orderId) {
+    const finalShipmentDescription = dispatch.reused
+      ? 'تم العثور على الشحنة الموجودة لدى Yalidine / Guepex وربطها بهذا الطلب في تاجر تراك دون إنشاء شحنة مكررة.'
+      : 'تم إنشاء الشحنة لدى Yalidine / Guepex بنجاح وربط رقم تتبعها بالطلب في تاجر تراك.';
+    const { error: historyDescriptionError } = await supabase
+      .from('order_history')
+      .update({ description: finalShipmentDescription })
+      .eq('order_id', result.orderId)
+      .eq('status_raw', 'order_placed')
+      .eq(
+        'description',
+        'تم حفظ بيانات الطلب في تاجر تراك تمهيداً لإنشاء شحنة Yalidine / Guepex.'
+      );
+    if (historyDescriptionError) {
+      console.warn('[ManualOrder] Could not update the shipment-created timeline description:', historyDescriptionError.message);
+    }
+  }
+
   if (!result.orderId) {
     const suffix = dispatch
       ? ' الشحنة موجودة لدى شركة التوصيل برقم ' + dispatch.trackingNumber + '. أعد المحاولة بنفس المرجع؛ لن يتم إرسال نسخة ثانية.'
