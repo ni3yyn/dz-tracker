@@ -881,7 +881,6 @@ async function dispatchManualYalidineParcel(
   supabase: any,
   merchantId: string,
   externalOrderId: string,
-  customerName: string,
   customerPhone: string,
   productName: string,
   formData: FormData
@@ -1353,7 +1352,6 @@ export async function createManualOrder(formData: FormData) {
         supabase,
         merchantId,
         externalOrderId,
-        customerName,
         customerPhone,
         productName,
         formData
