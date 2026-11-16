@@ -11,10 +11,6 @@ interface UseMerchantDashboardBackHandlerOptions {
   setMobileMenuOpen: Dispatch<SetStateAction<boolean>>;
   isCustomMappingModalOpen: boolean;
   closeCustomMappingModal: () => void;
-  isAddOrderModalOpen: boolean;
-  isAddOrderPanelMounted: boolean;
-  isCreatingOrder: boolean;
-  closeAddOrder: () => void;
 }
 
 /**
@@ -29,10 +25,6 @@ export function useMerchantDashboardBackHandler({
   setMobileMenuOpen,
   isCustomMappingModalOpen,
   closeCustomMappingModal,
-  isAddOrderModalOpen,
-  isAddOrderPanelMounted,
-  isCreatingOrder,
-  closeAddOrder,
 }: UseMerchantDashboardBackHandlerOptions) {
   useDashboardBackHandler({
     scope: 'merchant',
@@ -40,9 +32,7 @@ export function useMerchantDashboardBackHandler({
     setActiveTab,
     hasActiveOverlay: Boolean(
       mobileMenuOpen ||
-      isCustomMappingModalOpen ||
-      isAddOrderModalOpen ||
-      isAddOrderPanelMounted
+      isCustomMappingModalOpen
     ),
     onBack: () => {
       const globalDialog = typeof document !== 'undefined'
@@ -72,8 +62,15 @@ export function useMerchantDashboardBackHandler({
         closeCustomMappingModal();
         return true;
       }
-      if (isAddOrderModalOpen || isAddOrderPanelMounted) {
-        if (isAddOrderModalOpen && !isCreatingOrder) closeAddOrder();
+      const addOrderLayer = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="add-order-panel"]')
+        : null;
+      if (addOrderLayer) {
+        addOrderLayer.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
         return true;
       }
       const orderDetailsLayer = typeof document !== 'undefined'
