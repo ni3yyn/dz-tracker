@@ -2098,7 +2098,7 @@
             opacity .28s ease,
             visibility 0s linear .48s;
         }
-        .dz-order-side-panel--add { --order-side-panel-width: min(500px, 100vw); }
+        .dz-order-side-panel--add { --order-side-panel-width: min(620px, 100vw); }
         .dz-order-side-panel[data-open="true"] {
           flex-basis: var(--order-side-panel-width);
           width: var(--order-side-panel-width);
@@ -2119,9 +2119,18 @@
           min-width: min(520px, 100vw);
         }
         .dz-order-side-panel-inner--add {
-          width: min(500px, 100vw);
-          min-width: min(500px, 100vw);
+          width: min(620px, 100vw);
+          min-width: min(620px, 100vw);
         }
+        @media (max-width: 620px) {
+          .dz-order-side-panel--add { --order-side-panel-width: 100vw; }
+          .dz-order-side-panel-inner--add {
+            width: 100vw;
+            min-width: 100vw;
+            padding: 22px 18px calc(18px + env(safe-area-inset-bottom));
+          }
+        }
+        .dz-order-side-panel--add { overscroll-behavior: contain; }
 
         /* Order details reveal from the RTL drawer's right edge.
            Keep this separate from the legacy drawer keyframes above so closing
