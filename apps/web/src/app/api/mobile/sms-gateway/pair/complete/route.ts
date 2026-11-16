@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const pairing = Array.isArray(data) ? data[0] : data;
     if (pairing?.blocked === true) {
       return NextResponse.json({
-        error: 'تم إيقاف هذا الهاتف من إدارة تاجر تراك. تواصل مع الدعم قبل ربط هاتف بديل.',
+        error: 'تم إيقاف خط هذه الشبكة من إدارة تاجر تراك. أعد تفعيله أو ألغِ ربطه قبل إضافة جهاز بديل.',
       }, { status: 403 });
     }
     if (!pairing?.device_id || !pairing?.merchant_id) {
@@ -61,6 +61,7 @@ export async function POST(request: Request) {
       deviceId: pairing.device_id,
       deviceToken,
       storeName: pairing.store_name || 'متجرك',
+      operatorCode: pairing.operator_code || null,
     }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate',

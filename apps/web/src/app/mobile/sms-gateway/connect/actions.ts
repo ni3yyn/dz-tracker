@@ -5,17 +5,18 @@ import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
 import { createClient } from '../../../../lib/supabase-server';
 import { isAuthorizedAdmin } from '../../../../lib/admin-auth';
+import { hashNativeSmsCredential } from '../../../../lib/native-sms-gateway-auth';
 
 const PAIRING_PATH = '/mobile/sms-gateway/connect';
 const APP_REDIRECT = 'tajertrack-sms://pair';
 
 function normalizeAlgerianMobileNumber(input: unknown): string | null {
   if (typeof input !== 'string') return null;
-  let value = input.trim().replace(/[\s().-]/g, '');
+  let value = input.trim().replace(/[\\s().-]/g, '');
   if (value.startsWith('00')) value = `+${value.slice(2)}`;
   if (value.startsWith('213')) value = `+${value}`;
-  if (/^0[5-7]\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
-  return /^\+213[5-7]\d{8}$/.test(value) ? value : null;
+  if (/^0[5-7]\\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
+  return /^\\+213[5-7]\\d{8}$/.test(value) ? value : null;
 }
 
 function connectErrorUrl(error: string) {
@@ -51,8 +52,7 @@ export async function approveNativeSmsDevice() {
     redirect(connectErrorUrl('merchant_unavailable'));
   }
 
-  // The one-time code is high entropy, expires in five minutes, and only its
-  // SHA-256 digest is persisted. It never contains or exposes a Supabase token.
+  // The legacy direct-pairing path remains available for existing installs.
   const code = randomBytes(32).toString('base64url');
   const codeHash = createHash('sha256').update(code, 'utf8').digest('hex');
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
@@ -69,6 +69,34 @@ export async function approveNativeSmsDevice() {
   if (insertError) {
     console.error('[NativeSmsGateway] Could not create a pairing code:', insertError.message);
     redirect(connectErrorUrl('pairing_unavailable'));
+  }
+
+  redirect(`${APP_REDIRECT}?code=${encodeURIComponent(code)}`);
+}
+
+/** Redeems a merchant-created, carrier-scoped invitation without requiring the recipient to log in. */
+export async function approveNativeSmsInvite(formData: FormData) {
+  const invite = String(formData.get('invite') || '').trim();
+  const invitePage = `${PAIRING_PATH}?invite=${encodeURIComponent(invite)}`;
+  if (!/^[A-Za-z0-9_-]{30,100}$/.test(invite)) {
+    redirect(`${PAIRING_PATH}?error=invite_invalid`);
+  }
+
+  const code = randomBytes(32).toString('base64url');
+  const supabase = getSupabaseAdminClient() as any;
+  const { data, error } = await supabase.rpc('redeem_native_sms_gateway_invite', {
+    p_invite_hash: hashNativeSmsCredential(invite),
+    p_code_hash: hashNativeSmsCredential(code),
+  });
+
+  if (error) {
+    console.error('[NativeSmsGateway] Invite redemption failed:', error.message);
+    redirect(`${invitePage}&error=invite_unavailable`);
+  }
+
+  const redemption = Array.isArray(data) ? data[0] : data;
+  if (!redemption?.merchant_id || !redemption?.operator_code) {
+    redirect(`${invitePage}&error=invite_expired`);
   }
 
   redirect(`${APP_REDIRECT}?code=${encodeURIComponent(code)}`);
