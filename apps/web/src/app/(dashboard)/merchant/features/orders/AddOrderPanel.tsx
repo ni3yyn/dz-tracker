@@ -740,7 +740,7 @@ export function AddOrderPanel({
                                 </div>
                                 <div className={styles.grid}>
                                   <div className={styles.field}>
-                                    <label className={styles.label}>قيمة المنتجات المطلوب تحصيلها (دون رسوم التوصيل) (دج) *</label>
+                                    <label className={styles.label}>سعر المنتج (بدون سعر التوصيل) (دج) *</label>
                                     <input
                                       className={styles.input}
                                       type="number"
