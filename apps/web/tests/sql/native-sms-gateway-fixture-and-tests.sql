@@ -332,7 +332,7 @@ BEGIN
          AND revoked_at IS NULL) <> 3 THEN
     RAISE EXCEPTION 'Legacy reconnect unexpectedly removed a carrier-specific sender line';
   END IF;
-END $;
+END $$;
 
 
 -- Single-use relative invitations and merchant pause/revoke controls.
