@@ -64,6 +64,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'تم إنشاء عدة روابط ربط مؤخراً. حاول لاحقاً.' }, { status: 429 });
   }
 
+  // Keep only one outstanding invitation per merchant/carrier slot. This
+  // prevents an older forwarded link from unexpectedly replacing a newer phone.
+  const { error: invalidateError } = await supabase
+    .from('sms_gateway_device_invites')
+    .update({ consumed_at: new Date().toISOString() })
+    .eq('merchant_id', merchant.id)
+    .eq('operator_code', operatorCode)
+    .is('consumed_at', null);
+
+  if (invalidateError) {
+    console.error('[NativeSmsGateway] Could not rotate previous sender-line invites:', invalidateError.message);
+    return NextResponse.json({ error: 'تعذر إنشاء رابط الربط حالياً.' }, { status: 503 });
+  }
+
   const invite = randomBytes(32).toString('base64url');
   const { error: insertError } = await supabase
     .from('sms_gateway_device_invites')
