@@ -2122,7 +2122,7 @@
           width: min(620px, 100vw);
           min-width: min(620px, 100vw);
         }
-        @media (max-width: 620px) {
+        @media (max-width: 760px) {
           .dz-order-side-panel--add { --order-side-panel-width: 100vw; }
           .dz-order-side-panel-inner--add {
             width: 100vw;
