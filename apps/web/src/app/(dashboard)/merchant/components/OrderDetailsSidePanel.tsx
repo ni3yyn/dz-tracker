@@ -125,7 +125,11 @@ export const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSid
                 <div className="dz-order-detail-head">
                   <div>
                     <span className="dz-order-detail-kicker">تفاصيل الشحنة</span>
-                    <h2 id="order-detail-title">{selectedOrder.external_order_id}</h2>
+                    <h2 id="order-detail-title">
+                      {(['Yalidine Express', 'Yalidine', 'Guepex'].includes(selectedOrder.carrier_name || '') && selectedOrder.carrier_tracking_number)
+                        ? selectedOrder.carrier_tracking_number
+                        : selectedOrder.external_order_id}
+                    </h2>
                     <p>{selectedOrder.customer_name || 'عميل'} · {formatOrderDate(selectedOrder.created_at)}</p>
                   </div>
                   <button type="button" className="dz-order-detail-close" aria-label="إغلاق التفاصيل" onClick={closePanel}><Icons.X /></button>
@@ -145,6 +149,26 @@ export const OrderDetailsSidePanel = React.memo(React.forwardRef<OrderDetailsSid
                   <OrderDetailField label="اسم الطرد / المنتجات">{selectedOrder.product_name || 'غير متوفر'}</OrderDetailField>
                   <OrderDetailField label="شركة الشحن">{selectedOrder.carrier_name || 'غير محددة'}</OrderDetailField>
                   <OrderDetailField label="رقم التتبع">{selectedOrder.carrier_tracking_number || 'غير متوفر'}</OrderDetailField>
+                  {['Yalidine Express', 'Yalidine', 'Guepex'].includes(selectedOrder.carrier_name || '') && (
+                    <>
+                      <OrderDetailField label="مرجع الطلب في تاجر تراك" dir="ltr">{selectedOrder.external_order_id}</OrderDetailField>
+                      <OrderDetailField label="ولاية الانطلاق">{selectedOrder.carrier_metadata?.yalidine_from_wilaya || 'غير متوفر'}</OrderDetailField>
+                      <OrderDetailField label="ولاية المستلم">{selectedOrder.carrier_metadata?.yalidine_to_wilaya || 'غير متوفر'}</OrderDetailField>
+                      <OrderDetailField label="بلدية المستلم">{selectedOrder.carrier_metadata?.yalidine_to_commune || 'غير متوفر'}</OrderDetailField>
+                      <OrderDetailField label="عنوان التوصيل">{selectedOrder.carrier_metadata?.yalidine_address || 'غير متوفر'}</OrderDetailField>
+                      <OrderDetailField label="طريقة التوصيل">{selectedOrder.carrier_metadata?.yalidine_delivery_type === 'stopdesk' ? 'مكتب استلام (Stop Desk)' : 'توصيل إلى المنزل'}</OrderDetailField>
+                      {selectedOrder.carrier_metadata?.yalidine_stopdesk_id && <OrderDetailField label="معرّف مكتب الاستلام">{selectedOrder.carrier_metadata.yalidine_stopdesk_id}</OrderDetailField>}
+                      <OrderDetailField label="نوع الخدمة">{selectedOrder.carrier_metadata?.yalidine_delivery_tier === 'economic' ? 'اقتصادي' : 'سريع'}</OrderDetailField>
+                      <OrderDetailField label="مبلغ التحصيل">{selectedOrder.carrier_metadata?.yalidine_amount_to_collect != null ? Number(selectedOrder.carrier_metadata.yalidine_amount_to_collect).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</OrderDetailField>
+                      <OrderDetailField label="القيمة المصرّح بها">{selectedOrder.carrier_metadata?.yalidine_declared_value != null ? Number(selectedOrder.carrier_metadata.yalidine_declared_value).toLocaleString('ar-DZ') + ' دج' : 'غير متوفر'}</OrderDetailField>
+                      <OrderDetailField label="دافع رسوم التوصيل">{selectedOrder.carrier_metadata?.yalidine_delivery_fee_payer === 'sender' ? 'المتجر' : 'العميل'}</OrderDetailField>
+                      <OrderDetailField label="التأمين">{selectedOrder.carrier_metadata?.yalidine_do_insurance ? 'مؤمّن' : 'غير مؤمّن'}</OrderDetailField>
+                      <OrderDetailField label="الأبعاد (سم)">{[selectedOrder.carrier_metadata?.yalidine_length_cm, selectedOrder.carrier_metadata?.yalidine_width_cm, selectedOrder.carrier_metadata?.yalidine_height_cm].join(' × ')}</OrderDetailField>
+                      <OrderDetailField label="الوزن (كغ)">{selectedOrder.carrier_metadata?.yalidine_weight_kg ?? 'غير متوفر'}</OrderDetailField>
+                      {selectedOrder.carrier_metadata?.yalidine_has_exchange && <OrderDetailField label="المنتج المستلم للاستبدال">{selectedOrder.carrier_metadata?.yalidine_product_to_collect || 'غير محدد'}</OrderDetailField>}
+                      {selectedOrder.carrier_metadata?.yalidine_opening_decision && <OrderDetailField label="فتح الطرد">{selectedOrder.carrier_metadata.yalidine_opening_decision === 'accept' ? 'مسموح' : 'غير مسموح'}</OrderDetailField>}
+                    </>
+                  )}
                   {selectedOrder.carrier_name === 'Maystro Delivery' && selectedOrder.carrier_order_id && (
                     <OrderDetailField label="معرّف الطلب لدى Maystro" dir="ltr">{selectedOrder.carrier_order_id}</OrderDetailField>
                   )}
