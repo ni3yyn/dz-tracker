@@ -1456,102 +1456,86 @@ export async function createManualOrder(formData: FormData) {
       yalidine_opening_decision: String(formData.get('opening_decision') || 'accept'),
     };
 
-    const carrierResult = await orchestrator.processEvent({
-      merchantId,
-      sourceProvider: 'yalidine',
-      externalOrderId,
-      customerName,
-      customerPhone,
-      productName: productName || undefined,
-      carrierName: 'Yalidine Express',
-      carrierTrackingNumber: dispatch.trackingNumber,
-      carrierMetadata: yalidineCarrierMetadata,
-      statusRaw: 'processing',
-      description: dispatch.reused
-        ? 'تم ربط الشحنة الموجودة في حساب Yalidine / Guepex بطلبك في تاجر تراك.'
-        : 'تم إنشاء الشحنة مباشرة في حساب Yalidine / Guepex من تاجر تراك.',
-    });
+    // The order was already created by the first manual processEvent call.
+    // Do NOT pass this same order through the general orchestrator again after
+    // Guepex returns its tracking number: that second resolution pass finds
+    // the row we just created by external_order_id and can misclassify it as
+    // an already-existing shipment. We have the exact row ID, so attach the
+    // confirmed carrier data directly to that row.
+    const { data: currentOrder, error: currentOrderError } = await supabase
+      .from('orders')
+      .select('id, tracking_uuid, external_order_id, carrier_name, carrier_tracking_number, carrier_metadata')
+      .eq('merchant_id', merchantId)
+      .eq('id', result.orderId)
+      .maybeSingle();
 
-    if (!carrierResult.success) {
-      // The local order already exists and the carrier POST has returned a
-      // confirmed tracking number. The orchestrator's secondary resolution
-      // (including exchange/duplicate guards) can fail after the parcel was
-      // created. Reconcile the exact order row and attach the confirmed values
-      // directly rather than showing a false "creation failed" result.
-      const { data: currentOrder, error: currentOrderError } = await supabase
-        .from('orders')
-        .select('id, tracking_uuid, external_order_id, carrier_name, carrier_tracking_number, carrier_metadata')
-        .eq('merchant_id', merchantId)
-        .eq('id', result.orderId)
-        .maybeSingle();
-
-      if (currentOrderError || !currentOrder || currentOrder.external_order_id !== externalOrderId) {
-        return {
-          error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
-            '، لكن تعذّر التحقق من سجل الطلب المقابل في تاجر تراك. لم نعد إرسال الشحنة.',
-        };
-      }
-
-      if (
-        currentOrder.carrier_tracking_number &&
-        currentOrder.carrier_tracking_number !== dispatch.trackingNumber
-      ) {
-        return {
-          error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
-            '، لكن الطلب في تاجر تراك مرتبط برقم تتبع مختلف (' +
-            currentOrder.carrier_tracking_number + '). لم نغيّر الربط تلقائياً.',
-        };
-      }
-
-      const mergedCarrierMetadata = {
-        ...((currentOrder.carrier_metadata as Record<string, unknown> | null) || {}),
-        ...yalidineCarrierMetadata,
+    if (currentOrderError || !currentOrder || currentOrder.external_order_id !== externalOrderId) {
+      return {
+        error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
+          '، لكن تعذّر التحقق من سجل الطلب المقابل في تاجر تراك. لم نعد إرسال الشحنة.',
       };
-      const { data: reconciledOrder, error: reconcileError } = await supabase
+    }
+
+    if (
+      currentOrder.carrier_tracking_number &&
+      currentOrder.carrier_tracking_number !== dispatch.trackingNumber
+    ) {
+      return {
+        error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
+          '، لكن الطلب في تاجر تراك مرتبط برقم تتبع مختلف (' +
+          currentOrder.carrier_tracking_number + '). لم نغيّر الربط تلقائياً.',
+      };
+    }
+
+    const mergedCarrierMetadata = {
+      ...((currentOrder.carrier_metadata as Record<string, unknown> | null) || {}),
+      ...yalidineCarrierMetadata,
+    };
+    const { data: attachedOrder, error: attachError } = await supabase
+      .from('orders')
+      .update({
+        carrier_name: 'Yalidine Express',
+        carrier_tracking_number: dispatch.trackingNumber,
+        carrier_metadata: mergedCarrierMetadata as any,
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq('merchant_id', merchantId)
+      .eq('id', result.orderId)
+      .eq('external_order_id', externalOrderId)
+      .select('id, tracking_uuid, carrier_tracking_number')
+      .maybeSingle();
+
+    if (attachError || !attachedOrder || attachedOrder.carrier_tracking_number !== dispatch.trackingNumber) {
+      // A transient update response can be lost after the database commits.
+      // Verify the exact row before returning an error or allowing a retry.
+      const { data: verifyOrder, error: verifyError } = await supabase
         .from('orders')
-        .update({
-          carrier_name: 'Yalidine Express',
-          carrier_tracking_number: dispatch.trackingNumber,
-          carrier_metadata: mergedCarrierMetadata as any,
-          updated_at: new Date().toISOString(),
-        } as any)
+        .select('id, tracking_uuid, carrier_tracking_number')
         .eq('merchant_id', merchantId)
         .eq('id', result.orderId)
-        .select('id, tracking_uuid, carrier_tracking_number')
+        .eq('external_order_id', externalOrderId)
         .maybeSingle();
 
-      if (reconcileError || !reconciledOrder || reconciledOrder.carrier_tracking_number !== dispatch.trackingNumber) {
-        const { data: verifyOrder } = await supabase
-          .from('orders')
-          .select('id, tracking_uuid, carrier_tracking_number')
-          .eq('merchant_id', merchantId)
-          .eq('id', result.orderId)
-          .maybeSingle();
-
-        if (!verifyOrder || verifyOrder.carrier_tracking_number !== dispatch.trackingNumber) {
-          return {
-            error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
-              '، لكن تعذّر تثبيت رقم التتبع في سجل الطلب. لم نكرر الإنشاء؛ أعد المحاولة بنفس المرجع لإكمال الربط.',
-          };
-        }
-        result = {
-          ...result,
-          success: true,
-          orderId: verifyOrder.id,
-          trackingUuid: verifyOrder.tracking_uuid,
-          isNewOrder: false,
-        };
-      } else {
-        result = {
-          ...result,
-          success: true,
-          orderId: reconciledOrder.id,
-          trackingUuid: reconciledOrder.tracking_uuid,
-          isNewOrder: false,
+      if (verifyError || !verifyOrder || verifyOrder.carrier_tracking_number !== dispatch.trackingNumber) {
+        return {
+          error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
+            '، لكن تعذّر تثبيت رقم التتبع في سجل الطلب. لم نكرر الإنشاء؛ أعد المحاولة بنفس المرجع لإكمال الربط.',
         };
       }
+
+      result = {
+        ...result,
+        success: true,
+        orderId: verifyOrder.id,
+        trackingUuid: verifyOrder.tracking_uuid,
+      };
     } else {
-      result = carrierResult;
+      result = {
+        ...result,
+        success: true,
+        orderId: attachedOrder.id,
+        trackingUuid: attachedOrder.tracking_uuid,
+      };
     }
   }
 
