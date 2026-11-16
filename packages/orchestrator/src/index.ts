@@ -11,7 +11,9 @@ export {
   buildYalidineCreateParcelData,
   createYalidineParcel,
   findYalidineParcelsByOrderId,
+  getYalidineFeeQuote,
   getYalidineManualParcelOptions,
+  estimateYalidineFees,
   normalizeYalidineApiBaseUrl,
 } from './carriers/yalidine-api';
 export type {
@@ -20,6 +22,9 @@ export type {
   YalidineCreateParcelData,
   YalidineManualParcelOptions,
   YalidineParcelMatch,
+  YalidineFeeQuote,
+  YalidineFeeEstimateInput,
+  YalidineFeeEstimate,
 } from './carriers/yalidine-api';
 export { EcoTrackAdapter } from './carriers/ecotrack.adapter';
 export { ZRExpressAdapter, ProcolisAdapter } from './carriers/zrexpress.adapter';

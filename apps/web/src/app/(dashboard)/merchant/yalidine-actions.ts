@@ -3,7 +3,10 @@
 import { createHash, createPublicKey, randomBytes, verify as verifySignature } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { getSupabaseAdminClient } from '@saas/database';
-import { getYalidineManualParcelOptions as fetchYalidineManualParcelOptions } from '@saas/orchestrator';
+import {
+  getYalidineManualParcelOptions as fetchYalidineManualParcelOptions,
+  getYalidineFeeQuote as fetchYalidineFeeQuote,
+} from '@saas/orchestrator';
 import { createClient } from '../../../lib/supabase-server';
 import {
   decryptYalidineWebhookCredentials,
@@ -415,6 +418,42 @@ export async function getYalidineManualParcelOptions(): Promise<{
       success: false,
       error: error?.message || 'تعذر تحميل ولايات وبلديات ومكاتب Yalidine / Guepex.',
     };
+  }
+}
+
+
+export async function getYalidineManualFeeQuote(
+  fromWilayaId: number,
+  toWilayaId: number,
+  communeId: number
+): Promise<{
+  success: boolean;
+  quote?: Awaited<ReturnType<typeof fetchYalidineFeeQuote>>;
+  error?: string;
+}> {
+  try {
+    const merchantId = await authenticatedMerchantId();
+    const integration = await loadIntegration(merchantId);
+    if (!integration?.api_sync_enabled || !integration?.credentials_encrypted) {
+      throw new Error('اربط حساب Yalidine / Guepex API أولاً لعرض تسعيرة التوصيل.');
+    }
+    const credentials = decryptYalidineWebhookCredentials(
+      integration.credentials_encrypted,
+      merchantId,
+      process.env.CARRIER_CREDENTIALS_ENCRYPTION_KEY || ''
+    );
+    if (!credentials.apiId || !credentials.apiToken) {
+      throw new Error('بيانات API غير مكتملة. أعد ربط API ID و API Token.');
+    }
+    const quote = await fetchYalidineFeeQuote(
+      integration.base_url || 'https://api.guepex.app/v1/',
+      { apiId: credentials.apiId, apiToken: credentials.apiToken },
+      fromWilayaId, toWilayaId, communeId
+    );
+    return { success: true, quote };
+  } catch (error: any) {
+    const retry = error?.retryAfterSeconds ? ' أعد المحاولة بعد ' + error.retryAfterSeconds + ' ثانية.' : '';
+    return { success: false, error: (error?.message || 'تعذر تحميل تسعيرة Yalidine / Guepex.') + retry };
   }
 }
 
