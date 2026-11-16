@@ -306,6 +306,33 @@ export function TrackingLiveView({
         {
           event: 'UPDATE',
           schema: 'public',
+          table: 'order_history',
+          filter: `order_id=eq.${orderId}`,
+        },
+        (payload) => {
+          const updatedRow = payload.new as {
+            id: string;
+            status_title: string;
+            created_at: string;
+            description: string | null;
+          };
+          setEvents((previous) => previous.map((event) =>
+            event.id === updatedRow.id
+              ? {
+                  ...event,
+                  title: updatedRow.status_title,
+                  date: updatedRow.created_at,
+                  description: updatedRow.description,
+                }
+              : event
+          ));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
