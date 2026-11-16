@@ -175,6 +175,33 @@ function apiMessage(payload: any): string {
   return '';
 }
 
+const YALIDINE_REQUEST_INTERVAL_MS = 1_100;
+const nextRequestAtByApiId = new Map<string, number>();
+
+async function waitForApiRequestSlot(apiId: string): Promise<void> {
+  const key = apiId.trim() || 'default';
+  const now = Date.now();
+  const scheduledAt = Math.max(now, nextRequestAtByApiId.get(key) || now);
+  nextRequestAtByApiId.set(key, scheduledAt + YALIDINE_REQUEST_INTERVAL_MS);
+  const waitMs = scheduledAt - now;
+  if (waitMs > 0) {
+    await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
+  }
+}
+
+function deferApiRequests(apiId: string, milliseconds: number): void {
+  const key = apiId.trim() || 'default';
+  const nextAllowed = Date.now() + Math.max(YALIDINE_REQUEST_INTERVAL_MS, milliseconds);
+  nextRequestAtByApiId.set(key, Math.max(nextRequestAtByApiId.get(key) || 0, nextAllowed));
+}
+
+const MANUAL_OPTIONS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const manualParcelOptionsCache = new Map<string, {
+  expiresAt: number;
+  options: YalidineManualParcelOptions;
+}>();
+const manualParcelOptionsInFlight = new Map<string, Promise<YalidineManualParcelOptions>>();
+
 async function requestJson(
   baseUrl: URL,
   credentials: YalidineApiCredentials,
@@ -182,6 +209,8 @@ async function requestJson(
   init: RequestInit,
   fetchImpl: typeof fetch
 ): Promise<any> {
+  if (fetchImpl === fetch) await waitForApiRequestSlot(credentials.apiId);
+
   let response: Response;
   try {
     const url = /^https:\/\//i.test(path) ? new URL(path) : endpoint(baseUrl, path);
@@ -230,8 +259,13 @@ async function requestJson(
     const retryHeader = Number(response.headers.get('retry-after'));
     const retryAfter = Number.isFinite(retryHeader) && retryHeader > 0 ? Math.ceil(retryHeader) : undefined;
     if (response.status === 429) {
+      const cooldownMs = retryAfter ? retryAfter * 1000 : 2_000;
+      if (fetchImpl === fetch) deferApiRequests(credentials.apiId, cooldownMs);
+      const retryMessage = retryAfter
+        ? ` أعد المحاولة بعد ${retryAfter} ثانية.`
+        : ' انتظر ثانيتين ثم أعد المحاولة.';
       throw new YalidineApiError(
-        message || 'تجاوزت طلبات API الحد المسموح. انتظر قبل المحاولة مجدداً.',
+        'بلغ حساب Guepex / Yalidine الحد المسموح من طلبات API خلال الثانية.' + retryMessage,
         'rate_limited',
         response.status,
         retryAfter
@@ -241,6 +275,10 @@ async function requestJson(
       ? (init.method === 'POST' ? 'uncertain' : 'unavailable')
       : 'rejected';
     throw new YalidineApiError(message || 'رفضت الشركة الطلب (HTTP ' + response.status + ').', kind, response.status);
+  }
+  const secondQuotaLeft = Number(response.headers.get('second-quota-left'));
+  if (fetchImpl === fetch && Number.isFinite(secondQuotaLeft) && secondQuotaLeft <= 0) {
+    deferApiRequests(credentials.apiId, YALIDINE_REQUEST_INTERVAL_MS);
   }
   return payload;
 }
@@ -445,27 +483,63 @@ export async function getYalidineManualParcelOptions(
   fetchImpl: typeof fetch = fetch
 ): Promise<YalidineManualParcelOptions> {
   const baseUrl = normalizeYalidineApiBaseUrl(baseUrlInput);
-  const [wilayaRows, communeRows, centerRows] = await Promise.all([
-    fetchAll(baseUrl, credentials, 'wilayas', fetchImpl),
-    fetchAll(baseUrl, credentials, 'communes', fetchImpl),
-    fetchAll(baseUrl, credentials, 'centers', fetchImpl),
-  ]);
-  return {
-    platform: baseUrl.hostname === 'api.guepex.app' ? 'guepex' : 'yalidine',
-    wilayas: wilayaRows.map((row) => ({
-      id: Number(row.id), name: asText(row.name), is_deliverable: Number(row.is_deliverable) === 1,
-    })).filter((row) => Number.isSafeInteger(row.id) && row.id > 0 && row.name),
-    communes: communeRows.map((row) => ({
-      id: Number(row.id), name: asText(row.name), wilaya_id: Number(row.wilaya_id),
-      wilaya_name: asText(row.wilaya_name), is_deliverable: Number(row.is_deliverable) === 1,
-      has_stop_desk: Number(row.has_stop_desk) === 1,
-    })).filter((row) => Number.isSafeInteger(row.id) && Number.isSafeInteger(row.wilaya_id) && row.id > 0 && row.name && row.wilaya_name),
-    centers: centerRows.map((row) => ({
-      center_id: Number(row.center_id), name: asText(row.name), address: asText(row.address),
-      commune_id: Number(row.commune_id), commune_name: asText(row.commune_name),
-      wilaya_id: Number(row.wilaya_id), wilaya_name: asText(row.wilaya_name),
-    })).filter((row) => Number.isSafeInteger(row.center_id) && row.center_id > 0 && row.name && Number.isSafeInteger(row.wilaya_id)),
+  const cacheKey = `${baseUrl.origin}|${credentials.apiId}`;
+  const canUseProcessCache = fetchImpl === fetch;
+
+  if (canUseProcessCache) {
+    const cached = manualParcelOptionsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.options;
+    const inFlight = manualParcelOptionsInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+  }
+
+  const loadOptions = async (): Promise<YalidineManualParcelOptions> => {
+    // requestJson reserves one API slot per credential, so these lookups cannot
+    // burst three requests into Guepex's per-second quota.
+    const wilayaRows = await fetchAll(baseUrl, credentials, 'wilayas', fetchImpl);
+    const communeRows = await fetchAll(baseUrl, credentials, 'communes', fetchImpl);
+    const centerRows = await fetchAll(baseUrl, credentials, 'centers', fetchImpl);
+    return {
+      platform: baseUrl.hostname === 'api.guepex.app' ? 'guepex' : 'yalidine',
+      wilayas: wilayaRows.map((row) => ({
+        id: Number(row.id), name: asText(row.name), is_deliverable: Number(row.is_deliverable) === 1,
+      })).filter((row) => Number.isSafeInteger(row.id) && row.id > 0 && row.name),
+      communes: communeRows.map((row) => ({
+        id: Number(row.id), name: asText(row.name), wilaya_id: Number(row.wilaya_id),
+        wilaya_name: asText(row.wilaya_name), is_deliverable: Number(row.is_deliverable) === 1,
+        has_stop_desk: Number(row.has_stop_desk) === 1,
+      })).filter((row) => Number.isSafeInteger(row.id) && Number.isSafeInteger(row.wilaya_id) && row.id > 0 && row.name && row.wilaya_name),
+      centers: centerRows.map((row) => ({
+        center_id: Number(row.center_id), name: asText(row.name), address: asText(row.address),
+        commune_id: Number(row.commune_id), commune_name: asText(row.commune_name),
+        wilaya_id: Number(row.wilaya_id), wilaya_name: asText(row.wilaya_name),
+      })).filter((row) => Number.isSafeInteger(row.center_id) && row.center_id > 0 && row.name && Number.isSafeInteger(row.wilaya_id)),
+    };
   };
+
+  if (!canUseProcessCache) return loadOptions();
+
+  const pending = loadOptions();
+  manualParcelOptionsInFlight.set(cacheKey, pending);
+  try {
+    const options = await pending;
+    manualParcelOptionsCache.set(cacheKey, {
+      expiresAt: Date.now() + MANUAL_OPTIONS_CACHE_TTL_MS,
+      options,
+    });
+    if (manualParcelOptionsCache.size > 100) {
+      const now = Date.now();
+      for (const [key, value] of manualParcelOptionsCache) {
+        if (value.expiresAt <= now || manualParcelOptionsCache.size > 100) {
+          manualParcelOptionsCache.delete(key);
+        }
+        if (manualParcelOptionsCache.size <= 100) break;
+      }
+    }
+    return options;
+  } finally {
+    manualParcelOptionsInFlight.delete(cacheKey);
+  }
 }
 
 export async function getYalidineFeeQuote(
