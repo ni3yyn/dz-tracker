@@ -306,9 +306,15 @@ export function OrdersTab({
                               </div>
                             </td>
                             <td className="dz-order-carrier-cell">
-                              <strong className="dz-order-reference">{order.external_order_id}</strong>
+                              <strong className="dz-order-reference">
+                                {(['Yalidine Express', 'Yalidine', 'Guepex'].includes(order.carrier_name || '') && order.carrier_tracking_number)
+                                  ? order.carrier_tracking_number
+                                  : order.external_order_id}
+                              </strong>
                               <div className="dz-order-carrier-name">{order.carrier_name || 'غير محدد'}</div>
-                              <span className="dz-order-tracking-number">{order.carrier_tracking_number || 'لا يوجد رقم تتبع'}</span>
+                              {(['Yalidine Express', 'Yalidine', 'Guepex'].includes(order.carrier_name || '') && order.carrier_tracking_number)
+                                ? <span className="dz-order-tracking-number">مرجع تاجر تراك: {order.external_order_id}</span>
+                                : <span className="dz-order-tracking-number">{order.carrier_tracking_number || 'لا يوجد رقم تتبع'}</span>}
                             </td>
                             <td>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
