@@ -389,15 +389,21 @@ export function AddOrderPanel({
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                         <div>
                           <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 750, marginBottom: '7px', color: 'var(--ink-main)' }}>
-                            اسم المنتج {shouldDispatchToYalidine ? '*' : '(اختياري)'}
+                            المنتج / محتوى الشحنة {shouldDispatchToYalidine ? '*' : '(اختياري)'}
                           </label>
                           <input
                             type="text"
                             name="product_name"
-                            placeholder="ساعة ذكية Ultra"
+                            maxLength={255}
+                            placeholder="مثال: ساعة ذكية سوداء × 2، شاحن سريع × 1"
                             className="dz-input-field"
                             required={shouldDispatchToYalidine}
                           />
+                          {shouldDispatchToYalidine && (
+                            <span style={{ display: 'block', marginTop: 6, fontSize: 11, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+                              يُحفظ هذا الوصف في الطلب ويُرسل كما هو إلى Guepex في خانة محتويات الشحنة (product_list).
+                            </span>
+                          )}
                         </div>
 
                         <div>
@@ -603,23 +609,13 @@ export function AddOrderPanel({
                                     </div>
                                   </div>
 
-                                  <div>
-                                    <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>وصف محتوى الشحنة *</label>
-                                    <input
-                                      className="dz-input-field"
-                                      type="text"
-                                      name="product_description"
-                                      maxLength={255}
-                                      required={shouldDispatchToYalidine}
-                                      defaultValue=""
-                                      placeholder="مثال: ساعة ذكية، لون أسود"
-                                    />
-                                  </div>
+
 
                                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                     <div>
-                                      <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>القيمة المصرّح بها (دج) *</label>
-                                      <input className="dz-input-field" type="number" name="shipment_declared_value" min={0} max={150000} step={1} required={shouldDispatchToYalidine} placeholder="4500" />
+                                      <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>قيمة محتويات الطرد المصرّح بها (دج) *</label>
+                                      <input className="dz-input-field" type="number" name="shipment_declared_value" min={0} max={150000} step={1} required={shouldDispatchToYalidine} placeholder="القيمة الحقيقية للمنتجات" />
+                                      <span style={{ display: 'block', marginTop: 6, fontSize: 11, color: 'var(--ink-muted)', lineHeight: 1.6 }}>قيمة البضاعة لأغراض التصريح والتأمين؛ ليست المبلغ الذي سيحصّله المندوب.</span>
                                     </div>
                                     <div>
                                       <label style={{ display: 'block', fontSize: 13, fontWeight: 750, marginBottom: 7 }}>نوع الخدمة *</label>
