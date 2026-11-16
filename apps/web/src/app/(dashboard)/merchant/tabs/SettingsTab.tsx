@@ -179,7 +179,7 @@ export function SettingsTab({
                   <div style={{ minWidth: 0 }}>
                     <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>03 / SMS DELIVERY</span>
                     <h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>رسائل التتبع عبر SMS</h2>
-                    <p style={{ margin: '5px 0 0', fontSize: '12px', lineHeight: 1.7, color: 'var(--ink-muted)' }}>إرسال رسالة SMS واحدة عند تسجيل كل طلب جديد، تحتوي على رابط صفحة التتبع. عند ربط تطبيق TajerTrack Phone، تُرسل الرسالة من شريحة هاتفك المختارة.</p>
+                    <p style={{ margin: '5px 0 0', fontSize: '12px', lineHeight: 1.7, color: 'var(--ink-muted)' }}>إرسال رسالة SMS واحدة عند تسجيل كل طلب جديد، تحتوي على رابط صفحة التتبع. يختار TajerTrack Phone تلقائياً خط Djezzy أو Mobilis أو Ooredoo المطابق لشبكة رقم العميل، من الشرائح المفعّلة.</p>
                   </div>
                   <button type="button" role="switch" aria-checked={smsEnabled} aria-busy={isSavingSms} data-checked={smsEnabled ? 'true' : 'false'} aria-label="تفعيل إرسال رابط التتبع عبر SMS" disabled={!smsTrackingStorageAvailable || isSavingSms} onClick={() => void onToggleSmsTracking()} style={{ width: '48px', height: '27px', flex: '0 0 48px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: smsEnabled ? '#273b30' : '#cbd1ca', cursor: isSavingSms ? 'wait' : 'pointer', opacity: isSavingSms ? .7 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'none' }}>
                     <span className="dz-settings-switch-thumb">{isSavingSms && <span className="dz-settings-switch-spinner" aria-hidden="true" />}</span>
