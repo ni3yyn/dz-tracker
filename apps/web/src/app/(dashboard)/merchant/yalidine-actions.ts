@@ -1,6 +1,6 @@
 'use server';
 
-import { createHash, createPublicKey, randomBytes, verify as verifySignature } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { getSupabaseAdminClient } from '@saas/database';
 import {
@@ -44,294 +44,6 @@ async function authenticatedMerchantId(): Promise<string> {
 }
 
 
-
-type CompanionProof = {
-  installationId: string;
-  timestamp: number;
-  nonce: string;
-  signature: string;
-};
-
-const COMPANION_PROOF_MAX_AGE_MS = 60_000;
-
-function validUuid(value: unknown): value is string {
-  return typeof value === 'string' &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-}
-
-function companionChallengeHash(challenge: string): string {
-  return createHash('sha256').update(challenge, 'utf8').digest('hex');
-}
-
-function validCompanionPublicKey(value: any): boolean {
-  return Boolean(
-    value &&
-    value.kty === 'EC' &&
-    value.crv === 'P-256' &&
-    typeof value.x === 'string' &&
-    /^[A-Za-z0-9_-]{43}$/.test(value.x) &&
-    typeof value.y === 'string' &&
-    /^[A-Za-z0-9_-]{43}$/.test(value.y)
-  );
-}
-
-function verifyCompanionSignature(publicKeyJwk: any, message: string, signature: string): boolean {
-  try {
-    const key = createPublicKey({ key: publicKeyJwk, format: 'jwk' });
-    const bytes = Buffer.from(signature, 'base64url');
-    if (bytes.length !== 64) return false;
-    return verifySignature(
-      'sha256',
-      Buffer.from(message, 'utf8'),
-      { key, dsaEncoding: 'ieee-p1363' },
-      bytes
-    );
-  } catch {
-    return false;
-  }
-}
-
-async function requireYalidineCompanionProof(
-  merchantId: string,
-  proof: CompanionProof | undefined,
-  purpose: string
-): Promise<void> {
-  if (
-    !proof ||
-    !validUuid(proof.installationId) ||
-    !Number.isSafeInteger(proof.timestamp) ||
-    Math.abs(Date.now() - proof.timestamp) > COMPANION_PROOF_MAX_AGE_MS ||
-    typeof proof.nonce !== 'string' ||
-    !/^[A-Za-z0-9_-]{20,128}$/.test(proof.nonce) ||
-    typeof proof.signature !== 'string' ||
-    proof.signature.length > 256
-  ) {
-    throw new Error('ثبّت إضافة TajerTrack Companion وافتحها في المتصفح ثم أعد التحقق قبل ربط Yalidine / Guepex.');
-  }
-
-  const supabase = getSupabaseAdminClient();
-  const { data: device, error } = await (supabase as any)
-    .from('merchant_companion_devices')
-    .select('installation_id, public_key, revoked_at')
-    .eq('merchant_id', merchantId)
-    .eq('installation_id', proof.installationId)
-    .is('revoked_at', null)
-    .maybeSingle();
-
-  if (error || !device || !validCompanionPublicKey(device.public_key)) {
-    throw new Error('إضافة TajerTrack Companion غير مربوطة بهذا المتجر. أعد ربط الإضافة أولاً.');
-  }
-
-  const signedMessage = [
-    'tt-companion-proof-v1',
-    proof.installationId,
-    purpose,
-    String(proof.timestamp),
-    proof.nonce,
-  ].join('\n');
-
-  if (!verifyCompanionSignature(device.public_key, signedMessage, proof.signature)) {
-    throw new Error('تعذر التحقق من إضافة TajerTrack Companion. حدّث حالة الإضافة وأعد المحاولة.');
-  }
-
-  const { error: purgeError } = await (supabase as any)
-    .from('merchant_companion_proof_nonces')
-    .delete()
-    .lt('expires_at', new Date().toISOString());
-  if (purgeError) throw new Error('تعذر تحديث حماية إضافة TajerTrack Companion. حاول مجدداً.');
-
-  const { error: nonceError } = await (supabase as any)
-    .from('merchant_companion_proof_nonces')
-    .insert({
-      installation_id: proof.installationId,
-      nonce: proof.nonce,
-      purpose,
-      expires_at: new Date(Date.now() + 10 * 60_000).toISOString(),
-    });
-  if (nonceError) {
-    if (nonceError.code === '23505') throw new Error('تم استخدام إثبات الإضافة مسبقاً. أعد التحقق ثم حاول مجدداً.');
-    throw new Error('تعذر تسجيل إثبات الإضافة لمرة واحدة. تحقق من تحديث قاعدة البيانات.');
-  }
-
-  const { error: touchError } = await (supabase as any)
-    .from('merchant_companion_devices')
-    .update({ last_seen_at: new Date().toISOString() })
-    .eq('merchant_id', merchantId)
-    .eq('installation_id', proof.installationId)
-    .is('revoked_at', null);
-  if (touchError) throw new Error('تعذر تحديث حالة إضافة TajerTrack Companion. حاول مجدداً.');
-}
-
-export async function getYalidineCompanionStatus(installationId?: string): Promise<{
-  success: boolean;
-  paired: boolean;
-  installationId?: string;
-  version?: string | null;
-  pairedAt?: string | null;
-  lastSeenAt?: string | null;
-  error?: string;
-}> {
-  try {
-    const merchantId = await authenticatedMerchantId();
-    const supabase = getSupabaseAdminClient();
-    let query = (supabase as any)
-      .from('merchant_companion_devices')
-      .select('installation_id, extension_version, paired_at, last_seen_at')
-      .eq('merchant_id', merchantId)
-      .is('revoked_at', null);
-    if (installationId) {
-      if (!validUuid(installationId)) throw new Error('معرّف تثبيت الإضافة غير صالح.');
-      query = query.eq('installation_id', installationId);
-    } else {
-      query = query.order('last_seen_at', { ascending: false }).limit(1);
-    }
-    const { data, error } = await query.maybeSingle();
-    if (error) throw new Error('تعذر تحميل حالة إضافة TajerTrack Companion. تأكد من تطبيق تحديث قاعدة البيانات.');
-    return {
-      success: true,
-      paired: Boolean(data?.installation_id),
-      installationId: data?.installation_id,
-      version: data?.extension_version || null,
-      pairedAt: data?.paired_at || null,
-      lastSeenAt: data?.last_seen_at || null,
-    };
-  } catch (error: any) {
-    return {
-      success: false,
-      paired: false,
-      error: error?.message || 'تعذر تحميل حالة إضافة TajerTrack Companion.',
-    };
-  }
-}
-
-export async function createYalidineCompanionPairingChallenge(): Promise<{
-  success: boolean;
-  challenge?: string;
-  merchantId?: string;
-  expiresAt?: string;
-  error?: string;
-}> {
-  try {
-    const merchantId = await authenticatedMerchantId();
-    const challenge = randomBytes(32).toString('base64url');
-    const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
-    const supabase = getSupabaseAdminClient();
-    const { error } = await (supabase as any)
-      .from('merchant_companion_pairing_challenges')
-      .insert({
-        merchant_id: merchantId,
-        challenge_hash: companionChallengeHash(challenge),
-        expires_at: expiresAt,
-      });
-    if (error) throw new Error('تعذر إنشاء طلب ربط الإضافة. تحقق من تحديث قاعدة البيانات.');
-    return { success: true, challenge, merchantId, expiresAt };
-  } catch (error: any) {
-    return { success: false, error: error?.message || 'تعذر إنشاء طلب ربط الإضافة.' };
-  }
-}
-
-export async function completeYalidineCompanionPairing(input: {
-  installationId: string;
-  publicKey: unknown;
-  signature: string;
-  challenge: string;
-  version?: string;
-}): Promise<{ success: boolean; installationId?: string; error?: string }> {
-  try {
-    const merchantId = await authenticatedMerchantId();
-    if (
-      !input ||
-      !validUuid(input.installationId) ||
-      typeof input.challenge !== 'string' ||
-      input.challenge.length < 32 ||
-      input.challenge.length > 256 ||
-      typeof input.signature !== 'string' ||
-      input.signature.length > 256 ||
-      !validCompanionPublicKey(input.publicKey)
-    ) {
-      throw new Error('بيانات ربط الإضافة غير صالحة. أعد المحاولة.');
-    }
-
-    const supabase = getSupabaseAdminClient();
-    const challengeHash = companionChallengeHash(input.challenge);
-    const { data: pending, error: challengeError } = await (supabase as any)
-      .from('merchant_companion_pairing_challenges')
-      .select('id, expires_at, consumed_at')
-      .eq('merchant_id', merchantId)
-      .eq('challenge_hash', challengeHash)
-      .is('consumed_at', null)
-      .maybeSingle();
-
-    if (challengeError || !pending || new Date(pending.expires_at).getTime() <= Date.now()) {
-      throw new Error('انتهت صلاحية طلب الربط. اضغط ربط الإضافة مجدداً.');
-    }
-
-    const signedMessage = [
-      'tt-companion-pair-v1',
-      merchantId,
-      input.challenge,
-      input.installationId,
-    ].join('\n');
-
-    if (!verifyCompanionSignature(input.publicKey, signedMessage, input.signature)) {
-      throw new Error('فشل التحقق من توقيع TajerTrack Companion.');
-    }
-
-    const { data: existingDevice, error: existingError } = await (supabase as any)
-      .from('merchant_companion_devices')
-      .select('merchant_id, installation_id')
-      .eq('installation_id', input.installationId)
-      .maybeSingle();
-    if (existingError) throw new Error('تعذر التحقق من تثبيت الإضافة.');
-    if (existingDevice && existingDevice.merchant_id !== merchantId) {
-      throw new Error('هذا التثبيت مربوط بمتجر آخر. افصل الإضافة من المتجر السابق أولاً.');
-    }
-
-    const now = new Date().toISOString();
-    const { data: consumed, error: consumeError } = await (supabase as any)
-      .from('merchant_companion_pairing_challenges')
-      .update({ consumed_at: now })
-      .eq('id', pending.id)
-      .is('consumed_at', null)
-      .select('id')
-      .maybeSingle();
-    if (consumeError || !consumed) {
-      throw new Error('انتهت صلاحية طلب الربط أو استُخدم مسبقاً. أعد المحاولة.');
-    }
-
-    const { error: saveError } = await (supabase as any)
-      .from('merchant_companion_devices')
-      .upsert({
-        merchant_id: merchantId,
-        installation_id: input.installationId,
-        public_key: input.publicKey,
-        extension_version: String(input.version || '').slice(0, 32) || null,
-        paired_at: now,
-        last_seen_at: now,
-        revoked_at: null,
-      }, { onConflict: 'installation_id' });
-    if (saveError) throw new Error('تعذر حفظ ربط الإضافة. أنشئ طلب ربط جديداً ثم حاول مجدداً.');
-
-    revalidatePath('/merchant');
-    return { success: true, installationId: input.installationId };
-  } catch (error: any) {
-    return { success: false, error: error?.message || 'تعذر ربط إضافة TajerTrack Companion.' };
-  }
-}
-
-export async function recordYalidineCompanionHeartbeat(proof: CompanionProof): Promise<{
-  success: boolean;
-  installationId?: string;
-  error?: string;
-}> {
-  try {
-    const merchantId = await authenticatedMerchantId();
-    await requireYalidineCompanionProof(merchantId, proof, 'status');
-    return { success: true, installationId: proof.installationId };
-  } catch (error: any) {
-    return { success: false, error: error?.message || 'تعذر التحقق من حالة الإضافة.' };
-  }
-}
 
 const MANUAL_REFRESH_MIGRATION = 'apps/web/src/app/migrations/20261115_yalidine_manual_api_refresh.sql';
 const MANUAL_REFRESH_SCHEMA_ERROR =
@@ -639,7 +351,7 @@ export async function requestYalidineApiSync(): Promise<{
 }
 
 /** Reserve a stable callback URL before the merchant creates the webhook in the courier dashboard. */
-export async function prepareYalidineWebhookEndpoint(proof?: CompanionProof): Promise<{
+export async function prepareYalidineWebhookEndpoint(): Promise<{
   success: boolean;
   endpointUrl?: string;
   alreadyConnected?: boolean;
@@ -647,7 +359,6 @@ export async function prepareYalidineWebhookEndpoint(proof?: CompanionProof): Pr
 }> {
   try {
     const merchantId = await authenticatedMerchantId();
-    await requireYalidineCompanionProof(merchantId, proof, 'prepare-webhook');
     const existing = await loadIntegration(merchantId);
     if (existing?.webhook_endpoint_token) {
       return {
@@ -699,7 +410,6 @@ export async function prepareYalidineWebhookEndpoint(proof?: CompanionProof): Pr
 export async function saveYalidineApiCredentials(
   apiIdInput: string,
   apiTokenInput: string,
-  proof?: CompanionProof
 ): Promise<{
   success: boolean;
   status?: YalidineWebhookStatus;
@@ -707,7 +417,6 @@ export async function saveYalidineApiCredentials(
 }> {
   try {
     const merchantId = await authenticatedMerchantId();
-    await requireYalidineCompanionProof(merchantId, proof, 'save-api');
     const apiId = String(apiIdInput || '').trim();
     const apiToken = String(apiTokenInput || '').trim();
     if (!/^[A-Za-z0-9_-]{8,128}$/.test(apiId)) {
@@ -808,14 +517,13 @@ export async function saveYalidineApiCredentials(
   }
 }
 
-export async function saveYalidineWebhookSecret(secretInput: string, proof?: CompanionProof): Promise<{
+export async function saveYalidineWebhookSecret(secretInput: string): Promise<{
   success: boolean;
   status?: YalidineWebhookStatus;
   error?: string;
 }> {
   try {
     const merchantId = await authenticatedMerchantId();
-    await requireYalidineCompanionProof(merchantId, proof, 'save-webhook');
     const secret = String(secretInput || '').trim();
     if (!secret || secret.length > 512) {
       throw new Error('مفتاح Webhook غير صالح. انسخ المفتاح الكامل من بطاقة Webhook في حسابك.');
