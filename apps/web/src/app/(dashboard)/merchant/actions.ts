@@ -959,7 +959,7 @@ async function dispatchManualYalidineParcel(
   const heightRaw = String(formData.get('shipment_height') || '').trim();
   const deliveryFeePayer = String(formData.get('delivery_fee_payer') || 'receiver');
   const address = String(formData.get('carrier_address') || '').trim();
-  const productDescription = String(formData.get('product_description') || productName || '').trim();
+  const productDescription = productName.trim();
   const hasExchange = formData.get('has_exchange') === 'on';
   const insurance = formData.get('do_insurance') === 'on';
   const deliveryTier = String(formData.get('delivery_tier') || 'express');
@@ -1442,7 +1442,7 @@ export async function createManualOrder(formData: FormData) {
       yalidine_delivery_type: String(formData.get('delivery_type') || 'home'),
       yalidine_delivery_tier: String(formData.get('delivery_tier') || 'express'),
       yalidine_stopdesk_id: formData.get('stopdesk_id') ? Number(formData.get('stopdesk_id')) : null,
-      yalidine_product_description: String(formData.get('product_description') || productName || '').trim(),
+      yalidine_product_description: productName.trim(),
       yalidine_amount_to_collect: Number(formData.get('shipment_amount')),
       yalidine_declared_value: Number(formData.get('shipment_declared_value')),
       yalidine_do_insurance: formData.get('do_insurance') === 'on',
