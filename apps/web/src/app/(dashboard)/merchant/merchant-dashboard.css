@@ -2121,13 +2121,14 @@
         .dz-order-side-panel-inner--add {
           width: min(620px, 100vw);
           min-width: min(620px, 100vw);
+          padding-bottom: 0;
         }
         @media (max-width: 760px) {
           .dz-order-side-panel--add { --order-side-panel-width: 100vw; }
           .dz-order-side-panel-inner--add {
             width: 100vw;
             min-width: 100vw;
-            padding: 22px 18px calc(18px + env(safe-area-inset-bottom));
+            padding: 22px 18px 0;
           }
         }
         .dz-order-side-panel--add { overscroll-behavior: contain; }
