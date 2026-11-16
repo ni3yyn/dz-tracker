@@ -1275,7 +1275,10 @@ export async function createManualOrder(formData: FormData) {
   const merchantId = merchant.id;
 
   const externalOrderId = String(formData.get('external_order_id') || '').trim();
-  const customerName = String(formData.get('customer_name') || '').trim();
+  const customerFirstName = String(formData.get('customer_firstname') || '').trim();
+  const customerLastName = String(formData.get('customer_lastname') || '').trim();
+  const customerName = [customerFirstName, customerLastName].filter(Boolean).join(' ').trim() ||
+    String(formData.get('customer_name') || '').trim();
   const customerPhone = String(formData.get('customer_phone') || '').trim();
   const productName = String(formData.get('product_name') || '').trim();
   const carrierName = String(formData.get('carrier_name') || 'Yalidine Express').trim();
@@ -1286,6 +1289,11 @@ export async function createManualOrder(formData: FormData) {
 
   if (!externalOrderId) return { error: 'يرجى إدخال رقم طلب فريد قبل حفظ الطلب.' };
   if (externalOrderId.length > 100) return { error: 'رقم الطلب يجب ألا يتجاوز 100 حرف.' };
+  if (!customerFirstName || !customerLastName) {
+    if (!String(formData.get('customer_name') || '').trim()) {
+      return { error: 'يرجى إدخال الاسم الشخصي ولقب العميل.' };
+    }
+  }
   if (!customerName) return { error: 'يرجى إدخال اسم العميل.' };
   if (!customerPhone) return { error: 'يرجى إدخال رقم هاتف العميل.' };
   if (dispatchRequested && !isYalidine) return { error: 'الإرسال المباشر متاح حالياً مع Yalidine / Guepex فقط.' };
