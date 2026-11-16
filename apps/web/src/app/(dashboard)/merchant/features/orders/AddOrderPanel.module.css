@@ -1,0 +1,398 @@
+.kicker {
+  display: block;
+  margin-bottom: 7px;
+  color: #68806b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.title {
+  margin: 0;
+  color: #263b30;
+  font-size: 24px;
+  font-weight: 850;
+  letter-spacing: -.035em;
+  line-height: 1.35;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+  padding: 20px 0 12px;
+}
+
+.section {
+  display: grid;
+  gap: 17px;
+  min-width: 0;
+  padding: 0 0 26px;
+  border: 0;
+  border-bottom: 1px solid #e4e9e2;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sectionHeading h3 {
+  margin: 0;
+  color: #263b30;
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.5;
+}
+
+.sectionHeading span {
+  min-width: 0;
+  color: #829087;
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px 14px;
+  min-width: 0;
+}
+
+.field {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+}
+
+.label {
+  display: block;
+  min-width: 0;
+  color: #34483a;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid #d7e0d6;
+  border-radius: 0;
+  outline: none;
+  background: #fffefa;
+  color: #263b30;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.5;
+  box-shadow: none;
+  transition: border-color .16s ease, background-color .16s ease, box-shadow .16s ease;
+}
+
+.input::placeholder {
+  color: #a1aaa2;
+  font-weight: 450;
+}
+
+.input:hover {
+  border-color: #aebead;
+  background: #fff;
+}
+
+.input:focus {
+  border-color: #66836b;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(75, 111, 81, .11);
+}
+
+.select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.select :global(button) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 2px 0 17px;
+  border-bottom: 1px solid #e8ece6;
+  color: #263b30;
+  cursor: pointer;
+}
+
+.toggleRow > input,
+.checkboxRow > input {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  accent-color: #294b37;
+  cursor: pointer;
+}
+
+.toggleRow > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.toggleRow strong {
+  color: #263b30;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.toggleRow small {
+  color: #879188;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.shippingFields {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  padding-top: 3px;
+}
+
+.shippingFields > .sectionHeading:not(:first-child) {
+  padding-top: 8px;
+}
+
+.dimensions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.optionsRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 17px 24px;
+  padding-top: 2px;
+}
+
+.checkboxRow {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  color: #3c5041;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.55;
+  cursor: pointer;
+}
+
+.checkboxRow > input {
+  flex-basis: 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+}
+
+.inlineNote {
+  margin: 0;
+  color: #7c897e;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.inlineError {
+  margin: 0;
+  color: #a53d32;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.feeSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid #e8ece6;
+  color: #68776b;
+  font-size: 11px;
+}
+
+.feeSummary strong {
+  flex: 0 0 auto;
+  color: #263b30;
+  font-size: 14px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-inline-start: 3px solid #b94b40;
+  background: #fbf0ee;
+  color: #8e352e;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.7;
+}
+
+.error svg {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+}
+
+.formFooter {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, .6fr);
+  gap: 10px;
+  margin-top: -8px;
+  padding: 15px 0 calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e1e7df;
+  background: #fffefa;
+}
+
+.submitButton,
+.cancelButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 48px;
+  padding: 11px 14px;
+  border: 1px solid #263b30;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease, transform .16s ease;
+}
+
+.submitButton {
+  background: #263b30;
+  color: #fff;
+}
+
+.submitButton:hover:not(:disabled) {
+  border-color: #1c2e23;
+  background: #1c2e23;
+}
+
+.cancelButton {
+  border-color: #d4ddd3;
+  background: transparent;
+  color: #405344;
+}
+
+.cancelButton:hover:not(:disabled) {
+  border-color: #9eaf9e;
+  background: #f5f7f2;
+}
+
+.submitButton:active:not(:disabled),
+.cancelButton:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.submitButton:disabled,
+.cancelButton:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 680px) {
+  .form {
+    gap: 24px;
+    padding-top: 16px;
+  }
+
+  .section {
+    gap: 15px;
+    padding-bottom: 22px;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .sectionHeading {
+    align-items: flex-start;
+  }
+
+  .sectionHeading span {
+    max-width: 44%;
+  }
+}
+
+@media (max-width: 390px) {
+  .dimensions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dimensions .field:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .optionsRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .formFooter {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cancelButton {
+    min-height: 42px;
+  }
+
+  .sectionHeading span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .submitButton,
+  .cancelButton {
+    transition: none;
+  }
+}
