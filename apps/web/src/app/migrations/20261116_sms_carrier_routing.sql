@@ -111,6 +111,16 @@ UPDATE public.sms_tracking_outbox AS job
  WHERE order_row.id = job.order_id
    AND job.recipient_operator IS NULL;
 
+-- Invalid or unsupported destinations must not sit pending forever. They are
+-- explicitly skipped and can be corrected by the merchant before a new order.
+UPDATE public.sms_tracking_outbox
+   SET status = 'skipped',
+       result_code = 'unsupported_recipient_network',
+       last_error = 'The customer number does not match a supported Algerian mobile network (05, 06 or 07). No SMS was sent.',
+       updated_at = NOW()
+ WHERE status IN ('pending', 'retry')
+   AND recipient_operator IS NULL;
+
 -- Keep the one-job-per-order trigger but annotate each new job at creation.
 CREATE OR REPLACE FUNCTION public.trg_fn_orders_create_sms_tracking_job()
 RETURNS TRIGGER
@@ -120,6 +130,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_enabled BOOLEAN;
+  v_operator_code TEXT;
 BEGIN
   IF NEW.customer_phone IS NULL OR BTRIM(NEW.customer_phone) = '' THEN
     RETURN NEW;
@@ -134,16 +145,31 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  v_operator_code := public.detect_algerian_mobile_operator(NEW.customer_phone);
+
   INSERT INTO public.sms_tracking_outbox (
-    order_id, merchant_id, idempotency_key, status, available_at, recipient_operator
+    order_id,
+    merchant_id,
+    idempotency_key,
+    status,
+    available_at,
+    recipient_operator,
+    result_code,
+    last_error
   )
   VALUES (
     NEW.id,
     NEW.merchant_id,
     'sms:tracking-link:' || NEW.id::TEXT,
-    'pending',
+    CASE WHEN v_operator_code IS NULL THEN 'skipped' ELSE 'pending' END,
     NOW(),
-    public.detect_algerian_mobile_operator(NEW.customer_phone)
+    v_operator_code,
+    CASE WHEN v_operator_code IS NULL THEN 'unsupported_recipient_network' ELSE NULL END,
+    CASE
+      WHEN v_operator_code IS NULL
+      THEN 'The customer number does not match a supported Algerian mobile network (05, 06 or 07). No SMS was sent.'
+      ELSE NULL
+    END
   )
   ON CONFLICT (order_id) DO NOTHING;
 
