@@ -21,7 +21,7 @@
   flex-direction: column;
   gap: 28px;
   min-width: 0;
-  padding: 20px 0 12px;
+  padding: 20px 0 0;
 }
 
 .screenStage {
@@ -332,10 +332,10 @@
   z-index: 3;
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, .6fr);
-  column-gap: 10px;
+  column-gap: 18px;
   row-gap: 0;
   margin-top: -8px;
-  padding: 15px 0 calc(10px + env(safe-area-inset-bottom));
+  padding: 15px 0 env(safe-area-inset-bottom);
   border-top: 1px solid #e1e7df;
   background: #fffefa;
 }
@@ -493,6 +493,7 @@
 
   .cancelButton {
     min-height: 42px;
+    margin-top: 10px;
   }
 
   .sectionHeading span {
