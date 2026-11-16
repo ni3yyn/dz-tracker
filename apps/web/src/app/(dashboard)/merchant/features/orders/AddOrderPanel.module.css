@@ -135,12 +135,28 @@
 }
 
 .productQuantitySelect :global(button) {
+  position: relative;
   min-height: 48px;
   justify-content: center;
   padding-inline: 8px;
   font-variant-numeric: tabular-nums;
 }
 
+.productQuantitySelect :global(button > span:first-child) {
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.productQuantitySelect :global(button > span:last-child) {
+  position: absolute;
+  left: 7px;
+  right: auto;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+}
 .input::placeholder {
   color: #a1aaa2;
   font-weight: 450;
