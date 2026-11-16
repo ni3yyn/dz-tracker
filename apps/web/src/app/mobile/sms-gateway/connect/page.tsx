@@ -98,9 +98,7 @@ export default async function ConnectNativeSmsPage({
     ? 'لم يتم العثور على متجر مرتبط بهذا الحساب.'
     : params.error === 'pairing_unavailable' || params.error === 'invite_unavailable'
       ? 'تعذر إنشاء رابط آمن الآن. حاول مرة أخرى.'
-      : params.error === 'phone_unavailable'
-        ? 'لم نعثر على رقم هاتف جزائري صالح محفوظ في بيانات حسابك. حدّث رقم هاتف الحساب ثم أعد المحاولة.'
-        : params.error === 'invite_expired' || params.error === 'invite_invalid'
+      : params.error === 'invite_expired' || params.error === 'invite_invalid'
           ? 'رابط الدعوة غير صالح أو انتهت صلاحيته أو تم استخدامه مسبقاً. اطلب رابطاً جديداً من صاحب المتجر.'
           : '';
 
