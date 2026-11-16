@@ -114,7 +114,10 @@ if (merchant) {
   }
 }
 
-const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim() || null;
+// Stable GitHub Releases asset URL: every signed release replaces the
+// latest asset at this path, so the dashboard does not need an env update.
+const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim()
+  || 'https://github.com/ni3yyn/tajertrack-phone/releases/latest/download/tajertrack-phone.apk';
 
 // في حالة فشل الاتصال بقاعدة البيانات تماماً، نعرض شاشة استعادة مع زر تسجيل الخروج
   if (!merchant) {
