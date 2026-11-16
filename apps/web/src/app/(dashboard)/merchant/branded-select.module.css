@@ -221,10 +221,29 @@
   background: #fff;
 }
 
+.field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .field .trigger {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
+  overflow: hidden;
   background: #fffefa;
   font-size: 13px;
+}
+
+.field .value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @keyframes brandedSelectSpin {
