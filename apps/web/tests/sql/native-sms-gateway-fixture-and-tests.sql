@@ -237,12 +237,17 @@ BEGIN
   INSERT INTO public.orders (id, merchant_id, customer_phone) VALUES
     ('30000000-0000-4000-8000-000000000013', '10000000-0000-4000-8000-000000000010', '0770000013'),
     ('30000000-0000-4000-8000-000000000014', '10000000-0000-4000-8000-000000000010', '+213660000014'),
-    ('30000000-0000-4000-8000-000000000015', '10000000-0000-4000-8000-000000000010', '00213550000015');
+    ('30000000-0000-4000-8000-000000000015', '10000000-0000-4000-8000-000000000010', '00213550000015'),
+    ('30000000-0000-4000-8000-000000000016', '10000000-0000-4000-8000-000000000010', '12345');
 
   IF (SELECT recipient_operator FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000013') <> 'djezzy'
      OR (SELECT recipient_operator FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000014') <> 'mobilis'
      OR (SELECT recipient_operator FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000015') <> 'ooredoo' THEN
     RAISE EXCEPTION 'New SMS outbox jobs were not assigned to the correct carrier';
+  END IF;
+  IF (SELECT status FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000016') <> 'skipped'
+     OR (SELECT result_code FROM public.sms_tracking_outbox WHERE order_id = '30000000-0000-4000-8000-000000000016') <> 'unsupported_recipient_network' THEN
+    RAISE EXCEPTION 'Unsupported customer number was left pending instead of being explicitly skipped';
   END IF;
 
   INSERT INTO public.sms_gateway_pairing_codes (code_hash, merchant_id, created_by, operator_code, expires_at)
