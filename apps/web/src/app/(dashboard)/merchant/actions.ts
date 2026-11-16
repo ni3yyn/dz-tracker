@@ -1298,6 +1298,7 @@ async function dispatchManualYalidineParcel(
     });
     const retry = error?.retryAfterSeconds ? ' أعد المحاولة بعد ' + error.retryAfterSeconds + ' ثانية.' : '';
     throw new Error((message || 'رفضت Guepex إنشاء الشحنة.') + retry);
+  }
 }
 
 export async function createManualOrder(formData: FormData) {
