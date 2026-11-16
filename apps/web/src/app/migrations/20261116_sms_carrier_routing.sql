@@ -312,9 +312,22 @@ BEGIN
     SELECT 1
       FROM public.sms_gateway_devices AS device
      WHERE device.merchant_id = v_merchant_id
-       AND device.operator_code IS NOT DISTINCT FROM v_operator_code
        AND device.revoked_at IS NULL
        AND device.enabled IS FALSE
+       AND (
+         device.operator_code IS NOT DISTINCT FROM v_operator_code
+         OR (v_operator_code IS NULL AND device.operator_code IS NOT NULL)
+       )
+  ) OR (
+    v_operator_code IS NULL
+    AND EXISTS (
+      SELECT 1
+        FROM public.sms_gateway_devices AS device
+       WHERE device.merchant_id = v_merchant_id
+         AND device.operator_code IS NOT NULL
+         AND device.enabled IS TRUE
+         AND device.revoked_at IS NULL
+    )
   ) THEN
     RETURN QUERY SELECT NULL::TEXT, v_merchant_id, v_store_name, TRUE, v_operator_code;
     RETURN;
