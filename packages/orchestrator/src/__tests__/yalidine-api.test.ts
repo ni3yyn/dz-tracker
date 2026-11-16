@@ -6,6 +6,7 @@ import {
   createYalidineParcel,
   estimateYalidineFees,
   findYalidineParcelsByOrderId,
+  findYalidineParcelsByTracking,
   getYalidineFeeQuote,
   getYalidineManualParcelOptions,
   normalizeYalidineApiBaseUrl,
@@ -94,6 +95,29 @@ test('finds an existing parcel by exact merchant reference without using masked 
   assert.equal(matches[0].tracking, 'yal-42ABC');
   assert.equal(requestedHeaders?.get('X-API-ID'), credentials.apiId);
   assert.equal(requestedHeaders?.get('X-API-TOKEN'), credentials.apiToken);
+});
+
+test('recovers an issued parcel by its exact yal tracking number', async () => {
+  let requestedUrl = '';
+  const matches = await findYalidineParcelsByTracking(
+    baseUrl, credentials, 'yal-42ABC',
+    async (input) => {
+      requestedUrl = String(input);
+      return response({ data: [{
+        order_id: 'TT-ORDER-42',
+        tracking: 'yal-42ABC',
+        label: 'https://guepex.app/label/42',
+        import_id: 42,
+        last_status: 'En préparation',
+      }] });
+    }
+  );
+  const url = new URL(requestedUrl);
+  assert.equal(url.pathname, '/v1/parcels/');
+  assert.equal(url.searchParams.get('tracking'), 'yal-42ABC');
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].order_id, 'TT-ORDER-42');
+  assert.equal(matches[0].tracking, 'yal-42ABC');
 });
 
 test('refuses a matching carrier reference without a confirmed tracking number', async () => {
