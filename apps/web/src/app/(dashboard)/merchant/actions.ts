@@ -958,6 +958,7 @@ async function dispatchManualYalidineParcel(
   const widthRaw = String(formData.get('shipment_width') || '').trim();
   const heightRaw = String(formData.get('shipment_height') || '').trim();
   const deliveryFeePayer = String(formData.get('delivery_fee_payer') || 'receiver');
+  const address = String(formData.get('carrier_address') || '').trim();
   const productDescription = String(formData.get('product_description') || productName || '').trim();
   const hasExchange = formData.get('has_exchange') === 'on';
   const insurance = formData.get('do_insurance') === 'on';
