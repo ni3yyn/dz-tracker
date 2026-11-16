@@ -948,32 +948,73 @@ async function dispatchManualYalidineParcel(
     throw new Error('لا تعرض الشركة مكتب استلام لهذه البلدية. اختر التوصيل إلى المنزل.');
   }
 
+  const firstName = String(formData.get('customer_firstname') || '').trim();
+  const lastName = String(formData.get('customer_lastname') || '').trim();
+  const phone2 = String(formData.get('customer_phone2') || '').trim();
   const amountRaw = String(formData.get('shipment_amount') || '').trim();
-  const weightRaw = String(formData.get('shipment_weight') || '1').trim();
+  const declaredValueRaw = String(formData.get('shipment_declared_value') || '').trim();
+  const weightRaw = String(formData.get('shipment_weight') || '').trim();
+  const lengthRaw = String(formData.get('shipment_length') || '').trim();
+  const widthRaw = String(formData.get('shipment_width') || '').trim();
+  const heightRaw = String(formData.get('shipment_height') || '').trim();
   const deliveryFeePayer = String(formData.get('delivery_fee_payer') || 'receiver');
+  const productDescription = String(formData.get('product_description') || productName || '').trim();
+  const hasExchange = formData.get('has_exchange') === 'on';
+  const insurance = formData.get('do_insurance') === 'on';
+  const deliveryTier = String(formData.get('delivery_tier') || 'express');
+  const openingDecision = String(formData.get('opening_decision') || 'accept');
+
+  if (!firstName || !lastName) {
+    throw new Error('أدخل الاسم الشخصي ولقب العميل كلّاً على حدة كما يظهران في بيانات الشحنة.');
+  }
   if (!amountRaw || !/^\d+$/.test(amountRaw)) {
     throw new Error('أدخل مبلغ التحصيل الذي سيأخذه المندوب من العميل بالدينار.');
+  }
+  if (!declaredValueRaw || !/^\d+$/.test(declaredValueRaw)) {
+    throw new Error('أدخل القيمة الحقيقية المصرّح بها لمحتويات الطرد بالدينار.');
+  }
+  if (![weightRaw, lengthRaw, widthRaw, heightRaw].every((value) => /^\d+$/.test(value))) {
+    throw new Error('أدخل الوزن والأبعاد بأعداد صحيحة بالسنتيمتر والكيلوغرام.');
   }
   if (!['sender', 'receiver'].includes(deliveryFeePayer)) {
     throw new Error('حدد من سيدفع رسوم التوصيل.');
   }
+  if (!['express', 'economic'].includes(deliveryTier)) {
+    throw new Error('اختر خدمة التوصيل السريع أو الاقتصادي.');
+  }
+  if (!['accept', 'reject'].includes(openingDecision)) {
+    throw new Error('حدد ما إذا كان مسموحاً للعميل فتح الطرد قبل الاستلام.');
+  }
 
-  const address = String(formData.get('carrier_address') || '').trim();
-  const productDescription = String(formData.get('product_description') || productName || '').trim();
   const parcel = buildYalidineCreateParcelData({
     orderId: externalOrderId,
-    customerName,
+    firstName,
+    lastName,
     phone: customerPhone,
+    phone2,
     address,
     fromWilayaName: fromWilaya.name,
     toWilayaName: toWilaya.name,
     toCommuneName: toCommune.name,
     productDescription,
     amountToCollect: Number(amountRaw),
+    declaredValue: Number(declaredValueRaw),
+    insurance,
+    length: Number(lengthRaw),
+    width: Number(widthRaw),
+    height: Number(heightRaw),
     weight: Number(weightRaw),
     deliveryFeePayer: deliveryFeePayer as 'sender' | 'receiver',
     stopDesk,
     stopDeskId: stopDesk ? stopDeskId : null,
+    hasExchange,
+    productToCollect: String(formData.get('product_to_collect') || '').trim(),
+    ...(options.platform === 'guepex'
+      ? {
+          openingDecision: openingDecision as 'accept' | 'reject',
+          economic: deliveryTier === 'economic',
+        }
+      : {}),
   });
   const payloadHash = createHash('sha256').update(JSON.stringify(parcel), 'utf8').digest('hex');
 
@@ -1188,7 +1229,7 @@ async function dispatchManualYalidineParcel(
       reused: false,
     };
   } catch (error: any) {
-    const isDefiniteRejection = error instanceof YalidineApiError && error.kind === 'rejected';
+    const isDefiniteRejection = error instanceof YalidineApiError && (error.kind === 'rejected' || error.kind === 'rate_limited');
     if (isDefiniteRejection) {
       await updateManualYalidineDispatch(supabase, merchantId, externalOrderId, {
         status: 'rejected',
@@ -1335,6 +1376,20 @@ export async function createManualOrder(formData: FormData) {
         yalidine_label_url: dispatch.labelUrl,
         yalidine_manual_dispatch_reused: dispatch.reused,
         yalidine_delivery_type: String(formData.get('delivery_type') || 'home'),
+        yalidine_delivery_tier: String(formData.get('delivery_tier') || 'express'),
+        yalidine_stopdesk_id: formData.get('stopdesk_id') ? Number(formData.get('stopdesk_id')) : null,
+        yalidine_product_description: String(formData.get('product_description') || productName || '').trim(),
+        yalidine_amount_to_collect: Number(formData.get('shipment_amount')),
+        yalidine_declared_value: Number(formData.get('shipment_declared_value')),
+        yalidine_do_insurance: formData.get('do_insurance') === 'on',
+        yalidine_delivery_fee_payer: String(formData.get('delivery_fee_payer') || 'receiver'),
+        yalidine_length_cm: Number(formData.get('shipment_length')),
+        yalidine_width_cm: Number(formData.get('shipment_width')),
+        yalidine_height_cm: Number(formData.get('shipment_height')),
+        yalidine_weight_kg: Number(formData.get('shipment_weight')),
+        yalidine_has_exchange: formData.get('has_exchange') === 'on',
+        yalidine_product_to_collect: String(formData.get('product_to_collect') || '').trim() || null,
+        yalidine_opening_decision: String(formData.get('opening_decision') || 'accept'),
       },
       statusRaw: 'processing',
       description: dispatch.reused
