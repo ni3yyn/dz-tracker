@@ -920,13 +920,8 @@ async function dispatchManualYalidineParcel(
   const toCommuneId = Number(formData.get('to_commune_id'));
   const fromWilaya = options.wilayas.find((item) => item.id === fromWilayaId);
   const toWilaya = options.wilayas.find((item) => item.id === toWilayaId && item.is_deliverable);
-  const toCommune = options.communes.find((item) =>
-    item.id === toCommuneId &&
-    item.wilaya_id === toWilayaId &&
-    item.is_deliverable
-  );
-  if (!fromWilaya || !toWilaya || !toCommune) {
-    throw new Error('اختر ولاية الانطلاق وولاية وبلدية مستلماً صالحة من قوائم شركة التوصيل.');
+  if (!fromWilaya || !toWilaya) {
+    throw new Error('اختر ولاية الانطلاق وولاية مستلم صالحة من قوائم شركة التوصيل.');
   }
 
   const deliveryType = String(formData.get('delivery_type') || 'home');
@@ -938,15 +933,27 @@ async function dispatchManualYalidineParcel(
   const stopDeskCenter = stopDesk
     ? options.centers.find((item) =>
         item.center_id === stopDeskId &&
-        item.wilaya_id === toWilayaId &&
-        item.commune_id === toCommuneId
+        item.wilaya_id === toWilayaId
       )
     : null;
   if (stopDesk && !stopDeskCenter) {
-    throw new Error('اختر مكتب استلام تابعاً لنفس بلدية المستلم وولايتها.');
+    throw new Error('اختر مكتب استلام متاحاً ضمن ولاية المستلم.');
   }
-  if (stopDesk && !toCommune.has_stop_desk) {
-    throw new Error('لا تعرض الشركة مكتب استلام لهذه البلدية. اختر التوصيل إلى المنزل.');
+
+  // Stop-desk delivery uses the centre's actual commune, which may differ
+  // from the commune originally selected before the merchant picked a centre.
+  const toCommune = stopDesk
+    ? options.communes.find((item) =>
+        item.id === stopDeskCenter?.commune_id &&
+        item.wilaya_id === toWilayaId
+      )
+    : options.communes.find((item) =>
+        item.id === toCommuneId &&
+        item.wilaya_id === toWilayaId &&
+        item.is_deliverable
+      );
+  if (!toCommune) {
+    throw new Error('اختر بلدية مستلم صالحة من قوائم شركة التوصيل.');
   }
 
   const firstName = String(formData.get('customer_firstname') || '').trim();
