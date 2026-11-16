@@ -1434,6 +1434,28 @@ export async function createManualOrder(formData: FormData) {
     // Attach the confirmed carrier tracking number to the already-saved order.
     // If this database update fails, the idempotent carrier reservation retains
     // the tracking number so the same order reference can safely complete later.
+    const yalidineCarrierMetadata = {
+      yalidine_manual_dispatch: true,
+      yalidine_import_id: dispatch.importId,
+      yalidine_label_url: dispatch.labelUrl,
+      yalidine_manual_dispatch_reused: dispatch.reused,
+      yalidine_delivery_type: String(formData.get('delivery_type') || 'home'),
+      yalidine_delivery_tier: String(formData.get('delivery_tier') || 'express'),
+      yalidine_stopdesk_id: formData.get('stopdesk_id') ? Number(formData.get('stopdesk_id')) : null,
+      yalidine_product_description: String(formData.get('product_description') || productName || '').trim(),
+      yalidine_amount_to_collect: Number(formData.get('shipment_amount')),
+      yalidine_declared_value: Number(formData.get('shipment_declared_value')),
+      yalidine_do_insurance: formData.get('do_insurance') === 'on',
+      yalidine_delivery_fee_payer: String(formData.get('delivery_fee_payer') || 'receiver'),
+      yalidine_length_cm: Number(formData.get('shipment_length')),
+      yalidine_width_cm: Number(formData.get('shipment_width')),
+      yalidine_height_cm: Number(formData.get('shipment_height')),
+      yalidine_weight_kg: Number(formData.get('shipment_weight')),
+      yalidine_has_exchange: formData.get('has_exchange') === 'on',
+      yalidine_product_to_collect: String(formData.get('product_to_collect') || '').trim() || null,
+      yalidine_opening_decision: String(formData.get('opening_decision') || 'accept'),
+    };
+
     const carrierResult = await orchestrator.processEvent({
       merchantId,
       sourceProvider: 'yalidine',
@@ -1443,27 +1465,7 @@ export async function createManualOrder(formData: FormData) {
       productName: productName || undefined,
       carrierName: 'Yalidine Express',
       carrierTrackingNumber: dispatch.trackingNumber,
-      carrierMetadata: {
-        yalidine_manual_dispatch: true,
-        yalidine_import_id: dispatch.importId,
-        yalidine_label_url: dispatch.labelUrl,
-        yalidine_manual_dispatch_reused: dispatch.reused,
-        yalidine_delivery_type: String(formData.get('delivery_type') || 'home'),
-        yalidine_delivery_tier: String(formData.get('delivery_tier') || 'express'),
-        yalidine_stopdesk_id: formData.get('stopdesk_id') ? Number(formData.get('stopdesk_id')) : null,
-        yalidine_product_description: String(formData.get('product_description') || productName || '').trim(),
-        yalidine_amount_to_collect: Number(formData.get('shipment_amount')),
-        yalidine_declared_value: Number(formData.get('shipment_declared_value')),
-        yalidine_do_insurance: formData.get('do_insurance') === 'on',
-        yalidine_delivery_fee_payer: String(formData.get('delivery_fee_payer') || 'receiver'),
-        yalidine_length_cm: Number(formData.get('shipment_length')),
-        yalidine_width_cm: Number(formData.get('shipment_width')),
-        yalidine_height_cm: Number(formData.get('shipment_height')),
-        yalidine_weight_kg: Number(formData.get('shipment_weight')),
-        yalidine_has_exchange: formData.get('has_exchange') === 'on',
-        yalidine_product_to_collect: String(formData.get('product_to_collect') || '').trim() || null,
-        yalidine_opening_decision: String(formData.get('opening_decision') || 'accept'),
-      },
+      carrierMetadata: yalidineCarrierMetadata,
       statusRaw: 'processing',
       description: dispatch.reused
         ? 'تم ربط الشحنة الموجودة في حساب Yalidine / Guepex بطلبك في تاجر تراك.'
@@ -1471,13 +1473,86 @@ export async function createManualOrder(formData: FormData) {
     });
 
     if (!carrierResult.success) {
-      return {
-        error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
-          '، لكن تعذّر تحديث ربطها في تاجر تراك. أعد حفظ نفس رقم الطلب لإكمال الربط دون إنشاء شحنة ثانية. ' +
-          (carrierResult.message || ''),
+      // The local order already exists and the carrier POST has returned a
+      // confirmed tracking number. The orchestrator's secondary resolution
+      // (including exchange/duplicate guards) can fail after the parcel was
+      // created. Reconcile the exact order row and attach the confirmed values
+      // directly rather than showing a false "creation failed" result.
+      const { data: currentOrder, error: currentOrderError } = await supabase
+        .from('orders')
+        .select('id, tracking_uuid, external_order_id, carrier_name, carrier_tracking_number, carrier_metadata')
+        .eq('merchant_id', merchantId)
+        .eq('id', result.orderId)
+        .maybeSingle();
+
+      if (currentOrderError || !currentOrder || currentOrder.external_order_id !== externalOrderId) {
+        return {
+          error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
+            '، لكن تعذّر التحقق من سجل الطلب المقابل في تاجر تراك. لم نعد إرسال الشحنة.',
+        };
+      }
+
+      if (
+        currentOrder.carrier_tracking_number &&
+        currentOrder.carrier_tracking_number !== dispatch.trackingNumber
+      ) {
+        return {
+          error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
+            '، لكن الطلب في تاجر تراك مرتبط برقم تتبع مختلف (' +
+            currentOrder.carrier_tracking_number + '). لم نغيّر الربط تلقائياً.',
+        };
+      }
+
+      const mergedCarrierMetadata = {
+        ...((currentOrder.carrier_metadata as Record<string, unknown> | null) || {}),
+        ...yalidineCarrierMetadata,
       };
+      const { data: reconciledOrder, error: reconcileError } = await supabase
+        .from('orders')
+        .update({
+          carrier_name: 'Yalidine Express',
+          carrier_tracking_number: dispatch.trackingNumber,
+          carrier_metadata: mergedCarrierMetadata as any,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('merchant_id', merchantId)
+        .eq('id', result.orderId)
+        .select('id, tracking_uuid, carrier_tracking_number')
+        .maybeSingle();
+
+      if (reconcileError || !reconciledOrder || reconciledOrder.carrier_tracking_number !== dispatch.trackingNumber) {
+        const { data: verifyOrder } = await supabase
+          .from('orders')
+          .select('id, tracking_uuid, carrier_tracking_number')
+          .eq('merchant_id', merchantId)
+          .eq('id', result.orderId)
+          .maybeSingle();
+
+        if (!verifyOrder || verifyOrder.carrier_tracking_number !== dispatch.trackingNumber) {
+          return {
+            error: 'تم إنشاء الشحنة لدى شركة التوصيل برقم ' + dispatch.trackingNumber +
+              '، لكن تعذّر تثبيت رقم التتبع في سجل الطلب. لم نكرر الإنشاء؛ أعد المحاولة بنفس المرجع لإكمال الربط.',
+          };
+        }
+        result = {
+          ...result,
+          success: true,
+          orderId: verifyOrder.id,
+          trackingUuid: verifyOrder.tracking_uuid,
+          isNewOrder: false,
+        };
+      } else {
+        result = {
+          ...result,
+          success: true,
+          orderId: reconciledOrder.id,
+          trackingUuid: reconciledOrder.tracking_uuid,
+          isNewOrder: false,
+        };
+      }
+    } else {
+      result = carrierResult;
     }
-    result = carrierResult;
   }
 
   if (!result.orderId) {
