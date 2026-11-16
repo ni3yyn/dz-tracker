@@ -11,6 +11,11 @@ export const dynamic = 'force-dynamic';
 const OPERATORS = new Set(['djezzy', 'mobilis', 'ooredoo']);
 
 export async function POST(request: Request) {
+  const origin = request.headers.get('origin');
+  const host = request.headers.get('host');
+  if (!origin || !host || new URL(origin).host !== host) {
+    return NextResponse.json({ error: 'Origin validation failed.' }, { status: 403 });
+  }
   const supabaseAuth = await createClient();
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
   if (authError || !user) {

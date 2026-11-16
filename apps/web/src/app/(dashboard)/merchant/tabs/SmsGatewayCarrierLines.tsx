@@ -157,8 +157,14 @@ export function SmsGatewayCarrierLines({
             {OPERATORS.map((operator) => {
               const line = lines.find((candidate) => candidate.operator_code === operator.code) || null;
               const isBusy = busyOperator === operator.code || (line ? busyDevice === line.device_id : false);
-              const lastSeen = line?.last_seen_at
-                ? new Date(line.last_seen_at).toLocaleString('ar-DZ', { dateStyle: 'short', timeStyle: 'short' })
+              const lastSeenDate = line?.last_seen_at ? new Date(line.last_seen_at) : null;
+              const online = Boolean(
+                lastSeenDate &&
+                Number.isFinite(lastSeenDate.getTime()) &&
+                Date.now() - lastSeenDate.getTime() < 3 * 60 * 1000
+              );
+              const lastSeen = lastSeenDate
+                ? lastSeenDate.toLocaleString('ar-DZ', { dateStyle: 'short', timeStyle: 'short' })
                 : null;
               return (
                 <div key={operator.code} style={{ minWidth: 0, border: '1px solid var(--border-soft)', padding: '13px', background: 'var(--bg-base)' }}>
@@ -177,7 +183,7 @@ export function SmsGatewayCarrierLines({
                         {line.display_name || 'هاتف Android'}
                       </p>
                       <p style={{ margin: '4px 0 10px', color: 'var(--ink-muted)', fontSize: '10px', lineHeight: 1.5 }}>
-                        {lastSeen ? `آخر اتصال: ${lastSeen}` : 'بانتظار أول اتصال من التطبيق'}
+                        {online ? 'متصل الآن' : lastSeen ? `غير متصل حالياً · آخر اتصال: ${lastSeen}` : 'بانتظار أول اتصال من التطبيق'}
                       </p>
                       <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
                         <button
