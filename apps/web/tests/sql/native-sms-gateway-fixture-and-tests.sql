@@ -70,6 +70,8 @@ DECLARE
   v_pairing RECORD;
   v_job public.sms_tracking_outbox%ROWTYPE;
   v_poll JSONB;
+  v_claim_token UUID;
+  v_dispatch_started BOOLEAN;
 BEGIN
   SELECT * INTO v_pairing
     FROM public.complete_native_sms_gateway_pairing(
@@ -140,6 +142,17 @@ BEGIN
   END IF;
   IF v_poll #>> '{job,order_id}' <> '30000000-0000-4000-8000-000000000011' THEN
     RAISE EXCEPTION 'Native phone claimed the wrong order: %', v_poll;
+  END IF;
+
+  v_claim_token := (v_poll #>> '{job,claim_token}')::UUID;
+  SELECT public.begin_native_sms_job_dispatch(
+    (v_poll #>> '{job,id}')::UUID,
+    '10000000-0000-4000-8000-000000000010',
+    'native-device-1',
+    v_claim_token
+  ) INTO v_dispatch_started;
+  IF v_dispatch_started IS DISTINCT FROM TRUE THEN
+    RAISE EXCEPTION 'The legacy phone could not mark its SMS dispatch start';
   END IF;
 
   -- An admin-disabled phone is a hold. A merchant-generated replacement code must not bypass it.
