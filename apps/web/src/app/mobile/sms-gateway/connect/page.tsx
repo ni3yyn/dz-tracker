@@ -136,13 +136,15 @@ export default async function ConnectNativeSmsPage({
 
   const errorMessage = params.error === 'merchant_unavailable'
     ? 'لم يتم العثور على متجر مرتبط بهذا الحساب.'
+    : params.error === 'merchant_lookup_failed'
+      ? 'تعذر التحقق من ربط حسابك بقاعدة بيانات المتاجر. أعد المحاولة، وإذا تكرر الخطأ فتواصل مع الدعم مع ذكر أن مرحلة التحقق من المتجر فشلت.'
+    : params.error === 'pairing_code_create_failed'
+      ? 'تعذر إنشاء رمز ربط الهاتف في قاعدة البيانات. هذا خطأ في إعداد خدمة الربط، وليس في الشريحة أو رقم الهاتف. أعد المحاولة بعد تحديث الخدمة.'
     : params.error === 'pairing_unavailable' || params.error === 'invite_unavailable'
-      ? 'تعذر إنشاء رابط آمن الآن. حاول مرة أخرى.'
+      ? 'تعذر الوصول إلى خدمة إنشاء الربط أو الدعوة. تحقق من اتصال الخدمة بقاعدة البيانات ثم أعد المحاولة.'
       : params.error === 'invite_expired' || params.error === 'invite_invalid'
         ? 'رابط الدعوة غير صالح أو انتهت صلاحيته أو تم استخدامه مسبقاً. اطلب رابطاً جديداً من الهاتف الرئيسي.'
-        : params.error === 'operator_required'
-          ? 'اختر شبكة شريحة الإرسال التي ستعمل من هذا الهاتف.'
-          : params.error === 'manager_replacement_required'
+        : params.error === 'manager_replacement_required'
             ? 'يوجد هاتف رئيسي مرتبط بالفعل. أكّد استبداله قبل المتابعة.'
             : '';
 
@@ -183,8 +185,8 @@ export default async function ConnectNativeSmsPage({
         <h1>{inviteMode ? 'ساهم في إرسال رسائل تتبع الطلبات.' : 'اجعل هذا هاتف متجرك الرئيسي.'}</h1>
         <p className={styles.description}>
           {inviteMode
-            ? `سيُربط هذا الهاتف بمتجر ${merchant.store_name} لإرسال رسائل التتبع للعملاء على شبكة ${operatorLabel}. لا تحتاج إلى كلمة مرور صاحب المتجر.`
-            : 'الهاتف الرئيسي يدير ربط الهواتف الأخرى، ويمكنه أيضاً إرسال رسائل التتبع من شريحته. يتطلب هذا الإجراء تسجيل الدخول بحساب التاجر.'}
+            ? `سيُربط هذا الهاتف بمتجر ${merchant.store_name} لإدارة أجهزة الإرسال وإرسال روابط التتبع من الشرائح التي تفعّلها لاحقاً داخل التطبيق. لا تحتاج إلى تطابق رقم الشريحة مع رقم التسجيل.`
+            : 'الهاتف الرئيسي يدير ربط الهواتف الأخرى ويمكنه إرسال روابط التتبع من أي شريحة مفعّلة داخل التطبيق. لا يلزم اختيار الشبكة هنا، ولا يشترط أن يطابق رقم الشريحة رقم الهاتف المسجل في حسابك.'}
         </p>
 
         <div className={styles.store}>
@@ -218,16 +220,6 @@ export default async function ConnectNativeSmsPage({
           </form>
         ) : (
           <form action={approveNativeSmsDevice} className={styles.form}>
-            <div className={styles.selectField}>
-              <label htmlFor="operatorCode">شبكة الشريحة الأساسية في هذا الهاتف</label>
-              <select id="operatorCode" name="operatorCode" required defaultValue="">
-                <option value="" disabled>اختر شبكة الإرسال</option>
-                <option value="djezzy">Djezzy</option>
-                <option value="mobilis">Mobilis</option>
-                <option value="ooredoo">Ooredoo</option>
-              </select>
-              <p>اختر الشبكة المطابقة للشريحة التي ستستخدمها لإرسال الرسائل. يمكنك إضافة خطوط الشبكات الأخرى لاحقاً من التطبيق.</p>
-            </div>
             {managerExists && (
               <div className={styles.confirmField}>
                 <label>
@@ -243,11 +235,11 @@ export default async function ConnectNativeSmsPage({
         <p className={styles.security}>
           {inviteMode
             ? 'هذا الهاتف يحصل على صلاحية إرسال SMS للشبكة المحددة فقط. لا يمكنه إنشاء دعوات أو إدارة حساب المتجر.'
-            : 'صلاحية الإدارة محفوظة لهذا الهاتف فقط. الهواتف التي تربطها لاحقاً تحصل على صلاحية إرسال الرسائل فقط، ولا تحصل على صلاحية حسابك أو إدارة الأجهزة.'}
+            : 'لا يتطلب الربط رقم هاتف محدداً أو شبكة محددة. اختر الشرائح المفعّلة لاحقاً من التطبيق؛ وسيُرسل كل رابط تتبع عبر الشريحة المطابقة لشبكة العميل. الهواتف المدعوة تحصل على صلاحية الإرسال فقط.'}
         </p>
         {!inviteMode && (
           <p className={styles.notice}>
-            سيُفتح موقع تاجر تراك في المتصفح. سجّل الدخول بالحساب المرتبط بمتجرك ووافق على جعل هذا الهاتف رئيسياً. بعد العودة إلى التطبيق يمكنك إنشاء دعوات ومشاركتها.
+            سيُفتح موقع تاجر تراك في المتصفح. سجّل الدخول بالحساب المرتبط بمتجرك ووافق على جعل هذا الهاتف رئيسياً. بعد العودة إلى التطبيق فعّل الشريحة أو الشرائح التي تريد استخدامها، ثم أرسل رسالة اختبار للتحقق من عمل الإرسال.
           </p>
         )}
       </section>
