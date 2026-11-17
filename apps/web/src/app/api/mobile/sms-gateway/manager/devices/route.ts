@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticateNativeSmsManager } from '../../../../../lib/native-sms-gateway-auth';
+import { authenticateNativeSmsManager } from '../../../../../../lib/native-sms-gateway-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
