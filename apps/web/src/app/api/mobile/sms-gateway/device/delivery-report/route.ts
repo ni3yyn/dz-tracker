@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       .from('sms_tracking_outbox')
       .update(update)
       .eq('id', jobId)
-      .eq('last_claim_token', claimToken)
+      .or(`claim_token.eq.${claimToken},last_claim_token.eq.${claimToken}`)
       .in('status', ['processing', 'submitted', 'unknown'])
       .neq('delivery_status', 'delivered')
       .select('id, delivery_status')
