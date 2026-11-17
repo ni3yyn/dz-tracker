@@ -1028,3 +1028,86 @@ REVOKE ALL ON FUNCTION public.complete_native_sms_gateway_pairing(TEXT, TEXT, TE
 GRANT EXECUTE ON FUNCTION public.complete_native_sms_gateway_pairing(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT)
   TO service_role;
 
+
+-- Revalidate sender, merchant and platform switches at the last server-side
+-- checkpoint before Android is allowed to call SmsManager.
+CREATE OR REPLACE FUNCTION public.begin_native_sms_job_dispatch(
+  p_job_id UUID,
+  p_merchant_id UUID,
+  p_device_id TEXT,
+  p_claim_token UUID
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_job public.sms_tracking_outbox%ROWTYPE;
+  v_device_enabled BOOLEAN;
+  v_sms_enabled BOOLEAN;
+  v_gateway_enabled BOOLEAN;
+BEGIN
+  SELECT *
+    INTO v_job
+    FROM public.sms_tracking_outbox
+   WHERE id = p_job_id
+     AND merchant_id = p_merchant_id
+     AND last_device_id = p_device_id
+     AND locked_by = p_device_id
+     AND claim_token = p_claim_token
+     AND status = 'processing'
+   FOR UPDATE;
+
+  IF NOT FOUND OR v_job.expires_at <= NOW() THEN
+    RETURN FALSE;
+  END IF;
+
+  SELECT device.enabled
+    INTO v_device_enabled
+    FROM public.sms_gateway_devices AS device
+   WHERE device.device_id = p_device_id
+     AND device.merchant_id = p_merchant_id
+     AND device.revoked_at IS NULL;
+
+  SELECT merchant.sms_tracking_enabled
+    INTO v_sms_enabled
+    FROM public.merchants AS merchant
+   WHERE merchant.id = p_merchant_id;
+
+  SELECT control.enabled
+    INTO v_gateway_enabled
+    FROM public.sms_gateway_control AS control
+   WHERE control.id = 'primary';
+
+  IF v_device_enabled IS DISTINCT FROM TRUE
+     OR v_sms_enabled IS DISTINCT FROM TRUE
+     OR v_gateway_enabled IS DISTINCT FROM TRUE THEN
+    RETURN FALSE;
+  END IF;
+
+  IF v_job.dispatch_started_at IS NOT NULL THEN
+    RETURN TRUE;
+  END IF;
+
+  UPDATE public.sms_tracking_outbox
+     SET dispatch_started_at = NOW(),
+         attempt_count = attempt_count + 1,
+         lease_expires_at = NOW() + INTERVAL '5 minutes',
+         updated_at = NOW()
+   WHERE id = p_job_id
+     AND merchant_id = p_merchant_id
+     AND locked_by = p_device_id
+     AND claim_token = p_claim_token
+     AND status = 'processing'
+     AND dispatch_started_at IS NULL
+     AND expires_at > NOW();
+
+  RETURN FOUND;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.begin_native_sms_job_dispatch(UUID, UUID, TEXT, UUID)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.begin_native_sms_job_dispatch(UUID, UUID, TEXT, UUID)
+  TO service_role;
