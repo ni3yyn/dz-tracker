@@ -11,7 +11,7 @@ const PAIRING_PATH = '/mobile/sms-gateway/connect';
 const MANAGER_REDIRECT = 'tajertrack-sms://manager-pair';
 const SENDER_REDIRECT = 'tajertrack-sms://pair';
 
-function connectErrorUrl(error: string, managerDeviceId = '') {
+function connectErrorUrl(error: string, managerDeviceId = '', deviceModel = '') {
   const params = new URLSearchParams({
     redirect_uri: MANAGER_REDIRECT,
     error,
@@ -19,20 +19,32 @@ function connectErrorUrl(error: string, managerDeviceId = '') {
   if (/^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId)) {
     params.set('manager_device_id', managerDeviceId);
   }
+  if (deviceModel) params.set('device_model', deviceModel);
   return `${PAIRING_PATH}?${params.toString()}`;
+}
+
+function normalizeDeviceModel(value: string | null | undefined) {
+  return (value || '').trim().replace(/\\s+/g, ' ').toLowerCase();
 }
 
 /** The normal account-authenticated flow establishes the one merchant manager device. */
 export async function approveNativeSmsDevice(formData: FormData) {
+  const managerDeviceId = String(formData.get('managerDeviceId') || '').trim();
+  const suppliedManagerDeviceId = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId) ? managerDeviceId : '';
+  const deviceModel = String(formData.get('deviceModel') || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
+  const normalizedDeviceModel = normalizeDeviceModel(deviceModel);
+  if (!normalizedDeviceModel) {
+    redirect(connectErrorUrl('device_model_missing', suppliedManagerDeviceId));
+  }
+
   const supabaseAuth = await createClient();
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
   if (authError || !user) {
-    const managerDeviceId = String(formData.get('managerDeviceId') || '').trim();
-    const managerQuery = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId)
-      ? `&manager_device_id=${encodeURIComponent(managerDeviceId)}`
+    const managerQuery = suppliedManagerDeviceId
+      ? `&manager_device_id=${encodeURIComponent(suppliedManagerDeviceId)}`
       : '';
-    const nextPath = `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}${managerQuery}`;
+    const nextPath = `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}${managerQuery}&device_model=${encodeURIComponent(deviceModel)}`;
     redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
 
@@ -52,18 +64,14 @@ export async function approveNativeSmsDevice(formData: FormData) {
       details: merchantError.details,
       hint: merchantError.hint,
     });
-    redirect(connectErrorUrl('merchant_lookup_failed'));
+    redirect(connectErrorUrl('merchant_lookup_failed', suppliedManagerDeviceId, deviceModel));
   }
-  if (!merchant?.id) redirect(connectErrorUrl('merchant_unavailable'));
+  if (!merchant?.id) redirect(connectErrorUrl('merchant_unavailable', suppliedManagerDeviceId, deviceModel));
 
-  const managerDeviceId = String(formData.get('managerDeviceId') || '').trim();
-  const suppliedManagerDeviceId = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId)
-    ? managerDeviceId
-    : '';
 
   const { data: existingManager, error: managerError } = await supabase
     .from('sms_gateway_manager_devices')
-    .select('manager_device_id, enabled')
+    .select('manager_device_id, enabled, display_name')
     .eq('merchant_id', merchant.id)
     .is('revoked_at', null)
     .order('created_at', { ascending: false })
@@ -72,7 +80,7 @@ export async function approveNativeSmsDevice(formData: FormData) {
 
   if (managerError) {
     console.error('[NativeSmsGateway] Existing manager check failed:', managerError.message);
-    redirect(connectErrorUrl('pairing_unavailable'));
+    redirect(connectErrorUrl('pairing_unavailable', suppliedManagerDeviceId, deviceModel));
   }
 
   const sameManagerDevice = Boolean(
@@ -82,12 +90,15 @@ export async function approveNativeSmsDevice(formData: FormData) {
     existingManager.manager_device_id === suppliedManagerDeviceId
   );
   if (sameManagerDevice) {
-    redirect(connectErrorUrl('', suppliedManagerDeviceId));
+    redirect(connectErrorUrl('', suppliedManagerDeviceId, deviceModel));
   }
 
   const replaceExisting = Boolean(existingManager?.manager_device_id);
-  if (replaceExisting && formData.get('replaceExisting') !== 'yes') {
-    redirect(connectErrorUrl('manager_replacement_required', suppliedManagerDeviceId));
+  const registeredDeviceModel = normalizeDeviceModel(existingManager?.display_name);
+  const requiresReplacementConfirmation = replaceExisting &&
+    registeredDeviceModel !== normalizedDeviceModel;
+  if (requiresReplacementConfirmation && formData.get('replaceExisting') !== 'yes') {
+    redirect(connectErrorUrl('manager_replacement_required', suppliedManagerDeviceId, deviceModel));
   }
 
   const code = randomBytes(32).toString('base64url');
@@ -109,7 +120,7 @@ export async function approveNativeSmsDevice(formData: FormData) {
       details: insertError.details,
       hint: insertError.hint,
     });
-    redirect(connectErrorUrl('pairing_code_create_failed'));
+    redirect(connectErrorUrl('pairing_code_create_failed', suppliedManagerDeviceId, deviceModel));
   }
 
   redirect(`${MANAGER_REDIRECT}?code=${encodeURIComponent(code)}`);
