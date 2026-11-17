@@ -27,7 +27,7 @@ const OPERATOR_LABELS: Record<string, string> = {
 };
 
 function normalizeDeviceModel(value?: string | null) {
-  return (value || '').trim().replace(/\\s+/g, ' ').toLowerCase();
+  return (value || '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 export default async function ConnectNativeSmsPage({
@@ -39,7 +39,7 @@ export default async function ConnectNativeSmsPage({
   const inviteToken = typeof params.invite === 'string' ? params.invite.trim() : '';
   const inviteMode = Boolean(inviteToken);
   const deviceModel = typeof params.device_model === 'string'
-    ? params.device_model.trim().replace(/\\s+/g, ' ').slice(0, 80)
+    ? params.device_model.trim().replace(/\s+/g, ' ').slice(0, 80)
     : '';
   const normalizedDeviceModel = normalizeDeviceModel(deviceModel);
   const managerDeviceIdParam = typeof params.manager_device_id === 'string' ? params.manager_device_id.trim() : '';
