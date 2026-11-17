@@ -14,6 +14,7 @@ export async function POST(request: Request) {
 
   const jobId = typeof body?.jobId === 'string' ? body.jobId : '';
   const claimToken = typeof body?.claimToken === 'string' ? body.claimToken : '';
+  const deliveryReportRequested = body?.deliveryReportRequested === true;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(jobId) ||
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(claimToken)) {
     return NextResponse.json({ error: 'Invalid SMS dispatch claim.' }, { status: 400 });
@@ -44,6 +45,32 @@ export async function POST(request: Request) {
       return NextResponse.json({
         error: 'This SMS claim expired or is no longer assigned to this phone.',
       }, { status: 409 });
+    }
+
+    if (deliveryReportRequested) {
+      // Persist this before allowing the app to call SmsManager. A very fast
+      // carrier callback can then never race ahead of the pending state.
+      const { data: deliveryJob, error: deliveryInitError } = await auth.supabase
+        .from('sms_tracking_outbox')
+        .update({
+          delivery_status: 'pending',
+          delivered_at: null,
+          delivery_reported_at: null,
+          delivery_status_code: null,
+          delivery_error: null,
+        })
+        .eq('id', jobId)
+        .eq('merchant_id', auth.device.merchant_id)
+        .eq('last_device_id', auth.device.device_id)
+        .eq('claim_token', claimToken)
+        .eq('status', 'processing')
+        .select('id')
+        .maybeSingle();
+
+      if (deliveryInitError || !deliveryJob) {
+        console.error('[NativeSmsGateway] Could not initialize SMS delivery tracking:', deliveryInitError?.message || 'Claim changed.');
+        return NextResponse.json({ error: 'Could not initialize SMS delivery tracking.' }, { status: 503 });
+      }
     }
 
     return NextResponse.json({ success: true }, {
