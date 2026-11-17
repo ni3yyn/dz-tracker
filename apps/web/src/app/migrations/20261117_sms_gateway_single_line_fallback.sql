@@ -255,3 +255,5 @@ REVOKE ALL ON FUNCTION public.poll_native_sms_gateway(TEXT, TEXT, INTEGER, BOOLE
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.poll_native_sms_gateway(TEXT, TEXT, INTEGER, BOOLEAN, TEXT, BOOLEAN)
   TO service_role;
+
+NOTIFY pgrst, 'reload schema';
