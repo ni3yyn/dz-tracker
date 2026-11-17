@@ -58,7 +58,7 @@ export default async function ConnectNativeSmsPage({
     if (/^[A-Za-z0-9_-]{30,100}$/.test(inviteToken)) {
       const { data: invite } = await supabase
         .from('sms_gateway_device_invites')
-        .select('merchant_id, operator_code, expires_at, consumed_at, manager_device_id')
+        .select('merchant_id, operator_code, expires_at, consumed_at, manager_device_id, created_by')
         .eq('token_hash', hashNativeSmsCredential(inviteToken))
         .maybeSingle();
 
