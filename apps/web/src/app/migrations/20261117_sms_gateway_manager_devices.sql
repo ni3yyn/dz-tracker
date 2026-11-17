@@ -117,6 +117,16 @@ BEGIN
     RETURN;
   END IF;
 
+  -- A manager code issued before an account suspension must not remain usable.
+  IF NOT EXISTS (
+    SELECT 1
+      FROM auth.users AS account
+     WHERE account.id = v_owner_user_id
+       AND (account.banned_until IS NULL OR account.banned_until <= NOW())
+  ) THEN
+    RETURN;
+  END IF;
+
   SELECT EXISTS (
     SELECT 1
       FROM public.sms_gateway_manager_devices AS manager
@@ -328,6 +338,16 @@ BEGIN
    WHERE merchant.id = v_invite.merchant_id;
 
   IF v_store_name IS NULL OR v_owner_user_id IS DISTINCT FROM v_invite.created_by THEN
+    RETURN;
+  END IF;
+
+  -- An invitation cannot be redeemed after the merchant account is banned or deleted.
+  IF NOT EXISTS (
+    SELECT 1
+      FROM auth.users AS account
+     WHERE account.id = v_owner_user_id
+       AND (account.banned_until IS NULL OR account.banned_until <= NOW())
+  ) THEN
     RETURN;
   END IF;
 
