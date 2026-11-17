@@ -94,6 +94,7 @@ export async function POST(request: Request) {
     ? body.operatorCode.trim().toLowerCase()
     : null;
   const dispatchProtocol = body?.dispatchProtocol === 1 || body?.dispatchProtocol === true;
+  const allowCrossNetworkFallback = body?.allowCrossNetworkFallback === true;
   const diagnosticReference = randomUUID();
 
   if (operatorCode && !['djezzy', 'mobilis', 'ooredoo'].includes(operatorCode)) {
@@ -116,6 +117,7 @@ export async function POST(request: Request) {
       p_lease_seconds: 300,
       p_dispatch_protocol: dispatchProtocol,
       p_operator_code: operatorCode,
+      p_allow_cross_network_fallback: allowCrossNetworkFallback,
     });
 
     if (pollError) {
@@ -226,7 +228,12 @@ export async function POST(request: Request) {
     }
 
     const actualOperator = operatorForPhone(phone);
-    if (!actualOperator || actualOperator !== job.recipient_operator || actualOperator !== poll.operatorCode) {
+    const crossNetworkFallback = poll.crossNetworkFallback === true;
+    if (
+      !actualOperator ||
+      actualOperator !== job.recipient_operator ||
+      (!crossNetworkFallback && actualOperator !== poll.operatorCode)
+    ) {
       // Never send a corrected number through the wrong carrier's SIM. The
       // order-update trigger will recalculate the route when the phone changes.
       await skipJob(supabase, job.id, deviceId, claimToken, 'recipient_carrier_mismatch');
