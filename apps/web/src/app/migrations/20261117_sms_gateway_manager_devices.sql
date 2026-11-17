@@ -349,6 +349,7 @@ BEGIN
     SELECT 1
       FROM auth.users AS account
      WHERE account.id = v_owner_user_id
+       AND account.deleted_at IS NULL
        AND (account.banned_until IS NULL OR account.banned_until <= NOW())
   ) THEN
     RETURN;
