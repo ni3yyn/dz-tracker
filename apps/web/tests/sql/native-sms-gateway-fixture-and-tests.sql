@@ -53,6 +53,7 @@ UPDATE public.sms_tracking_outbox
        locked_by = 'android-sms-gateway',
        locked_at = NOW(),
        lease_expires_at = NOW() + INTERVAL '3 minutes',
+       dispatch_started_at = NOW(),
        attempt_count = 1
  WHERE order_id = '30000000-0000-4000-8000-000000000010';
 
