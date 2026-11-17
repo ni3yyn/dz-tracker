@@ -75,59 +75,6 @@ if (merchant) {
   }
 }
 
-// Native phone columns arrive with the native SMS gateway migration. Keep the
-// merchant dashboard usable on deployments where that migration is not live yet.
-let nativeSmsGatewayStorageAvailable = false;
-let nativeSmsDevice: { device_id: string; display_name: string; enabled: boolean; last_seen_at: string | null } | null = null;
-let nativeSmsDevices: Array<{
-  device_id: string;
-  display_name: string | null;
-  enabled: boolean;
-  operator_code: string | null;
-  last_seen_at: string | null;
-  connected_at: string | null;
-}> = [];
-if (merchant) {
-  const { data: nativeDeviceRows, error: nativeDeviceError } = await (supabaseAdmin as any)
-    .from('sms_gateway_devices')
-    .select('device_id, display_name, enabled, operator_code, last_seen_at, connected_at')
-    .eq('merchant_id', merchant.id)
-    .is('revoked_at', null)
-    .order('connected_at', { ascending: false });
-
-  if (!nativeDeviceError) {
-    nativeSmsGatewayStorageAvailable = true;
-    nativeSmsDevices = (nativeDeviceRows || []).map((device: any) => ({
-      device_id: device.device_id,
-      display_name: device.display_name || null,
-      enabled: Boolean(device.enabled),
-      operator_code: typeof device.operator_code === 'string'
-        ? device.operator_code.trim().toLowerCase() || null
-        : null,
-      last_seen_at: device.last_seen_at || null,
-      connected_at: device.connected_at || null,
-    }));
-
-    // A legacy phone is actionable whenever it is still active and has no
-    // carrier assignment. Carrier-specific devices for other networks do not
-    // make this phone visible under an operator card, so keep the warning until
-    // the old phone classifies itself or is replaced/revoked.
-    const legacyDevice = nativeSmsDevices.find(
-      (device) => device.enabled && !device.operator_code
-    ) || null;
-    nativeSmsDevice = legacyDevice
-      ? {
-          device_id: legacyDevice.device_id,
-          display_name: legacyDevice.display_name || 'هاتف Android',
-          enabled: true,
-          last_seen_at: legacyDevice.last_seen_at,
-        }
-      : null;
-  } else {
-    console.warn('[NativeSmsGateway] Sender-line status is unavailable until the carrier routing migration is applied:', nativeDeviceError.message);
-  }
-}
-
 // Stable GitHub Releases asset URL: every signed release replaces the
 // latest asset at this path, so the dashboard does not need an env update.
 const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim()
