@@ -21,6 +21,7 @@ type SmsJob = {
   attempt_count: number;
   max_attempts: number;
   available_at: string;
+  expires_at: string | null;
   locked_by: string | null;
   locked_at: string | null;
   lease_expires_at: string | null;
@@ -102,6 +103,7 @@ const STATUS_LABELS: Record<string, string> = {
   unknown: 'نتيجة غير معروفة',
   skipped: 'تم التخطي',
   dead_letter: 'تجاوز المحاولات',
+  expired: 'انتهت مهلة 72 ساعة',
 };
 
 const STATUS_FILTERS = [
@@ -113,6 +115,7 @@ const STATUS_FILTERS = [
   ['failed', 'فشل'],
   ['unknown', 'غير معروف'],
   ['dead_letter', 'تجاوز المحاولات'],
+  ['expired', 'انتهت المهلة'],
   ['skipped', 'تم التخطي'],
 ] as const;
 
@@ -189,6 +192,7 @@ function statusTone(status: string): string {
   if (status === 'submitted') return 'success';
   if (status === 'pending' || status === 'retry' || status === 'processing') return 'active';
   if (status === 'unknown' || status === 'dead_letter' || status === 'failed') return 'danger';
+  if (status === 'expired') return 'muted';
   return 'muted';
 }
 
@@ -686,7 +690,7 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
                     <td>{merchant?.store_name || '—'}</td>
                     <td className={styles.phone}>{maskPhone(order?.customer_phone)}</td>
                     <td><span className={styles.status} data-tone={statusTone(job.status)}>{STATUS_LABELS[job.status] || job.status}</span></td>
-                    <td className={styles.number}>{job.attempt_count} / {job.max_attempts}</td>
+                    <td className={styles.number}>{job.attempt_count.toLocaleString('ar-DZ')}</td>
                     <td>{formatDate(job.updated_at)}</td>
                     <td>
                       <div className={styles.rowActions}>
@@ -736,11 +740,12 @@ export default function SmsManagerTab({ data: initialData, searchQuery = '' }: P
             <div><span>معرّف الطلب</span><code>{selectedJob.order_id}</code></div>
             <div><span>رقم العميل</span><strong className={styles.phone}>{maskPhone(related(selectedJob.orders)?.customer_phone)}</strong></div>
             <div><span>الحالة</span><strong className={styles.status} data-tone={statusTone(selectedJob.status)}>{STATUS_LABELS[selectedJob.status] || selectedJob.status}</strong></div>
-            <div><span>المحاولات</span><strong>{selectedJob.attempt_count} / {selectedJob.max_attempts}</strong></div>
+            <div><span>المحاولات</span><strong>{selectedJob.attempt_count.toLocaleString('ar-DZ')}</strong></div>
             <div><span>رمز النتيجة</span><code>{selectedJob.result_code || '—'}</code></div>
             <div><span>وقت الإنشاء</span><strong>{formatDate(selectedJob.created_at)}</strong></div>
             <div><span>وقت آخر تحديث</span><strong>{formatDate(selectedJob.updated_at)}</strong></div>
             <div><span>وقت الإرسال</span><strong>{formatDate(selectedJob.submitted_at)}</strong></div>
+            <div><span>آخر مهلة للإرسال (72 ساعة)</span><strong>{formatDate(selectedJob.expires_at)}</strong></div>
             <div><span>انتهاء الحجز</span><strong>{formatDate(selectedJob.lease_expires_at)}</strong></div>
             <div><span>الجهاز الذي عالج الرسالة</span><code>{selectedJob.locked_by || '—'}</code></div>
             <div><span>الخطأ الأخير</span><strong>{selectedJob.last_error || '—'}</strong></div>
