@@ -58,7 +58,7 @@ export default async function ConnectNativeSmsPage({
     if (/^[A-Za-z0-9_-]{30,100}$/.test(inviteToken)) {
       const { data: invite } = await supabase
         .from('sms_gateway_device_invites')
-        .select('merchant_id, operator_code, expires_at, consumed_at')
+        .select('merchant_id, operator_code, expires_at, consumed_at, manager_device_id')
         .eq('token_hash', hashNativeSmsCredential(inviteToken))
         .maybeSingle();
 
@@ -70,12 +70,40 @@ export default async function ConnectNativeSmsPage({
 
       if (inviteValid && invite) {
         operatorCode = invite.operator_code;
+
+        if (invite.manager_device_id) {
+          const { data: manager } = await supabase
+            .from('sms_gateway_manager_devices')
+            .select('manager_device_id')
+            .eq('manager_device_id', invite.manager_device_id)
+            .eq('merchant_id', invite.merchant_id)
+            .eq('owner_user_id', invite.created_by)
+            .eq('enabled', true)
+            .is('revoked_at', null)
+            .maybeSingle();
+          inviteValid = Boolean(manager?.manager_device_id);
+        }
+
         const { data } = await supabase
           .from('merchants')
-          .select('id, store_name, logo_url')
+          .select('id, store_name, logo_url, auth_user_id')
           .eq('id', invite.merchant_id)
           .maybeSingle();
         merchant = data;
+
+        if (inviteValid && merchant?.auth_user_id) {
+          const { data: owner } = await supabase.auth.admin.getUserById(merchant.auth_user_id);
+          const bannedUntil = owner?.user?.banned_until
+            ? new Date(owner.user.banned_until).getTime()
+            : 0;
+          inviteValid = Boolean(
+            owner?.user &&
+            !owner.user.deleted_at &&
+            (!Number.isFinite(bannedUntil) || bannedUntil <= Date.now())
+          );
+        } else {
+          inviteValid = false;
+        }
       }
     }
   } else {
