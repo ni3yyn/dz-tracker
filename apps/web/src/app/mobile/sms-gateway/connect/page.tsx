@@ -29,11 +29,13 @@ const OPERATOR_LABELS: Record<string, string> = {
 export default async function ConnectNativeSmsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirect_uri?: string; error?: string; invite?: string }>;
+  searchParams: Promise<{ redirect_uri?: string; error?: string; invite?: string; manager_device_id?: string }>;
 }) {
   const params = await searchParams;
   const inviteToken = typeof params.invite === 'string' ? params.invite.trim() : '';
   const inviteMode = Boolean(inviteToken);
+  const managerDeviceIdParam = typeof params.manager_device_id === 'string' ? params.manager_device_id.trim() : '';
+  const currentManagerDeviceId = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceIdParam) ? managerDeviceIdParam : '';
 
   if (!inviteMode && params.redirect_uri !== MANAGER_REDIRECT) {
     return (
@@ -53,6 +55,7 @@ export default async function ConnectNativeSmsPage({
   let operatorCode: string | null = null;
   let inviteValid = false;
   let managerExists = false;
+  let sameManagerDevice = false;
 
   if (inviteMode) {
     if (/^[A-Za-z0-9_-]{30,100}$/.test(inviteToken)) {
@@ -110,7 +113,8 @@ export default async function ConnectNativeSmsPage({
     const supabaseAuth = await createClient();
     const { data: { user } } = await supabaseAuth.auth.getUser();
     if (!user) {
-      const next = `/mobile/sms-gateway/connect?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}`;
+      const managerQuery = currentManagerDeviceId ? `&manager_device_id=${encodeURIComponent(currentManagerDeviceId)}` : '';
+      const next = `/mobile/sms-gateway/connect?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}${managerQuery}`;
       redirect(`/login?next=${encodeURIComponent(next)}`);
     }
     if (isAuthorizedAdmin(user)) redirect('/admin');
@@ -125,12 +129,19 @@ export default async function ConnectNativeSmsPage({
     if (merchant?.id) {
       const { data: manager } = await supabase
         .from('sms_gateway_manager_devices')
-        .select('manager_device_id')
+        .select('manager_device_id, enabled')
         .eq('merchant_id', merchant.id)
         .is('revoked_at', null)
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      managerExists = Boolean(manager?.manager_device_id);
+      sameManagerDevice = Boolean(
+        manager?.manager_device_id &&
+        manager.enabled === true &&
+        currentManagerDeviceId &&
+        manager.manager_device_id === currentManagerDeviceId
+      );
+      managerExists = Boolean(manager?.manager_device_id && !sameManagerDevice);
     }
   }
 
@@ -182,11 +193,19 @@ export default async function ConnectNativeSmsPage({
         </div>
 
         <p className={styles.eyebrow}>{inviteMode ? 'دعوة ربط آمنة' : 'إعداد الهاتف الرئيسي'}</p>
-        <h1>{inviteMode ? 'ساهم في إرسال رسائل تتبع الطلبات.' : 'اجعل هذا هاتف متجرك الرئيسي.'}</h1>
+        <h1>
+          {inviteMode
+            ? 'ساهم في إرسال رسائل تتبع الطلبات.'
+            : sameManagerDevice
+              ? 'هذا الهاتف مرتبط بالفعل بمتجرك.'
+              : 'اجعل هذا هاتف متجرك الرئيسي.'}
+        </h1>
         <p className={styles.description}>
           {inviteMode
             ? `سيُربط هذا الهاتف بمتجر ${merchant.store_name} لإرسال رسائل التتبع عبر شبكة ${operatorLabel}. لا تحتاج إلى كلمة مرور صاحب المتجر.`
-            : 'الهاتف الرئيسي يدير ربط الهواتف الأخرى ويمكنه إرسال روابط التتبع من أي شريحة مفعّلة داخل التطبيق. لا يلزم اختيار الشبكة هنا، ولا يشترط أن يطابق رقم الشريحة رقم الهاتف المسجل في حسابك.'}
+            : sameManagerDevice
+              ? 'هذا هو الهاتف الرئيسي المعتمد لهذا المتجر. لا حاجة إلى إعادة ربطه أو استبداله؛ ارجع إلى تطبيق تاجر تراك فون لإدارة شرائح الإرسال والأجهزة.'
+              : 'الهاتف الرئيسي يدير ربط الهواتف الأخرى ويمكنه إرسال روابط التتبع من أي شريحة مفعّلة داخل التطبيق. لا يلزم اختيار الشبكة هنا، ولا يشترط أن يطابق رقم الشريحة رقم الهاتف المسجل في حسابك.'}
         </p>
 
         <div className={styles.store}>
@@ -218,8 +237,13 @@ export default async function ConnectNativeSmsPage({
             <input type="hidden" name="invite" value={inviteToken} />
             <PairingSubmitButton label="ربط هذا الهاتف كجهاز إرسال" />
           </form>
+        ) : sameManagerDevice ? (
+          <div className={styles.form}>
+            <a className={styles.action} href="tajertrack-sms://device-manager">العودة إلى تطبيق الهاتف</a>
+          </div>
         ) : (
           <form action={approveNativeSmsDevice} className={styles.form}>
+            <input type="hidden" name="managerDeviceId" value={currentManagerDeviceId} />
             {managerExists && (
               <div className={styles.confirmField}>
                 <label>
@@ -237,7 +261,7 @@ export default async function ConnectNativeSmsPage({
             ? 'هذا الهاتف يحصل على صلاحية إرسال SMS للشبكة المحددة فقط. لا يمكنه إنشاء دعوات أو إدارة حساب المتجر.'
             : 'لا يتطلب الربط رقم هاتف محدداً أو شبكة محددة. اختر الشرائح المفعّلة لاحقاً من التطبيق؛ وسيُرسل كل رابط تتبع عبر الشريحة المطابقة لشبكة العميل. الهواتف المدعوة تحصل على صلاحية الإرسال فقط.'}
         </p>
-        {!inviteMode && (
+        {!inviteMode && !sameManagerDevice && (
           <p className={styles.notice}>
             سيُفتح موقع تاجر تراك في المتصفح. سجّل الدخول بالحساب المرتبط بمتجرك ووافق على جعل هذا الهاتف رئيسياً. بعد العودة إلى التطبيق فعّل الشريحة أو الشرائح التي تريد استخدامها، ثم أرسل رسالة اختبار للتحقق من عمل الإرسال.
           </p>
