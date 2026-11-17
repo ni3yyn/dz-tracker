@@ -4,7 +4,10 @@ import { createServerClient } from '@supabase/ssr';
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const needsDashboardLogin = pathname.startsWith('/merchant') || pathname.startsWith('/admin');
-  const needsNativeSmsLogin = pathname === '/mobile/sms-gateway/connect';
+  // Carrier-scoped invitations are bearer-token flows and must work for recipients without TajerTrack accounts.
+  // Keep the normal manager-pairing route protected; only a non-empty invite token bypasses this login gate.
+  const isNativeSmsInvite = pathname === '/mobile/sms-gateway/connect' && Boolean(request.nextUrl.searchParams.get('invite')?.trim());
+  const needsNativeSmsLogin = pathname === '/mobile/sms-gateway/connect' && !isNativeSmsInvite;
   const isLoginPage = pathname === '/login';
   const hasSupabaseSessionCookie = request.cookies.getAll().some(({ name }) =>
     name.startsWith('sb-') && name.includes('auth-token')
