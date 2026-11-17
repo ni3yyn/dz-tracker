@@ -23,6 +23,7 @@ interface DashboardSidebarProps {
   brandLogoUrl?: string | null;
   logoSrc: string;
   displayStoreName: string;
+  nativeSmsDownloadUrl: string | null;
   exceptionCount: number;
   activeUpsellsCount: number;
   getReadableOnBrand: (color: string) => string;
@@ -37,6 +38,7 @@ export function DashboardSidebar({
   brandLogoUrl,
   logoSrc,
   displayStoreName,
+  nativeSmsDownloadUrl,
   exceptionCount,
   activeUpsellsCount,
   getReadableOnBrand,
@@ -131,6 +133,21 @@ export function DashboardSidebar({
           </nav>
 
           <div className="dz-sidebar-footer">
+            {nativeSmsDownloadUrl && (
+              <a
+                href={nativeSmsDownloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="dz-sidebar-download-button"
+                aria-label="تحميل تطبيق TajerTrack Phone لأندرويد"
+              >
+                <Icons.Download />
+                <span>
+                  <strong>تحميل تطبيق الهاتف</strong>
+                  <small>TajerTrack Phone · Android</small>
+                </span>
+              </a>
+            )}
             <form action={logout}>
               <button type="submit" className="dz-nav-item" style={{ width: '100%', justifyContent: 'center', background: 'var(--bg-base)' }}>
                 <Icons.LogOut /> <span style={{ marginRight: '8px' }}>تسجيل الخروج</span>
