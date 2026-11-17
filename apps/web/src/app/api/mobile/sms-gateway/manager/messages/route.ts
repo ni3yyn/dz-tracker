@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     let query = auth.supabase
       .from('sms_tracking_outbox')
       .select(
-        'id, order_id, status, result_code, attempt_count, created_at, updated_at, submitted_at, last_error, last_device_id, recipient_operator, dispatch_started_at, order:orders!sms_tracking_outbox_order_id_fkey!inner(customer_name, customer_phone, external_order_id)',
+        'id, order_id, status, result_code, attempt_count, created_at, updated_at, submitted_at, last_error, last_device_id, recipient_operator, dispatch_started_at, orders!sms_tracking_outbox_order_id_fkey!inner(customer_name, customer_phone, external_order_id)',
       )
       .eq('merchant_id', auth.manager.merchant_id)
       .order('created_at', { ascending: false })
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
     if (search) {
       query = query.or(
         `customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%`,
-        { referencedTable: 'order' },
+        { referencedTable: 'orders' },
       );
     }
 
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
     );
 
     const messages = rows.map((row) => {
-      const order = Array.isArray(row.order) ? row.order[0] : row.order;
+      const order = Array.isArray(row.orders) ? row.orders[0] : row.orders;
       const attempt = latestAttemptByJob.get(row.id);
       const device = row.last_device_id ? deviceById.get(row.last_device_id) : null;
       const status = String(row.status || 'unknown');
