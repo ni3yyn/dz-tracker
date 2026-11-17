@@ -10,8 +10,8 @@ import styles from './connect.module.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'ربط هاتف إرسال الرسائل',
-  description: 'اربط هاتف Android بخط إرسال SMS الخاص بمتجرك في تاجر تراك.',
+  title: 'ربط هاتف تاجر تراك',
+  description: 'اربط الهاتف الرئيسي أو أضف هاتفاً لإرسال رسائل التتبع.',
   robots: {
     index: false,
     follow: false,
@@ -19,7 +19,7 @@ export const metadata = {
   },
 };
 
-const APP_REDIRECT = 'tajertrack-sms://pair';
+const MANAGER_REDIRECT = 'tajertrack-sms://manager-pair';
 const OPERATOR_LABELS: Record<string, string> = {
   djezzy: 'Djezzy',
   mobilis: 'Mobilis',
@@ -35,13 +35,13 @@ export default async function ConnectNativeSmsPage({
   const inviteToken = typeof params.invite === 'string' ? params.invite.trim() : '';
   const inviteMode = Boolean(inviteToken);
 
-  if (!inviteMode && params.redirect_uri !== APP_REDIRECT) {
+  if (!inviteMode && params.redirect_uri !== MANAGER_REDIRECT) {
     return (
       <main className={styles.page} dir="rtl">
         <section className={styles.content}>
           <p className={styles.eyebrow}>تاجر تراك</p>
           <h1>تعذر بدء ربط الهاتف</h1>
-          <p className={styles.description}>افتح صفحة الربط من تطبيق TajerTrack Phone أو استخدم رابط الدعوة الذي أنشأه صاحب المتجر.</p>
+          <p className={styles.description}>افتح صفحة الربط من تطبيق TajerTrack Phone أو استخدم رابط الدعوة الذي أنشأه الهاتف الرئيسي.</p>
           <a className={styles.action} href="/merchant">العودة إلى لوحة التاجر</a>
         </section>
       </main>
@@ -52,6 +52,7 @@ export default async function ConnectNativeSmsPage({
   let merchant: any = null;
   let operatorCode: string | null = null;
   let inviteValid = false;
+  let managerExists = false;
 
   if (inviteMode) {
     if (/^[A-Za-z0-9_-]{30,100}$/.test(inviteToken)) {
@@ -81,7 +82,7 @@ export default async function ConnectNativeSmsPage({
     const supabaseAuth = await createClient();
     const { data: { user } } = await supabaseAuth.auth.getUser();
     if (!user) {
-      const next = `/mobile/sms-gateway/connect?redirect_uri=${encodeURIComponent(APP_REDIRECT)}`;
+      const next = `/mobile/sms-gateway/connect?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}`;
       redirect(`/login?next=${encodeURIComponent(next)}`);
     }
     if (isAuthorizedAdmin(user)) redirect('/admin');
@@ -92,6 +93,17 @@ export default async function ConnectNativeSmsPage({
       .eq('auth_user_id', user.id)
       .maybeSingle();
     merchant = data;
+
+    if (merchant?.id) {
+      const { data: manager } = await supabase
+        .from('sms_gateway_manager_devices')
+        .select('manager_device_id')
+        .eq('merchant_id', merchant.id)
+        .is('revoked_at', null)
+        .limit(1)
+        .maybeSingle();
+      managerExists = Boolean(manager?.manager_device_id);
+    }
   }
 
   const errorMessage = params.error === 'merchant_unavailable'
@@ -99,8 +111,12 @@ export default async function ConnectNativeSmsPage({
     : params.error === 'pairing_unavailable' || params.error === 'invite_unavailable'
       ? 'تعذر إنشاء رابط آمن الآن. حاول مرة أخرى.'
       : params.error === 'invite_expired' || params.error === 'invite_invalid'
-          ? 'رابط الدعوة غير صالح أو انتهت صلاحيته أو تم استخدامه مسبقاً. اطلب رابطاً جديداً من صاحب المتجر.'
-          : '';
+        ? 'رابط الدعوة غير صالح أو انتهت صلاحيته أو تم استخدامه مسبقاً. اطلب رابطاً جديداً من الهاتف الرئيسي.'
+        : params.error === 'operator_required'
+          ? 'اختر شبكة شريحة الإرسال التي ستعمل من هذا الهاتف.'
+          : params.error === 'manager_replacement_required'
+            ? 'يوجد هاتف رئيسي مرتبط بالفعل. أكّد استبداله قبل المتابعة.'
+            : '';
 
   if (!merchant || (inviteMode && !inviteValid)) {
     return (
@@ -110,7 +126,7 @@ export default async function ConnectNativeSmsPage({
           <h1>{inviteMode ? 'رابط الدعوة غير متاح' : 'لا يوجد متجر مرتبط'}</h1>
           <p className={styles.description}>
             {inviteMode
-              ? errorMessage || 'انتهت صلاحية رابط الربط أو تم استخدامه مسبقاً. اطلب رابطاً جديداً من صاحب المتجر.'
+              ? errorMessage || 'انتهت صلاحية رابط الربط أو تم استخدامه مسبقاً. اطلب رابطاً جديداً من الهاتف الرئيسي.'
               : 'سجّل الدخول بالحساب المرتبط بمتجرك، ثم أعد فتح الربط من التطبيق.'}
           </p>
           {!inviteMode && <a className={styles.action} href="/login">تسجيل الدخول</a>}
@@ -135,12 +151,12 @@ export default async function ConnectNativeSmsPage({
           <span>تاجر تراك</span>
         </div>
 
-        <p className={styles.eyebrow}>{inviteMode ? 'دعوة ربط آمنة' : 'ربط جهاز جديد'}</p>
-        <h1>{inviteMode ? 'ساهم في إرسال رسائل تتبع الطلبات.' : 'إرسال رسائل الطلبات من شريحتك.'}</h1>
+        <p className={styles.eyebrow}>{inviteMode ? 'دعوة ربط آمنة' : 'إعداد الهاتف الرئيسي'}</p>
+        <h1>{inviteMode ? 'ساهم في إرسال رسائل تتبع الطلبات.' : 'اجعل هذا هاتف متجرك الرئيسي.'}</h1>
         <p className={styles.description}>
           {inviteMode
-            ? `سيُربط هذا الهاتف بمتجر ${merchant.store_name} لإرسال رسالة واحدة فقط للعملاء الذين يستخدمون شبكة ${operatorLabel}. لا تحتاج إلى كلمة مرور صاحب المتجر.`
-            : 'سيستخدم هذا الهاتف شريحة الاتصال المختارة لإرسال رابط تتبع واحد عند إنشاء طلب جديد في متجرك.'}
+            ? `سيُربط هذا الهاتف بمتجر ${merchant.store_name} لإرسال رسائل التتبع للعملاء على شبكة ${operatorLabel}. لا تحتاج إلى كلمة مرور صاحب المتجر.`
+            : 'الهاتف الرئيسي يدير ربط الهواتف الأخرى، ويمكنه أيضاً إرسال رسائل التتبع من شريحته. يتطلب هذا الإجراء تسجيل الدخول بحساب التاجر.'}
         </p>
 
         <div className={styles.store}>
@@ -170,22 +186,40 @@ export default async function ConnectNativeSmsPage({
         {inviteMode ? (
           <form action={approveNativeSmsInvite} className={styles.form}>
             <input type="hidden" name="invite" value={inviteToken} />
-            <PairingSubmitButton />
+            <PairingSubmitButton label="ربط هذا الهاتف كجهاز إرسال" />
           </form>
         ) : (
           <form action={approveNativeSmsDevice} className={styles.form}>
-            <PairingSubmitButton />
+            <div className={styles.selectField}>
+              <label htmlFor="operatorCode">شبكة الشريحة الأساسية في هذا الهاتف</label>
+              <select id="operatorCode" name="operatorCode" required defaultValue="">
+                <option value="" disabled>اختر شبكة الإرسال</option>
+                <option value="djezzy">Djezzy</option>
+                <option value="mobilis">Mobilis</option>
+                <option value="ooredoo">Ooredoo</option>
+              </select>
+              <p>اختر الشبكة المطابقة للشريحة التي ستستخدمها لإرسال الرسائل. يمكنك إضافة خطوط الشبكات الأخرى لاحقاً من التطبيق.</p>
+            </div>
+            {managerExists && (
+              <div className={styles.confirmField}>
+                <label>
+                  <input type="checkbox" name="replaceExisting" value="yes" required />
+                  <span>أؤكد استبدال الهاتف الرئيسي الحالي. سيفقد الهاتف السابق صلاحية إدارة الأجهزة، وسيتوقف خط الإرسال الرئيسي القديم.</span>
+                </label>
+              </div>
+            )}
+            <PairingSubmitButton label={managerExists ? 'استبدال الهاتف الرئيسي' : 'اعتماد هذا الهاتف الرئيسي'} />
           </form>
         )}
 
         <p className={styles.security}>
           {inviteMode
-            ? 'بموافقتك، ستسمح للتطبيق باستخدام صلاحية إرسال SMS على هذا الهاتف لهذا المتجر فقط. يمكنك إيقاف الإرسال أو إزالة الخط لاحقاً.'
-            : 'لن نطلب كلمة مرورك داخل التطبيق، ولن نرسل الرسائل من رقم مشترك تابع لتاجر تراك.'}
+            ? 'هذا الهاتف يحصل على صلاحية إرسال SMS للشبكة المحددة فقط. لا يمكنه إنشاء دعوات أو إدارة حساب المتجر.'
+            : 'صلاحية الإدارة محفوظة لهذا الهاتف فقط. الهواتف التي تربطها لاحقاً تحصل على صلاحية إرسال الرسائل فقط، ولا تحصل على صلاحية حسابك أو إدارة الأجهزة.'}
         </p>
         {!inviteMode && (
           <p className={styles.notice}>
-            سيستمر هذا الربط القديم في العمل كما هو. لإضافة خطوط Djezzy وMobilis وOoredoo مستقلة، أنشئ دعوة للشبكة المطلوبة من إعدادات المتجر.
+            سيُفتح موقع تاجر تراك في المتصفح. سجّل الدخول بالحساب المرتبط بمتجرك ووافق على جعل هذا الهاتف رئيسياً. بعد العودة إلى التطبيق يمكنك إنشاء دعوات ومشاركتها.
           </p>
         )}
       </section>
