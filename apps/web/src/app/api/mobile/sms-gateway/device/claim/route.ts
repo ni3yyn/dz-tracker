@@ -113,7 +113,7 @@ export async function POST(request: Request) {
         console.error('[NativeSmsGateway] Could not classify the legacy sender line:', assignError.message);
         return NextResponse.json({ error: 'تعذر تحديد شبكة شريحة الإرسال حالياً.' }, { status: 503 });
       }
-      if (assigned !== true) {
+      if (assigned === false) {
         return NextResponse.json({
           job: null,
           operatorConflict: true,
@@ -186,8 +186,16 @@ export async function POST(request: Request) {
     }
 
     if (!order?.tracking_uuid) {
-      await skipJob(supabase, job.id, deviceId, claimToken, 'order_or_tracking_link_missing');
-      return NextResponse.json({ job: null }, { headers: { 'Cache-Control': 'no-store' } });
+      // Order creation can commit before a tracking UUID is attached by a
+      // follow-up transaction. Do not discard a valid order during that race.
+      await releaseClaimedJobForRetry(
+        supabase,
+        job.id,
+        deviceId,
+        claimToken,
+        'The order does not have a tracking UUID yet. The SMS remains queued for another check.'
+      );
+      return NextResponse.json({ job: null, deferred: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     const phone = normalizeAlgerianMobilePhone(order.customer_phone);
