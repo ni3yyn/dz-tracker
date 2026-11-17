@@ -24,6 +24,19 @@ export async function GET(request: Request) {
     ? Math.max(0, Math.min(100_000, rawOffset))
     : 0;
   const filter = (url.searchParams.get('status') || 'all').trim().toLowerCase();
+  const rawSearch = (url.searchParams.get('q') || '').trim().slice(0, 120);
+  // Keep PostgREST's filter grammar out of user input while allowing Arabic and
+  // Latin names, Algerian phone numbers, plus signs and spaces.
+  const search = rawSearch
+    .replace(/[^a-zA-Z0-9\\u0600-\\u06FF\\s+\\-]/g, ' ')
+    .replace(/\\s+/g, ' ')
+    .trim()
+    .slice(0, 80);
+  const deviceId = (url.searchParams.get('deviceId') || '').trim();
+
+  if (deviceId && !/^[A-Za-z0-9_-]{8,100}$/.test(deviceId)) {
+    return NextResponse.json({ error: 'جهاز الإرسال المحدد غير صالح.' }, { status: 400 });
+  }
 
   if (filter !== 'all' && !Object.prototype.hasOwnProperty.call(STATUS_FILTERS, filter)) {
     return NextResponse.json({ error: 'مرشح سجل الرسائل غير صالح.' }, { status: 400 });
@@ -33,7 +46,7 @@ export async function GET(request: Request) {
     let query = auth.supabase
       .from('sms_tracking_outbox')
       .select(
-        'id, order_id, status, result_code, attempt_count, created_at, updated_at, submitted_at, last_error, last_device_id, recipient_operator, dispatch_started_at, order:orders!sms_tracking_outbox_order_id_fkey(customer_name, customer_phone, external_order_id)',
+        'id, order_id, status, result_code, attempt_count, created_at, updated_at, submitted_at, last_error, last_device_id, recipient_operator, dispatch_started_at, order:orders!sms_tracking_outbox_order_id_fkey!inner(customer_name, customer_phone, external_order_id)',
       )
       .eq('merchant_id', auth.manager.merchant_id)
       .order('created_at', { ascending: false })
@@ -41,6 +54,15 @@ export async function GET(request: Request) {
 
     if (filter !== 'all') {
       query = query.in('status', STATUS_FILTERS[filter]);
+    }
+    if (deviceId) {
+      query = query.eq('last_device_id', deviceId);
+    }
+    if (search) {
+      query = query.or(
+        `customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%`,
+        { referencedTable: 'order' },
+      );
     }
 
     const { data, error } = await query;
