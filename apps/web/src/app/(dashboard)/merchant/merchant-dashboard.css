@@ -6002,3 +6002,62 @@
     animation-duration: .01ms !important;
   }
 }
+
+
+/* Permanent Android app download action: anchored in the rail footer above logout. */
+.dz-sidebar-footer .dz-sidebar-download-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  box-sizing: border-box;
+  padding: 9px 14px;
+  border: 1px solid #287a45;
+  border-radius: 0;
+  background: #287a45;
+  color: #fff;
+  text-decoration: none;
+  transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.dz-sidebar-footer .dz-sidebar-download-button:hover {
+  background: #21663a;
+  border-color: #21663a;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(33, 102, 58, .2);
+}
+.dz-sidebar-footer .dz-sidebar-download-button:focus-visible {
+  outline: 2px solid #287a45;
+  outline-offset: 3px;
+}
+.dz-sidebar-footer .dz-sidebar-download-button > svg {
+  flex: 0 0 19px;
+  width: 19px;
+  height: 19px;
+}
+.dz-sidebar-footer .dz-sidebar-download-button > span {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: start;
+}
+.dz-sidebar-footer .dz-sidebar-download-button strong {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+.dz-sidebar-footer .dz-sidebar-download-button small {
+  color: rgba(255, 255, 255, .82);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dz-sidebar-footer .dz-sidebar-download-button {
+    transition: none;
+  }
+}
