@@ -57,7 +57,8 @@ export async function POST(request: Request) {
     const sameDevice = job.last_device_id === device.device_id;
     const sameClaim = claimToken
       ? job.claim_token === claimToken || job.last_claim_token === claimToken
-      : job.status === 'processing' && job.locked_by === device.device_id;
+      : job.status === 'processing' && job.locked_by === device.device_id ||
+        job.status === 'unknown' && job.last_claim_token != null;
 
     // The server may have saved a result and lost its HTTP response. Confirm
     // that same claim idempotently before requiring the active lease token.
@@ -69,8 +70,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'unknown' });
       }
       if (status === 'not_sent' && job.status === 'retry' &&
-          ['sms_not_dispatched', 'claim_lease_expired_before_dispatch', 'sender_line_disabled_before_dispatch'].includes(job.result_code || '')) {
+          [
+            'sms_not_dispatched',
+            'claim_lease_expired_before_dispatch',
+            'sender_line_disabled_before_dispatch',
+            'sender_line_revoked_before_dispatch',
+            'claim_lease_expired_before_dispatch'
+          ].includes(job.result_code || '')) {
         return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'retry' });
+      }
+      if (status === 'not_sent' && job.status === 'expired' &&
+          job.result_code === 'order_sms_window_expired_before_dispatch') {
+        return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'expired' });
       }
       if (status === 'failed' && ['retry', 'failed', 'expired'].includes(job.status) &&
           ['device_send_failed_retry_scheduled', 'device_send_permanent_failure', 'order_sms_window_expired'].includes(job.result_code || '')) {
@@ -79,10 +90,10 @@ export async function POST(request: Request) {
     }
 
     const claimMatches = claimToken
-      ? job.status === 'processing' || job.status === 'unknown'
-        ? job.claim_token === claimToken
-        : false
-      : job.status === 'processing' && job.locked_by === device.device_id;
+      ? (job.status === 'processing' || job.status === 'unknown') &&
+        job.claim_token === claimToken
+      : job.status === 'processing' && job.locked_by === device.device_id ||
+        job.status === 'unknown' && job.last_claim_token != null;
     if (!sameDevice || !claimMatches) {
       // Older installed TTP versions do not send a claim token. They are
       // accepted only while their exact device still owns the active lease.
