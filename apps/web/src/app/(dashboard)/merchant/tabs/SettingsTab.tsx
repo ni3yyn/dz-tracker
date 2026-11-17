@@ -25,6 +25,7 @@ interface SettingsTabProps {
   smsTrackingStorageAvailable: boolean;
   onToggleSmsTracking: () => Promise<void>;
   nativeSmsDownloadUrl: string | null;
+  hasPairedNativeSmsDevice: boolean;
   confirmationEnabled: boolean;
   isSavingConfirmation: boolean;
   hasActivePaidPlan: boolean;
@@ -67,6 +68,7 @@ export function SettingsTab({
   smsTrackingStorageAvailable,
   onToggleSmsTracking,
   nativeSmsDownloadUrl,
+  hasPairedNativeSmsDevice,
   confirmationEnabled,
   isSavingConfirmation,
   hasActivePaidPlan,
@@ -190,9 +192,16 @@ export function SettingsTab({
                   <a href="tajertrack-sms://device-manager" style={{ display: 'inline-flex', minHeight: '42px', alignItems: 'center', justifyContent: 'center', padding: '0 16px', background: 'var(--ink-main)', color: 'var(--surface)', border: 0, borderRadius: 0, fontSize: '12px', fontWeight: 800, textDecoration: 'none' }}>
                     فتح إدارة الأجهزة في التطبيق
                   </a>
-                  {nativeSmsDownloadUrl && (
-                    <a href={nativeSmsDownloadUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', minHeight: '42px', alignItems: 'center', justifyContent: 'center', padding: '0 12px', color: 'var(--ink-main)', border: '1px solid var(--border-soft)', borderRadius: 0, fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>
-                      تحميل TajerTrack Phone
+                  {nativeSmsDownloadUrl && !hasPairedNativeSmsDevice && (
+                    <a
+                      href={nativeSmsDownloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="dz-app-download-button"
+                      style={{ display: 'inline-flex', minHeight: '44px', alignItems: 'center', justifyContent: 'center', gap: '9px', padding: '0 16px', background: '#287a45', color: '#ffffff', border: '1px solid #287a45', borderRadius: 0, fontSize: '13px', fontWeight: 800, textDecoration: 'none', boxShadow: '0 3px 10px rgba(40,122,69,.16)' }}
+                    >
+                      <Icons.Download />
+                      تحميل تطبيق TajerTrack Phone
                     </a>
                   )}
                 </div>
