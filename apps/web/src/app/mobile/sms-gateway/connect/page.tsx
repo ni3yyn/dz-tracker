@@ -29,14 +29,11 @@ const OPERATOR_LABELS: Record<string, string> = {
 export default async function ConnectNativeSmsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirect_uri?: string; error?: string; invite?: string; manager_device_id?: string; device_model?: string }>;
+  searchParams: Promise<{ redirect_uri?: string; error?: string; invite?: string; manager_device_id?: string }>;
 }) {
   const params = await searchParams;
   const inviteToken = typeof params.invite === 'string' ? params.invite.trim() : '';
   const inviteMode = Boolean(inviteToken);
-  const deviceModel = typeof params.device_model === 'string'
-    ? params.device_model.trim().replace(/\s+/g, ' ').slice(0, 80)
-    : '';
   const managerDeviceIdParam = typeof params.manager_device_id === 'string' ? params.manager_device_id.trim() : '';
   const currentManagerDeviceId = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceIdParam) ? managerDeviceIdParam : '';
 
@@ -117,8 +114,7 @@ export default async function ConnectNativeSmsPage({
     const { data: { user } } = await supabaseAuth.auth.getUser();
     if (!user) {
       const managerQuery = currentManagerDeviceId ? `&manager_device_id=${encodeURIComponent(currentManagerDeviceId)}` : '';
-      const modelQuery = deviceModel ? `&device_model=${encodeURIComponent(deviceModel)}` : '';
-      const next = `/mobile/sms-gateway/connect?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}${managerQuery}${modelQuery}`;
+      const next = `/mobile/sms-gateway/connect?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}${managerQuery}`;
       redirect(`/login?next=${encodeURIComponent(next)}`);
     }
     if (isAuthorizedAdmin(user)) redirect('/admin');
@@ -152,9 +148,7 @@ export default async function ConnectNativeSmsPage({
   // Only the server-issued manager ID identifies the same installation. Device model is metadata.
   const managerNeedsReplacementConfirmation = managerExists && !sameManagerDevice;
 
-  const errorMessage = params.error === 'device_model_missing'
-    ? 'تعذر تحديد طراز هذا الهاتف. حدّث تطبيق TajerTrack Phone إلى أحدث إصدار ثم افتح صفحة الربط منه مجدداً.'
-    : params.error === 'merchant_unavailable'
+  const errorMessage = params.error === 'merchant_unavailable'
     ? 'لم يتم العثور على متجر مرتبط بهذا الحساب.'
     : params.error === 'merchant_lookup_failed'
       ? 'تعذر التحقق من ربط حسابك بقاعدة بيانات المتاجر. أعد المحاولة، وإذا تكرر الخطأ فتواصل مع الدعم مع ذكر أن مرحلة التحقق من المتجر فشلت.'
@@ -250,10 +244,9 @@ export default async function ConnectNativeSmsPage({
           <div className={styles.form}>
             <a className={styles.action} href="tajertrack-sms://device-manager">العودة إلى تطبيق الهاتف</a>
           </div>
-        ) : deviceModel ? (
+        ) : (
           <form action={approveNativeSmsDevice} className={styles.form}>
             <input type="hidden" name="managerDeviceId" value={currentManagerDeviceId} />
-            <input type="hidden" name="deviceModel" value={deviceModel} />
             {managerNeedsReplacementConfirmation && (
               <div className={styles.confirmField}>
                 <label>
@@ -272,10 +265,6 @@ export default async function ConnectNativeSmsPage({
               }
             />
           </form>
-        ) : (
-          <p className={styles.error} role="alert">
-            {errorMessage || 'تعذر تحديد طراز هذا الهاتف. حدّث تطبيق TajerTrack Phone ثم افتح صفحة الربط منه مجدداً.'}
-          </p>
         )}
 
         <p className={styles.security}>
