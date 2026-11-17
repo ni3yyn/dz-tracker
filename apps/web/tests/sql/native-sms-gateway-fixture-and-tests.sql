@@ -28,7 +28,8 @@ CREATE TABLE public.merchants (
 CREATE TABLE public.orders (
   id UUID PRIMARY KEY,
   merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
-  customer_phone TEXT
+  customer_phone TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 \ir ../../src/app/migrations/20261112_android_sms_gateway.sql
