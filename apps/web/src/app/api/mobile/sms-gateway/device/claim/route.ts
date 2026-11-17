@@ -7,15 +7,15 @@ export const dynamic = 'force-dynamic';
 
 function normalizeAlgerianMobilePhone(input: string | null): string | null {
   if (!input) return null;
-  let value = input.trim().replace(/[\\s().-]/g, '');
+  let value = input.trim().replace(/[\s().-]/g, '');
   if (value.startsWith('00')) value = `+${value.slice(2)}`;
   if (value.startsWith('213')) value = `+${value}`;
-  if (/^0[5-7]\\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
-  return /^\\+213[5-7]\\d{8}$/.test(value) ? value : null;
+  if (/^0[5-7]\d{8}$/.test(value)) value = `+213${value.slice(1)}`;
+  return /^\+213[5-7]\d{8}$/.test(value) ? value : null;
 }
 
 function operatorForPhone(phone: string): string | null {
-  const match = phone.match(/^\\+213([5-7])\\d{8}$/);
+  const match = phone.match(/^\+213([5-7])\d{8}$/);
   if (!match) return null;
   return match[1] === '5' ? 'ooredoo' : match[1] === '6' ? 'mobilis' : 'djezzy';
 }
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
   }
 
   const authorization = request.headers.get('authorization') || '';
-  const token = authorization.match(/^Bearer\\s+(.+)$/i)?.[1]?.trim() || '';
+  const token = authorization.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || '';
   if (!/^[A-Za-z0-9_-]{40,100}$/.test(token)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
@@ -209,7 +209,7 @@ export async function POST(request: Request) {
       process.env.TRACKING_PUBLIC_BASE_URL ||
       process.env.NEXT_PUBLIC_SITE_URL ||
       'https://tajertrack.vercel.app'
-    ).replace(/\\/+$/, '');
+    ).replace(/\/+$/, '');
     const trackingUrl = `${baseUrl}/t/${encodeURIComponent(order.tracking_uuid)}`;
     const message = `TajerTrack - Suivez votre commande: ${trackingUrl}`;
 
