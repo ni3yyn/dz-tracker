@@ -184,19 +184,6 @@ export async function POST(request: Request) {
       };
     }
 
-    // No carrier delivery report is expected when Android confirms that the
-    // message was not submitted. Unknown submission outcomes keep tracking
-    // open because a late positive delivery report is still possible.
-    if (status === 'failed' || status === 'not_sent') {
-      Object.assign(updates, {
-        delivery_status: 'not_requested',
-        delivered_at: null,
-        delivery_reported_at: null,
-        delivery_status_code: null,
-        delivery_error: null,
-      });
-    }
-
     const clearsClaim = ['retry', 'expired'].includes(updates.status);
     const { data: updatedJob, error: updateError } = await supabase
       .from('sms_tracking_outbox')
@@ -220,6 +207,27 @@ export async function POST(request: Request) {
     if (updateError || !updatedJob) {
       console.error('[NativeSmsGateway] Could not save the SMS result:', updateError?.message || 'Job state changed concurrently.');
       return NextResponse.json({ error: 'Could not save the SMS result.' }, { status: 409 });
+    }
+
+    // Clear only a still-pending receipt when Android confirms no SMS was
+    // submitted. The delivery_status predicate prevents a late sent callback
+    // from ever overwriting a positive receipt already received by the phone.
+    if (status === 'failed' || status === 'not_sent') {
+      const { error: deliveryCleanupError } = await supabase
+        .from('sms_tracking_outbox')
+        .update({
+          delivery_status: 'not_requested',
+          delivered_at: null,
+          delivery_reported_at: null,
+          delivery_status_code: null,
+          delivery_error: null,
+        })
+        .eq('id', jobId)
+        .eq('merchant_id', device.merchant_id)
+        .eq('delivery_status', 'pending');
+      if (deliveryCleanupError) {
+        console.error('[NativeSmsGateway] Could not clear unused SMS delivery tracking:', deliveryCleanupError.message);
+      }
     }
 
     const attemptOutcome = status === 'not_sent' ? 'not_sent' : status;
