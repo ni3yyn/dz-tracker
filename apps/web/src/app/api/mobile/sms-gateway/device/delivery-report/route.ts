@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseAdminClient } from '../../../../../../lib/supabase-admin';
+import { getSupabaseAdminClient } from '@saas/database';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   try {
     // A per-message, one-time claim token is the callback capability. It cannot
     // list jobs or read customer data; it can only report this exact SMS job.
-    const supabase = createSupabaseAdminClient();
+    const supabase = getSupabaseAdminClient() as any;
     const { data: job, error: readError } = await supabase
       .from('sms_tracking_outbox')
       .select('id, status, delivery_status, claim_token, last_claim_token, last_device_id')
