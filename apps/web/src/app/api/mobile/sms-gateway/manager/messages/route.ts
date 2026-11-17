@@ -136,7 +136,7 @@ export async function GET(request: Request) {
         row.created_at;
 
       const eventLabel = row.delivered_at
-        ? 'وقت تأكيد التسليم'
+        ? 'وقت استلام تقرير التسليم'
         : row.delivery_reported_at
           ? 'وقت استلام تقرير الشبكة'
           : row.submitted_at
