@@ -108,15 +108,13 @@ if (merchant) {
       connected_at: device.connected_at || null,
     }));
 
-    // Show a legacy warning only while an enabled unclassified phone is the
-    // merchant's only active sender. Once any carrier line exists, this stale
-    // migration banner is no longer relevant and must not remain permanently.
-    const hasEnabledCarrierLine = nativeSmsDevices.some(
-      (device) => device.enabled && Boolean(device.operator_code)
-    );
-    const legacyDevice = !hasEnabledCarrierLine
-      ? nativeSmsDevices.find((device) => device.enabled && !device.operator_code)
-      : null;
+    // A legacy phone is actionable whenever it is still active and has no
+    // carrier assignment. Carrier-specific devices for other networks do not
+    // make this phone visible under an operator card, so keep the warning until
+    // the old phone classifies itself or is replaced/revoked.
+    const legacyDevice = nativeSmsDevices.find(
+      (device) => device.enabled && !device.operator_code
+    ) || null;
     nativeSmsDevice = legacyDevice
       ? {
           device_id: legacyDevice.device_id,
