@@ -371,11 +371,17 @@ export async function retrySmsTrackingJob(formData: FormData): Promise<AdminActi
   const supabase = getSupabaseAdminClient();
   const { data: job, error: readError } = await (supabase as any)
     .from('sms_tracking_outbox')
-    .select('id, status, attempt_count, max_attempts')
+    .select('id, status, attempt_count, max_attempts, expires_at')
     .eq('id', jobId)
     .maybeSingle();
 
   if (readError || !job) return { error: 'تعذر العثور على رسالة SMS.' };
+  if (job.expires_at && new Date(job.expires_at).getTime() <= Date.now()) {
+    return { error: 'انتهت مهلة إرسال رابط التتبع لهذا الطلب (72 ساعة). لا يمكن إعادة إرساله تلقائياً أو يدوياً بعد انتهاء المهلة.' };
+  }
+  if (job.status === 'expired') {
+    return { error: 'انتهت مهلة إرسال رابط التتبع لهذا الطلب (72 ساعة).' };
+  }
   const allowed = ['failed', 'dead_letter'].includes(job.status) ||
     (job.status === 'unknown' && forceUnknown);
   if (!allowed) {
@@ -401,6 +407,8 @@ export async function retrySmsTrackingJob(formData: FormData): Promise<AdminActi
       locked_by: null,
       locked_at: null,
       lease_expires_at: null,
+      claim_token: null,
+      dispatch_started_at: null,
       updated_at: now,
     })
     .eq('id', jobId)
