@@ -122,8 +122,7 @@ export async function POST(request: Request) {
     if (
       !pairing?.manager_device_id ||
       !pairing?.sender_device_id ||
-      !pairing?.merchant_id ||
-      !pairing?.operator_code
+      !pairing?.merchant_id
     ) {
       return NextResponse.json({
         error: 'لم يُرجع الخادم بيانات اعتماد الهاتف الرئيسية كاملة. لم تُحفظ أي بيانات على الهاتف؛ أعد بدء الربط من التطبيق.',
@@ -138,7 +137,7 @@ export async function POST(request: Request) {
       senderDeviceId: pairing.sender_device_id,
       deviceToken: senderToken,
       storeName: pairing.store_name || 'متجرك',
-      operatorCode: pairing.operator_code,
+      operatorCode: pairing.operator_code || null,
       role: 'manager',
     }, {
       headers: {
