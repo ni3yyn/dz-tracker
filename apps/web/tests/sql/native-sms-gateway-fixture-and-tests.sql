@@ -196,12 +196,13 @@ BEGIN
   UPDATE public.sms_gateway_devices
      SET enabled = TRUE
    WHERE device_id = 'native-device-1';
-  INSERT INTO public.sms_gateway_pairing_codes (code_hash, merchant_id, created_by, expires_at)
+  INSERT INTO public.sms_gateway_pairing_codes (code_hash, merchant_id, created_by, expires_at, operator_code)
   VALUES (
     encode(digest('native-pair-code-2', 'sha256'), 'hex'),
     '10000000-0000-4000-8000-000000000010',
     '20000000-0000-4000-8000-000000000010',
-    NOW() + INTERVAL '5 minutes'
+    NOW() + INTERVAL '5 minutes',
+    'ooredoo'
   );
 
   SELECT * INTO v_pairing
