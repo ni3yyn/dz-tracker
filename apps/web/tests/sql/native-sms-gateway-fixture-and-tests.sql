@@ -35,6 +35,7 @@ CREATE TABLE public.orders (
 \ir ../../src/app/migrations/20261112_sms_gateway_admin_manager.sql
 \ir ../../src/app/migrations/20261112_native_sms_gateway.sql
 \ir ../../src/app/migrations/20261116_sms_carrier_routing.sql
+\ir ../../src/app/migrations/20261117_native_sms_reliability.sql
 
 INSERT INTO public.merchants (id, store_name, sms_tracking_enabled) VALUES
   ('10000000-0000-4000-8000-000000000010', 'Native merchant', TRUE),
@@ -124,8 +125,14 @@ BEGIN
     RAISE EXCEPTION 'Legacy worker changed the native merchant pending job';
   END IF;
 
-  -- The paired phone can claim that merchant's own pending job via the token-hash poll RPC.
-  SELECT public.poll_native_sms_gateway(repeat('a', 64), '0.1.0', 180) INTO v_poll;
+  -- The old unscoped pairing is safely assigned to its selected primary
+  -- SIM before it can claim carrier-specific customer jobs.
+  IF public.assign_native_sms_gateway_legacy_operator(repeat('a', 64), 'ooredoo') IS DISTINCT FROM TRUE THEN
+    RAISE EXCEPTION 'Legacy phone could not be classified from its selected Ooredoo SIM';
+  END IF;
+
+  -- The paired phone can claim only its own carrier's pending job.
+  SELECT public.poll_native_sms_gateway(repeat('a', 64), '0.1.0', 180, TRUE) INTO v_poll;
   IF v_poll->>'deviceId' <> 'native-device-1' OR v_poll->>'merchantId' <> '10000000-0000-4000-8000-000000000010' THEN
     RAISE EXCEPTION 'Native poll did not authenticate the paired phone: %', v_poll;
   END IF;
@@ -440,5 +447,160 @@ BEGIN
        AND revoked_at IS NOT NULL
   ) THEN
     RAISE EXCEPTION 'Merchant revocation did not invalidate the selected carrier device';
+  END IF;
+END $$;
+
+
+-- Reliability: 72-hour expiry, number corrections, safe pre-dispatch recovery,
+-- dispatch ambiguity, and pause preservation.
+DO $$
+DECLARE
+  v_poll JSONB;
+  v_claim_token UUID;
+  v_result BOOLEAN;
+  v_status TEXT;
+BEGIN
+  -- Correcting a phone before dispatch recalculates its carrier and keeps the
+  -- original order's 72-hour deadline.
+  INSERT INTO public.orders (id, merchant_id, customer_phone)
+  VALUES (
+    '30000000-0000-4000-8000-000000000017',
+    '10000000-0000-4000-8000-000000000010',
+    '0770000017'
+  );
+
+  UPDATE public.orders
+     SET customer_phone = '0660000017'
+   WHERE id = '30000000-0000-4000-8000-000000000017';
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.sms_tracking_outbox
+     WHERE order_id = '30000000-0000-4000-8000-000000000017'
+       AND recipient_operator = 'mobilis'
+       AND status = 'pending'
+       AND dispatch_started_at IS NULL
+       AND expires_at <= created_at + INTERVAL '72 hours'
+       AND expires_at > created_at + INTERVAL '71 hours'
+  ) THEN
+    RAISE EXCEPTION 'A corrected customer phone was not re-routed to its new carrier within the original 72-hour window';
+  END IF;
+
+  -- Pausing the merchant preference does not discard already queued work.
+  UPDATE public.merchants
+     SET sms_tracking_enabled = FALSE
+   WHERE id = '10000000-0000-4000-8000-000000000010';
+
+  SELECT public.poll_native_sms_gateway(repeat('e', 64), '0.3.0', 180, TRUE) INTO v_poll;
+  IF v_poll->>'merchantDisabled' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'The native gateway did not honor the merchant SMS pause: %', v_poll;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.sms_tracking_outbox
+     WHERE order_id = '30000000-0000-4000-8000-000000000017'
+       AND status = 'pending'
+  ) THEN
+    RAISE EXCEPTION 'Merchant SMS pause discarded a previously queued order';
+  END IF;
+
+  UPDATE public.merchants
+     SET sms_tracking_enabled = TRUE
+   WHERE id = '10000000-0000-4000-8000-000000000010';
+
+  -- An unsubmitted claim that expires is safely returned to retry, without
+  -- increasing the actual dispatch-attempt count or becoming unknown.
+  INSERT INTO public.orders (id, merchant_id, customer_phone)
+  VALUES (
+    '30000000-0000-4000-8000-000000000018',
+    '10000000-0000-4000-8000-000000000010',
+    '0770000018'
+  );
+
+  SELECT public.poll_native_sms_gateway(repeat('e', 64), '0.3.0', 180, TRUE) INTO v_poll;
+  IF v_poll #>> '{job,order_id}' <> '30000000-0000-4000-8000-000000000018' THEN
+    RAISE EXCEPTION 'A Djezzy phone did not claim its matching pending SMS: %', v_poll;
+  END IF;
+
+  SELECT (v_poll #>> '{job,claim_token}')::UUID INTO v_claim_token;
+  UPDATE public.sms_tracking_outbox
+     SET lease_expires_at = NOW() - INTERVAL '1 second'
+   WHERE order_id = '30000000-0000-4000-8000-000000000018';
+
+  SELECT public.poll_native_sms_gateway(repeat('e', 64), '0.3.0', 180, TRUE) INTO v_poll;
+
+  SELECT status INTO v_status
+    FROM public.sms_tracking_outbox
+   WHERE order_id = '30000000-0000-4000-8000-000000000018';
+
+  IF v_status <> 'retry' OR EXISTS (
+    SELECT 1 FROM public.sms_tracking_outbox
+     WHERE order_id = '30000000-0000-4000-8000-000000000018'
+       AND (locked_by IS NOT NULL OR claim_token IS NOT NULL OR attempt_count <> 0)
+  ) THEN
+    RAISE EXCEPTION 'A claim that expired before dispatch was not safely re-queued: %', v_status;
+  END IF;
+
+  -- Once the explicit dispatch handshake is recorded, an expired lease must
+  -- become unknown rather than retry and risk a duplicate customer SMS.
+  INSERT INTO public.orders (id, merchant_id, customer_phone)
+  VALUES (
+    '30000000-0000-4000-8000-000000000019',
+    '10000000-0000-4000-8000-000000000010',
+    '0770000019'
+  );
+
+  SELECT public.poll_native_sms_gateway(repeat('e', 64), '0.3.0', 180, TRUE) INTO v_poll;
+  IF v_poll #>> '{job,order_id}' <> '30000000-0000-4000-8000-000000000019' THEN
+    RAISE EXCEPTION 'The next Djezzy job was not claimed after pre-dispatch recovery: %', v_poll;
+  END IF;
+  SELECT (v_poll #>> '{job,claim_token}')::UUID INTO v_claim_token;
+
+  SELECT public.begin_native_sms_job_dispatch(
+    (v_poll #>> '{job,id}')::UUID,
+    '10000000-0000-4000-8000-000000000010',
+    'carrier-device-djezzy',
+    v_claim_token
+  ) INTO v_result;
+
+  IF v_result IS DISTINCT FROM TRUE OR NOT EXISTS (
+    SELECT 1 FROM public.sms_tracking_outbox
+     WHERE order_id = '30000000-0000-4000-8000-000000000019'
+       AND dispatch_started_at IS NOT NULL
+       AND attempt_count = 1
+  ) THEN
+    RAISE EXCEPTION 'The explicit SMS dispatch handshake did not record the attempt';
+  END IF;
+
+  UPDATE public.sms_tracking_outbox
+     SET lease_expires_at = NOW() - INTERVAL '1 second'
+   WHERE order_id = '30000000-0000-4000-8000-000000000019';
+
+  SELECT public.poll_native_sms_gateway(repeat('e', 64), '0.3.0', 180, TRUE) INTO v_poll;
+  SELECT status INTO v_status
+    FROM public.sms_tracking_outbox
+   WHERE order_id = '30000000-0000-4000-8000-000000000019';
+
+  IF v_status <> 'unknown' THEN
+    RAISE EXCEPTION 'A possibly submitted SMS was automatically retried after its lease expired';
+  END IF;
+
+  -- An unsent job older than 72 hours is explicitly expired, never sent late.
+  INSERT INTO public.orders (id, merchant_id, customer_phone)
+  VALUES (
+    '30000000-0000-4000-8000-000000000020',
+    '10000000-0000-4000-8000-000000000010',
+    '0770000020'
+  );
+  UPDATE public.sms_tracking_outbox
+     SET expires_at = NOW() - INTERVAL '1 second'
+   WHERE order_id = '30000000-0000-4000-8000-000000000020';
+
+  SELECT public.poll_native_sms_gateway(repeat('e', 64), '0.3.0', 180, TRUE) INTO v_poll;
+  SELECT status INTO v_status
+    FROM public.sms_tracking_outbox
+   WHERE order_id = '30000000-0000-4000-8000-000000000020';
+
+  IF v_status <> 'expired' THEN
+    RAISE EXCEPTION 'An SMS older than the 72-hour delivery window was not expired';
   END IF;
 END $$;
