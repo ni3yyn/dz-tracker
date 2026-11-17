@@ -4,7 +4,12 @@ import { authenticateNativeSmsDevice } from '../../../../../../lib/native-sms-ga
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type DeviceReportStatus = 'submitted' | 'failed' | 'unknown';
+type DeviceReportStatus = 'submitted' | 'failed' | 'unknown' | 'not_sent';
+
+function retryDelayMs(attemptCount: number): number {
+  const exponent = Math.max(0, Math.min(4, attemptCount - 1));
+  return Math.min(30 * 60_000, 2 * 60_000 * (2 ** exponent));
+}
 
 export async function POST(request: Request) {
   let body: any;
@@ -16,11 +21,19 @@ export async function POST(request: Request) {
 
   const jobId = typeof body?.jobId === 'string' ? body.jobId : '';
   const status = body?.status as DeviceReportStatus;
+  const claimToken = typeof body?.claimToken === 'string' ? body.claimToken : null;
+  const retryable = body?.retryable === true;
   const errorMessage = typeof body?.error === 'string' ? body.error.slice(0, 500) : null;
+  const failureCode = typeof body?.failureCode === 'string'
+    ? body.failureCode.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80)
+    : null;
 
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(jobId) ||
-      !['submitted', 'failed', 'unknown'].includes(status)) {
+      !['submitted', 'failed', 'unknown', 'not_sent'].includes(status)) {
     return NextResponse.json({ error: 'Invalid SMS result.' }, { status: 400 });
+  }
+  if (claimToken && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(claimToken)) {
+    return NextResponse.json({ error: 'Invalid SMS claim token.' }, { status: 400 });
   }
 
   const auth = await authenticateNativeSmsDevice(request);
@@ -32,7 +45,7 @@ export async function POST(request: Request) {
     const { supabase, device } = auth;
     const { data: job, error: readError } = await supabase
       .from('sms_tracking_outbox')
-      .select('id, merchant_id, status, result_code, attempt_count, max_attempts, locked_by, last_device_id, last_error')
+      .select('id, merchant_id, status, result_code, attempt_count, locked_by, last_device_id, last_error, claim_token, dispatch_started_at, expires_at')
       .eq('id', jobId)
       .eq('merchant_id', device.merchant_id)
       .maybeSingle();
@@ -41,56 +54,91 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'SMS job not found for this phone.' }, { status: 404 });
     }
 
-    if (job.status === 'submitted') {
+    const claimMatches = claimToken
+      ? job.claim_token === claimToken
+      : job.status === 'processing' && job.locked_by === device.device_id;
+    const sameDevice = job.last_device_id === device.device_id;
+    if (!sameDevice || !claimMatches) {
+      // Older installed TTP versions do not send a claim token. They are
+      // accepted only while their exact device still owns the active lease.
+      return NextResponse.json({ error: 'This SMS claim is no longer assigned to this phone.' }, { status: 409 });
+    }
+
+    if (status === 'submitted' && job.status === 'submitted') {
       return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'submitted' });
     }
-    if (status === 'unknown' && job.status === 'unknown' && job.last_device_id === device.device_id) {
+    if (status === 'unknown' && job.status === 'unknown') {
       return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'unknown' });
     }
-    if (
-      status === 'failed' &&
-      job.last_device_id === device.device_id &&
-      ['retry', 'dead_letter'].includes(job.status) &&
-      ['device_send_failed_retry_scheduled', 'device_send_failed_max_attempts'].includes(job.result_code)
-    ) {
-      return NextResponse.json({
-        success: true,
-        alreadyRecorded: true,
-        resultingStatus: job.status,
-      });
+    if (status === 'not_sent' && job.status === 'retry' &&
+        job.result_code === 'sms_not_dispatched') {
+      return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'retry' });
     }
-    if (!['processing', 'unknown'].includes(job.status) ||
-        job.last_device_id !== device.device_id ||
-        (job.status === 'processing' && job.locked_by !== device.device_id)) {
-      return NextResponse.json({ error: 'This SMS job is no longer assigned to this phone.' }, { status: 409 });
+    if (status === 'failed' && ['retry', 'failed', 'expired'].includes(job.status) &&
+        ['device_send_failed_retry_scheduled', 'device_send_permanent_failure', 'order_sms_window_expired'].includes(job.result_code || '')) {
+      return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: job.status });
+    }
+
+    if (!['processing', 'unknown'].includes(job.status)) {
+      return NextResponse.json({ error: 'This SMS job has already moved to another state.' }, { status: 409 });
     }
 
     const now = new Date();
+    const nowIso = now.toISOString();
+    const expired = !job.expires_at || new Date(job.expires_at).getTime() <= now.getTime();
     let updates: Record<string, any>;
+
     if (status === 'submitted') {
+      // Android accepted the SMS. Keep that result even if the 72-hour
+      // enqueue window passed while the device was reconnecting.
       updates = {
         status: 'submitted',
         result_code: 'android_sms_manager_accepted',
-        submitted_at: now.toISOString(),
+        submitted_at: nowIso,
         last_error: null,
       };
     } else if (status === 'unknown') {
       updates = {
         status: 'unknown',
-        result_code: 'device_send_result_unknown',
+        result_code: failureCode || 'device_send_result_unknown',
         last_error: errorMessage || 'The phone could not determine whether Android submitted the SMS. It was not automatically resent.',
       };
-    } else {
-      const terminal = Number(job.attempt_count) >= Number(job.max_attempts);
-      const retrySeconds = Math.min(15 * 60, Math.max(60, Number(job.attempt_count) * 60));
+    } else if (status === 'not_sent') {
+      updates = expired
+        ? {
+            status: 'expired',
+            result_code: 'order_sms_window_expired_before_dispatch',
+            last_error: 'The phone confirmed that Android was not called, but the 72-hour order window has elapsed.',
+          }
+        : {
+            status: 'retry',
+            available_at: new Date(now.getTime() + 15_000).toISOString(),
+            result_code: 'sms_not_dispatched',
+            last_error: errorMessage || 'The phone recovered a claimed job before calling Android. It was safely returned to the queue.',
+          };
+    } else if (expired) {
       updates = {
-        status: terminal ? 'dead_letter' : 'retry',
-        available_at: terminal ? now.toISOString() : new Date(now.getTime() + retrySeconds * 1000).toISOString(),
-        result_code: terminal ? 'device_send_failed_max_attempts' : 'device_send_failed_retry_scheduled',
-        last_error: errorMessage || 'Android SMS command returned a failure.',
+        status: 'expired',
+        result_code: 'order_sms_window_expired_after_send_failure',
+        last_error: errorMessage || 'Android reported a send failure after the 72-hour order window elapsed.',
+      };
+    } else if (retryable) {
+      const delayMs = retryDelayMs(Math.max(1, Number(job.attempt_count) || 1));
+      updates = {
+        status: 'retry',
+        available_at: new Date(now.getTime() + delayMs).toISOString(),
+        result_code: failureCode || 'device_send_failed_retry_scheduled',
+        last_error: errorMessage || 'Android reported a temporary SMS submission failure. The job remains queued for another attempt.',
+      };
+    } else {
+      updates = {
+        status: 'failed',
+        result_code: failureCode || 'device_send_permanent_failure',
+        last_error: errorMessage || 'Android reported a non-retryable SMS submission failure. Correct the cause before a manual retry.',
       };
     }
 
+    const clearsClaim = ['retry', 'expired'].includes(updates.status);
     const { data: updatedJob, error: updateError } = await supabase
       .from('sms_tracking_outbox')
       .update({
@@ -98,11 +146,13 @@ export async function POST(request: Request) {
         locked_by: null,
         locked_at: null,
         lease_expires_at: null,
-        updated_at: now.toISOString(),
+        ...(clearsClaim ? { claim_token: null, dispatch_started_at: null } : {}),
+        updated_at: nowIso,
       })
       .eq('id', jobId)
       .eq('merchant_id', device.merchant_id)
       .eq('last_device_id', device.device_id)
+      .eq('claim_token', job.claim_token)
       .in('status', ['processing', 'unknown'])
       .select('id')
       .maybeSingle();
@@ -112,20 +162,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Could not save the SMS result.' }, { status: 409 });
     }
 
-    await supabase.from('sms_tracking_attempts').upsert({
+    const attemptOutcome = status === 'not_sent' ? 'not_sent' : status;
+    const { error: attemptError } = await supabase.from('sms_tracking_attempts').upsert({
       job_id: jobId,
-      attempt_number: job.attempt_count,
-      outcome: status,
+      attempt_number: Math.max(0, Number(job.attempt_count) || 0),
+      outcome: attemptOutcome,
       error_message: errorMessage,
     }, { onConflict: 'job_id,attempt_number,outcome', ignoreDuplicates: true });
+    if (attemptError) {
+      console.error('[NativeSmsGateway] Could not record SMS attempt telemetry:', attemptError.message);
+    }
 
     const { error: deviceUpdateError } = await supabase
       .from('sms_gateway_devices')
       .update({
-        last_result_at: now.toISOString(),
+        last_result_at: nowIso,
         last_status: status,
         last_error: errorMessage,
-        updated_at: now.toISOString(),
+        updated_at: nowIso,
       })
       .eq('device_id', device.device_id)
       .eq('merchant_id', device.merchant_id);
@@ -134,7 +188,13 @@ export async function POST(request: Request) {
       console.error('[NativeSmsGateway] Could not update device telemetry:', deviceUpdateError.message);
     }
 
-    return NextResponse.json({ success: true, resultingStatus: updates.status });
+    return NextResponse.json({
+      success: true,
+      resultingStatus: updates.status,
+      retryAfterSeconds: updates.status === 'retry' && updates.available_at
+        ? Math.max(0, Math.ceil((new Date(updates.available_at).getTime() - now.getTime()) / 1000))
+        : null,
+    });
   } catch (error: any) {
     console.error('[NativeSmsGateway] Report endpoint failed:', error?.message || error);
     return NextResponse.json({ error: 'Could not save the SMS result.' }, { status: 500 });
