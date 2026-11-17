@@ -92,7 +92,10 @@ export async function POST(request: Request) {
       }
       if (status === 'failed' && ['retry', 'failed', 'expired'].includes(job.status)) {
         const expectedResultCode = expiredResultCode(job.status, retryable, failureCode);
+        const alreadyExpired = job.status === 'expired' &&
+          (job.result_code || '').startsWith('order_sms_window_expired');
         if (
+          alreadyExpired ||
           (expectedResultCode && job.result_code === expectedResultCode) ||
           ['device_send_failed_retry_scheduled', 'device_send_permanent_failure', 'order_sms_window_expired'].includes(job.result_code || '')
         ) {
