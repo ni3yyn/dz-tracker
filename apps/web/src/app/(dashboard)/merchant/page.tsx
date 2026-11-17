@@ -105,6 +105,20 @@ const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim()
     );
   }
 
+  // Only treat an unrevoked sender credential as a paired phone. Disabled devices
+  // still count as paired, so the first-time download prompt stays hidden afterwards.
+  const { data: pairedNativeSmsDevice, error: pairedNativeSmsDeviceError } = await (supabaseAdmin as any)
+    .from('sms_gateway_devices')
+    .select('device_id')
+    .eq('merchant_id', merchant.id)
+    .is('revoked_at', null)
+    .limit(1)
+    .maybeSingle();
+  const hasPairedNativeSmsDevice = !pairedNativeSmsDeviceError && Boolean(pairedNativeSmsDevice);
+  if (pairedNativeSmsDeviceError) {
+    console.warn('[NativeSmsGateway] Could not determine whether a phone is paired:', pairedNativeSmsDeviceError.message);
+  }
+
   // جلب جميع الطلبات
   const extendedOrdersQuery = await supabaseAdmin
     .from('orders')
@@ -330,6 +344,7 @@ const nativeSmsDownloadUrl = process.env.TAJERTRACK_PHONE_APK_URL?.trim()
       smsTrackingLinkEnabled={smsTrackingLinkEnabled}
       smsTrackingStorageAvailable={smsTrackingStorageAvailable}
       nativeSmsDownloadUrl={nativeSmsDownloadUrl}
+      hasPairedNativeSmsDevice={hasPairedNativeSmsDevice}
       confirmationTelegramEnabled={(merchant as any).confirmation_telegram_enabled ?? false}
       initialUpsells={(upsells || []) as any}
       exchangeRequestsEnabled={exchangeRequestsEnabled}
