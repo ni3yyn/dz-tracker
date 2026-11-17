@@ -10,7 +10,6 @@ import { hashNativeSmsCredential } from '../../../../lib/native-sms-gateway-auth
 const PAIRING_PATH = '/mobile/sms-gateway/connect';
 const MANAGER_REDIRECT = 'tajertrack-sms://manager-pair';
 const SENDER_REDIRECT = 'tajertrack-sms://pair';
-const OPERATORS = new Set(['djezzy', 'mobilis', 'ooredoo']);
 
 function connectErrorUrl(error: string) {
   return `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}&error=${encodeURIComponent(error)}`;
@@ -28,9 +27,6 @@ export async function approveNativeSmsDevice(formData: FormData) {
 
   if (isAuthorizedAdmin(user)) redirect('/admin');
 
-  const operatorCode = String(formData.get('operatorCode') || '').trim().toLowerCase();
-  if (!OPERATORS.has(operatorCode)) redirect(connectErrorUrl('operator_required'));
-
   const supabase = getSupabaseAdminClient() as any;
   const { data: merchant, error: merchantError } = await supabase
     .from('merchants')
@@ -38,7 +34,16 @@ export async function approveNativeSmsDevice(formData: FormData) {
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
-  if (merchantError || !merchant?.id) redirect(connectErrorUrl('merchant_unavailable'));
+  if (merchantError) {
+    console.error('[NativeSmsGateway] Merchant lookup failed before manager pairing:', {
+      code: merchantError.code,
+      message: merchantError.message,
+      details: merchantError.details,
+      hint: merchantError.hint,
+    });
+    redirect(connectErrorUrl('merchant_lookup_failed'));
+  }
+  if (!merchant?.id) redirect(connectErrorUrl('merchant_unavailable'));
 
   const { data: existingManager, error: managerError } = await supabase
     .from('sms_gateway_manager_devices')
@@ -65,14 +70,19 @@ export async function approveNativeSmsDevice(formData: FormData) {
       code_hash: hashNativeSmsCredential(code),
       merchant_id: merchant.id,
       created_by: user.id,
-      operator_code: operatorCode,
+      operator_code: null,
       replace_existing: replaceExisting,
       expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
     });
 
   if (insertError) {
-    console.error('[NativeSmsGateway] Could not create a manager pairing code:', insertError.message);
-    redirect(connectErrorUrl('pairing_unavailable'));
+    console.error('[NativeSmsGateway] Could not create a manager pairing code:', {
+      code: insertError.code,
+      message: insertError.message,
+      details: insertError.details,
+      hint: insertError.hint,
+    });
+    redirect(connectErrorUrl('pairing_code_create_failed'));
   }
 
   redirect(`${MANAGER_REDIRECT}?code=${encodeURIComponent(code)}`);
