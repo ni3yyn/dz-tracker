@@ -23,17 +23,12 @@ function connectErrorUrl(error: string, managerDeviceId = '', deviceModel = '') 
   return `${PAIRING_PATH}?${params.toString()}`;
 }
 
-function normalizeDeviceModel(value: string | null | undefined) {
-  return (value || '').trim().replace(/\s+/g, ' ').toLowerCase();
-}
-
 /** The normal account-authenticated flow establishes the one merchant manager device. */
 export async function approveNativeSmsDevice(formData: FormData) {
   const managerDeviceId = String(formData.get('managerDeviceId') || '').trim();
   const suppliedManagerDeviceId = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId) ? managerDeviceId : '';
   const deviceModel = String(formData.get('deviceModel') || '').trim().replace(/\s+/g, ' ').slice(0, 80);
-  const normalizedDeviceModel = normalizeDeviceModel(deviceModel);
-  if (!normalizedDeviceModel) {
+  if (!deviceModel) {
     redirect(connectErrorUrl('device_model_missing', suppliedManagerDeviceId));
   }
 
@@ -71,7 +66,7 @@ export async function approveNativeSmsDevice(formData: FormData) {
 
   const { data: existingManager, error: managerError } = await supabase
     .from('sms_gateway_manager_devices')
-    .select('manager_device_id, enabled, display_name')
+    .select('manager_device_id, enabled')
     .eq('merchant_id', merchant.id)
     .is('revoked_at', null)
     .order('created_at', { ascending: false })
@@ -94,9 +89,8 @@ export async function approveNativeSmsDevice(formData: FormData) {
   }
 
   const replaceExisting = Boolean(existingManager?.manager_device_id);
-  const registeredDeviceModel = normalizeDeviceModel(existingManager?.display_name);
-  const requiresReplacementConfirmation = replaceExisting &&
-    registeredDeviceModel !== normalizedDeviceModel;
+  // A different manager ID requires explicit approval even if both phones share a model.
+  const requiresReplacementConfirmation = replaceExisting && !sameManagerDevice;
   if (requiresReplacementConfirmation && formData.get('replaceExisting') !== 'yes') {
     redirect(connectErrorUrl('manager_replacement_required', suppliedManagerDeviceId, deviceModel));
   }
