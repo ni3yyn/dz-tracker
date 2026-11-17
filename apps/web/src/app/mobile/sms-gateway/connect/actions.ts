@@ -11,7 +11,7 @@ const PAIRING_PATH = '/mobile/sms-gateway/connect';
 const MANAGER_REDIRECT = 'tajertrack-sms://manager-pair';
 const SENDER_REDIRECT = 'tajertrack-sms://pair';
 
-function connectErrorUrl(error: string, managerDeviceId = '', deviceModel = '') {
+function connectErrorUrl(error: string, managerDeviceId = '') {
   const params = new URLSearchParams({
     redirect_uri: MANAGER_REDIRECT,
     error,
@@ -19,7 +19,6 @@ function connectErrorUrl(error: string, managerDeviceId = '', deviceModel = '') 
   if (/^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId)) {
     params.set('manager_device_id', managerDeviceId);
   }
-  if (deviceModel) params.set('device_model', deviceModel);
   return `${PAIRING_PATH}?${params.toString()}`;
 }
 
@@ -27,11 +26,6 @@ function connectErrorUrl(error: string, managerDeviceId = '', deviceModel = '') 
 export async function approveNativeSmsDevice(formData: FormData) {
   const managerDeviceId = String(formData.get('managerDeviceId') || '').trim();
   const suppliedManagerDeviceId = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId) ? managerDeviceId : '';
-  const deviceModel = String(formData.get('deviceModel') || '').trim().replace(/\s+/g, ' ').slice(0, 80);
-  if (!deviceModel) {
-    redirect(connectErrorUrl('device_model_missing', suppliedManagerDeviceId));
-  }
-
   const supabaseAuth = await createClient();
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
@@ -39,7 +33,7 @@ export async function approveNativeSmsDevice(formData: FormData) {
     const managerQuery = suppliedManagerDeviceId
       ? `&manager_device_id=${encodeURIComponent(suppliedManagerDeviceId)}`
       : '';
-    const nextPath = `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}${managerQuery}&device_model=${encodeURIComponent(deviceModel)}`;
+    const nextPath = `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}${managerQuery}`;
     redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
 
@@ -59,9 +53,9 @@ export async function approveNativeSmsDevice(formData: FormData) {
       details: merchantError.details,
       hint: merchantError.hint,
     });
-    redirect(connectErrorUrl('merchant_lookup_failed', suppliedManagerDeviceId, deviceModel));
+    redirect(connectErrorUrl('merchant_lookup_failed', suppliedManagerDeviceId));
   }
-  if (!merchant?.id) redirect(connectErrorUrl('merchant_unavailable', suppliedManagerDeviceId, deviceModel));
+  if (!merchant?.id) redirect(connectErrorUrl('merchant_unavailable', suppliedManagerDeviceId));
 
 
   const { data: existingManager, error: managerError } = await supabase
@@ -75,7 +69,7 @@ export async function approveNativeSmsDevice(formData: FormData) {
 
   if (managerError) {
     console.error('[NativeSmsGateway] Existing manager check failed:', managerError.message);
-    redirect(connectErrorUrl('pairing_unavailable', suppliedManagerDeviceId, deviceModel));
+    redirect(connectErrorUrl('pairing_unavailable', suppliedManagerDeviceId));
   }
 
   const sameManagerDevice = Boolean(
@@ -85,14 +79,14 @@ export async function approveNativeSmsDevice(formData: FormData) {
     existingManager.manager_device_id === suppliedManagerDeviceId
   );
   if (sameManagerDevice) {
-    redirect(connectErrorUrl('', suppliedManagerDeviceId, deviceModel));
+    redirect(connectErrorUrl('', suppliedManagerDeviceId));
   }
 
   const replaceExisting = Boolean(existingManager?.manager_device_id);
   // A different manager ID requires explicit approval even if both phones share a model.
   const requiresReplacementConfirmation = replaceExisting && !sameManagerDevice;
   if (requiresReplacementConfirmation && formData.get('replaceExisting') !== 'yes') {
-    redirect(connectErrorUrl('manager_replacement_required', suppliedManagerDeviceId, deviceModel));
+    redirect(connectErrorUrl('manager_replacement_required', suppliedManagerDeviceId));
   }
 
   const code = randomBytes(32).toString('base64url');
@@ -114,7 +108,7 @@ export async function approveNativeSmsDevice(formData: FormData) {
       details: insertError.details,
       hint: insertError.hint,
     });
-    redirect(connectErrorUrl('pairing_code_create_failed', suppliedManagerDeviceId, deviceModel));
+    redirect(connectErrorUrl('pairing_code_create_failed', suppliedManagerDeviceId));
   }
 
   redirect(`${MANAGER_REDIRECT}?code=${encodeURIComponent(code)}`);
