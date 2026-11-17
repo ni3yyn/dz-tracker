@@ -32,7 +32,7 @@ export function SmsGatewayCarrierLines({
 }: {
   available: boolean;
   devices: SenderLine[];
-  legacyDevice: { display_name: string; enabled: boolean } | null;
+  legacyDevice: { device_id: string; display_name: string; enabled: boolean; last_seen_at: string | null } | null;
   downloadUrl: string | null;
 }) {
   const router = useRouter();
@@ -43,6 +43,23 @@ export function SmsGatewayCarrierLines({
   const [notice, setNotice] = useState('');
 
   useEffect(() => setLines(devices), [devices]);
+
+  // Pairing can be completed from the phone itself, and a legacy phone may
+  // classify its SIM on its next heartbeat. Refresh this panel while visible
+  // so the operator card updates without requiring a full dashboard reload.
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') router.refresh();
+    };
+    const interval = window.setInterval(refreshWhenVisible, 20_000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('focus', refreshWhenVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('focus', refreshWhenVisible);
+    };
+  }, [router]);
 
   async function createInvite(operatorCode: Operator['code']) {
     setBusyOperator(operatorCode);
@@ -155,7 +172,9 @@ export function SmsGatewayCarrierLines({
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '10px', marginTop: '16px' }}>
             {OPERATORS.map((operator) => {
-              const line = lines.find((candidate) => candidate.operator_code === operator.code) || null;
+              const line = lines.find((candidate) =>
+                candidate.operator_code?.trim().toLowerCase() === operator.code
+              ) || null;
               const isBusy = busyOperator === operator.code || (line ? busyDevice === line.device_id : false);
               const lastSeenDate = line?.last_seen_at ? new Date(line.last_seen_at) : null;
               const online = Boolean(
@@ -227,8 +246,9 @@ export function SmsGatewayCarrierLines({
           </div>
 
           {legacyDevice && (
-            <p style={{ margin: '12px 0 0', paddingTop: '10px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '11px', lineHeight: 1.7 }}>
-              يوجد هاتف مرتبط بالطريقة السابقة ({legacyDevice.display_name || 'Android'}). سيُستبدل هذا الربط عند إكمال أول خط خاص بشبكة، ولن يتأثر أي خط آخر بعد ذلك.
+            <p role="status" style={{ margin: '12px 0 0', paddingTop: '10px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '11px', lineHeight: 1.7 }}>
+              الهاتف {legacyDevice.display_name} مرتبط بالطريقة السابقة، لكن شبكته لم تُسجّل بعد؛ لذلك لن يظهر تحت مشغّل محدد حالياً. افتح TTP على هذا الهاتف، اختر الشريحة الأساسية الصحيحة، وشغّل الإرسال. سيُسجّل التطبيق شبكتها تلقائياً إذا لم يكن هناك خط نشط للشبكة نفسها.
+              {legacyDevice.last_seen_at ? ' آخر اتصال: ' + new Date(legacyDevice.last_seen_at).toLocaleString('ar-DZ') + '.' : ''}
             </p>
           )}
 
