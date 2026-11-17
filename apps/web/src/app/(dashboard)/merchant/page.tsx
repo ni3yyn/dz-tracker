@@ -78,7 +78,7 @@ if (merchant) {
 // Native phone columns arrive with the native SMS gateway migration. Keep the
 // merchant dashboard usable on deployments where that migration is not live yet.
 let nativeSmsGatewayStorageAvailable = false;
-let nativeSmsDevice: { display_name: string; enabled: boolean } | null = null;
+let nativeSmsDevice: { device_id: string; display_name: string; enabled: boolean; last_seen_at: string | null } | null = null;
 let nativeSmsDevices: Array<{
   device_id: string;
   display_name: string | null;
@@ -101,13 +101,29 @@ if (merchant) {
       device_id: device.device_id,
       display_name: device.display_name || null,
       enabled: Boolean(device.enabled),
-      operator_code: device.operator_code || null,
+      operator_code: typeof device.operator_code === 'string'
+        ? device.operator_code.trim().toLowerCase() || null
+        : null,
       last_seen_at: device.last_seen_at || null,
       connected_at: device.connected_at || null,
     }));
-    const legacyDevice = nativeSmsDevices.find((device) => !device.operator_code);
+
+    // Show a legacy warning only while an enabled unclassified phone is the
+    // merchant's only active sender. Once any carrier line exists, this stale
+    // migration banner is no longer relevant and must not remain permanently.
+    const hasEnabledCarrierLine = nativeSmsDevices.some(
+      (device) => device.enabled && Boolean(device.operator_code)
+    );
+    const legacyDevice = !hasEnabledCarrierLine
+      ? nativeSmsDevices.find((device) => device.enabled && !device.operator_code)
+      : null;
     nativeSmsDevice = legacyDevice
-      ? { display_name: legacyDevice.display_name || 'هاتف Android', enabled: legacyDevice.enabled }
+      ? {
+          device_id: legacyDevice.device_id,
+          display_name: legacyDevice.display_name || 'هاتف Android',
+          enabled: true,
+          last_seen_at: legacyDevice.last_seen_at,
+        }
       : null;
   } else {
     console.warn('[NativeSmsGateway] Sender-line status is unavailable until the carrier routing migration is applied:', nativeDeviceError.message);
