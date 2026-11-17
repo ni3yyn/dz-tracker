@@ -26,10 +26,6 @@ const OPERATOR_LABELS: Record<string, string> = {
   ooredoo: 'Ooredoo',
 };
 
-function normalizeDeviceModel(value?: string | null) {
-  return (value || '').trim().replace(/\s+/g, ' ').toLowerCase();
-}
-
 export default async function ConnectNativeSmsPage({
   searchParams,
 }: {
@@ -41,7 +37,6 @@ export default async function ConnectNativeSmsPage({
   const deviceModel = typeof params.device_model === 'string'
     ? params.device_model.trim().replace(/\s+/g, ' ').slice(0, 80)
     : '';
-  const normalizedDeviceModel = normalizeDeviceModel(deviceModel);
   const managerDeviceIdParam = typeof params.manager_device_id === 'string' ? params.manager_device_id.trim() : '';
   const currentManagerDeviceId = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceIdParam) ? managerDeviceIdParam : '';
 
@@ -64,7 +59,6 @@ export default async function ConnectNativeSmsPage({
   let inviteValid = false;
   let managerExists = false;
   let sameManagerDevice = false;
-  let registeredManagerModel = '';
 
   if (inviteMode) {
     if (/^[A-Za-z0-9_-]{30,100}$/.test(inviteToken)) {
@@ -139,7 +133,7 @@ export default async function ConnectNativeSmsPage({
     if (merchant?.id) {
       const { data: manager } = await supabase
         .from('sms_gateway_manager_devices')
-        .select('manager_device_id, enabled, display_name')
+        .select('manager_device_id, enabled')
         .eq('merchant_id', merchant.id)
         .is('revoked_at', null)
         .order('created_at', { ascending: false })
@@ -152,12 +146,11 @@ export default async function ConnectNativeSmsPage({
         manager.manager_device_id === currentManagerDeviceId
       );
       managerExists = Boolean(manager?.manager_device_id && !sameManagerDevice);
-      registeredManagerModel = manager?.display_name || '';
     }
   }
 
-  const managerNeedsReplacementConfirmation = managerExists &&
-    normalizeDeviceModel(registeredManagerModel) !== normalizedDeviceModel;
+  // Only the server-issued manager ID identifies the same installation. Device model is metadata.
+  const managerNeedsReplacementConfirmation = managerExists && !sameManagerDevice;
 
   const errorMessage = params.error === 'device_model_missing'
     ? 'تعذر تحديد طراز هذا الهاتف. حدّث تطبيق TajerTrack Phone إلى أحدث إصدار ثم افتح صفحة الربط منه مجدداً.'
@@ -172,7 +165,7 @@ export default async function ConnectNativeSmsPage({
       : params.error === 'invite_expired' || params.error === 'invite_invalid'
         ? 'رابط الدعوة غير صالح أو انتهت صلاحيته أو تم استخدامه مسبقاً. اطلب رابطاً جديداً من الهاتف الرئيسي.'
         : params.error === 'manager_replacement_required'
-            ? 'طراز هذا الهاتف مختلف عن الهاتف الرئيسي المسجّل. أكّد الاستبدال للمتابعة.'
+            ? 'يوجد هاتف رئيسي آخر مرتبط بالمتجر. أكّد استبداله قبل المتابعة.'
             : '';
 
   if (!merchant || (inviteMode && !inviteValid)) {
@@ -265,7 +258,7 @@ export default async function ConnectNativeSmsPage({
               <div className={styles.confirmField}>
                 <label>
                   <input type="checkbox" name="replaceExisting" value="yes" required />
-                  <span>طراز هذا الهاتف مختلف عن الهاتف الرئيسي المسجّل. أؤكد استبداله، وسيُلغى وصول الهاتف السابق إلى إدارة الأجهزة.</span>
+                  <span>هذا هاتف مختلف عن الهاتف الرئيسي المسجّل. أؤكد استبداله، وسيُلغى وصول الهاتف السابق إلى إدارة الأجهزة.</span>
                 </label>
               </div>
             )}
