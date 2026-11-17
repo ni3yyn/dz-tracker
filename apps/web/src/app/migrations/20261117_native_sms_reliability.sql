@@ -823,3 +823,10 @@ REVOKE ALL ON FUNCTION public.claim_next_sms_tracking_job(TEXT, INTEGER)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_next_sms_tracking_job(TEXT, INTEGER)
   TO service_role;
+
+ALTER TABLE public.sms_tracking_attempts
+  DROP CONSTRAINT IF EXISTS sms_tracking_attempts_outcome_check;
+
+ALTER TABLE public.sms_tracking_attempts
+  ADD CONSTRAINT sms_tracking_attempts_outcome_check
+  CHECK (outcome IN ('submitted', 'failed', 'unknown', 'not_sent'));
