@@ -37,6 +37,7 @@ CREATE TABLE public.orders (
 \ir ../../src/app/migrations/20261112_native_sms_gateway.sql
 \ir ../../src/app/migrations/20261116_sms_carrier_routing.sql
 \ir ../../src/app/migrations/20261117_native_sms_reliability.sql
+\ir ../../src/app/migrations/20261117_preserve_manager_sender_on_invite.sql
 
 INSERT INTO public.merchants (id, store_name, sms_tracking_enabled) VALUES
   ('10000000-0000-4000-8000-000000000010', 'Native merchant', TRUE),
@@ -620,3 +621,89 @@ BEGIN
     RAISE EXCEPTION 'An SMS older than the 72-hour delivery window was not expired';
   END IF;
 END $$;
+
+-- Adding/replacing an invited carrier line must never revoke the manager phone's
+-- neutral primary sender profile. Only the matching carrier slot is replaced.
+DO $$
+DECLARE
+  v_pairing RECORD;
+BEGIN
+  INSERT INTO public.sms_gateway_devices (
+    device_id, display_name, merchant_id, enabled, token_hash, token_last_four,
+    platform, app_version, device_model, operator_code, connected_at, last_seen_at
+  )
+  VALUES (
+    'manager-primary-neutral',
+    'Main manager phone',
+    '10000000-0000-4000-8000-000000000010',
+    TRUE,
+    repeat('8', 64),
+    '8888',
+    'android',
+    '1.0.28',
+    'Main manager phone',
+    NULL,
+    NOW(),
+    NOW()
+  );
+
+  INSERT INTO public.sms_gateway_pairing_codes (
+    code_hash, merchant_id, created_by, operator_code, expires_at
+  )
+  VALUES (
+    encode(digest('carrier-ooredoo-replacement', 'sha256'), 'hex'),
+    '10000000-0000-4000-8000-000000000010',
+    '20000000-0000-4000-8000-000000000010',
+    'ooredoo',
+    NOW() + INTERVAL '5 minutes'
+  );
+
+  SELECT * INTO v_pairing
+    FROM public.complete_native_sms_gateway_pairing(
+      encode(digest('carrier-ooredoo-replacement', 'sha256'), 'hex'),
+      'carrier-device-ooredoo-replacement',
+      repeat('7', 64),
+      '7777',
+      'Replacement Ooredoo phone',
+      'android',
+      '1.0.28'
+    );
+
+  IF NOT FOUND
+     OR v_pairing.blocked IS DISTINCT FROM FALSE
+     OR v_pairing.operator_code <> 'ooredoo' THEN
+    RAISE EXCEPTION 'Ooredoo sender replacement failed: %', row_to_json(v_pairing);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+      FROM public.sms_gateway_devices
+     WHERE device_id = 'manager-primary-neutral'
+       AND enabled IS TRUE
+       AND revoked_at IS NULL
+       AND operator_code IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Adding an invited carrier line revoked the manager phone primary sender profile';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+      FROM public.sms_gateway_devices
+     WHERE device_id = 'carrier-device-ooredoo'
+       AND enabled IS FALSE
+       AND revoked_at IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'Ooredoo replacement did not revoke the previous Ooredoo sender';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+      FROM public.sms_gateway_devices
+     WHERE device_id = 'carrier-device-djezzy'
+       AND enabled IS TRUE
+       AND revoked_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Adding an Ooredoo line changed the Djezzy sender slot';
+  END IF;
+END $$;
+
