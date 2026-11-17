@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
-import { authenticateNativeSmsManager, hashNativeSmsCredential } from '../../../../../lib/native-sms-gateway-auth';
+import { authenticateNativeSmsManager, hashNativeSmsCredential } from '../../../../../../lib/native-sms-gateway-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
