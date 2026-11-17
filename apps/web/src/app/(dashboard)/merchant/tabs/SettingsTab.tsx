@@ -6,7 +6,6 @@ import type { EditableBrandSettings } from '../shared/branding-types';
 import type { PaymentRecord, SubscriptionInfo } from '../shared/subscription-types';
 import type { UpgradeTier } from '../features/settings/settings-types';
 import CustomPlanRequest, { type CustomPlanRequestHandle } from '../../../CustomPlanRequest';
-import { SmsGatewayCarrierLines } from './SmsGatewayCarrierLines';
 
 interface SettingsTabProps {
   merchantId: string;
@@ -25,16 +24,6 @@ interface SettingsTabProps {
   isSavingSms: boolean;
   smsTrackingStorageAvailable: boolean;
   onToggleSmsTracking: () => Promise<void>;
-  nativeSmsGatewayStorageAvailable: boolean;
-  nativeSmsDevice: { device_id: string; display_name: string; enabled: boolean; last_seen_at: string | null } | null;
-  nativeSmsDevices: Array<{
-    device_id: string;
-    display_name: string | null;
-    enabled: boolean;
-    operator_code: string | null;
-    last_seen_at: string | null;
-    connected_at: string | null;
-  }>;
   nativeSmsDownloadUrl: string | null;
   confirmationEnabled: boolean;
   isSavingConfirmation: boolean;
@@ -77,9 +66,6 @@ export function SettingsTab({
   isSavingSms,
   smsTrackingStorageAvailable,
   onToggleSmsTracking,
-  nativeSmsGatewayStorageAvailable,
-  nativeSmsDevice,
-  nativeSmsDevices,
   nativeSmsDownloadUrl,
   confirmationEnabled,
   isSavingConfirmation,
@@ -192,13 +178,25 @@ export function SettingsTab({
                 </div>
               </div>
 
-              <SmsGatewayCarrierLines
-                available={nativeSmsGatewayStorageAvailable}
-                devices={nativeSmsDevices}
-                legacyDevice={nativeSmsDevice}
-                downloadUrl={nativeSmsDownloadUrl}
-              />
-
+              <section className="dz-settings-section dz-settings-native-sms" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 0, padding: '18px 20px', marginBottom: '20px', boxShadow: 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                  <div style={{ minWidth: 0, flex: '1 1 260px' }}>
+                    <span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>04 / ANDROID DEVICE MANAGER</span>
+                    <h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>إدارة أجهزة الإرسال</h2>
+                    <p style={{ margin: '5px 0 0', fontSize: '12px', lineHeight: 1.7, color: 'var(--ink-muted)' }}>إدارة الهاتف الرئيسي وهواتف الإرسال الإضافية ودعوات الربط تتم الآن من تطبيق TajerTrack Phone.</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
+                  <a href="tajertrack-sms://device-manager" style={{ display: 'inline-flex', minHeight: '42px', alignItems: 'center', justifyContent: 'center', padding: '0 16px', background: 'var(--ink-main)', color: 'var(--surface)', border: 0, borderRadius: 0, fontSize: '12px', fontWeight: 800, textDecoration: 'none' }}>
+                    فتح إدارة الأجهزة في التطبيق
+                  </a>
+                  {nativeSmsDownloadUrl && (
+                    <a href={nativeSmsDownloadUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', minHeight: '42px', alignItems: 'center', justifyContent: 'center', padding: '0 12px', color: 'var(--ink-main)', border: '1px solid var(--border-soft)', borderRadius: 0, fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>
+                      تحميل TajerTrack Phone
+                    </a>
+                  )}
+                </div>
+              </section>
               <div className="dz-settings-section dz-settings-exchange" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 0, padding: '18px 20px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                   <div style={{ minWidth: 0 }}><span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>04 / AFTER-SALES</span><h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>خدمات ما بعد البيع</h2><p style={{ margin: '5px 0 0', fontSize: '12px', lineHeight: 1.7, color: 'var(--ink-muted)' }}>اسمح للزبائن بطلب استبدال المنتجات بعد استلامها، وتابع الطلبات من لوحة التحكم.</p></div>
