@@ -76,6 +76,7 @@ interface Props {
   smsTrackingLinkEnabled?: boolean;
   smsTrackingStorageAvailable?: boolean;
   nativeSmsDownloadUrl?: string | null;
+  hasPairedNativeSmsDevice?: boolean;
   confirmationTelegramEnabled?: boolean;
   initialUpsells?: MerchantUpsellItem[];
   exceptionStates?: ShipmentExceptionState[];
@@ -122,6 +123,7 @@ export function MerchantDashboardView({
   smsTrackingLinkEnabled = false,
   smsTrackingStorageAvailable = false,
   nativeSmsDownloadUrl = null,
+  hasPairedNativeSmsDevice = false,
   confirmationTelegramEnabled = false,
   initialUpsells = [],
   exceptionStates = [],
@@ -399,6 +401,7 @@ export function MerchantDashboardView({
           brandLogoUrl={brandConfig.logoUrl}
           logoSrc={brandConfig.logoUrl ? toCachedImageUrl(brandConfig.logoUrl) : ''}
           displayStoreName={displayStoreName}
+          nativeSmsDownloadUrl={nativeSmsDownloadUrl}
           exceptionCount={exceptionCount}
           activeUpsellsCount={upsellsList.filter((u) => u.is_active).length}
           getReadableOnBrand={getReadableOnBrand}
@@ -724,6 +727,7 @@ export function MerchantDashboardView({
               smsTrackingStorageAvailable={smsTrackingStorageAvailable}
               onToggleSmsTracking={handleToggleSmsTracking}
               nativeSmsDownloadUrl={nativeSmsDownloadUrl}
+              hasPairedNativeSmsDevice={hasPairedNativeSmsDevice}
               confirmationEnabled={confirmationEnabled}
               isSavingConfirmation={isSavingConfirmation}
               hasActivePaidPlan={hasActivePaidPlan}
