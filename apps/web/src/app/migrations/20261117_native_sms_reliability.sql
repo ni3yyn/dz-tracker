@@ -836,3 +836,195 @@ ALTER TABLE public.sms_tracking_attempts
   ADD CONSTRAINT sms_tracking_attempts_outcome_check
   CHECK (outcome IN ('submitted', 'failed', 'unknown', 'not_sent'));
 
+-- Pairing/replacement must preserve jobs that were only claimed, never sent.
+-- Jobs whose Android dispatch marker was already written remain unknown.
+CREATE OR REPLACE FUNCTION public.complete_native_sms_gateway_pairing(
+  p_code_hash TEXT,
+  p_device_id TEXT,
+  p_token_hash TEXT,
+  p_token_last_four TEXT,
+  p_device_name TEXT,
+  p_platform TEXT,
+  p_app_version TEXT
+)
+RETURNS TABLE (
+  device_id TEXT,
+  merchant_id UUID,
+  store_name TEXT,
+  blocked BOOLEAN,
+  operator_code TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_merchant_id UUID;
+  v_store_name TEXT;
+  v_operator_code TEXT;
+BEGIN
+  SELECT pairing.merchant_id, pairing.operator_code
+    INTO v_merchant_id, v_operator_code
+    FROM public.sms_gateway_pairing_codes AS pairing
+   WHERE pairing.code_hash = p_code_hash
+     AND pairing.consumed_at IS NULL
+     AND pairing.expires_at > NOW()
+   FOR UPDATE;
+
+  IF v_merchant_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  SELECT merchant.store_name
+    INTO v_store_name
+    FROM public.merchants AS merchant
+   WHERE merchant.id = v_merchant_id;
+
+  IF v_store_name IS NULL THEN
+    RETURN;
+  END IF;
+
+  PERFORM 1
+    FROM public.merchants AS merchant
+   WHERE merchant.id = v_merchant_id
+   FOR UPDATE;
+
+  IF v_operator_code IS NULL AND EXISTS (
+    SELECT 1
+      FROM public.sms_gateway_devices AS device
+     WHERE device.merchant_id = v_merchant_id
+       AND device.operator_code IS NOT NULL
+       AND device.revoked_at IS NULL
+  ) THEN
+    RETURN QUERY SELECT NULL::TEXT, v_merchant_id, v_store_name, TRUE, NULL::TEXT;
+    RETURN;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+      FROM public.sms_gateway_devices AS device
+     WHERE device.merchant_id = v_merchant_id
+       AND device.revoked_at IS NULL
+       AND device.enabled IS FALSE
+       AND (
+         device.operator_code IS NOT DISTINCT FROM v_operator_code
+         OR (v_operator_code IS NULL AND device.operator_code IS NOT NULL)
+       )
+  ) OR (
+    v_operator_code IS NULL
+    AND EXISTS (
+      SELECT 1
+        FROM public.sms_gateway_devices AS device
+       WHERE device.merchant_id = v_merchant_id
+         AND device.operator_code IS NOT NULL
+         AND device.enabled IS TRUE
+         AND device.revoked_at IS NULL
+    )
+  ) THEN
+    RETURN QUERY SELECT NULL::TEXT, v_merchant_id, v_store_name, TRUE, v_operator_code;
+    RETURN;
+  END IF;
+
+  UPDATE public.sms_gateway_pairing_codes
+     SET consumed_at = NOW()
+   WHERE code_hash = p_code_hash
+     AND consumed_at IS NULL;
+
+  UPDATE public.sms_tracking_outbox AS job
+     SET status = CASE
+           WHEN job.dispatch_started_at IS NULL AND job.expires_at > NOW() THEN 'retry'
+           WHEN job.dispatch_started_at IS NULL THEN 'expired'
+           ELSE 'unknown'
+         END,
+         available_at = CASE
+           WHEN job.dispatch_started_at IS NULL THEN NOW()
+           ELSE job.available_at
+         END,
+         result_code = CASE
+           WHEN job.dispatch_started_at IS NULL AND job.expires_at > NOW() THEN 'sender_line_replaced_before_dispatch'
+           WHEN job.dispatch_started_at IS NULL THEN 'order_sms_window_expired_before_dispatch'
+           ELSE 'sender_line_replaced_after_dispatch_started'
+         END,
+         last_error = CASE
+           WHEN job.dispatch_started_at IS NULL AND job.expires_at > NOW()
+             THEN 'The sender line was replaced before Android dispatch began. The order remains queued for another authorized sender.'
+           WHEN job.dispatch_started_at IS NULL
+             THEN 'The 72-hour order window elapsed before Android dispatch began.'
+           ELSE 'The sender line was replaced after SMS dispatch began. Verify the outcome before any manual resend.'
+         END,
+         locked_by = NULL,
+         locked_at = NULL,
+         lease_expires_at = NULL,
+         claim_token = CASE WHEN job.dispatch_started_at IS NULL THEN NULL ELSE job.claim_token END,
+         updated_at = NOW()
+   WHERE job.merchant_id = v_merchant_id
+     AND job.status = 'processing'
+     AND (
+       job.locked_by = 'android-sms-gateway'
+       OR job.locked_by IN (
+         SELECT device.device_id
+           FROM public.sms_gateway_devices AS device
+          WHERE device.merchant_id = v_merchant_id
+            AND device.revoked_at IS NULL
+            AND (
+              v_operator_code IS NULL
+              OR device.operator_code IS NULL
+              OR device.operator_code = v_operator_code
+            )
+       )
+     );
+
+  UPDATE public.sms_gateway_devices AS device
+     SET enabled = FALSE,
+         revoked_at = NOW(),
+         updated_at = NOW()
+   WHERE device.merchant_id = v_merchant_id
+     AND device.revoked_at IS NULL
+     AND (
+       v_operator_code IS NULL
+       OR device.operator_code IS NULL
+       OR device.operator_code = v_operator_code
+     );
+
+  INSERT INTO public.sms_gateway_devices (
+    device_id,
+    display_name,
+    merchant_id,
+    enabled,
+    token_hash,
+    token_last_four,
+    platform,
+    app_version,
+    device_model,
+    operator_code,
+    connected_at,
+    last_seen_at,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    p_device_id,
+    LEFT(COALESCE(NULLIF(BTRIM(p_device_name), ''), 'Android phone'), 80),
+    v_merchant_id,
+    TRUE,
+    p_token_hash,
+    RIGHT(COALESCE(p_token_last_four, ''), 4),
+    LEFT(COALESCE(NULLIF(BTRIM(p_platform), ''), 'android'), 24),
+    LEFT(COALESCE(NULLIF(BTRIM(p_app_version), ''), 'unknown'), 32),
+    LEFT(COALESCE(NULLIF(BTRIM(p_device_name), ''), 'Android phone'), 80),
+    v_operator_code,
+    NOW(),
+    NOW(),
+    NOW(),
+    NOW()
+  );
+
+  RETURN QUERY SELECT p_device_id, v_merchant_id, v_store_name, FALSE, v_operator_code;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.complete_native_sms_gateway_pairing(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.complete_native_sms_gateway_pairing(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT)
+  TO service_role;
+
