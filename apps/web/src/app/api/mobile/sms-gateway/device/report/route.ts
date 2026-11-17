@@ -184,6 +184,19 @@ export async function POST(request: Request) {
       };
     }
 
+    // No carrier delivery report is expected when Android confirms that the
+    // message was not submitted. Unknown submission outcomes keep tracking
+    // open because a late positive delivery report is still possible.
+    if (status === 'failed' || status === 'not_sent') {
+      Object.assign(updates, {
+        delivery_status: 'not_requested',
+        delivered_at: null,
+        delivery_reported_at: null,
+        delivery_status_code: null,
+        delivery_error: null,
+      });
+    }
+
     const clearsClaim = ['retry', 'expired'].includes(updates.status);
     const { data: updatedJob, error: updateError } = await supabase
       .from('sms_tracking_outbox')
