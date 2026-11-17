@@ -5,7 +5,7 @@ import { isCurrentUserAdmin } from '../../../../lib/admin-auth';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const SMS_STATUSES = ['pending', 'processing', 'retry', 'submitted', 'failed', 'unknown', 'skipped', 'dead_letter'];
+const SMS_STATUSES = ['pending', 'processing', 'retry', 'submitted', 'failed', 'unknown', 'skipped', 'dead_letter', 'expired'];
 
 export async function GET() {
   if (!(await isCurrentUserAdmin())) {
@@ -25,7 +25,7 @@ export async function GET() {
     ] = await Promise.all([
       supabase
         .from('sms_tracking_outbox')
-        .select('id, order_id, merchant_id, status, attempt_count, max_attempts, available_at, locked_by, locked_at, lease_expires_at, last_error, result_code, created_at, updated_at, submitted_at, orders(external_order_id, customer_name, customer_phone), merchants(store_name)')
+        .select('id, order_id, merchant_id, status, attempt_count, max_attempts, available_at, locked_by, locked_at, lease_expires_at, expires_at, last_error, result_code, created_at, updated_at, submitted_at, orders(external_order_id, customer_name, customer_phone), merchants(store_name)')
         .order('created_at', { ascending: false })
         .limit(150),
       supabase
