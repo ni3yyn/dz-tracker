@@ -24,14 +24,14 @@ function connectErrorUrl(error: string, managerDeviceId = '', deviceModel = '') 
 }
 
 function normalizeDeviceModel(value: string | null | undefined) {
-  return (value || '').trim().replace(/\\s+/g, ' ').toLowerCase();
+  return (value || '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 /** The normal account-authenticated flow establishes the one merchant manager device. */
 export async function approveNativeSmsDevice(formData: FormData) {
   const managerDeviceId = String(formData.get('managerDeviceId') || '').trim();
   const suppliedManagerDeviceId = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId) ? managerDeviceId : '';
-  const deviceModel = String(formData.get('deviceModel') || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
+  const deviceModel = String(formData.get('deviceModel') || '').trim().replace(/\s+/g, ' ').slice(0, 80);
   const normalizedDeviceModel = normalizeDeviceModel(deviceModel);
   if (!normalizedDeviceModel) {
     redirect(connectErrorUrl('device_model_missing', suppliedManagerDeviceId));
