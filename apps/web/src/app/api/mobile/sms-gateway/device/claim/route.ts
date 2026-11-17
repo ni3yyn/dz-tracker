@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@saas/database';
 import { hashNativeSmsCredential } from '../../../../../../lib/native-sms-gateway-auth';
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
     ? body.operatorCode.trim().toLowerCase()
     : null;
   const dispatchProtocol = body?.dispatchProtocol === 1 || body?.dispatchProtocol === true;
+  const diagnosticReference = randomUUID();
 
   if (operatorCode && !['djezzy', 'mobilis', 'ooredoo'].includes(operatorCode)) {
     return NextResponse.json({ error: 'Invalid SIM carrier.' }, { status: 400 });
@@ -101,26 +103,9 @@ export async function POST(request: Request) {
   try {
     const supabase = getSupabaseAdminClient() as any;
 
-    // A legacy single-SIM pairing has no carrier label. Resolve it from the
-    // phone's explicitly selected primary SIM and permanently bind that line
-    // before it can claim carrier-specific customer jobs.
-    if (operatorCode) {
-      const { data: assigned, error: assignError } = await supabase.rpc(
-        'assign_native_sms_gateway_legacy_operator',
-        { p_token_hash: tokenHash, p_operator_code: operatorCode }
-      );
-      if (assignError) {
-        console.error('[NativeSmsGateway] Could not classify the legacy sender line:', assignError.message);
-        return NextResponse.json({ error: 'تعذر تحديد شبكة شريحة الإرسال حالياً.' }, { status: 503 });
-      }
-      if (assigned === false) {
-        return NextResponse.json({
-          job: null,
-          operatorConflict: true,
-          error: 'هذا الهاتف لم يُربط بهذه الشبكة. قد يكون مرتبطاً بشبكة أخرى أو يوجد خط نشط للشبكة نفسها.',
-        }, { headers: { 'Cache-Control': 'no-store' } });
-      }
-    }
+    // The carrier is selected per poll from the SIM enabled in Android.
+    // Carrier-neutral manager devices can therefore serve multiple SIM networks
+    // without permanently binding their credential to the first one used.
 
     // New clients use a claim/dispatch handshake. Older installed versions
     // omit dispatchProtocol; the database conservatively treats their claim
@@ -130,11 +115,29 @@ export async function POST(request: Request) {
       p_app_version: appVersion,
       p_lease_seconds: 300,
       p_dispatch_protocol: dispatchProtocol,
+      p_operator_code: operatorCode,
     });
 
     if (pollError) {
-      console.error('[NativeSmsGateway] Device poll failed:', pollError.message);
-      return NextResponse.json({ error: 'Could not check for new order messages.' }, { status: 503 });
+      console.error('[NativeSmsGateway] Device poll failed:', {
+        diagnosticReference,
+        code: pollError.code,
+        message: pollError.message,
+        details: pollError.details,
+        hint: pollError.hint,
+      });
+      const databaseMessage = pollError.code === 'PGRST202' || pollError.code === '42883'
+        ? 'خدمة فحص روابط التتبع غير منشورة في قاعدة البيانات. يلزم تطبيق تحديث قاعدة البيانات.'
+        : pollError.code === '42702'
+          ? 'حدث تعارض في استعلام قاعدة البيانات أثناء اختيار طلب التتبع. أرسل رمز التشخيص إلى الدعم.'
+          : pollError.code === '42P01' || pollError.code === 'PGRST205'
+            ? 'جدول خدمة إرسال الرسائل غير متاح في قاعدة البيانات. يلزم مراجعة تحديثات قاعدة البيانات.'
+            : 'تعذر على قاعدة البيانات فحص قائمة روابط التتبع. أرسل رمز التشخيص إلى الدعم.';
+      return NextResponse.json({
+        error: databaseMessage,
+        errorCode: 'sms_queue_database_error',
+        diagnosticReference,
+      }, { status: 503 });
     }
 
     if (poll?.errorCode === 'unauthorized') {
@@ -143,10 +146,18 @@ export async function POST(request: Request) {
     if (poll?.errorCode === 'gateway_control_unavailable') {
       return NextResponse.json({ error: 'SMS gateway control is not configured.' }, { status: 503 });
     }
+    if (poll?.operatorConflict === true) {
+      return NextResponse.json({
+        job: null,
+        operatorConflict: true,
+        error: 'شبكة الشريحة المختارة لا تطابق شبكة خط الإرسال المرتبط بهذا الهاتف.',
+      }, { headers: { 'Cache-Control': 'no-store' } });
+    }
     if (poll?.operatorUnassigned === true) {
       return NextResponse.json({
         job: null,
         operatorUnassigned: true,
+        error: 'لم يتمكن Android من تحديد شبكة الشريحة المفعّلة. فعّل شريحة جزائرية معروفة ثم أعد تشغيل الإرسال.',
       }, { headers: { 'Cache-Control': 'no-store' } });
     }
     if (poll?.deviceDisabled === true) {
@@ -180,9 +191,19 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (orderError) {
-      console.error('[NativeSmsGateway] Claimed order lookup failed:', orderError.message);
+      console.error('[NativeSmsGateway] Claimed order lookup failed:', {
+        diagnosticReference,
+        code: orderError.code,
+        message: orderError.message,
+        details: orderError.details,
+        hint: orderError.hint,
+      });
       await releaseClaimedJobForRetry(supabase, job.id, deviceId, claimToken, orderError.message);
-      return NextResponse.json({ error: 'Could not read the new order.' }, { status: 503 });
+      return NextResponse.json({
+        error: 'تم حجز رابط تتبع، لكن تعذر قراءة بيانات الطلب من قاعدة البيانات. أعيد الطلب إلى قائمة الانتظار بأمان.',
+        errorCode: 'tracking_order_lookup_failed',
+        diagnosticReference,
+      }, { status: 503 });
     }
 
     if (!order?.tracking_uuid) {
@@ -232,7 +253,15 @@ export async function POST(request: Request) {
       },
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error: any) {
-    console.error('[NativeSmsGateway] Claim endpoint failed:', error?.message || error);
-    return NextResponse.json({ error: 'Could not check for new order messages.' }, { status: 500 });
+    console.error('[NativeSmsGateway] Claim endpoint failed:', {
+      diagnosticReference,
+      message: error?.message || String(error),
+      stack: error?.stack,
+    });
+    return NextResponse.json({
+      error: 'حدث خطأ غير متوقع أثناء تجهيز رابط التتبع. لم يتم إرسال رسالة من هذا الطلب.',
+      errorCode: 'tracking_claim_unexpected_error',
+      diagnosticReference,
+    }, { status: 500 });
   }
 }
