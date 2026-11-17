@@ -11,6 +11,12 @@ const STATUS_FILTERS: Record<string, string[]> = {
   failed: ['failed', 'dead_letter', 'expired', 'skipped'],
   unknown: ['unknown'],
 };
+const DELIVERY_STATUS_FILTERS: Record<string, string> = {
+  delivered: 'delivered',
+  awaiting_delivery: 'pending',
+  delivery_failed: 'failed',
+  delivery_unknown: 'unknown',
+};
 
 export async function GET(request: Request) {
   const auth = await authenticateNativeSmsManager(request);
@@ -38,7 +44,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'جهاز الإرسال المحدد غير صالح.' }, { status: 400 });
   }
 
-  if (filter !== 'all' && !Object.prototype.hasOwnProperty.call(STATUS_FILTERS, filter)) {
+  if (
+    filter !== 'all' &&
+    !Object.prototype.hasOwnProperty.call(STATUS_FILTERS, filter) &&
+    !Object.prototype.hasOwnProperty.call(DELIVERY_STATUS_FILTERS, filter)
+  ) {
     return NextResponse.json({ error: 'مرشح سجل الرسائل غير صالح.' }, { status: 400 });
   }
 
@@ -46,13 +56,15 @@ export async function GET(request: Request) {
     let query = auth.supabase
       .from('sms_tracking_outbox')
       .select(
-        'id, order_id, status, result_code, attempt_count, created_at, updated_at, submitted_at, last_error, last_device_id, recipient_operator, dispatch_started_at, orders!sms_tracking_outbox_order_id_fkey!inner(customer_name, customer_phone, external_order_id)',
+        'id, order_id, status, result_code, attempt_count, created_at, updated_at, submitted_at, last_error, last_device_id, recipient_operator, dispatch_started_at, delivery_status, delivered_at, delivery_reported_at, delivery_status_code, delivery_error, orders!sms_tracking_outbox_order_id_fkey!inner(customer_name, customer_phone, external_order_id)',
       )
       .eq('merchant_id', auth.manager.merchant_id)
       .order('created_at', { ascending: false })
       .range(offset, offset + PAGE_SIZE);
 
-    if (filter !== 'all') {
+    if (Object.prototype.hasOwnProperty.call(DELIVERY_STATUS_FILTERS, filter)) {
+      query = query.eq('delivery_status', DELIVERY_STATUS_FILTERS[filter]);
+    } else if (filter !== 'all') {
       query = query.in('status', STATUS_FILTERS[filter]);
     }
     if (deviceId) {
@@ -113,16 +125,23 @@ export async function GET(request: Request) {
       const attempt = latestAttemptByJob.get(row.id);
       const device = row.last_device_id ? deviceById.get(row.last_device_id) : null;
       const status = String(row.status || 'unknown');
+      const deliveryStatus = String(row.delivery_status || 'not_requested');
       const eventAt =
+        row.delivered_at ||
+        row.delivery_reported_at ||
         row.submitted_at ||
         attempt?.created_at ||
         (status === 'processing' ? row.dispatch_started_at : null) ||
         row.updated_at ||
         row.created_at;
 
-      const eventLabel = row.submitted_at
-        ? 'وقت الإرسال'
-        : attempt?.created_at
+      const eventLabel = row.delivered_at
+        ? 'وقت تأكيد التسليم'
+        : row.delivery_reported_at
+          ? 'وقت استلام تقرير الشبكة'
+          : row.submitted_at
+            ? 'وقت الإرسال'
+            : attempt?.created_at
           ? 'وقت آخر محاولة'
           : status === 'processing'
             ? 'وقت بدء الإرسال'
@@ -136,6 +155,11 @@ export async function GET(request: Request) {
         messageType: 'tracking_link',
         status,
         resultCode: row.result_code || null,
+        deliveryStatus,
+        deliveredAt: row.delivered_at || null,
+        deliveryReportedAt: row.delivery_reported_at || null,
+        deliveryStatusCode: row.delivery_status_code ?? null,
+        deliveryError: row.delivery_error || null,
         eventAt: eventAt || null,
         eventLabel,
         queuedAt: row.created_at,
