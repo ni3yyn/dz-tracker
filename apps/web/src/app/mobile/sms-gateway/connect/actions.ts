@@ -11,8 +11,15 @@ const PAIRING_PATH = '/mobile/sms-gateway/connect';
 const MANAGER_REDIRECT = 'tajertrack-sms://manager-pair';
 const SENDER_REDIRECT = 'tajertrack-sms://pair';
 
-function connectErrorUrl(error: string) {
-  return `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}&error=${encodeURIComponent(error)}`;
+function connectErrorUrl(error: string, managerDeviceId = '') {
+  const params = new URLSearchParams({
+    redirect_uri: MANAGER_REDIRECT,
+    error,
+  });
+  if (/^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId)) {
+    params.set('manager_device_id', managerDeviceId);
+  }
+  return `${PAIRING_PATH}?${params.toString()}`;
 }
 
 /** The normal account-authenticated flow establishes the one merchant manager device. */
@@ -21,7 +28,11 @@ export async function approveNativeSmsDevice(formData: FormData) {
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
   if (authError || !user) {
-    const nextPath = `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}`;
+    const managerDeviceId = String(formData.get('managerDeviceId') || '').trim();
+    const managerQuery = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId)
+      ? `&manager_device_id=${encodeURIComponent(managerDeviceId)}`
+      : '';
+    const nextPath = `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}${managerQuery}`;
     redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
 
@@ -45,11 +56,17 @@ export async function approveNativeSmsDevice(formData: FormData) {
   }
   if (!merchant?.id) redirect(connectErrorUrl('merchant_unavailable'));
 
+  const managerDeviceId = String(formData.get('managerDeviceId') || '').trim();
+  const suppliedManagerDeviceId = /^[A-Za-z0-9_-]{8,80}$/.test(managerDeviceId)
+    ? managerDeviceId
+    : '';
+
   const { data: existingManager, error: managerError } = await supabase
     .from('sms_gateway_manager_devices')
-    .select('manager_device_id')
+    .select('manager_device_id, enabled')
     .eq('merchant_id', merchant.id)
     .is('revoked_at', null)
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -58,9 +75,19 @@ export async function approveNativeSmsDevice(formData: FormData) {
     redirect(connectErrorUrl('pairing_unavailable'));
   }
 
+  const sameManagerDevice = Boolean(
+    existingManager?.manager_device_id &&
+    existingManager.enabled === true &&
+    suppliedManagerDeviceId &&
+    existingManager.manager_device_id === suppliedManagerDeviceId
+  );
+  if (sameManagerDevice) {
+    redirect(connectErrorUrl('', suppliedManagerDeviceId));
+  }
+
   const replaceExisting = Boolean(existingManager?.manager_device_id);
   if (replaceExisting && formData.get('replaceExisting') !== 'yes') {
-    redirect(connectErrorUrl('manager_replacement_required'));
+    redirect(connectErrorUrl('manager_replacement_required', suppliedManagerDeviceId));
   }
 
   const code = randomBytes(32).toString('base64url');
