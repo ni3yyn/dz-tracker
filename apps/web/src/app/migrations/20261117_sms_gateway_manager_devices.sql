@@ -89,8 +89,9 @@ DECLARE
 BEGIN
   IF p_code_hash IS NULL OR p_code_hash !~ '^[0-9a-f]{64}$'
      OR p_manager_token_hash IS NULL OR p_manager_token_hash !~ '^[0-9a-f]{64}$'
-     OR p_manager_token_last_four IS NULL OR length(p_manager_token_last_four) > 4
-     OR p_sender_token_hash IS NULL OR p_sender_token_hash !~ '^[0-9a-f]{64}
+     OR p_manager_token_last_four IS NULL OR p_manager_token_last_four !~ '^[A-Za-z0-9_-]{4}$'
+     OR p_manager_device_id IS NULL OR length(p_manager_device_id) > 80
+     OR p_sender_token_hash IS NULL OR p_sender_token_hash !~ '^[0-9a-f]{64}$'
      OR p_sender_device_id IS NULL OR length(p_sender_device_id) > 80 THEN
     RETURN;
   END IF;
