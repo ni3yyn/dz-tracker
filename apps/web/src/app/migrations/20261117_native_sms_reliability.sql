@@ -266,11 +266,10 @@ BEGIN
     FROM public.sms_gateway_devices
    WHERE token_hash = p_token_hash
      AND merchant_id IS NOT NULL
-     AND enabled IS TRUE
      AND revoked_at IS NULL;
 
   IF v_merchant_id IS NULL THEN
-    RETURN FALSE;
+    RETURN NULL;
   END IF;
 
   -- Pairing and auto-classification serialize on the merchant row.
@@ -284,12 +283,11 @@ BEGIN
     FROM public.sms_gateway_devices
    WHERE token_hash = p_token_hash
      AND merchant_id = v_merchant_id
-     AND enabled IS TRUE
      AND revoked_at IS NULL
    FOR UPDATE;
 
   IF NOT FOUND THEN
-    RETURN FALSE;
+    RETURN NULL;
   END IF;
 
   IF v_device.operator_code IS NOT NULL THEN
