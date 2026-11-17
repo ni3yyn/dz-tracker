@@ -707,3 +707,174 @@ BEGIN
   END IF;
 END $$;
 
+
+
+-- Extend the isolated test fixture for the current polling function's account
+-- eligibility check, then install the production fallback migration.
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE TABLE auth.users (
+  id UUID PRIMARY KEY,
+  deleted_at TIMESTAMPTZ,
+  banned_until TIMESTAMPTZ
+);
+ALTER TABLE public.merchants ADD COLUMN auth_user_id UUID;
+UPDATE public.merchants
+   SET auth_user_id = CASE
+     WHEN id = '10000000-0000-4000-8000-000000000010'
+       THEN '20000000-0000-4000-8000-000000000010'::UUID
+     ELSE '20000000-0000-4000-8000-000000000011'::UUID
+   END;
+INSERT INTO auth.users (id) VALUES
+  ('20000000-0000-4000-8000-000000000010'),
+  ('20000000-0000-4000-8000-000000000011');
+
+\ir ../../src/app/migrations/20261117_sms_gateway_single_line_fallback.sql
+
+-- One neutral manager SIM must be able to serve every operator when no
+-- dedicated carrier line is enabled.
+DO $$
+DECLARE
+  v_poll JSONB;
+  v_operator TEXT;
+  v_job_id UUID;
+  v_seen TEXT[] := ARRAY[]::TEXT[];
+  v_index INTEGER;
+BEGIN
+  UPDATE public.sms_gateway_devices
+     SET enabled = FALSE
+   WHERE merchant_id = '10000000-0000-4000-8000-000000000010'
+     AND operator_code IS NOT NULL
+     AND revoked_at IS NULL;
+
+  UPDATE public.sms_tracking_outbox
+     SET status = 'skipped',
+         result_code = 'fallback_test_reset',
+         locked_by = NULL,
+         locked_at = NULL,
+         lease_expires_at = NULL,
+         claim_token = NULL,
+         updated_at = NOW()
+   WHERE merchant_id = '10000000-0000-4000-8000-000000000010'
+     AND status IN ('pending', 'retry');
+
+  INSERT INTO public.orders (id, merchant_id, customer_phone) VALUES
+    ('30000000-0000-4000-8000-000000000021', '10000000-0000-4000-8000-000000000010', '0770000021'),
+    ('30000000-0000-4000-8000-000000000022', '10000000-0000-4000-8000-000000000010', '0660000022'),
+    ('30000000-0000-4000-8000-000000000023', '10000000-0000-4000-8000-000000000010', '0550000023');
+
+  FOR v_index IN 1..3 LOOP
+    SELECT public.poll_native_sms_gateway(
+      p_token_hash => repeat('8', 64),
+      p_app_version => '1.0.30',
+      p_lease_seconds => 180,
+      p_dispatch_protocol => TRUE,
+      p_operator_code => 'ooredoo',
+      p_allow_cross_network_fallback => TRUE
+    ) INTO v_poll;
+
+    v_job_id := NULLIF(v_poll #>> '{job,id}', '')::UUID;
+    v_operator := v_poll #>> '{job,recipient_operator}';
+    IF v_job_id IS NULL OR v_operator IS NULL THEN
+      RAISE EXCEPTION 'The single manager SIM could not claim all three carrier jobs: %', v_poll;
+    END IF;
+    IF v_operator = ANY(v_seen) THEN
+      RAISE EXCEPTION 'The single manager SIM claimed the same carrier twice before covering all three: %', v_seen;
+    END IF;
+    IF v_operator <> 'ooredoo' AND v_poll->>'crossNetworkFallback' IS DISTINCT FROM 'true' THEN
+      RAISE EXCEPTION 'A cross-network manager claim was not marked as fallback: %', v_poll;
+    END IF;
+
+    v_seen := array_append(v_seen, v_operator);
+    UPDATE public.sms_tracking_outbox
+       SET status = 'submitted',
+           locked_by = NULL,
+           locked_at = NULL,
+           lease_expires_at = NULL,
+           claim_token = NULL,
+           updated_at = NOW()
+     WHERE id = v_job_id;
+  END LOOP;
+
+  IF NOT ('djezzy' = ANY(v_seen) AND 'mobilis' = ANY(v_seen) AND 'ooredoo' = ANY(v_seen)) THEN
+    RAISE EXCEPTION 'The single manager SIM did not cover all supported operators: %', v_seen;
+  END IF;
+END $$;
+
+-- A dedicated enabled Ooredoo line takes priority. The neutral main phone
+-- continues to cover only the other operators, while the Ooredoo phone
+-- continues to claim its own network.
+DO $$
+DECLARE
+  v_poll JSONB;
+  v_operator TEXT;
+  v_job_id UUID;
+BEGIN
+  UPDATE public.sms_gateway_devices
+     SET enabled = FALSE
+   WHERE merchant_id = '10000000-0000-4000-8000-000000000010'
+     AND operator_code IS NOT NULL
+     AND revoked_at IS NULL;
+  UPDATE public.sms_gateway_devices
+     SET enabled = TRUE
+   WHERE device_id = 'carrier-device-ooredoo-replacement'
+     AND merchant_id = '10000000-0000-4000-8000-000000000010'
+     AND revoked_at IS NULL;
+
+  INSERT INTO public.orders (id, merchant_id, customer_phone) VALUES
+    ('30000000-0000-4000-8000-000000000024', '10000000-0000-4000-8000-000000000010', '0770000024'),
+    ('30000000-0000-4000-8000-000000000025', '10000000-0000-4000-8000-000000000010', '0660000025'),
+    ('30000000-0000-4000-8000-000000000026', '10000000-0000-4000-8000-000000000010', '0550000026');
+
+  SELECT public.poll_native_sms_gateway(
+    p_token_hash => repeat('8', 64),
+    p_app_version => '1.0.30',
+    p_lease_seconds => 180,
+    p_dispatch_protocol => TRUE,
+    p_operator_code => 'ooredoo',
+    p_allow_cross_network_fallback => FALSE
+  ) INTO v_poll;
+  IF v_poll->'job' IS NOT NULL AND v_poll->'job' <> 'null'::JSONB THEN
+    RAISE EXCEPTION 'The manager phone claimed an Ooredoo job already covered by a dedicated enabled line: %', v_poll;
+  END IF;
+
+  SELECT public.poll_native_sms_gateway(
+    p_token_hash => repeat('8', 64),
+    p_app_version => '1.0.30',
+    p_lease_seconds => 180,
+    p_dispatch_protocol => TRUE,
+    p_operator_code => 'ooredoo',
+    p_allow_cross_network_fallback => TRUE
+  ) INTO v_poll;
+  v_job_id := NULLIF(v_poll #>> '{job,id}', '')::UUID;
+  v_operator := v_poll #>> '{job,recipient_operator}';
+  IF v_job_id IS NULL OR v_operator NOT IN ('djezzy', 'mobilis')
+     OR v_poll->>'crossNetworkFallback' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'The manager fallback did not restrict itself to unpaired operators: %', v_poll;
+  END IF;
+  UPDATE public.sms_tracking_outbox
+     SET status = 'submitted',
+         locked_by = NULL,
+         locked_at = NULL,
+         lease_expires_at = NULL,
+         claim_token = NULL,
+         updated_at = NOW()
+   WHERE id = v_job_id;
+
+  SELECT public.poll_native_sms_gateway(
+    p_token_hash => repeat('7', 64),
+    p_app_version => '1.0.30',
+    p_lease_seconds => 180,
+    p_dispatch_protocol => TRUE,
+    p_operator_code => 'ooredoo',
+    p_allow_cross_network_fallback => FALSE
+  ) INTO v_poll;
+  v_operator := v_poll #>> '{job,recipient_operator}';
+  IF v_operator <> 'ooredoo' THEN
+    RAISE EXCEPTION 'The dedicated Ooredoo sender did not retain priority for its network: %', v_poll;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  RAISE NOTICE 'Single-line all-network fallback and dedicated-line priority tests passed.';
+END $$;
