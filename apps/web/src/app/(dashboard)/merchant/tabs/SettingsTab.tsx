@@ -26,7 +26,7 @@ interface SettingsTabProps {
   smsTrackingStorageAvailable: boolean;
   onToggleSmsTracking: () => Promise<void>;
   nativeSmsGatewayStorageAvailable: boolean;
-  nativeSmsDevice: { display_name: string; enabled: boolean } | null;
+  nativeSmsDevice: { device_id: string; display_name: string; enabled: boolean; last_seen_at: string | null } | null;
   nativeSmsDevices: Array<{
     device_id: string;
     display_name: string | null;
