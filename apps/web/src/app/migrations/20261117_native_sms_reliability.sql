@@ -256,8 +256,6 @@ DECLARE
   v_device public.sms_gateway_devices%ROWTYPE;
 BEGIN
   IF p_token_hash IS NULL OR p_token_hash !~ '^[0-9a-f]{64}
-    RETURN FALSE;
-  END IF;
 
   SELECT merchant_id
     INTO v_merchant_id
@@ -846,6 +844,7 @@ ALTER TABLE public.sms_tracking_attempts
     FROM public.sms_gateway_devices
    WHERE token_hash = p_token_hash
      AND merchant_id IS NOT NULL
+     AND enabled IS TRUE
      AND revoked_at IS NULL;
 
   IF v_merchant_id IS NULL THEN
@@ -863,6 +862,7 @@ ALTER TABLE public.sms_tracking_attempts
     FROM public.sms_gateway_devices
    WHERE token_hash = p_token_hash
      AND merchant_id = v_merchant_id
+     AND enabled IS TRUE
      AND revoked_at IS NULL
    FOR UPDATE;
 
@@ -926,6 +926,7 @@ DECLARE
   v_device public.sms_gateway_devices%ROWTYPE;
   v_global_enabled BOOLEAN;
   v_sms_enabled BOOLEAN;
+  v_claim_token UUID;
   v_job public.sms_tracking_outbox%ROWTYPE;
 BEGIN
   IF p_token_hash IS NULL OR p_token_hash !~ '^[0-9a-f]{64}$' THEN
@@ -1012,8 +1013,7 @@ BEGIN
      AND status = 'processing'
      AND locked_by = v_device.device_id
      AND lease_expires_at IS NOT NULL
-     AND lease_expires_at <= NOW()
-     AND expires_at > NOW();
+     AND lease_expires_at <= NOW();
 
   IF v_device.enabled IS NOT TRUE THEN
     RETURN jsonb_build_object('deviceDisabled', TRUE);
@@ -1073,13 +1073,16 @@ BEGIN
     RETURN jsonb_build_object('job', NULL, 'operatorCode', v_device.operator_code);
   END IF;
 
+  v_claim_token := gen_random_uuid();
+
   UPDATE public.sms_tracking_outbox
      SET status = 'processing',
          locked_by = v_device.device_id,
          last_device_id = v_device.device_id,
          locked_at = NOW(),
          lease_expires_at = NOW() + make_interval(secs => GREATEST(60, LEAST(p_lease_seconds, 900))),
-         claim_token = gen_random_uuid(),
+         claim_token = v_claim_token,
+         last_claim_token = v_claim_token,
          dispatch_started_at = CASE
            WHEN p_dispatch_protocol THEN NULL
            ELSE NOW()
