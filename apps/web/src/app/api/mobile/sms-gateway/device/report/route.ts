@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const { supabase, device } = auth;
     const { data: job, error: readError } = await supabase
       .from('sms_tracking_outbox')
-      .select('id, merchant_id, status, result_code, attempt_count, locked_by, last_device_id, last_error, claim_token, dispatch_started_at, expires_at')
+      .select('id, merchant_id, status, result_code, attempt_count, locked_by, last_device_id, last_error, claim_token, last_claim_token, dispatch_started_at, expires_at')
       .eq('id', jobId)
       .eq('merchant_id', device.merchant_id)
       .maybeSingle();
@@ -54,29 +54,39 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'SMS job not found for this phone.' }, { status: 404 });
     }
 
-    const claimMatches = claimToken
-      ? job.claim_token === claimToken
-      : job.status === 'processing' && job.locked_by === device.device_id;
     const sameDevice = job.last_device_id === device.device_id;
+    const sameClaim = claimToken
+      ? job.claim_token === claimToken || job.last_claim_token === claimToken
+      : job.status === 'processing' && job.locked_by === device.device_id;
+
+    // The server may have saved a result and lost its HTTP response. Confirm
+    // that same claim idempotently before requiring the active lease token.
+    if (sameDevice && sameClaim) {
+      if (status === 'submitted' && job.status === 'submitted') {
+        return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'submitted' });
+      }
+      if (status === 'unknown' && job.status === 'unknown') {
+        return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'unknown' });
+      }
+      if (status === 'not_sent' && job.status === 'retry' &&
+          ['sms_not_dispatched', 'claim_lease_expired_before_dispatch', 'sender_line_disabled_before_dispatch'].includes(job.result_code || '')) {
+        return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'retry' });
+      }
+      if (status === 'failed' && ['retry', 'failed', 'expired'].includes(job.status) &&
+          ['device_send_failed_retry_scheduled', 'device_send_permanent_failure', 'order_sms_window_expired'].includes(job.result_code || '')) {
+        return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: job.status });
+      }
+    }
+
+    const claimMatches = claimToken
+      ? job.status === 'processing' || job.status === 'unknown'
+        ? job.claim_token === claimToken
+        : false
+      : job.status === 'processing' && job.locked_by === device.device_id;
     if (!sameDevice || !claimMatches) {
       // Older installed TTP versions do not send a claim token. They are
       // accepted only while their exact device still owns the active lease.
       return NextResponse.json({ error: 'This SMS claim is no longer assigned to this phone.' }, { status: 409 });
-    }
-
-    if (status === 'submitted' && job.status === 'submitted') {
-      return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'submitted' });
-    }
-    if (status === 'unknown' && job.status === 'unknown') {
-      return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'unknown' });
-    }
-    if (status === 'not_sent' && job.status === 'retry' &&
-        job.result_code === 'sms_not_dispatched') {
-      return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'retry' });
-    }
-    if (status === 'failed' && ['retry', 'failed', 'expired'].includes(job.status) &&
-        ['device_send_failed_retry_scheduled', 'device_send_permanent_failure', 'order_sms_window_expired'].includes(job.result_code || '')) {
-      return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: job.status });
     }
 
     if (!['processing', 'unknown'].includes(job.status)) {
@@ -153,6 +163,7 @@ export async function POST(request: Request) {
       .eq('merchant_id', device.merchant_id)
       .eq('last_device_id', device.device_id)
       .eq('claim_token', job.claim_token)
+      .eq('last_claim_token', job.last_claim_token)
       .in('status', ['processing', 'unknown'])
       .select('id')
       .maybeSingle();
