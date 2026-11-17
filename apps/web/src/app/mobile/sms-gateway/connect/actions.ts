@@ -1,6 +1,6 @@
 'use server';
 
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { getSupabaseAdminClient } from '@saas/database';
 import { createClient } from '../../../../lib/supabase-server';
@@ -8,27 +8,28 @@ import { isAuthorizedAdmin } from '../../../../lib/admin-auth';
 import { hashNativeSmsCredential } from '../../../../lib/native-sms-gateway-auth';
 
 const PAIRING_PATH = '/mobile/sms-gateway/connect';
-const APP_REDIRECT = 'tajertrack-sms://pair';
+const MANAGER_REDIRECT = 'tajertrack-sms://manager-pair';
+const SENDER_REDIRECT = 'tajertrack-sms://pair';
+const OPERATORS = new Set(['djezzy', 'mobilis', 'ooredoo']);
 
 function connectErrorUrl(error: string) {
-  return `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(APP_REDIRECT)}&error=${encodeURIComponent(error)}`;
+  return `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}&error=${encodeURIComponent(error)}`;
 }
 
-export async function approveNativeSmsDevice() {
+/** The normal account-authenticated flow establishes the one merchant manager device. */
+export async function approveNativeSmsDevice(formData: FormData) {
   const supabaseAuth = await createClient();
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
   if (authError || !user) {
-    const nextPath = `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(APP_REDIRECT)}`;
+    const nextPath = `${PAIRING_PATH}?redirect_uri=${encodeURIComponent(MANAGER_REDIRECT)}`;
     redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
 
-  if (isAuthorizedAdmin(user)) {
-    redirect('/admin');
-  }
+  if (isAuthorizedAdmin(user)) redirect('/admin');
 
-  // A merchant account phone number is optional. The sender identity is verified
-  // through the invited Android device's carrier/SIM, not the merchant profile.
+  const operatorCode = String(formData.get('operatorCode') || '').trim().toLowerCase();
+  if (!OPERATORS.has(operatorCode)) redirect(connectErrorUrl('operator_required'));
 
   const supabase = getSupabaseAdminClient() as any;
   const { data: merchant, error: merchantError } = await supabase
@@ -37,30 +38,44 @@ export async function approveNativeSmsDevice() {
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
-  if (merchantError || !merchant?.id) {
-    redirect(connectErrorUrl('merchant_unavailable'));
-  }
+  if (merchantError || !merchant?.id) redirect(connectErrorUrl('merchant_unavailable'));
 
-  // The legacy direct-pairing path remains available for existing installs.
-  const code = randomBytes(32).toString('base64url');
-  const codeHash = createHash('sha256').update(code, 'utf8').digest('hex');
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+  const { data: existingManager, error: managerError } = await supabase
+    .from('sms_gateway_manager_devices')
+    .select('manager_device_id')
+    .eq('merchant_id', merchant.id)
+    .is('revoked_at', null)
+    .limit(1)
+    .maybeSingle();
 
-  const { error: insertError } = await supabase
-    .from('sms_gateway_pairing_codes')
-    .insert({
-      code_hash: codeHash,
-      merchant_id: merchant.id,
-      created_by: user.id,
-      expires_at: expiresAt,
-    });
-
-  if (insertError) {
-    console.error('[NativeSmsGateway] Could not create a pairing code:', insertError.message);
+  if (managerError) {
+    console.error('[NativeSmsGateway] Existing manager check failed:', managerError.message);
     redirect(connectErrorUrl('pairing_unavailable'));
   }
 
-  redirect(`${APP_REDIRECT}?code=${encodeURIComponent(code)}`);
+  const replaceExisting = Boolean(existingManager?.manager_device_id);
+  if (replaceExisting && formData.get('replaceExisting') !== 'yes') {
+    redirect(connectErrorUrl('manager_replacement_required'));
+  }
+
+  const code = randomBytes(32).toString('base64url');
+  const { error: insertError } = await supabase
+    .from('sms_gateway_manager_pairing_codes')
+    .insert({
+      code_hash: hashNativeSmsCredential(code),
+      merchant_id: merchant.id,
+      created_by: user.id,
+      operator_code: operatorCode,
+      replace_existing: replaceExisting,
+      expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    });
+
+  if (insertError) {
+    console.error('[NativeSmsGateway] Could not create a manager pairing code:', insertError.message);
+    redirect(connectErrorUrl('pairing_unavailable'));
+  }
+
+  redirect(`${MANAGER_REDIRECT}?code=${encodeURIComponent(code)}`);
 }
 
 /** Redeems a merchant-created, carrier-scoped invitation without requiring the recipient to log in. */
@@ -88,5 +103,5 @@ export async function approveNativeSmsInvite(formData: FormData) {
     redirect(`${invitePage}&error=invite_expired`);
   }
 
-  redirect(`${APP_REDIRECT}?code=${encodeURIComponent(code)}`);
+  redirect(`${SENDER_REDIRECT}?code=${encodeURIComponent(code)}`);
 }
