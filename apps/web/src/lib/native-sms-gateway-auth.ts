@@ -70,6 +70,7 @@ export type NativeSmsManager = {
   manager_device_id: string;
   merchant_id: string;
   owner_user_id: string;
+  primary_sender_device_id: string | null;
   enabled: boolean;
   revoked_at: string | null;
 };
@@ -103,7 +104,7 @@ export async function authenticateNativeSmsManager(
     .eq('token_hash', tokenHash)
     .eq('enabled', true)
     .is('revoked_at', null)
-    .select('manager_device_id, merchant_id, owner_user_id, enabled, revoked_at')
+    .select('manager_device_id, merchant_id, owner_user_id, primary_sender_device_id, enabled, revoked_at')
     .maybeSingle();
 
   if (error) {
