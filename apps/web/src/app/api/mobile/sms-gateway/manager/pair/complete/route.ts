@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       p_code_hash: hashNativeSmsCredential(code),
       p_manager_device_id: managerDeviceId,
       p_manager_token_hash: hashNativeSmsCredential(managerToken),
+      p_manager_token_last_four: managerToken.slice(-4),
       p_sender_device_id: senderDeviceId,
       p_sender_token_hash: hashNativeSmsCredential(senderToken),
       p_token_last_four: senderToken.slice(-4),
