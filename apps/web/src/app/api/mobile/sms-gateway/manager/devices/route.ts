@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     const lastSeen = device.last_seen_at ? new Date(device.last_seen_at).getTime() : 0;
     return {
       deviceId: device.device_id,
+      isPrimary: device.device_id === auth.manager.primary_sender_device_id,
       displayName: device.display_name || 'Android phone',
       operatorCode: device.operator_code,
       enabled: device.enabled === true,
