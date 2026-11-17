@@ -11,6 +11,13 @@ function retryDelayMs(attemptCount: number): number {
   return Math.min(30 * 60_000, 2 * 60_000 * (2 ** exponent));
 }
 
+function expiredResultCode(status: string, retryable: boolean, failureCode: string | null): string | null {
+  if (status === 'expired') return 'order_sms_window_expired_after_send_failure';
+  return failureCode || (retryable
+    ? 'device_send_failed_retry_scheduled'
+    : 'device_send_permanent_failure');
+}
+
 export async function POST(request: Request) {
   let body: any;
   try {
@@ -83,9 +90,14 @@ export async function POST(request: Request) {
           job.result_code === 'order_sms_window_expired_before_dispatch') {
         return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'expired' });
       }
-      if (status === 'failed' && ['retry', 'failed', 'expired'].includes(job.status) &&
-          ['device_send_failed_retry_scheduled', 'device_send_permanent_failure', 'order_sms_window_expired'].includes(job.result_code || '')) {
-        return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: job.status });
+      if (status === 'failed' && ['retry', 'failed', 'expired'].includes(job.status)) {
+        const expectedResultCode = expiredResultCode(job.status, retryable, failureCode);
+        if (
+          (expectedResultCode && job.result_code === expectedResultCode) ||
+          ['device_send_failed_retry_scheduled', 'device_send_permanent_failure', 'order_sms_window_expired'].includes(job.result_code || '')
+        ) {
+          return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: job.status });
+        }
       }
     }
 
