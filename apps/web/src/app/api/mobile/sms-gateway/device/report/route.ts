@@ -82,12 +82,19 @@ export async function POST(request: Request) {
             'claim_lease_expired_before_dispatch',
             'sender_line_disabled_before_dispatch',
             'sender_line_revoked_before_dispatch',
-            'claim_lease_expired_before_dispatch'
           ].includes(job.result_code || '')) {
         return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'retry' });
       }
+      if (status === 'not_sent' && job.status === 'pending' &&
+          job.result_code === 'recipient_phone_corrected') {
+        return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'pending' });
+      }
+      if (status === 'not_sent' && job.status === 'skipped' &&
+          ['unsupported_recipient_network', 'invalid_algerian_mobile_number', 'recipient_carrier_mismatch'].includes(job.result_code || '')) {
+        return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'skipped' });
+      }
       if (status === 'not_sent' && job.status === 'expired' &&
-          job.result_code === 'order_sms_window_expired_before_dispatch') {
+          ['order_sms_window_expired_before_dispatch', 'order_sms_window_expired'].includes(job.result_code || '')) {
         return NextResponse.json({ success: true, alreadyRecorded: true, resultingStatus: 'expired' });
       }
       if (status === 'failed' && ['retry', 'failed', 'expired'].includes(job.status)) {
@@ -149,6 +156,9 @@ export async function POST(request: Request) {
         : {
             status: 'retry',
             available_at: new Date(now.getTime() + 15_000).toISOString(),
+            attempt_count: job.dispatch_started_at
+              ? Math.max(0, Number(job.attempt_count) - 1)
+              : Number(job.attempt_count) || 0,
             result_code: 'sms_not_dispatched',
             last_error: errorMessage || 'The phone recovered a claimed job before calling Android. It was safely returned to the queue.',
           };
