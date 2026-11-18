@@ -32,7 +32,7 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
     if (!isMounted) return;
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (event.pointerType !== 'touch') return;
+      if (window.matchMedia('(min-width: 1141px)').matches || event.pointerType !== 'touch') return;
       const target = event.target instanceof Element ? event.target : null;
 
       if (isOpen) {
