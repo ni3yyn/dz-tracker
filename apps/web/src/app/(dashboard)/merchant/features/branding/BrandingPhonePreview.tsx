@@ -58,12 +58,14 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
   const isBorderless = surfaceChoice === 'borderless';
   const isOutlined = surfaceChoice === 'bordered';
   const isGlass = surfaceChoice === 'glass';
+  const isTinted = surfaceChoice === 'tinted';
   const cardBg = isBorderless || isOutlined ? 'transparent'
     : isGlass ? `color-mix(in srgb, ${baseSurface} 76%, transparent)`
-    : surfaceChoice === 'tinted' ? (isDark ? `color-mix(in srgb, ${brandConfig.brandColor} 13%, ${baseSurface})` : `color-mix(in srgb, ${brandConfig.brandColor} 7%, ${baseSurface})`)
+    : isTinted ? `color-mix(in srgb, ${brandConfig.brandColor} 7%, ${baseSurface})`
     : raisedSurface;
   const cardBorder = isBorderless ? 'none'
     : isOutlined ? `1px solid ${strongBorderColor}`
+    : isTinted ? `1px solid color-mix(in srgb, ${brandConfig.brandColor} 22%, ${borderColor})`
     : `1px solid ${borderColor}`;
   const radiusTokens = brandConfig.cardRadius === 'sharp'
     ? { card: '0px', panel: '0px', control: '0px', timeline: '0px', badge: '0px', avatar: '0px', marker: '0px', floating: '0px', notice: '0px' }
