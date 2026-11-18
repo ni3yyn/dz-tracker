@@ -1,4 +1,4 @@
-import type { FormEvent, ReactNode } from 'react';
+import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import type { BrandPreset, BrandingCategory, EditableBrandSettings } from '../shared/branding-types';
 import {
   ANIMATION_LEVELS,
@@ -150,7 +150,7 @@ export function BrandingTab({
     id: style.id,
     label: style.name,
     preview: (
-      <span className={'dz-timeline-swatch dz-timeline-swatch--' + style.id + ' dz-brand-timeline-preview'} style={{ '--timeline-swatch-brand': brandConfig.brandColor } as React.CSSProperties}>
+      <span className={'dz-timeline-swatch dz-timeline-swatch--' + style.id + ' dz-brand-timeline-preview'} style={{ '--timeline-swatch-brand': brandConfig.brandColor } as CSSProperties}>
         <span /><span /><span />
       </span>
     ),
@@ -160,7 +160,7 @@ export function BrandingTab({
     id: style.id,
     label: style.name,
     preview: (
-      <span className={'dz-connector-swatch dz-connector-swatch--' + style.id + ' dz-brand-line-preview'} style={{ '--timeline-swatch-brand': brandConfig.brandColor } as React.CSSProperties}>
+      <span className={'dz-connector-swatch dz-connector-swatch--' + style.id + ' dz-brand-line-preview'} style={{ '--timeline-swatch-brand': brandConfig.brandColor } as CSSProperties}>
         <span />
         <i />
         <span />
