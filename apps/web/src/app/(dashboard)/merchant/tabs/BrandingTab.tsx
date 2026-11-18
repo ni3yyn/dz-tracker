@@ -191,7 +191,7 @@ export function BrandingTab({
   const handleWorkspacePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (isPreviewOpen || event.pointerType !== 'touch' || event.clientX > 28) return;
     const target = event.target as HTMLElement | null;
-    if (target?.closest('button, input, select, textarea, a, [contenteditable="true"]')) return;
+    if (target?.closest('button:not(.dz-branding-preview-handle), input, select, textarea, a, [contenteditable="true"]')) return;
     previewSwipeStartRef.current = { x: event.clientX, y: event.clientY };
   };
 
