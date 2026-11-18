@@ -8119,7 +8119,9 @@
 }
 
 
-/* BRANDING PREVIEW UX — fixed desktop device, mobile edge drawer. */
+
+
+/* BRANDING PREVIEW — desktop sticky device and shared order-side-panel pattern. */
 @media (min-width: 1141px) {
   .dz-admin-root .dz-branding-workspace .dz-customizer-grid {
     grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
@@ -8139,15 +8141,8 @@
     min-height: 0 !important;
     max-height: calc(100svh - 32px);
     padding: 0 !important;
-    overflow: hidden;
+    overflow: visible;
     z-index: 22;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-drawer-head {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    flex: 0 0 auto;
   }
 
   .dz-admin-root .dz-branding-workspace .dz-branding-preview-status {
@@ -8158,9 +8153,8 @@
   }
 
   .dz-admin-root .dz-branding-workspace .dz-phone-chassis {
-    width: min(100%, 35.1svh, 342px) !important;
+    width: min(100%, 342px, calc(76svh * .461538)) !important;
     height: min(76svh, 740px) !important;
-    max-width: 100%;
     max-height: calc(100svh - 82px);
     min-height: 0 !important;
     aspect-ratio: 9 / 19.5;
@@ -8170,9 +8164,11 @@
   }
 }
 
-.dz-admin-root .dz-branding-workspace .dz-branding-preview-backdrop,
-.dz-admin-root .dz-branding-workspace .dz-branding-preview-handle,
-.dz-admin-root .dz-branding-workspace .dz-branding-preview-close {
+.dz-admin-root .dz-branding-workspace .dz-branding-preview-handle {
+  display: none;
+}
+
+.dz-branding-preview-backdrop {
   display: none;
 }
 
@@ -8186,135 +8182,8 @@
     gap: 20px;
   }
 
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 1390;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    border: 0;
-    background: rgba(15, 25, 19, .42);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    cursor: default;
-    touch-action: none;
-    transition: opacity .28s ease, visibility 0s linear .28s;
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-backdrop[data-open="true"] {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    cursor: pointer;
-    transition: opacity .28s ease;
-  }
-
   .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
-    position: fixed !important;
-    inset: 0 auto 0 0 !important;
-    z-index: 1400;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 0;
-    width: min(90vw, 430px) !important;
-    max-width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    max-height: 100dvh;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: max(12px, env(safe-area-inset-top)) 15px max(12px, env(safe-area-inset-bottom)) !important;
-    box-sizing: border-box;
-    overflow: hidden;
-    border: 0 !important;
-    border-right: 1px solid #dfe5dc !important;
-    background: #fffefa !important;
-    box-shadow: 18px 0 48px -30px rgba(17, 34, 23, .42) !important;
-    transform: translate3d(-105%, 0, 0);
-    visibility: hidden;
-    pointer-events: none;
-    transition: transform .34s cubic-bezier(.2, .72, .22, 1), visibility 0s linear .34s;
-    will-change: transform;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky.is-open {
-    transform: translate3d(0, 0, 0);
-    visibility: visible;
-    pointer-events: auto;
-    transition: transform .34s cubic-bezier(.2, .72, .22, 1), visibility 0s;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-drawer-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    width: 100%;
-    min-height: 48px;
-    flex: 0 0 auto;
-    margin-bottom: 8px;
-    padding: 0 0 8px;
-    border-bottom: 1px solid #e5e9e2;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-status {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    width: 100%;
-    max-width: none;
-    min-width: 0;
-    padding: 0 !important;
-    font-size: 11px;
-    line-height: 1.5;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-status > span:last-child {
-    margin-inline-start: auto;
-    white-space: nowrap;
-    font-size: 10px;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-close {
-    display: grid;
-    place-items: center;
-    width: 38px;
-    height: 38px;
-    flex: 0 0 38px;
-    padding: 0;
-    border: 0 !important;
-    background: #edf1eb !important;
-    color: #294b37 !important;
-    cursor: pointer;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-close:hover {
-    background: #e2e9df !important;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-phone-chassis {
-    width: min(100%, 36svh, 340px) !important;
-    height: min(78svh, 760px) !important;
-    max-width: 100%;
-    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 98px);
-    min-height: 0 !important;
-    aspect-ratio: 9 / 19.5;
-    flex: 0 1 auto;
-    margin-inline: auto;
-    border-radius: 31px !important;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-phone-screen,
-  .dz-admin-root .dz-branding-workspace .dz-phone-scroll-viewport {
-    overscroll-behavior: contain;
-    touch-action: pan-y;
+    display: none !important;
   }
 
   .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle {
@@ -8338,7 +8207,8 @@
     cursor: pointer;
     writing-mode: vertical-rl;
     text-orientation: mixed;
-    transition: background .18s ease, opacity .2s ease, transform .2s ease;
+    touch-action: pan-y;
+    transition: background .18s ease, opacity .2s ease;
   }
 
   .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle:hover {
@@ -8347,41 +8217,157 @@
 
   .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle[data-open="true"] {
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
   }
 
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle svg {
+  .dz-branding-preview-backdrop {
+    display: flex;
+  }
+
+  .dz-order-detail-backdrop.dz-branding-preview-backdrop {
+    z-index: 2147483000;
+  }
+
+  .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel {
+    --order-details-width: min(520px, calc(100vw - 40px));
+    box-sizing: border-box;
+    width: var(--order-details-width);
+    max-width: calc(100vw - 40px);
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden !important;
+    border-inline-start: 1px solid var(--border-soft);
+    background: #fffefa;
+    box-shadow: 0 20px 70px rgba(20, 30, 23, .25);
+    clip-path: inset(0 0 0 100%);
+    transition: clip-path .32s cubic-bezier(.2,.75,.25,1), visibility 0s linear .32s;
+  }
+
+  .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel[data-open="true"] {
+    clip-path: inset(0);
+    visibility: visible;
+    overflow: hidden !important;
+    transition-delay: 0s;
+  }
+
+  .dz-order-side-panel-inner.dz-order-side-panel-inner--details.dz-branding-preview-side-panel-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    padding: max(16px, env(safe-area-inset-top)) 18px max(16px, env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
+  .dz-branding-preview-side-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
     flex: 0 0 auto;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .dz-branding-preview-side-head h2 {
+    margin: 0;
+    color: var(--ink-main);
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .dz-branding-preview-side-head p {
+    margin: 4px 0 0;
+    color: var(--ink-muted);
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  .dz-branding-preview-side-head .dz-order-detail-kicker {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .dz-branding-preview-side-head .dz-order-detail-close {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #edf1eb !important;
+    color: #294b37 !important;
+  }
+
+  .dz-branding-preview-side-device {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .dz-branding-preview-side-device .dz-phone-chassis {
+    width: min(100%, 342px, calc((100dvh - 112px) * .461538)) !important;
+    height: min(calc(100dvh - 112px), 740px) !important;
+    max-width: 100%;
+    min-height: 0 !important;
+    aspect-ratio: 9 / 19.5;
+    flex: 0 1 auto;
+    margin: auto;
+    border-radius: 32px !important;
+  }
+
+  .dz-branding-preview-side-device .dz-phone-screen,
+  .dz-branding-preview-side-device .dz-phone-scroll-viewport {
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  .dz-branding-preview-side-device .dz-phone-screen {
+    padding: 11px 8px;
+  }
+
+  .dz-branding-preview-side-device .dz-phone-notch {
+    height: 19px;
+    flex: 0 0 19px;
+  }
+
+  .dz-branding-preview-side-device .dz-phone-speaker {
+    border-radius: 99px;
+  }
+}
+
+@media (max-width: 420px) {
+  .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel {
+    --order-details-width: calc(100vw - 28px);
+    width: var(--order-details-width);
+    max-width: var(--order-details-width);
+  }
+
+  .dz-order-side-panel-inner.dz-order-side-panel-inner--details.dz-branding-preview-side-panel-inner {
+    padding-inline: 13px;
+  }
+
+  .dz-branding-preview-side-device .dz-phone-chassis {
+    width: min(100%, 342px, calc((100dvh - 108px) * .461538)) !important;
+    height: min(calc(100dvh - 108px), 740px) !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-backdrop,
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky,
+  .dz-order-detail-backdrop.dz-branding-preview-backdrop,
+  .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel,
   .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle {
     transition: none !important;
-  }
-}
-
-
-/* Preview drawer hardening: gestures belong to the viewport, not the padded form. */
-@media (max-width: 1140px) {
-  .dz-admin-root .dz-main-branding {
-    touch-action: pan-y;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
-    padding-inline: 12px !important;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle {
-    left: 0;
-    top: 50%;
-    transform: translate3d(0, -50%, 0);
-    touch-action: pan-y;
-  }
-
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle[data-open="true"] {
-    visibility: hidden;
   }
 }
