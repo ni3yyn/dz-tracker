@@ -447,15 +447,13 @@ export function BrandingTab({
                     );
                   }}
                   valueClassName="dz-brand-visual-value--background"
-                  triggerClassName="dz-brand-background-select-trigger"
-                  indicatorClassName="dz-brand-background-select-indicator"
                   menuMaxHeight={520}
                   menuColumns={1}
                   optionLayout="block"
                   optionMinHeight={78}
                   optionPadding="5px"
                   showOptionLabel={false}
-                  triggerHeight={56}
+                  triggerHeight={44}
                 />
                 <BrandVisualDropdown
                   label="وضع الصفحة"
