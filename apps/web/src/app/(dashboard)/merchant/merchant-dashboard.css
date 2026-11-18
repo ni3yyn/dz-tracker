@@ -6536,3 +6536,633 @@
     transition: none;
   }
 }
+
+
+
+
+/* TAJERTRACK BRANDING — compact visual dropdown editor */
+.dz-admin-root .dz-branding-workspace {
+  --brand-control-bg: #f0f2ec;
+  --brand-control-hover: #e6ebe3;
+  --brand-control-line: #dfe5dc;
+  padding-bottom: 132px;
+}
+.dz-admin-root .dz-branding-workspace .dz-customizer-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
+  gap: clamp(22px, 2.8vw, 40px);
+}
+.dz-admin-root .dz-branding-workspace .dz-branding-panel-head {
+  margin: 0 0 20px;
+  padding: 0 0 15px;
+  border-bottom: 1px solid var(--brand-control-line);
+}
+.dz-admin-root .dz-branding-workspace .dz-branding-panel-head h2 {
+  margin: 4px 0 0;
+  font-size: clamp(22px, 2vw, 28px);
+  line-height: 1.4;
+  letter-spacing: -.035em;
+}
+.dz-admin-root .dz-branding-workspace .dz-branding-kicker {
+  color: #758278;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .04em;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(170px, .85fr);
+  gap: 12px;
+  align-items: end;
+  margin: 0 0 16px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select {
+  position: relative;
+  min-width: 0;
+  z-index: 1;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select[open] {
+  z-index: 90;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 56px;
+  padding: 7px 11px;
+  border: 0 !important;
+  border-bottom: 1px solid var(--border-strong) !important;
+  background: var(--brand-control-bg);
+  color: var(--ink-main);
+  cursor: pointer;
+  list-style: none;
+  text-align: start;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select-trigger::-webkit-details-marker {
+  display: none;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select-trigger:focus-visible,
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-option:focus-visible,
+.dz-admin-root .dz-branding-workspace .dz-brand-category-select select:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select-label,
+.dz-admin-root .dz-branding-workspace .dz-brand-category-select > span {
+  flex: 0 0 auto;
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select-value > strong {
+  overflow: hidden;
+  color: var(--ink-main);
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select-current-art {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 32px;
+  flex: 0 0 48px;
+  overflow: hidden;
+  background: #e1e8df;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select-chevron {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  color: #728176;
+  transition: transform .16s ease;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select[open] .dz-brand-visual-select-chevron {
+  transform: rotate(180deg);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-select-menu {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 5px);
+  z-index: 100;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  max-height: min(310px, 48vh);
+  padding: 7px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--brand-control-line);
+  background: #fffefa;
+  box-shadow: 0 12px 30px rgba(32, 42, 35, .14);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 45px;
+  padding: 6px 7px;
+  border: 0 !important;
+  background: transparent;
+  color: var(--ink-main);
+  cursor: pointer;
+  text-align: start;
+  transition: background-color .14s ease;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-option:hover {
+  background: var(--brand-control-hover);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-option.is-selected {
+  background: #e6eee4;
+  box-shadow: inset 3px 0 0 var(--green);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-option-art {
+  display: grid;
+  place-items: center;
+  width: 49px;
+  height: 32px;
+  flex: 0 0 49px;
+  overflow: hidden;
+  background: #edf0e9;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-option-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-main);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-visual-option-check {
+  flex: 0 0 12px;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-preset-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-preset-preview > i {
+  display: block;
+  width: 10px;
+  height: 21px;
+  border: 1px solid rgba(31, 45, 35, .12);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-background-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-position: center;
+  background-size: cover;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-timeline-preview,
+.dz-admin-root .dz-branding-workspace .dz-brand-line-preview {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 3px 5px;
+  border: 0;
+  background: #f6f7f2;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-timeline-preview > span {
+  width: 5px;
+  height: 5px;
+  box-shadow: none;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-line-preview > span {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview {
+  position: relative;
+  display: block;
+  width: 37px;
+  height: 24px;
+  background: #f4f5ef;
+  border: 1px solid #bdc9bd;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview > i {
+  position: absolute;
+  inset: 5px 7px;
+  display: block;
+  background: #8da18e;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview--glass {
+  background: rgba(226, 235, 225, .55);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview--solid {
+  border: 0;
+  background: #dfe8dc;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview--bordered {
+  border: 2px solid #809483;
+  background: transparent;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview--borderless {
+  border: 0;
+  background: transparent;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview--elevated {
+  border: 0;
+  background: #fffefa;
+  box-shadow: 0 3px 7px rgba(35, 50, 39, .22);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview--tinted {
+  border: 0;
+  background: #dce9dd;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview--paper {
+  background: #f4eddf;
+  border-color: #d4c9b4;
+  box-shadow: 0 2px 3px rgba(60, 50, 35, .12);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-surface-preview--inset {
+  background: #e8ece5;
+  box-shadow: inset 0 1px 3px rgba(35, 50, 39, .15);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-radius-preview {
+  display: block;
+  width: 38px;
+  height: 23px;
+  border: 2px solid #738a78;
+  background: #e3ebe2;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-font-preview {
+  display: block;
+  width: 100%;
+  color: #294b37;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-motion-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-motion-preview > i {
+  display: block;
+  width: 5px;
+  height: 17px;
+  background: #809783;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-motion-preview--full > i:first-child {
+  height: 9px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-motion-preview--full > i:last-child {
+  height: 23px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-motion-preview--subtle > i:first-child,
+.dz-admin-root .dz-branding-workspace .dz-brand-motion-preview--subtle > i:last-child {
+  height: 13px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-motion-preview--none > i {
+  height: 7px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-theme-preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 35px;
+  height: 24px;
+  padding: 4px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-theme-preview--light {
+  background: #f8f7f1;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-theme-preview--dark {
+  background: #242c26;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-theme-preview > i {
+  display: block;
+  height: 3px;
+  width: 100%;
+  background: #8ca08f;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-category-select {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-category-select select {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 34px 8px 11px;
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--brand-control-bg);
+  color: var(--ink-main);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-category-select > svg {
+  position: absolute;
+  inset-inline-end: 10px;
+  bottom: 18px;
+  width: 17px;
+  height: 17px;
+  pointer-events: none;
+  color: #728176;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 19px;
+  padding: 0 0 13px;
+  border: 0;
+  border-bottom: 1px solid var(--brand-control-line);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-edit-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-edit-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  background: #7b927f;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-edit-dot.is-dirty {
+  background: #c18435;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-edit-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-tool-button {
+  min-width: 32px;
+  min-height: 30px;
+  padding: 5px 8px;
+  background: var(--brand-control-bg);
+  color: var(--green);
+  font-size: 10px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-tool-button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-tool-reset {
+  padding-inline: 10px;
+  color: var(--ink-muted);
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-section {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin: 0 0 23px;
+  padding: 0 0 22px;
+  border: 0;
+  border-bottom: 1px solid var(--brand-control-line);
+  background: transparent;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-section h3 {
+  margin: 0 0 1px;
+  color: var(--ink-main);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-color-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 11px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-color-swatch {
+  width: 29px !important;
+  height: 29px !important;
+  padding: 0;
+  border: 2px solid transparent !important;
+  box-shadow: none !important;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-color-swatch.is-selected {
+  outline: 2px solid var(--ink-main);
+  outline-offset: 2px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-color-custom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-color-custom label,
+.dz-admin-root .dz-branding-workspace .dz-brand-field label {
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-color-custom input[type="color"] {
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-color-custom code {
+  padding: 5px 8px;
+  background: var(--brand-control-bg);
+  color: var(--ink-main);
+  font-size: 11px;
+  letter-spacing: .04em;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-contrast-note {
+  margin: 0;
+  padding: 7px 10px;
+  border: 0 !important;
+  border-inline-start: 2px solid var(--green) !important;
+  background: #edf2ea !important;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.7;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-contrast-note.is-low {
+  border-inline-start-color: #bd7b2c !important;
+  background: #f5eee3 !important;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-field .input {
+  min-height: 43px;
+  padding: 9px 11px;
+  border: 0 !important;
+  border-bottom: 1px solid var(--border-strong) !important;
+  background: var(--brand-control-bg) !important;
+  box-shadow: none !important;
+  color: var(--ink-main);
+  font-size: 13px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-managed-logo-note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.7;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 43px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--brand-control-line);
+  color: var(--ink-main);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-toggle input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  margin: 0;
+  accent-color: var(--green);
+}
+.dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
+  min-height: 0;
+  padding: 0;
+}
+.dz-admin-root .dz-branding-workspace .dz-branding-preview-status {
+  padding-bottom: 9px;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-savebar {
+  left: calc(360px + 48px + 26px);
+  right: calc(280px + 28px);
+  bottom: 13px;
+  padding: 10px 14px;
+  border: 0 !important;
+  border-top: 1px solid var(--brand-control-line) !important;
+  background: rgba(255, 254, 250, .98) !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-savebar.is-dirty {
+  border-color: var(--brand-control-line) !important;
+  box-shadow: none !important;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-save-button {
+  min-height: 42px;
+  min-width: 140px;
+  padding: 9px 15px;
+  box-shadow: none !important;
+}
+@media (max-width: 1140px) {
+  .dz-admin-root .dz-branding-workspace .dz-customizer-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
+    position: relative;
+    top: auto;
+    order: 2;
+  }
+  .dz-admin-root .dz-branding-workspace #merchant-branding-form {
+    order: 1;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar {
+    left: 18px;
+    right: 18px;
+  }
+}
+@media (max-width: 680px) {
+  .dz-admin-root .dz-branding-workspace {
+    padding-bottom: 108px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-visual-select-trigger,
+  .dz-admin-root .dz-branding-workspace .dz-brand-category-select select {
+    min-height: 50px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-visual-select-menu {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 42vh;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-edit-actions {
+    align-items: flex-start;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-edit-state {
+    padding-top: 7px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-tool-reset {
+    max-width: 104px;
+    line-height: 1.35;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar {
+    left: 10px;
+    right: 10px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar-copy span:not(.dz-brand-save-indicator) {
+    display: none;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar-copy strong {
+    font-size: 10px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-save-button {
+    min-width: 118px;
+    min-height: 40px;
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dz-admin-root .dz-branding-workspace .dz-brand-visual-select-chevron,
+  .dz-admin-root .dz-branding-workspace .dz-brand-visual-option {
+    transition: none !important;
+  }
+}
