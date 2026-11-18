@@ -51,7 +51,9 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
         return;
       }
 
-      if (event.clientX > 56) return;
+      // Android reserves the first ~24px for its system Back gesture. Keep the
+      // app gesture just inside that zone, while still using the visible edge handle.
+      if (event.clientX < 24 || event.clientX > 84) return;
       if (target?.closest('button, input, select, textarea, a, [contenteditable="true"]') &&
           !target?.closest('.dz-branding-preview-handle')) return;
 
@@ -70,11 +72,15 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
       const deltaX = event.clientX - start.x;
       const deltaY = Math.abs(event.clientY - start.y);
       const horizontal = Math.abs(deltaX) >= 54 && Math.abs(deltaX) > deltaY * 1.15;
+      const verticalIntent = deltaY >= 14 && deltaY > Math.abs(deltaX) * 1.15;
 
-      if (!horizontal) {
-        if (deltaY > 48 || Math.abs(deltaX) > 24) gestureRef.current = null;
+      // Do not discard a horizontal gesture while it is still accumulating
+      // toward the activation threshold. Only abandon it once the user clearly scrolls vertically.
+      if (verticalIntent) {
+        gestureRef.current = null;
         return;
       }
+      if (!horizontal) return;
 
       if (start.mode === 'open' && deltaX > 0) setIsOpen(true);
       if (start.mode === 'close' && deltaX < 0) setIsOpen(false);
@@ -103,7 +109,8 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
         return;
       }
 
-      if (touch.clientX > 56) return;
+      // Avoid Android's reserved system-navigation strip at the physical edge.
+      if (touch.clientX < 24 || touch.clientX > 84) return;
       if (target?.closest('button, input, select, textarea, a, [contenteditable="true"]') &&
           !target?.closest('.dz-branding-preview-handle')) return;
 
@@ -118,17 +125,20 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
     const handleTouchMove = (event: TouchEvent) => {
       const start = touchGestureRef.current;
       if (!start) return;
-      const touch = Array.from(event.changedTouches).find((item) => item.identifier === start.identifier);
+      const activeTouches = [...Array.from(event.touches), ...Array.from(event.changedTouches)];
+      const touch = activeTouches.find((item) => item.identifier === start.identifier);
       if (!touch) return;
 
       const deltaX = touch.clientX - start.x;
       const deltaY = Math.abs(touch.clientY - start.y);
       const horizontal = Math.abs(deltaX) >= 54 && Math.abs(deltaX) > deltaY * 1.15;
+      const verticalIntent = deltaY >= 14 && deltaY > Math.abs(deltaX) * 1.15;
 
-      if (!horizontal) {
-        if (deltaY > 48 || Math.abs(deltaX) > 24) touchGestureRef.current = null;
+      if (verticalIntent) {
+        touchGestureRef.current = null;
         return;
       }
+      if (!horizontal) return;
 
       if (start.mode === 'open' && deltaX > 0) setIsOpen(true);
       if (start.mode === 'close' && deltaX < 0) setIsOpen(false);
@@ -261,7 +271,7 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
 
           <div
             className="dz-order-detail-backdrop dz-order-details-backdrop dz-branding-preview-backdrop"
-            data-dashboard-back-dismiss="branding-preview-panel"
+            data-dashboard-back-dismiss={isOpen ? 'branding-preview-panel' : undefined}
             data-open={isOpen ? 'true' : 'false'}
             aria-hidden={!isOpen}
             role="presentation"
@@ -283,9 +293,7 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
               <div className="dz-order-side-panel-inner dz-order-side-panel-inner--details dz-branding-preview-side-panel-inner">
                 <header className="dz-order-detail-head dz-branding-preview-side-head">
                   <div>
-                    <span className="dz-order-detail-kicker">معاينة مباشرة</span>
-                    <h2 id={panelId + '-title'}>صفحة تتبّع الطلب</h2>
-                    <p>تظهر التغييرات هنا فور تعديل الهوية.</p>
+                    <h2 id={panelId + '-title'}>معاينة مباشرة</h2>
                   </div>
                   <button
                     ref={closeRef}
