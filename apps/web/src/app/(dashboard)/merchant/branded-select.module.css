@@ -269,14 +269,6 @@
 }
 
 
-.optionContent {
-  display: block;
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-}
-
-
 
 .optionContent {
   display: flex;
@@ -338,6 +330,78 @@
 @media (prefers-reduced-motion: reduce) {
   .optionBlock,
   .optionLabel {
+    transition: none !important;
+  }
+}
+
+
+
+/* Rich visual menus: the menu is a real grid, not a block with ignored columns. */
+.menu {
+  display: grid;
+  align-content: start;
+  justify-items: stretch;
+  grid-auto-rows: min-content;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.option {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.optionContent {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.optionBlock {
+  box-sizing: border-box;
+  min-width: 0;
+  border: 1px solid transparent;
+  background: #fffefa;
+  transition: border-color .14s ease, background-color .14s ease, box-shadow .14s ease;
+}
+
+.optionBlock[aria-selected="true"] {
+  border: 2px solid #315f3c;
+  background: #e8f0e6;
+  box-shadow: inset 0 0 0 1px rgba(49, 95, 60, .14);
+  color: #203d2a;
+}
+
+.optionBlock[aria-selected="true"] .check {
+  top: 8px;
+  inset-inline-start: 8px;
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+  border: 1px solid #315f3c;
+  background: #fffefa;
+  stroke: #315f3c;
+  box-shadow: 0 1px 5px rgba(26, 44, 31, .14);
+}
+
+.optionBlock:not([aria-selected="true"]):hover,
+.optionBlock:not([aria-selected="true"]):focus-visible,
+.optionBlock:not([aria-selected="true"]).active {
+  border-color: #9caf9b;
+  background: #f3f7f1;
+  box-shadow: inset 0 0 0 1px rgba(76, 111, 79, .12);
+}
+
+.optionBlock:focus-visible {
+  outline: 2px solid rgba(65, 107, 82, .45);
+  outline-offset: 2px;
+  z-index: 2;
+}
+
+.optionBlock .optionContent {
+  overflow: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .optionBlock {
     transition: none !important;
   }
 }
