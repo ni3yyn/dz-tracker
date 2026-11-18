@@ -1,4 +1,5 @@
 import type { CSSProperties, FormEvent, ReactNode } from 'react';
+import { normalizeCardSurfaceChoice } from '@saas/ui';
 import { BrandedSelect } from '../BrandedSelect';
 import { BrandedToggle } from '../../../../components/BrandedToggle';
 import type { BrandPreset, BrandingCategory, EditableBrandSettings } from '../shared/branding-types';
@@ -41,6 +42,7 @@ type BrandVisualOption = {
   id: string;
   label: string;
   preview: ReactNode;
+  description?: string;
 };
 
 function BrandVisualDropdown({
@@ -255,7 +257,8 @@ export function BrandingTab({
   const surfaceOptions: BrandVisualOption[] = CARD_SURFACES.map((surface) => ({
     id: surface.id,
     label: surface.name,
-    preview: <span className={'dz-brand-surface-preview dz-brand-surface-preview--' + surface.id}><i /></span>,
+    description: surface.desc,
+    preview: <span className={'dz-brand-surface-preview dz-brand-surface-preview--' + surface.id} aria-hidden="true"><i /></span>,
   }));
 
   const radiusLabels = ['حواف حادة', 'حواف منحنية قليلاً', 'حواف متوسطة', 'حواف مستديرة'];
@@ -503,18 +506,48 @@ export function BrandingTab({
 
               <div className="dz-brand-group">
                 <div className="dz-brand-group-heading">
-                  <h4>بطاقات التتبع</h4>
-                  <p>اختر سطح البطاقات وشكل الحواف المحيطة بمعلومات الشحنة.</p>
+                  <h4>إبراز آخر تحديث</h4>
+                  <p>اختر طريقة عرض لوحة آخر حالة مسجلة للشحنة. يؤثر هذا الإعداد على لوحة الحالة فقط، وليس بقية الصفحة.</p>
                 </div>
                 <div className="dz-brand-group-controls">
                   <BrandVisualDropdown
-                    label="سطح البطاقة"
-                    selectedId={String(brandConfig.cardSurface)}
+                    label="طريقة إبراز الحالة"
+                    selectedId={normalizeCardSurfaceChoice(brandConfig.cardSurface)}
                     options={surfaceOptions}
                     onChange={(value) => onUpdateBrandConfig('cardSurface', value as EditableBrandSettings['cardSurface'])}
+                    menuWidth={390}
+                    menuMaxHeight={360}
+                    optionMinHeight={64}
+                    optionPadding="8px 10px"
+                    showOptionLabel={false}
+                    optionContentClassName="dz-brand-surface-option-content"
+                    renderOption={(option) => (
+                      <span className="dz-brand-surface-choice">
+                        {option.preview}
+                        <span className="dz-brand-surface-choice-copy">
+                          <strong>{option.label}</strong>
+                          <small>{option.description}</small>
+                        </span>
+                      </span>
+                    )}
+                    renderValue={(option) => (
+                      <span className="dz-brand-surface-selected">
+                        {option?.preview}
+                        <strong>{option?.label ?? 'اختر طريقة العرض'}</strong>
+                      </span>
+                    )}
                   />
+                </div>
+              </div>
+
+              <div className="dz-brand-group">
+                <div className="dz-brand-group-heading">
+                  <h4>استدارة عناصر الصفحة</h4>
+                  <p>تحكم في درجة استدارة البطاقات والأزرار وعناصر التحكم في صفحة التتبع.</p>
+                </div>
+                <div className="dz-brand-group-controls">
                   <BrandVisualDropdown
-                    label="شكل الحواف"
+                    label="درجة الاستدارة"
                     selectedId={String(brandConfig.cardRadius)}
                     options={radiusOptions}
                     onChange={(value) => onUpdateBrandConfig('cardRadius', value as EditableBrandSettings['cardRadius'])}
