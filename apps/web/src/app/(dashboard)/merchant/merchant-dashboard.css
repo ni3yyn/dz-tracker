@@ -5154,6 +5154,8 @@
         }
         @media (max-width: 380px) {
           .dz-admin-root .dz-settings-section { padding-inline: 12px !important; }
+  .dz-admin-root .dz-branding-workspace .dz-brand-group { padding-inline: 12px; }
+
           .dz-admin-root .dz-settings-payment-table td::before { flex-basis: 78px; }
           .dz-admin-root .dz-billing-plan { padding-inline: 7px; }
         }
@@ -6921,20 +6923,26 @@
   letter-spacing: -.02em;
 }
 
-/* Related branding parameters share one clear, compact surface. */
+/* Branding groups use the same flat section surface as Settings cards. */
 .dz-admin-root .dz-branding-workspace .dz-brand-group {
   display: flex;
   flex-direction: column;
   gap: 14px;
   min-width: 0;
-  padding: 14px 15px;
-  border: 1px solid var(--brand-control-line);
-  background: #fafbf8;
+  margin: 0;
+  padding: 20px 22px;
+  border: 0;
+  border-radius: 0;
+  background: #fffefa;
+  box-shadow: none;
 }
 
+/* Keep the background group visually identical to every other group. */
 .dz-admin-root .dz-branding-workspace .dz-brand-group--featured {
-  border-color: #cfdacb;
-  background: #f3f6f1;
+  border: 0;
+  border-radius: 0;
+  background: #fffefa;
+  box-shadow: none;
 }
 
 .dz-admin-root .dz-branding-workspace .dz-brand-group-heading {
@@ -7166,7 +7174,11 @@
   }
   .dz-admin-root .dz-branding-workspace .dz-brand-group {
     gap: 12px;
-    padding: 12px;
+    padding: 15px 14px;
+    border: 0;
+    border-radius: 0;
+    background: #fffefa;
+    box-shadow: none;
   }
   .dz-admin-root .dz-branding-workspace .dz-brand-group-heading p {
     font-size: 10px;
