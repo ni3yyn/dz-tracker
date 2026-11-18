@@ -1,0 +1,115 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.input {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.box {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #aebcaf;
+  border-radius: 0;
+  background: #fffefa;
+  pointer-events: none;
+  transition: border-color .18s ease, background-color .18s ease;
+}
+
+.box::before {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: var(--brand-checkbox-fill, var(--green-deep, #294b37));
+  transform: translateY(102%) scaleY(.72);
+  transform-origin: bottom center;
+  transition: transform .32s cubic-bezier(.2, .78, .2, 1);
+}
+
+.check {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 76%;
+  height: 76%;
+  overflow: visible;
+  fill: none;
+  stroke: #fffefa;
+  stroke-width: 2.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  opacity: 0;
+  transform: translateY(2px) scale(.78);
+  transform-origin: center;
+  transition:
+    stroke-dashoffset .22s ease .09s,
+    opacity .12s ease .09s,
+    transform .22s cubic-bezier(.2, .8, .2, 1) .07s;
+}
+
+.input:checked + .box {
+  border-color: var(--brand-checkbox-fill, var(--green-deep, #294b37));
+}
+
+.input:checked + .box::before {
+  transform: translateY(0) scaleY(1);
+}
+
+.input:checked + .box .check {
+  stroke-dashoffset: 0;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.input:not(:disabled):hover + .box {
+  border-color: var(--brand-checkbox-fill, var(--green-deep, #294b37));
+}
+
+.input:focus-visible + .box {
+  outline: 2px solid rgba(41, 75, 55, .3);
+  outline-offset: 3px;
+}
+
+.input:disabled {
+  cursor: not-allowed;
+}
+
+.input:disabled + .box {
+  opacity: .48;
+}
+
+.root:has(.input:disabled) {
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box,
+  .box::before,
+  .check {
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
