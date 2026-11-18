@@ -1,5 +1,6 @@
 import { useRef, type FormEvent } from 'react';
 import { BrandedSelect } from '../BrandedSelect';
+import { BrandedToggle } from '../../../../components/BrandedToggle';
 import { ImageUploadField } from '../ImageUploadField';
 import { Icons } from '../components/DashboardIcons';
 import type { EditableBrandSettings } from '../shared/branding-types';
@@ -141,11 +142,13 @@ export function SettingsTab({
                       <span style={{ fontSize: '11px', color: telegramEnabled ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{telegramEnabled ? 'مفعّل' : 'معطّل'}</span>
                     </div>
                     <p style={{ minHeight: '34px', margin: '0 0 10px', color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.6 }}>إرسال رابط تتبّع الشحنة تلقائياً إلى حساب Telegram المرتبط برقم العميل عند تسجيل الطلب.</p>
-                    <button type="button" role="switch" aria-checked={telegramEnabled} aria-busy={isSavingTelegram} data-checked={telegramEnabled ? 'true' : 'false'} aria-label="تفعيل إرسال روابط التتبع عبر تيليجرام" disabled={isSavingTelegram}
-                      onClick={() => void onToggleTelegramTracking()}
-                      style={{ width: '48px', height: '27px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: telegramEnabled ? '#273b30' : '#cbd1ca', cursor: isSavingTelegram ? 'wait' : 'pointer', opacity: isSavingTelegram ? .82 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}>
-                      <span className="dz-settings-switch-thumb">{isSavingTelegram && <span className="dz-settings-switch-spinner" aria-hidden="true" />}</span>
-                    </button>
+                    <BrandedToggle
+                      checked={telegramEnabled}
+                      loading={isSavingTelegram}
+                      aria-label="تفعيل إرسال روابط التتبع عبر تيليجرام"
+                      disabled={isSavingTelegram}
+                      onChange={() => void onToggleTelegramTracking()}
+                    />
                   </div>
                   <div className="dz-settings-telegram-option dz-settings-telegram-option-secondary" style={{ padding: '11px 8px 8px 16px', minWidth: 0, borderInlineStart: '1px solid var(--border-soft)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '7px' }}>
@@ -153,11 +156,13 @@ export function SettingsTab({
                       <span style={{ fontSize: '11px', color: confirmationEnabled && hasActivePaidPlan ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{!hasActivePaidPlan ? 'للباقات المدفوعة' : confirmationEnabled ? 'مفعّل' : 'معطّل'}</span>
                     </div>
                     <p style={{ minHeight: '34px', margin: '0 0 10px', color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.6 }}>إرسال رابط آمن للعميل لتأكيد الطلب أو طلب إلغائه.</p>
-                    <button type="button" role="switch" aria-checked={confirmationEnabled && hasActivePaidPlan} aria-busy={isSavingConfirmation} data-checked={confirmationEnabled && hasActivePaidPlan ? 'true' : 'false'} aria-label="تفعيل طلب تأكيد الطلب عبر تيليجرام" disabled={!hasActivePaidPlan || isSavingConfirmation}
-                      onClick={() => void onToggleConfirmationTelegram()}
-                      style={{ width: '48px', height: '27px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: confirmationEnabled && hasActivePaidPlan ? '#273b30' : '#cbd1ca', cursor: !hasActivePaidPlan || isSavingConfirmation ? 'not-allowed' : 'pointer', opacity: !hasActivePaidPlan ? .55 : isSavingConfirmation ? .82 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}>
-                      <span className="dz-settings-switch-thumb">{isSavingConfirmation && <span className="dz-settings-switch-spinner" aria-hidden="true" />}</span>
-                    </button>
+                    <BrandedToggle
+                      checked={confirmationEnabled && hasActivePaidPlan}
+                      loading={isSavingConfirmation}
+                      aria-label="تفعيل طلب تأكيد الطلب عبر تيليجرام"
+                      disabled={!hasActivePaidPlan || isSavingConfirmation}
+                      onChange={() => void onToggleConfirmationTelegram()}
+                    />
                   </div>
                 </div>
                 {!hasActivePaidPlan && <p style={{ margin: '8px 0 0', paddingTop: '9px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '11px' }}>ميزة تأكيد الطلب متاحة في الباقات المدفوعة Basic وGrowth وScale.</p>}
@@ -169,9 +174,13 @@ export function SettingsTab({
                     <h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>رسائل التتبع عبر SMS</h2>
                     <p style={{ margin: '5px 0 0', fontSize: '12px', lineHeight: 1.7, color: 'var(--ink-muted)' }}>إرسال رسالة SMS واحدة عند تسجيل كل طلب جديد، تحتوي على رابط صفحة التتبع. يختار TajerTrack Phone تلقائياً خط Djezzy أو Mobilis أو Ooredoo المطابق لشبكة رقم العميل، من الشرائح المفعّلة.</p>
                   </div>
-                  <button type="button" role="switch" aria-checked={smsEnabled} aria-busy={isSavingSms} data-checked={smsEnabled ? 'true' : 'false'} aria-label="تفعيل إرسال رابط التتبع عبر SMS" disabled={!smsTrackingStorageAvailable || isSavingSms} onClick={() => void onToggleSmsTracking()} style={{ width: '48px', height: '27px', flex: '0 0 48px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: smsEnabled ? '#273b30' : '#cbd1ca', cursor: isSavingSms ? 'wait' : 'pointer', opacity: isSavingSms ? .7 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'none' }}>
-                    <span className="dz-settings-switch-thumb">{isSavingSms && <span className="dz-settings-switch-spinner" aria-hidden="true" />}</span>
-                  </button>
+                  <BrandedToggle
+                    checked={smsEnabled}
+                    loading={isSavingSms}
+                    aria-label="تفعيل إرسال رابط التتبع عبر SMS"
+                    disabled={!smsTrackingStorageAvailable || isSavingSms}
+                    onChange={() => void onToggleSmsTracking()}
+                  />
                 </div>
                 {!smsTrackingStorageAvailable && <p role="status" style={{ margin: '10px 0 0', paddingTop: '10px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '12px', lineHeight: 1.7 }}>يلزم تطبيق تحديث قاعدة البيانات الخاص برسائل SMS أولاً لتفعيل هذه الميزة.</p>}
                 <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
@@ -209,7 +218,13 @@ export function SettingsTab({
               <div className="dz-settings-section dz-settings-exchange" style={{ background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 0, padding: '18px 20px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                   <div style={{ minWidth: 0 }}><span style={{ fontSize: '10px', letterSpacing: '.08em', color: 'var(--ink-light)', fontWeight: 800 }}>04 / AFTER-SALES</span><h2 style={{ margin: '3px 0 0', fontSize: '17px', fontWeight: 800, color: 'var(--ink-main)' }}>خدمات ما بعد البيع</h2><p style={{ margin: '5px 0 0', fontSize: '12px', lineHeight: 1.7, color: 'var(--ink-muted)' }}>اسمح للزبائن بطلب استبدال المنتجات بعد استلامها، وتابع الطلبات من لوحة التحكم.</p></div>
-                  <button type="button" role="switch" aria-checked={exchangeRequestsEnabled} aria-busy={isSavingExchangeRequests} data-checked={exchangeRequestsEnabled ? 'true' : 'false'} aria-label="تفعيل طلبات الاستبدال" disabled={!exchangeRequestsStorageAvailable || isSavingExchangeRequests} onClick={() => void onToggleExchangeRequests()} style={{ width: '48px', height: '27px', flex: '0 0 48px', position: 'relative', display: 'block', border: 0, borderRadius: '99px', padding: '3px', direction: 'ltr', background: exchangeRequestsEnabled ? '#273b30' : '#cbd1ca', cursor: !exchangeRequestsStorageAvailable || isSavingExchangeRequests ? 'not-allowed' : 'pointer', opacity: !exchangeRequestsStorageAvailable || isSavingExchangeRequests ? .62 : 1, transition: 'background .18s ease, opacity .18s ease', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.12)' }}><span className="dz-settings-switch-thumb">{isSavingExchangeRequests && <span className="dz-settings-switch-spinner" aria-hidden="true" />}</span></button>
+                  <BrandedToggle
+                    checked={exchangeRequestsEnabled}
+                    loading={isSavingExchangeRequests}
+                    aria-label="تفعيل طلبات الاستبدال"
+                    disabled={!exchangeRequestsStorageAvailable || isSavingExchangeRequests}
+                    onChange={() => void onToggleExchangeRequests()}
+                  />
                 </div>
                 <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}><span style={{ fontSize: '12px', color: exchangeRequestsEnabled ? '#267548' : 'var(--ink-muted)', fontWeight: 700 }}>{exchangeRequestsEnabled ? 'طلبات الاستبدال مفعّلة' : 'طلبات الاستبدال معطّلة'}</span>{!exchangeRequestsStorageAvailable && <p role="status" style={{ width: '100%', margin: 0, paddingTop: '10px', borderTop: '1px solid var(--border-soft)', color: '#946b2d', fontSize: '12px', lineHeight: 1.7 }}>يلزم تطبيق تحديث قاعدة البيانات الخاص بطلبات الاستبدال أولاً لتفعيل هذه الميزة.</p>}</div>
               </div>
