@@ -7760,3 +7760,70 @@
   .dz-brand-timeline-thumbnail { min-height: 90px; padding: 8px 9px; }
   .dz-branding-shared-select .optionBlock .dz-brand-background-choice { height: 66px; }
 }
+
+
+
+
+/* BRAND VISUAL TRIGGERS — selected previews stay intentionally compact */
+.dz-brand-preset-trigger-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: #263b30;
+}
+.dz-brand-preset-trigger-preview > span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 45px;
+  flex: 0 0 45px;
+}
+.dz-brand-preset-trigger-preview > span > i {
+  display: block;
+  width: 12px;
+  height: 23px;
+  border: 1px solid rgba(31, 45, 35, .13);
+}
+.dz-brand-preset-trigger-preview > b {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dz-brand-background-trigger {
+  display: block;
+  width: 100%;
+  height: 31px;
+  border: 1px solid rgba(37, 57, 42, .17);
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+}
+.dz-brand-timeline-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  color: #294b37;
+}
+.dz-brand-timeline-trigger > i {
+  display: block;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: #52765a;
+}
+.dz-brand-timeline-trigger > i + i {
+  margin-inline-start: 4px;
+}
+.dz-brand-timeline-trigger > b {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
