@@ -24,6 +24,26 @@ interface BrandedSelectProps {
   variant?: 'standard' | 'compact' | 'status' | 'field';
   className?: string;
   borderRadius?: string;
+  /** Fixed portal menu width in CSS pixels; defaults to the trigger width. */
+  menuWidth?: number;
+  /** Maximum menu height in CSS pixels before the menu becomes scrollable. */
+  menuMaxHeight?: number;
+  /** Number of visual option columns in the portal menu. */
+  menuColumns?: number;
+  /** Gap between options in CSS pixels. */
+  menuGap?: number;
+  /** Minimum visual option height in CSS pixels. */
+  optionMinHeight?: number;
+  /** Padding applied to each option. */
+  optionPadding?: string;
+  /** Stacks rich previews vertically when set to block. */
+  optionLayout?: 'row' | 'block';
+  /** Allows image-only choices without a duplicate text label. */
+  showOptionLabel?: boolean;
+  /** Shows or hides the shared selected checkmark. */
+  showOptionCheck?: boolean;
+  /** Height of the closed trigger in CSS pixels. */
+  triggerHeight?: number;
   renderValue?: (option: BrandedSelectOption | undefined) => React.ReactNode;
   renderOption?: (option: BrandedSelectOption, state: { selected: boolean; active: boolean }) => React.ReactNode;
 }
@@ -49,6 +69,16 @@ export function BrandedSelect({
   variant = 'standard',
   className,
   borderRadius,
+  menuWidth,
+  menuMaxHeight = 420,
+  menuColumns = 1,
+  menuGap = 5,
+  optionMinHeight = 42,
+  optionPadding = '9px 11px',
+  optionLayout = 'row',
+  showOptionLabel = true,
+  showOptionCheck = true,
+  triggerHeight,
   renderValue,
   renderOption,
 }: BrandedSelectProps) {
@@ -89,24 +119,28 @@ export function BrandedSelect({
     const rect = trigger.getBoundingClientRect();
     const gap = 5;
     const viewportPadding = 10;
-    const width = Math.min(Math.max(rect.width, 200), window.innerWidth - viewportPadding * 2);
+    const viewportWidth = Math.max(160, window.innerWidth - viewportPadding * 2);
+    const requestedWidth = menuWidth ?? Math.max(rect.width, 200);
+    const width = Math.min(Math.max(requestedWidth, 160), viewportWidth);
     const left = Math.min(
       Math.max(viewportPadding, rect.right - width),
       window.innerWidth - width - viewportPadding
     );
     const availableBelow = Math.max(0, window.innerHeight - rect.bottom - gap - viewportPadding);
     const availableAbove = Math.max(0, rect.top - gap - viewportPadding);
-    const estimatedHeight = Math.min(320, Math.max(48, enabledIndexes.length * 43 + 8));
-    const opensAbove = availableBelow < Math.min(estimatedHeight, 230) && availableAbove > availableBelow;
+    const columns = Math.max(1, Math.floor(menuColumns));
+    const estimatedRows = Math.ceil(enabledIndexes.length / columns);
+    const estimatedHeight = Math.min(menuMaxHeight, Math.max(48, estimatedRows * optionMinHeight + (estimatedRows - 1) * menuGap + 10));
+    const opensAbove = availableBelow < estimatedHeight && availableAbove > availableBelow;
     const available = opensAbove ? availableAbove : availableBelow;
-    const maxHeight = Math.max(120, Math.min(320, available));
+    const maxHeight = Math.max(80, Math.min(menuMaxHeight, Math.max(80, available)));
     const menuHeight = Math.min(estimatedHeight, maxHeight);
     const top = opensAbove
       ? Math.max(viewportPadding, rect.top - menuHeight - gap)
-      : Math.min(window.innerHeight - viewportPadding - 120, rect.bottom + gap);
+      : Math.min(Math.max(viewportPadding, rect.bottom + gap), window.innerHeight - menuHeight - viewportPadding);
 
     setMenuPosition({ top, left, width, maxHeight });
-  }, [enabledIndexes.length]);
+  }, [enabledIndexes.length, menuWidth, menuMaxHeight, menuColumns, optionMinHeight, menuGap]);
 
   const closeMenu = useCallback((restoreFocus = false) => {
     setIsOpen(false);
@@ -270,7 +304,10 @@ export function BrandedSelect({
         aria-disabled={disabled || loading || undefined}
         disabled={disabled || loading}
         data-brand-radius-control={borderRadius ? 'true' : undefined}
-        style={borderRadius ? { borderRadius } : undefined}
+        style={{
+          ...(borderRadius ? { borderRadius } : {}),
+          ...(triggerHeight ? { minHeight: triggerHeight, height: triggerHeight } : {}),
+        }}
         onClick={() => isOpen ? closeMenu() : openMenu()}
         onKeyDown={handleTriggerKeyDown}
       >
@@ -304,6 +341,8 @@ export function BrandedSelect({
             maxHeight: menuPosition.maxHeight,
             height: isMenuExpanded && isOpen ? String(menuHeight) + 'px' : '0px',
             ...(borderRadius ? { borderRadius } : {}),
+            gridTemplateColumns: 'repeat(' + Math.max(1, Math.floor(menuColumns)) + ', minmax(0, 1fr))',
+            gap: menuGap,
           }}
           onKeyDown={handleMenuKeyDown}
           onTransitionEnd={handleMenuTransitionEnd}
@@ -322,15 +361,23 @@ export function BrandedSelect({
                 disabled={option.disabled}
                 className={[
                   styles.option,
+                  optionLayout === 'block' ? styles.optionBlock : '',
                   isSelected ? styles.selected : '',
                   isActive ? styles.active : '',
                 ].filter(Boolean).join(' ')}
+                aria-label={option.label}
                 data-brand-radius-control={borderRadius ? 'true' : undefined}
+                style={{ minHeight: optionMinHeight, padding: optionPadding }}
                 onMouseEnter={() => !option.disabled && setActiveIndex(index)}
                 onClick={() => chooseOption(option)}
               >
-                <span className={styles.optionContent}>{renderOption ? renderOption(option, { selected: isSelected, active: isActive }) : option.label}</span>
-                {isSelected && (
+                <span className={styles.optionContent}>
+                  {renderOption ? renderOption(option, { selected: isSelected, active: isActive }) : null}
+                  {showOptionLabel && (
+                    <span className={styles.optionLabel}>{option.label}</span>
+                  )}
+                </span>
+                {showOptionCheck && isSelected && (
                   <svg className={styles.check} viewBox="0 0 20 20" fill="none" aria-hidden="true">
                     <path d="m4 10 4 4 8-8" />
                   </svg>
