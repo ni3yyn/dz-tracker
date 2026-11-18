@@ -8370,10 +8370,6 @@
     touch-action: pan-y;
   }
 
-  .dz-admin-root .dz-main-branding.dz-preview-drawer-open {
-    overflow: hidden !important;
-  }
-
   .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
     padding-inline: 12px !important;
   }
