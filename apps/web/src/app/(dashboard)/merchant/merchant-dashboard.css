@@ -7844,7 +7844,7 @@
   position: relative;
   box-sizing: border-box;
   width: 100%;
-  height: 56px;
+  height: 100%;
   min-width: 0;
   overflow: hidden;
   border: 0 !important;
@@ -7856,7 +7856,7 @@
   box-sizing: border-box;
   width: 520px;
   min-width: 520px;
-  height: 56px;
+  height: 100%;
   margin: 0;
   background-position: 0 0 !important;
   background-size: auto !important;
@@ -7870,66 +7870,11 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 56px;
+  height: 100%;
+  min-height: 0;
   flex: 1 1 auto;
   border: 0;
   box-shadow: none;
-}
-
-.dz-branding-shared-select .dz-brand-background-select-trigger {
-  display: flex !important;
-  box-sizing: border-box !important;
-  align-items: stretch !important;
-  justify-content: stretch !important;
-  gap: 0 !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  min-height: 58px !important;
-  height: 58px !important;
-  padding: 0 !important;
-  border: 1px solid #d7e0d6 !important;
-  background: #fffefa !important;
-  box-shadow: none !important;
-  overflow: hidden !important;
-}
-
-.dz-branding-shared-select .dz-brand-background-select-trigger:hover:not(:disabled),
-.dz-branding-shared-select .dz-brand-background-select-trigger:focus-visible,
-.dz-branding-shared-select .dz-brand-background-select-trigger.open {
-  border: 1px solid #9aaf9a !important;
-  background: #fffefa !important;
-  box-shadow: none !important;
-}
-
-.dz-branding-shared-select .dz-brand-background-select-trigger > .dz-brand-visual-value--background {
-  display: block !important;
-  box-sizing: border-box !important;
-  flex: 1 1 0 !important;
-  width: 0 !important;
-  min-width: 0 !important;
-  height: 56px !important;
-  min-height: 0 !important;
-  align-self: stretch !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-
-.dz-branding-shared-select .dz-brand-background-select-trigger > .dz-brand-background-select-indicator {
-  display: flex !important;
-  box-sizing: border-box !important;
-  flex: 0 0 56px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 56px !important;
-  min-width: 56px !important;
-  height: auto !important;
-  min-height: 0 !important;
-  align-self: stretch !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  background: #fffefa !important;
 }
 .dz-brand-visual-value--connector .dz-brand-connector-thumbnail {
   display: block;
