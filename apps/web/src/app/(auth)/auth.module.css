@@ -312,15 +312,10 @@
   gap: 10px;
   cursor: pointer;
 }
-.legalAcceptance input {
-  width: 16px;
-  height: 16px;
+.legalAcceptance [data-branded-checkbox] {
   flex: 0 0 16px;
   margin: 4px 0 0;
-  accent-color: #294b37;
-  cursor: pointer;
 }
-.legalAcceptance input:disabled { cursor: wait; opacity: .6; }
 .legalAcceptance a {
   color: #294b37;
   font-weight: 700;
@@ -329,7 +324,3 @@
   text-underline-offset: 3px;
 }
 .legalAcceptance a:hover { color: #1d3427; }
-.legalAcceptance input:focus-visible {
-  outline: 3px solid rgba(77,113,81,.3);
-  outline-offset: 3px;
-}
