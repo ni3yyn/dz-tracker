@@ -8362,3 +8362,30 @@
     transition: none !important;
   }
 }
+
+
+/* Preview drawer hardening: gestures belong to the viewport, not the padded form. */
+@media (max-width: 1140px) {
+  .dz-admin-root .dz-main-branding {
+    touch-action: pan-y;
+  }
+
+  .dz-admin-root .dz-main-branding.dz-preview-drawer-open {
+    overflow: hidden !important;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
+    padding-inline: 12px !important;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle {
+    left: 0;
+    top: 50%;
+    transform: translate3d(0, -50%, 0);
+    touch-action: pan-y;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle[data-open="true"] {
+    visibility: hidden;
+  }
+}
