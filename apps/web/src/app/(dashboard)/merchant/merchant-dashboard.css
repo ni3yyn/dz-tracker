@@ -7058,7 +7058,7 @@
   font-weight: 650;
   cursor: pointer;
 }
-.dz-admin-root .dz-branding-workspace .dz-brand-toggle [data-branded-checkbox] {
+.dz-admin-root .dz-branding-workspace .dz-brand-toggle [data-branded-toggle] {
   margin: 0;
 }
 .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
