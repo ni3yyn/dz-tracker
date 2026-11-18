@@ -53,6 +53,7 @@ interface MenuPosition {
   left: number;
   width: number;
   maxHeight: number;
+  columns: number;
 }
 
 export function BrandedSelect({
@@ -128,7 +129,8 @@ export function BrandedSelect({
     );
     const availableBelow = Math.max(0, window.innerHeight - rect.bottom - gap - viewportPadding);
     const availableAbove = Math.max(0, rect.top - gap - viewportPadding);
-    const columns = Math.max(1, Math.floor(menuColumns));
+    const requestedColumns = Math.max(1, Math.floor(menuColumns));
+    const columns = Math.max(1, Math.min(requestedColumns, Math.floor(width / 230)));
     const estimatedRows = Math.ceil(enabledIndexes.length / columns);
     const estimatedHeight = Math.min(menuMaxHeight, Math.max(48, estimatedRows * optionMinHeight + (estimatedRows - 1) * menuGap + 10));
     const opensAbove = availableBelow < estimatedHeight && availableAbove > availableBelow;
@@ -139,7 +141,7 @@ export function BrandedSelect({
       ? Math.max(viewportPadding, rect.top - menuHeight - gap)
       : Math.min(Math.max(viewportPadding, rect.bottom + gap), window.innerHeight - menuHeight - viewportPadding);
 
-    setMenuPosition({ top, left, width, maxHeight });
+    setMenuPosition({ top, left, width, maxHeight, columns });
   }, [enabledIndexes.length, menuWidth, menuMaxHeight, menuColumns, optionMinHeight, menuGap]);
 
   const closeMenu = useCallback((restoreFocus = false) => {
@@ -341,7 +343,7 @@ export function BrandedSelect({
             maxHeight: menuPosition.maxHeight,
             height: isMenuExpanded && isOpen ? String(menuHeight) + 'px' : '0px',
             ...(borderRadius ? { borderRadius } : {}),
-            gridTemplateColumns: 'repeat(' + Math.max(1, Math.floor(menuColumns)) + ', minmax(0, 1fr))',
+            gridTemplateColumns: 'repeat(' + menuPosition.columns + ', minmax(0, 1fr))',
             gap: menuGap,
           }}
           onKeyDown={handleMenuKeyDown}
