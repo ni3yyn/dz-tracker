@@ -275,3 +275,69 @@
   min-width: 0;
   overflow: hidden;
 }
+
+
+
+.optionContent {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.optionLabel {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionBlock {
+  position: relative;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  text-align: start;
+}
+
+.optionBlock .optionContent {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+.optionBlock .optionLabel {
+  text-align: start;
+  white-space: normal;
+}
+
+.optionBlock .check {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  z-index: 2;
+  padding: 2px;
+  background: rgba(255, 254, 250, .94);
+  box-shadow: 0 1px 4px rgba(24, 43, 30, .12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .optionBlock,
+  .optionLabel {
+    transition: none !important;
+  }
+}
