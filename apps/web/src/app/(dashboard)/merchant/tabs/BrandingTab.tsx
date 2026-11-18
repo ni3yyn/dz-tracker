@@ -1,4 +1,5 @@
 import type { CSSProperties, FormEvent, ReactNode } from 'react';
+import { BrandedSelect } from '../BrandedSelect';
 import type { BrandPreset, BrandingCategory, EditableBrandSettings } from '../shared/branding-types';
 import {
   ANIMATION_LEVELS,
@@ -47,6 +48,8 @@ function BrandVisualDropdown({
   onChange,
   fallbackLabel,
   fallbackPreview,
+  renderOption,
+  renderValue,
 }: {
   label: string;
   selectedId: string;
@@ -54,59 +57,52 @@ function BrandVisualDropdown({
   onChange: (value: string) => void;
   fallbackLabel?: string;
   fallbackPreview?: ReactNode;
+  renderOption?: (option: BrandVisualOption) => ReactNode;
+  renderValue?: (option: BrandVisualOption | undefined) => ReactNode;
 }) {
-  const selected = options.find((option) => option.id === selectedId);
-  const selectedLabel = selected?.label ?? fallbackLabel ?? 'مخصص';
+  const selectOptions = options.map((option) => ({
+    value: option.id,
+    label: option.label,
+  }));
+
+  const findOption = (option: BrandedSelectOption | undefined) =>
+    option ? options.find((item) => item.id === option.value) : undefined;
+
+  const defaultVisual = (option: BrandVisualOption) => (
+    <span className="dz-brand-dropdown-option">
+      <span className="dz-brand-dropdown-art" aria-hidden="true">{option.preview}</span>
+      <span className="dz-brand-dropdown-label">{option.label}</span>
+    </span>
+  );
 
   return (
-    <details
-      className="dz-brand-visual-select"
-      name="dz-brand-visual-select"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape' && event.currentTarget.open) {
-          event.preventDefault();
-          event.currentTarget.open = false;
-          event.currentTarget.querySelector('summary')?.focus();
-        }
-      }}
-    >
-      <summary className="dz-brand-visual-select-trigger" aria-label={label + ': ' + selectedLabel}>
-        <span className="dz-brand-visual-select-label">{label}</span>
-        <span className="dz-brand-visual-select-value">
-          <span className="dz-brand-visual-select-current-art" aria-hidden="true">
-            {selected?.preview ?? fallbackPreview}
-          </span>
-          <strong>{selectedLabel}</strong>
-        </span>
-        <svg className="dz-brand-visual-select-chevron" viewBox="0 0 20 20" aria-hidden="true">
-          <path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square" />
-        </svg>
-      </summary>
-      <div className="dz-brand-visual-select-menu" role="group" aria-label={label}>
-        {options.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            className={'dz-brand-visual-option' + (selectedId === option.id ? ' is-selected' : '')}
-            aria-pressed={selectedId === option.id}
-            onClick={(event) => {
-              onChange(option.id);
-              const details = event.currentTarget.closest('details');
-              if (details) {
-                details.open = false;
-                details.querySelector('summary')?.focus();
-              }
-            }}
-          >
-            <span className="dz-brand-visual-option-art" aria-hidden="true">{option.preview}</span>
-            <span className="dz-brand-visual-option-label">{option.label}</span>
-            <span className="dz-brand-visual-option-check" aria-hidden="true">
-              {selectedId === option.id ? '✓' : ''}
+    <div className="dz-brand-visual-control">
+      <span className="dz-brand-visual-control-label">{label}</span>
+      <BrandedSelect
+        value={selectedId}
+        options={selectOptions}
+        onChange={onChange}
+        ariaLabel={label}
+        placeholder={fallbackLabel ?? 'مخصص'}
+        variant="field"
+        className="dz-branding-shared-select"
+        renderOption={(option) => {
+          const visualOption = findOption(option);
+          return visualOption ? (renderOption ? renderOption(visualOption) : defaultVisual(visualOption)) : option.label;
+        }}
+        renderValue={(option) => {
+          const visualOption = findOption(option);
+          if (renderValue) return renderValue(visualOption);
+          if (visualOption) return defaultVisual(visualOption);
+          return (
+            <span className="dz-brand-dropdown-option">
+              {fallbackPreview && <span className="dz-brand-dropdown-art" aria-hidden="true">{fallbackPreview}</span>}
+              <span className="dz-brand-dropdown-label">{fallbackLabel ?? 'مخصص'}</span>
             </span>
-          </button>
-        ))}
-      </div>
-    </details>
+          );
+        }}
+      />
+    </div>
   );
 }
 
@@ -174,15 +170,11 @@ export function BrandingTab({
     preview: <span className={'dz-brand-surface-preview dz-brand-surface-preview--' + surface.id}><i /></span>,
   }));
 
-  const radiusOptions: BrandVisualOption[] = CARD_RADII.map((radius) => ({
+  const radiusLabels = ['حواف حادة', 'حواف منحنية قليلاً', 'حواف متوسطة', 'حواف متوسطة'];
+  const radiusOptions: BrandVisualOption[] = CARD_RADII.map((radius, index) => ({
     id: radius.id,
-    label: radius.name,
-    preview: (
-      <span
-        className="dz-brand-radius-preview"
-        style={{ borderRadius: radius.id === 'sharp' ? 0 : radius.id === 'sleek' ? 5 : radius.id === 'modern' ? 10 : 16 }}
-      />
-    ),
+    label: radiusLabels[index] ?? radius.name,
+    preview: <span className={'dz-brand-radius-preview dz-brand-radius-preview--' + radius.id} aria-hidden="true" />,
   }));
 
   const fontOptions: BrandVisualOption[] = FONT_FAMILIES.map((font) => ({
@@ -200,7 +192,7 @@ export function BrandingTab({
             "'Readex Pro', sans-serif",
         }}
       >
-        تتبع طلبك
+        تاجر تراك
       </span>
     ),
   }));
@@ -257,21 +249,18 @@ export function BrandingTab({
               }}
             />
 
-            <label className="dz-brand-category-select">
-              <span>قسم التخصيص</span>
-              <select
-                value={brandingCategory}
-                onChange={(event) => onSetBrandingCategory(event.target.value as BrandingCategory)}
-                aria-label="قسم التخصيص"
-              >
-                {BRANDING_CATEGORIES.map((category) => (
-                  <option key={category.id} value={category.id}>{category.label}</option>
-                ))}
-              </select>
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-              </svg>
-            </label>
+            <BrandVisualDropdown
+              label="قسم التخصيص"
+              selectedId={brandingCategory}
+              options={BRANDING_CATEGORIES.map((category) => ({
+                id: category.id,
+                label: category.label,
+                preview: <span className="dz-brand-category-mini">{category.number}</span>,
+              }))}
+              onChange={(value) => onSetBrandingCategory(value as BrandingCategory)}
+              renderOption={(option) => <span className="dz-brand-category-option">{option.preview}{option.label}</span>}
+              renderValue={(option) => <span className="dz-brand-category-option">{option?.preview}{option?.label ?? 'اختر القسم'}</span>}
+            />
           </div>
 
           <div className="dz-brand-edit-actions" aria-label="أدوات تعديل الهوية" data-history-version={brandHistoryTick}>
@@ -394,6 +383,8 @@ export function BrandingTab({
                   selectedId={String(brandConfig.fontFamily)}
                   options={fontOptions}
                   onChange={(value) => onUpdateBrandConfig('fontFamily', value as EditableBrandSettings['fontFamily'])}
+                  renderOption={(option) => option.preview}
+                  renderValue={(option) => option?.preview ?? <span className="dz-brand-font-preview">تاجر تراك</span>}
                 />
                 <BrandVisualDropdown
                   label="مستوى الحركة"
