@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { normalizeCardSurfaceChoice } from '@saas/ui';
 import { toCachedImageUrl } from '../../../../../lib/imageProxy';
 import type { EditableBrandSettings } from '../../shared/branding-types';
 import {
@@ -53,17 +54,17 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
   const strongBorderColor = isDark ? 'rgba(245,248,243,.2)' : '#D5D9D1';
   const raisedSurface = isDark ? '#232C27' : '#FFFFFF';
   const baseSurface = isDark ? (backgroundToken.surfaceDark || backgroundToken.dark) : (backgroundToken.surface || '#FFFEFA');
-  const isBorderless = brandConfig.cardSurface === 'borderless';
-  const isOpenCanvas = isBorderless || brandConfig.cardSurface === 'solid';
-  const cardBg = isOpenCanvas ? 'transparent'
-    : brandConfig.cardSurface === 'glass' ? (isDark ? 'rgba(29,36,32,.84)' : 'rgba(255,254,250,.84)')
-    : String(brandConfig.cardSurface) === 'tinted' ? (isDark ? `color-mix(in srgb, ${brandConfig.brandColor} 13%, #1D2420)` : `color-mix(in srgb, ${brandConfig.brandColor} 6%, #FFFEFA)`)
-    : String(brandConfig.cardSurface) === 'inset' ? (isDark ? '#1A211D' : '#F2F3EE')
-    : String(brandConfig.cardSurface) === 'paper' ? (isDark ? '#252720' : '#FFFDF7')
-    : baseSurface;
-  const cardBorder = brandConfig.cardSurface === 'bordered' || String(brandConfig.cardSurface) === 'paper' || String(brandConfig.cardSurface) === 'inset' || String(brandConfig.cardSurface) === 'tinted'
-    ? `1px solid ${strongBorderColor}`
-    : isOpenCanvas ? 'none' : String(brandConfig.cardSurface) === 'elevated' ? '1px solid transparent' : `1px solid ${borderColor}`;
+  const surfaceChoice = normalizeCardSurfaceChoice(brandConfig.cardSurface);
+  const isBorderless = surfaceChoice === 'borderless';
+  const isOutlined = surfaceChoice === 'bordered';
+  const isGlass = surfaceChoice === 'glass';
+  const cardBg = isBorderless || isOutlined ? 'transparent'
+    : isGlass ? `color-mix(in srgb, ${baseSurface} 76%, transparent)`
+    : surfaceChoice === 'tinted' ? (isDark ? `color-mix(in srgb, ${brandConfig.brandColor} 13%, ${baseSurface})` : `color-mix(in srgb, ${brandConfig.brandColor} 7%, ${baseSurface})`)
+    : raisedSurface;
+  const cardBorder = isBorderless ? 'none'
+    : isOutlined ? `1px solid ${strongBorderColor}`
+    : `1px solid ${borderColor}`;
   const radiusTokens = brandConfig.cardRadius === 'sharp'
     ? { card: '0px', panel: '0px', control: '0px', timeline: '0px', badge: '0px', avatar: '0px', marker: '0px', floating: '0px', notice: '0px' }
     : brandConfig.cardRadius === 'sleek'
@@ -72,11 +73,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
         ? { card: '38px', panel: '21px', control: '15px', timeline: '15px', badge: '999px', avatar: '20px', marker: '12px', floating: '999px', notice: '18px' }
         : { card: '26px', panel: '16px', control: '12px', timeline: '12px', badge: '12px', avatar: '18px', marker: '7px', floating: '16px', notice: '12px' };
   const cardRadius = radiusTokens.card;
-  const cardShadow = brandConfig.cardSurface === 'bordered' || String(brandConfig.cardSurface) === 'inset' || isOpenCanvas
-    ? 'none'
-    : String(brandConfig.cardSurface) === 'elevated' ? '0 18px 38px rgba(17,31,22,.17)'
-    : String(brandConfig.cardSurface) === 'paper' ? '0 3px 0 rgba(50,43,32,.035), 0 12px 24px rgba(17,31,22,.055)'
-    : '0 12px 30px rgba(17,31,22,.10)';
+  const cardShadow = 'none';
   const fontFamily = brandConfig.fontFamily === 'cairo' ? "'Cairo', system-ui, sans-serif"
     : brandConfig.fontFamily === 'tajawal' ? "'Tajawal', system-ui, sans-serif"
     : brandConfig.fontFamily === 'ibm-plex' ? "'IBM Plex Sans Arabic', system-ui, sans-serif"
@@ -183,7 +180,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
           </section>
 
           <section style={{ padding: '15px 13px 21px', borderBottom: `1px solid ${borderColor}` }}>
-            <div style={{ border: isOpenCanvas ? 'none' : cardBorder, borderInlineStart: isBorderless ? 'none' : `3px solid ${brandConfig.brandColor}`, borderRadius: isOpenCanvas ? 0 : cardRadius, background: isOpenCanvas ? 'transparent' : cardBg, boxShadow: isOpenCanvas ? 'none' : cardShadow, backdropFilter: brandConfig.cardSurface === 'glass' ? 'blur(10px)' : undefined, WebkitBackdropFilter: brandConfig.cardSurface === 'glass' ? 'blur(10px)' : undefined, padding: isOpenCanvas ? '8px 0 12px' : '15px 13px 17px' }}>
+            <div style={{ border: cardBorder, borderInlineStart: 0, borderRadius: isBorderless ? 0 : cardRadius, background: cardBg, boxShadow: cardShadow, backdropFilter: isGlass ? 'blur(12px)' : undefined, WebkitBackdropFilter: isGlass ? 'blur(12px)' : undefined, padding: isBorderless ? '8px 0 12px' : '15px 13px 17px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '5px 10px', marginBottom: '10px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 750, color: mutedColor }}>آخر تحديث</span>
                 <span style={{ fontSize: '10px', color: quietColor, whiteSpace: 'nowrap' }}>اليوم · 10:42</span>
