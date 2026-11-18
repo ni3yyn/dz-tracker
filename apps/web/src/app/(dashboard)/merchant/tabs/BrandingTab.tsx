@@ -379,227 +379,289 @@ export function BrandingTab({
 
           {brandingCategory === 'identity' && (
             <section className="dz-brand-section" aria-labelledby="dz-brand-identity-title">
-              <h3 id="dz-brand-identity-title">لون العلامة</h3>
-              <div className="dz-brand-color-row" role="group" aria-label="ألوان جاهزة">
-                {BRAND_PALETTES.map((palette) => (
-                  <button
-                    key={palette.hex}
-                    type="button"
-                    className={'dz-brand-color-swatch' + (brandConfig.brandColor.toLowerCase() === palette.hex.toLowerCase() ? ' is-selected' : '')}
-                    aria-label={palette.name}
-                    aria-pressed={brandConfig.brandColor.toLowerCase() === palette.hex.toLowerCase()}
-                    title={palette.name}
-                    onClick={() => onUpdateBrandConfig('brandColor', palette.hex)}
-                    style={{ background: palette.hex }}
+              <h3 id="dz-brand-identity-title">الهوية البصرية</h3>
+
+              <div className="dz-brand-group">
+                <div className="dz-brand-group-heading">
+                  <h4>ألوان العلامة</h4>
+                  <p>اختر اللون الأساسي الذي سيظهر في الأزرار والعناصر البارزة بصفحة التتبع.</p>
+                </div>
+                <div className="dz-brand-color-row" role="group" aria-label="ألوان جاهزة">
+                  {BRAND_PALETTES.map((palette) => (
+                    <button
+                      key={palette.hex}
+                      type="button"
+                      className={'dz-brand-color-swatch' + (brandConfig.brandColor.toLowerCase() === palette.hex.toLowerCase() ? ' is-selected' : '')}
+                      aria-label={palette.name}
+                      aria-pressed={brandConfig.brandColor.toLowerCase() === palette.hex.toLowerCase()}
+                      title={palette.name}
+                      onClick={() => onUpdateBrandConfig('brandColor', palette.hex)}
+                      style={{ background: palette.hex }}
+                    />
+                  ))}
+                </div>
+
+                <div className="dz-brand-color-custom">
+                  <label htmlFor="dz-brand-color-picker">لون مخصص</label>
+                  <input
+                    id="dz-brand-color-picker"
+                    type="color"
+                    value={brandConfig.brandColor}
+                    onChange={(event) => onUpdateBrandConfig('brandColor', event.target.value)}
                   />
-                ))}
+                  <code>{brandConfig.brandColor.toUpperCase()}</code>
+                </div>
+
+                <div className={'dz-brand-contrast-note' + (contrastIsLow ? ' is-low' : '')} role="status">
+                  {contrastIsLow ? 'يُنصح باختيار لون أوضح لزيادة التباين.' : 'تباين اللون مناسب للقراءة.'}
+                </div>
               </div>
 
-              <div className="dz-brand-color-custom">
-                <label htmlFor="dz-brand-color-picker">لون مخصص</label>
-                <input
-                  id="dz-brand-color-picker"
-                  type="color"
-                  value={brandConfig.brandColor}
-                  onChange={(event) => onUpdateBrandConfig('brandColor', event.target.value)}
-                />
-                <code>{brandConfig.brandColor.toUpperCase()}</code>
+              <div className="dz-brand-group">
+                <div className="dz-brand-group-heading">
+                  <h4>وصف المتجر والشعار</h4>
+                  <p>أضف وصفاً قصيراً يظهر مع هوية متجرك في صفحة التتبع.</p>
+                </div>
+                <div className="dz-brand-field">
+                  <label htmlFor="dz-brand-subtitle">وصف المتجر</label>
+                  <input
+                    id="dz-brand-subtitle"
+                    type="text"
+                    value={brandConfig.brandSubtitle}
+                    onChange={(event) => onUpdateBrandConfig('brandSubtitle', event.target.value)}
+                    placeholder="أضف وصفاً قصيراً لمتجرك"
+                    className="input"
+                    maxLength={120}
+                  />
+                </div>
+                <p className="dz-brand-managed-logo-note">يُدار شعار المتجر من إعدادات المتجر ويظهر هنا تلقائياً.</p>
               </div>
-
-              <div className={'dz-brand-contrast-note' + (contrastIsLow ? ' is-low' : '')} role="status">
-                {contrastIsLow ? 'يُنصح باختيار لون أوضح لزيادة التباين.' : 'تباين اللون مناسب للقراءة.'}
-              </div>
-
-              <div className="dz-brand-field">
-                <label htmlFor="dz-brand-subtitle">وصف المتجر</label>
-                <input
-                  id="dz-brand-subtitle"
-                  type="text"
-                  value={brandConfig.brandSubtitle}
-                  onChange={(event) => onUpdateBrandConfig('brandSubtitle', event.target.value)}
-                  placeholder="أضف وصفاً قصيراً لمتجرك"
-                  className="input"
-                  maxLength={120}
-                />
-              </div>
-              <p className="dz-brand-managed-logo-note">يُدار شعار المتجر من إعدادات المتجر ويظهر هنا تلقائياً.</p>
             </section>
           )}
 
           {brandingCategory === 'appearance' && (
-            <>
-              <section className="dz-brand-section" aria-labelledby="dz-brand-background-title">
-                <h3 id="dz-brand-background-title">الخلفية والإضاءة</h3>
-                <BrandVisualDropdown
-                  label="نمط الخلفية"
-                  selectedId={String(brandConfig.bgStyle)}
-                  options={backgroundOptions}
-                  onChange={(value) => onUpdateBrandConfig('bgStyle', value as EditableBrandSettings['bgStyle'])}
-                  renderOption={(option) => option.preview}
-                  renderValue={(option) => {
-                    const background = BACKGROUND_STYLES.find((item) => item.id === option?.id);
-                    return (
-                      <span
-                        className="dz-brand-background-preview dz-brand-background-trigger"
-                        data-background-style={background?.id}
-                        style={{ background: background?.previewBg ?? 'none' }}
-                      />
-                    );
-                  }}
-                  valueClassName="dz-brand-visual-value--background"
-                  menuMaxHeight={520}
-                  menuColumns={1}
-                  optionLayout="block"
-                  optionMinHeight={78}
-                  optionPadding="5px"
-                  showOptionLabel={false}
-                  triggerHeight={44}
-                />
-                <BrandVisualDropdown
-                  label="وضع الصفحة"
-                  selectedId={brandConfig.themeMode}
-                  options={themeOptions}
-                  onChange={(value) => onUpdateBrandConfig('themeMode', value as EditableBrandSettings['themeMode'])}
-                />
-                <label className="dz-brand-toggle">
-                  <span>تمويه الخلفية</span>
-                  <BrandedToggle checked={brandConfig.backgroundBlur !== false} onChange={(event) => onUpdateBrandConfig('backgroundBlur', event.target.checked)} />
-                </label>
-                {String(brandConfig.bgStyle) === 'blobs' && (
-                  <label className="dz-brand-toggle">
-                    <span>تحريك الأشكال</span>
-                    <BrandedToggle checked={Boolean(brandConfig.animateBackgroundBlobs)} onChange={(event) => onUpdateBrandConfig('animateBackgroundBlobs', event.target.checked)} />
+            <section className="dz-brand-section" aria-labelledby="dz-brand-appearance-title">
+              <h3 id="dz-brand-appearance-title">المظهر العام</h3>
+
+              <div className="dz-brand-group dz-brand-group--featured">
+                <div className="dz-brand-group-heading">
+                  <h4>الخلفية والإضاءة</h4>
+                  <p>تحكم في خلفية صفحة التتبع، واختر الوضع الفاتح أو الداكن، واضبط وضوح الخلفية خلف المحتوى.</p>
+                </div>
+                <div className="dz-brand-group-controls">
+                  <BrandVisualDropdown
+                    label="نمط الخلفية"
+                    selectedId={String(brandConfig.bgStyle)}
+                    options={backgroundOptions}
+                    onChange={(value) => onUpdateBrandConfig('bgStyle', value as EditableBrandSettings['bgStyle'])}
+                    renderOption={(option) => option.preview}
+                    renderValue={(option) => {
+                      const background = BACKGROUND_STYLES.find((item) => item.id === option?.id);
+                      return (
+                        <span
+                          className="dz-brand-background-preview dz-brand-background-trigger"
+                          data-background-style={background?.id}
+                          style={{ background: background?.previewBg ?? 'none' }}
+                        />
+                      );
+                    }}
+                    valueClassName="dz-brand-visual-value--background"
+                    menuMaxHeight={520}
+                    menuColumns={1}
+                    optionLayout="block"
+                    optionMinHeight={78}
+                    optionPadding="5px"
+                    showOptionLabel={false}
+                    triggerHeight={44}
+                  />
+                  <BrandVisualDropdown
+                    label="وضع الصفحة"
+                    selectedId={brandConfig.themeMode}
+                    options={themeOptions}
+                    onChange={(value) => onUpdateBrandConfig('themeMode', value as EditableBrandSettings['themeMode'])}
+                  />
+                </div>
+                <div className="dz-brand-setting-list">
+                  <label className="dz-brand-toggle dz-brand-toggle--feature">
+                    <span className="dz-brand-toggle-copy">
+                      <strong>تمويه الخلفية</strong>
+                      <small>يخفف تفاصيل الزخرفة خلف المحتوى حتى تبقى النصوص وبطاقات التتبع واضحة.</small>
+                    </span>
+                    <BrandedToggle checked={brandConfig.backgroundBlur !== false} onChange={(event) => onUpdateBrandConfig('backgroundBlur', event.target.checked)} />
                   </label>
-                )}
-              </section>
+                  {String(brandConfig.bgStyle) === 'blobs' && (
+                    <label className="dz-brand-toggle">
+                      <span className="dz-brand-toggle-copy">
+                        <strong>تحريك الأشكال</strong>
+                        <small>إضافة حركة هادئة للأشكال العضوية في الخلفية.</small>
+                      </span>
+                      <BrandedToggle checked={Boolean(brandConfig.animateBackgroundBlobs)} onChange={(event) => onUpdateBrandConfig('animateBackgroundBlobs', event.target.checked)} />
+                    </label>
+                  )}
+                </div>
+              </div>
 
-              <section className="dz-brand-section" aria-labelledby="dz-brand-card-title">
-                <h3 id="dz-brand-card-title">بطاقات التتبع</h3>
-                <BrandVisualDropdown
-                  label="سطح البطاقة"
-                  selectedId={String(brandConfig.cardSurface)}
-                  options={surfaceOptions}
-                  onChange={(value) => onUpdateBrandConfig('cardSurface', value as EditableBrandSettings['cardSurface'])}
-                />
-                <BrandVisualDropdown
-                  label="شكل الحواف"
-                  selectedId={String(brandConfig.cardRadius)}
-                  options={radiusOptions}
-                  onChange={(value) => onUpdateBrandConfig('cardRadius', value as EditableBrandSettings['cardRadius'])}
-                />
-              </section>
+              <div className="dz-brand-group">
+                <div className="dz-brand-group-heading">
+                  <h4>بطاقات التتبع</h4>
+                  <p>اختر سطح البطاقات وشكل الحواف المحيطة بمعلومات الشحنة.</p>
+                </div>
+                <div className="dz-brand-group-controls">
+                  <BrandVisualDropdown
+                    label="سطح البطاقة"
+                    selectedId={String(brandConfig.cardSurface)}
+                    options={surfaceOptions}
+                    onChange={(value) => onUpdateBrandConfig('cardSurface', value as EditableBrandSettings['cardSurface'])}
+                  />
+                  <BrandVisualDropdown
+                    label="شكل الحواف"
+                    selectedId={String(brandConfig.cardRadius)}
+                    options={radiusOptions}
+                    onChange={(value) => onUpdateBrandConfig('cardRadius', value as EditableBrandSettings['cardRadius'])}
+                  />
+                </div>
+              </div>
 
-              <section className="dz-brand-section" aria-labelledby="dz-brand-font-title">
-                <h3 id="dz-brand-font-title">الخط والحركة</h3>
-                <BrandVisualDropdown
-                  label="نوع الخط"
-                  selectedId={String(brandConfig.fontFamily)}
-                  options={fontOptions}
-                  onChange={(value) => onUpdateBrandConfig('fontFamily', value as EditableBrandSettings['fontFamily'])}
-                  renderOption={(option) => option.preview}
-                  optionContentClassName="dz-brand-font-option-content"
-                  optionLabelClassName="dz-brand-font-option-label"
-                  renderValue={(option) => option?.preview ?? <span className="dz-brand-font-preview">تاجر تراك</span>}
-                />
-                <BrandVisualDropdown
-                  label="مستوى الحركة"
-                  selectedId={String(brandConfig.animationLevel)}
-                  options={animationOptions}
-                  onChange={(value) => onUpdateBrandConfig('animationLevel', value as EditableBrandSettings['animationLevel'])}
-                />
-              </section>
-            </>
+              <div className="dz-brand-group">
+                <div className="dz-brand-group-heading">
+                  <h4>الخط والحركة</h4>
+                  <p>حدد أسلوب الكتابة ودرجة الحركة في صفحة تتبع الطلب.</p>
+                </div>
+                <div className="dz-brand-group-controls">
+                  <BrandVisualDropdown
+                    label="نوع الخط"
+                    selectedId={String(brandConfig.fontFamily)}
+                    options={fontOptions}
+                    onChange={(value) => onUpdateBrandConfig('fontFamily', value as EditableBrandSettings['fontFamily'])}
+                    renderOption={(option) => option.preview}
+                    optionContentClassName="dz-brand-font-option-content"
+                    optionLabelClassName="dz-brand-font-option-label"
+                    renderValue={(option) => option?.preview ?? <span className="dz-brand-font-preview">تاجر تراك</span>}
+                  />
+                  <BrandVisualDropdown
+                    label="مستوى الحركة"
+                    selectedId={String(brandConfig.animationLevel)}
+                    options={animationOptions}
+                    onChange={(value) => onUpdateBrandConfig('animationLevel', value as EditableBrandSettings['animationLevel'])}
+                  />
+                </div>
+              </div>
+            </section>
           )}
 
           {brandingCategory === 'layout' && (
             <section className="dz-brand-section" aria-labelledby="dz-brand-timeline-title">
               <h3 id="dz-brand-timeline-title">سجل الشحنة</h3>
-              <BrandVisualDropdown
-                label="تصميم المراحل"
-                selectedId={String(brandConfig.timelineDesign)}
-                options={timelineOptions}
-                onChange={(value) => onUpdateBrandConfig('timelineDesign', value as EditableBrandSettings['timelineDesign'])}
-                renderOption={(option) => option.preview}
-                renderValue={(option) => (
-                  <span className="dz-brand-timeline-trigger">
-                    <i /><i />
-                    <b>{option?.label ?? ''}</b>
-                  </span>
-                )}
-                menuWidth={600}
-                menuMaxHeight={540}
-                menuColumns={2}
-                optionLayout="block"
-                optionMinHeight={128}
-                optionPadding="8px"
-              />
-              <BrandVisualDropdown
-                label="خط الربط"
-                selectedId={String(brandConfig.timelineLineStyle || 'straight')}
-                options={lineOptions}
-                onChange={(value) => onUpdateBrandConfig('timelineLineStyle', value as EditableBrandSettings['timelineLineStyle'])}
-                renderOption={(option) => option.preview}
-                renderValue={(option) => option?.preview ?? null}
-                valueClassName="dz-brand-visual-value--connector"
-                menuWidth={500}
-                menuMaxHeight={460}
-                menuColumns={1}
-                optionLayout="block"
-                optionMinHeight={66}
-                optionPadding="7px 12px"
-                showOptionLabel={false}
-                triggerHeight={62}
-              />
+              <div className="dz-brand-group">
+                <div className="dz-brand-group-heading">
+                  <h4>مراحل التوصيل</h4>
+                  <p>خصص طريقة عرض تحديثات الشحنة والخط الذي يربط بينها.</p>
+                </div>
+                <div className="dz-brand-group-controls">
+                  <BrandVisualDropdown
+                    label="تصميم المراحل"
+                    selectedId={String(brandConfig.timelineDesign)}
+                    options={timelineOptions}
+                    onChange={(value) => onUpdateBrandConfig('timelineDesign', value as EditableBrandSettings['timelineDesign'])}
+                    renderOption={(option) => option.preview}
+                    renderValue={(option) => (
+                      <span className="dz-brand-timeline-trigger">
+                        <i /><i />
+                        <b>{option?.label ?? ''}</b>
+                      </span>
+                    )}
+                    menuWidth={600}
+                    menuMaxHeight={540}
+                    menuColumns={2}
+                    optionLayout="block"
+                    optionMinHeight={128}
+                    optionPadding="8px"
+                  />
+                  <BrandVisualDropdown
+                    label="خط الربط"
+                    selectedId={String(brandConfig.timelineLineStyle || 'straight')}
+                    options={lineOptions}
+                    onChange={(value) => onUpdateBrandConfig('timelineLineStyle', value as EditableBrandSettings['timelineLineStyle'])}
+                    renderOption={(option) => option.preview}
+                    renderValue={(option) => option?.preview ?? null}
+                    valueClassName="dz-brand-visual-value--connector"
+                    menuWidth={500}
+                    menuMaxHeight={460}
+                    menuColumns={1}
+                    optionLayout="block"
+                    optionMinHeight={66}
+                    optionPadding="7px 12px"
+                    showOptionLabel={false}
+                    triggerHeight={62}
+                  />
+                </div>
+              </div>
             </section>
           )}
 
           {brandingCategory === 'customer' && (
             <section className="dz-brand-section" aria-labelledby="dz-brand-customer-title">
               <h3 id="dz-brand-customer-title">تجربة الزبون</h3>
-              <div className="dz-brand-field">
-                <label htmlFor="dz-brand-support-phone">رقم واتساب الدعم</label>
-                <input
-                  id="dz-brand-support-phone"
-                  type="tel"
-                  value={brandConfig.supportPhone || ''}
-                  onChange={(event) => onUpdateBrandConfig('supportPhone', event.target.value)}
-                  placeholder="0550123456"
-                  className="input"
-                  inputMode="tel"
-                  autoComplete="tel"
-                />
-              </div>
-              <label className="dz-brand-toggle">
-                <span>إظهار زر واتساب</span>
-                <BrandedToggle checked={brandConfig.showWhatsAppButton !== false} onChange={(event) => onUpdateBrandConfig('showWhatsAppButton', event.target.checked)} />
-              </label>
 
-              <div className="dz-brand-field">
-                <label htmlFor="dz-brand-announcement">تنبيه للزبون</label>
-                <input
-                  id="dz-brand-announcement"
-                  type="text"
-                  value={brandConfig.announcementText || ''}
-                  onChange={(event) => onUpdateBrandConfig('announcementText', event.target.value)}
-                  placeholder="رسالة قصيرة تظهر في صفحة التتبع"
-                  className="input"
-                  maxLength={180}
-                />
+              <div className="dz-brand-group">
+                <div className="dz-brand-group-heading">
+                  <h4>التواصل مع المتجر</h4>
+                  <p>أضف رقم الدعم وحدد ما إذا كان زر واتساب سيظهر للعميل.</p>
+                </div>
+                <div className="dz-brand-field">
+                  <label htmlFor="dz-brand-support-phone">رقم واتساب الدعم</label>
+                  <input
+                    id="dz-brand-support-phone"
+                    type="tel"
+                    value={brandConfig.supportPhone || ''}
+                    onChange={(event) => onUpdateBrandConfig('supportPhone', event.target.value)}
+                    placeholder="0550123456"
+                    className="input"
+                    inputMode="tel"
+                    autoComplete="tel"
+                  />
+                </div>
+                <label className="dz-brand-toggle dz-brand-toggle--feature">
+                  <span className="dz-brand-toggle-copy">
+                    <strong>إظهار زر واتساب</strong>
+                    <small>يسمح للزبون بالتواصل مع متجرك مباشرة من صفحة التتبع.</small>
+                  </span>
+                  <BrandedToggle checked={brandConfig.showWhatsAppButton !== false} onChange={(event) => onUpdateBrandConfig('showWhatsAppButton', event.target.checked)} />
+                </label>
               </div>
 
-              <div className="dz-brand-toggle-list">
-                <label className="dz-brand-toggle">
-                  <span>شركة الشحن ورقم التتبع</span>
-                  <BrandedToggle checked={Boolean(brandConfig.showCarrierBadge)} onChange={(event) => onUpdateBrandConfig('showCarrierBadge', event.target.checked)} />
-                </label>
-                <label className="dz-brand-toggle">
-                  <span>محتويات الشحنة</span>
-                  <BrandedToggle checked={Boolean(brandConfig.showProductSection)} onChange={(event) => onUpdateBrandConfig('showProductSection', event.target.checked)} />
-                </label>
-                <label className="dz-brand-toggle">
-                  <span>رقم الطلب</span>
-                  <BrandedToggle checked={brandConfig.showOrderNumberBadge ?? true} onChange={(event) => onUpdateBrandConfig('showOrderNumberBadge', event.target.checked)} />
-                </label>
+              <div className="dz-brand-group">
+                <div className="dz-brand-group-heading">
+                  <h4>محتوى صفحة التتبع</h4>
+                  <p>أضف تنبيهاً قصيراً واختر تفاصيل الشحنة التي تريد إظهارها للعميل.</p>
+                </div>
+                <div className="dz-brand-field">
+                  <label htmlFor="dz-brand-announcement">تنبيه للزبون</label>
+                  <input
+                    id="dz-brand-announcement"
+                    type="text"
+                    value={brandConfig.announcementText || ''}
+                    onChange={(event) => onUpdateBrandConfig('announcementText', event.target.value)}
+                    placeholder="رسالة قصيرة تظهر في صفحة التتبع"
+                    className="input"
+                    maxLength={180}
+                  />
+                </div>
+
+                <div className="dz-brand-toggle-list">
+                  <label className="dz-brand-toggle">
+                    <span>شركة الشحن ورقم التتبع</span>
+                    <BrandedToggle checked={Boolean(brandConfig.showCarrierBadge)} onChange={(event) => onUpdateBrandConfig('showCarrierBadge', event.target.checked)} />
+                  </label>
+                  <label className="dz-brand-toggle">
+                    <span>محتويات الشحنة</span>
+                    <BrandedToggle checked={Boolean(brandConfig.showProductSection)} onChange={(event) => onUpdateBrandConfig('showProductSection', event.target.checked)} />
+                  </label>
+                  <label className="dz-brand-toggle">
+                    <span>رقم الطلب</span>
+                    <BrandedToggle checked={brandConfig.showOrderNumberBadge ?? true} onChange={(event) => onUpdateBrandConfig('showOrderNumberBadge', event.target.checked)} />
+                  </label>
+                </div>
               </div>
             </section>
           )}
