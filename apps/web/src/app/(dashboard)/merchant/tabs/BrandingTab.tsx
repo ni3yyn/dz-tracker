@@ -62,6 +62,8 @@ function BrandVisualDropdown({
   showOptionCheck,
   triggerHeight,
   valueClassName,
+  triggerClassName,
+  indicatorClassName,
   optionContentClassName,
   optionLabelClassName,
 }: {
@@ -84,6 +86,8 @@ function BrandVisualDropdown({
   showOptionCheck?: boolean;
   triggerHeight?: number;
   valueClassName?: string;
+  triggerClassName?: string;
+  indicatorClassName?: string;
   optionContentClassName?: string;
   optionLabelClassName?: string;
 }) {
@@ -141,6 +145,8 @@ function BrandVisualDropdown({
         showOptionCheck={showOptionCheck}
         triggerHeight={triggerHeight}
         valueClassName={['dz-brand-visual-value', valueClassName].filter(Boolean).join(' ')}
+        triggerClassName={triggerClassName}
+        indicatorClassName={indicatorClassName}
         optionContentClassName={optionContentClassName}
         optionLabelClassName={optionLabelClassName}
         renderOption={(option, state) => {
@@ -196,7 +202,7 @@ export function BrandingTab({
   const backgroundOptions: BrandVisualOption[] = BACKGROUND_STYLES.map((style) => ({
     id: style.id,
     label: style.name,
-    preview: <span className="dz-brand-background-choice" style={{ background: style.previewBg }} aria-hidden="true" />,
+    preview: <span className="dz-brand-background-preview dz-brand-background-choice" style={{ background: style.previewBg }} aria-hidden="true" />,
   }));
 
   const timelineOptions: BrandVisualOption[] = TIMELINE_DESIGNS.map((style) => ({
@@ -429,13 +435,15 @@ export function BrandingTab({
                     const background = BACKGROUND_STYLES.find((item) => item.id === option?.id);
                     return (
                       <span
-                        className="dz-brand-background-trigger"
+                        className="dz-brand-background-preview dz-brand-background-trigger"
                         data-background-style={background?.id}
                         style={{ background: background?.previewBg ?? 'none' }}
                       />
                     );
                   }}
                   valueClassName="dz-brand-visual-value--background"
+                  triggerClassName="dz-brand-background-select-trigger"
+                  indicatorClassName="dz-brand-background-select-indicator"
                   menuWidth={520}
                   menuMaxHeight={520}
                   menuColumns={1}
