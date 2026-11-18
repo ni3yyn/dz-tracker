@@ -1,5 +1,6 @@
 import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import { BrandedSelect } from '../BrandedSelect';
+import { BrandedCheckbox } from '../../../../components/BrandedCheckbox';
 import type { BrandPreset, BrandingCategory, EditableBrandSettings } from '../shared/branding-types';
 import type { BrandedSelectOption } from '../BrandedSelect';
 import {
@@ -462,20 +463,12 @@ export function BrandingTab({
                 />
                 <label className="dz-brand-toggle">
                   <span>تمويه الخلفية</span>
-                  <input
-                    type="checkbox"
-                    checked={brandConfig.backgroundBlur !== false}
-                    onChange={(event) => onUpdateBrandConfig('backgroundBlur', event.target.checked)}
-                  />
+                  <BrandedCheckbox size={17} checked={brandConfig.backgroundBlur !== false} onChange={(event) => onUpdateBrandConfig('backgroundBlur', event.target.checked)} />
                 </label>
                 {String(brandConfig.bgStyle) === 'blobs' && (
                   <label className="dz-brand-toggle">
                     <span>تحريك الأشكال</span>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(brandConfig.animateBackgroundBlobs)}
-                      onChange={(event) => onUpdateBrandConfig('animateBackgroundBlobs', event.target.checked)}
-                    />
+                    <BrandedCheckbox size={17} checked={Boolean(brandConfig.animateBackgroundBlobs)} onChange={(event) => onUpdateBrandConfig('animateBackgroundBlobs', event.target.checked)} />
                   </label>
                 )}
               </section>
@@ -578,11 +571,7 @@ export function BrandingTab({
               </div>
               <label className="dz-brand-toggle">
                 <span>إظهار زر واتساب</span>
-                <input
-                  type="checkbox"
-                  checked={brandConfig.showWhatsAppButton !== false}
-                  onChange={(event) => onUpdateBrandConfig('showWhatsAppButton', event.target.checked)}
-                />
+                <BrandedCheckbox size={17} checked={brandConfig.showWhatsAppButton !== false} onChange={(event) => onUpdateBrandConfig('showWhatsAppButton', event.target.checked)} />
               </label>
 
               <div className="dz-brand-field">
@@ -601,27 +590,15 @@ export function BrandingTab({
               <div className="dz-brand-toggle-list">
                 <label className="dz-brand-toggle">
                   <span>شركة الشحن ورقم التتبع</span>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(brandConfig.showCarrierBadge)}
-                    onChange={(event) => onUpdateBrandConfig('showCarrierBadge', event.target.checked)}
-                  />
+                  <BrandedCheckbox size={17} checked={Boolean(brandConfig.showCarrierBadge)} onChange={(event) => onUpdateBrandConfig('showCarrierBadge', event.target.checked)} />
                 </label>
                 <label className="dz-brand-toggle">
                   <span>محتويات الشحنة</span>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(brandConfig.showProductSection)}
-                    onChange={(event) => onUpdateBrandConfig('showProductSection', event.target.checked)}
-                  />
+                  <BrandedCheckbox size={17} checked={Boolean(brandConfig.showProductSection)} onChange={(event) => onUpdateBrandConfig('showProductSection', event.target.checked)} />
                 </label>
                 <label className="dz-brand-toggle">
                   <span>رقم الطلب</span>
-                  <input
-                    type="checkbox"
-                    checked={brandConfig.showOrderNumberBadge ?? true}
-                    onChange={(event) => onUpdateBrandConfig('showOrderNumberBadge', event.target.checked)}
-                  />
+                  <BrandedCheckbox size={17} checked={brandConfig.showOrderNumberBadge ?? true} onChange={(event) => onUpdateBrandConfig('showOrderNumberBadge', event.target.checked)} />
                 </label>
               </div>
             </section>
