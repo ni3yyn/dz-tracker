@@ -1,6 +1,7 @@
 import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import { BrandedSelect } from '../BrandedSelect';
 import type { BrandPreset, BrandingCategory, EditableBrandSettings } from '../shared/branding-types';
+import type { BrandedSelectOption } from '../BrandedSelect';
 import {
   ANIMATION_LEVELS,
   BACKGROUND_STYLES,
@@ -50,6 +51,16 @@ function BrandVisualDropdown({
   fallbackPreview,
   renderOption,
   renderValue,
+  menuWidth,
+  menuMaxHeight,
+  menuColumns,
+  menuGap,
+  optionMinHeight,
+  optionPadding,
+  optionLayout,
+  showOptionLabel,
+  showOptionCheck,
+  triggerHeight,
 }: {
   label: string;
   selectedId: string;
@@ -59,6 +70,16 @@ function BrandVisualDropdown({
   fallbackPreview?: ReactNode;
   renderOption?: (option: BrandVisualOption) => ReactNode;
   renderValue?: (option: BrandVisualOption | undefined) => ReactNode;
+  menuWidth?: number;
+  menuMaxHeight?: number;
+  menuColumns?: number;
+  menuGap?: number;
+  optionMinHeight?: number;
+  optionPadding?: string;
+  optionLayout?: 'row' | 'block';
+  showOptionLabel?: boolean;
+  showOptionCheck?: boolean;
+  triggerHeight?: number;
 }) {
   const selectOptions = options.map((option) => ({
     value: option.id,
@@ -71,9 +92,26 @@ function BrandVisualDropdown({
   const defaultVisual = (option: BrandVisualOption) => (
     <span className="dz-brand-dropdown-option">
       <span className="dz-brand-dropdown-art" aria-hidden="true">{option.preview}</span>
-      <span className="dz-brand-dropdown-label">{option.label}</span>
     </span>
   );
+
+  const selectedVisual = (option: BrandVisualOption | undefined) => {
+    if (renderValue) return renderValue(option);
+    if (option) {
+      return (
+        <span className="dz-brand-dropdown-option">
+          <span className="dz-brand-dropdown-art" aria-hidden="true">{option.preview}</span>
+          <span className="dz-brand-dropdown-label">{option.label}</span>
+        </span>
+      );
+    }
+    return (
+      <span className="dz-brand-dropdown-option">
+        {fallbackPreview && <span className="dz-brand-dropdown-art" aria-hidden="true">{fallbackPreview}</span>}
+        <span className="dz-brand-dropdown-label">{fallbackLabel ?? 'مخصص'}</span>
+      </span>
+    );
+  };
 
   return (
     <div className="dz-brand-visual-control">
@@ -86,21 +124,21 @@ function BrandVisualDropdown({
         placeholder={fallbackLabel ?? 'مخصص'}
         variant="field"
         className="dz-branding-shared-select"
-        renderOption={(option) => {
+        menuWidth={menuWidth}
+        menuMaxHeight={menuMaxHeight}
+        menuColumns={menuColumns}
+        menuGap={menuGap}
+        optionMinHeight={optionMinHeight}
+        optionPadding={optionPadding}
+        optionLayout={optionLayout}
+        showOptionLabel={showOptionLabel}
+        showOptionCheck={showOptionCheck}
+        triggerHeight={triggerHeight}
+        renderOption={(option, state) => {
           const visualOption = findOption(option);
-          return visualOption ? (renderOption ? renderOption(visualOption) : defaultVisual(visualOption)) : option.label;
+          return visualOption ? (renderOption ? renderOption(visualOption) : defaultVisual(visualOption)) : null;
         }}
-        renderValue={(option) => {
-          const visualOption = findOption(option);
-          if (renderValue) return renderValue(visualOption);
-          if (visualOption) return defaultVisual(visualOption);
-          return (
-            <span className="dz-brand-dropdown-option">
-              {fallbackPreview && <span className="dz-brand-dropdown-art" aria-hidden="true">{fallbackPreview}</span>}
-              <span className="dz-brand-dropdown-label">{fallbackLabel ?? 'مخصص'}</span>
-            </span>
-          );
-        }}
+        renderValue={(option) => selectedVisual(findOption(option))}
       />
     </div>
   );
@@ -128,10 +166,20 @@ export function BrandingTab({
     id: preset.id,
     label: preset.name,
     preview: (
-      <span className="dz-brand-preset-preview" style={{ background: 'linear-gradient(135deg, ' + preset.colors[1] + ', ' + preset.colors[2] + ')' }}>
-        <i style={{ background: preset.colors[0] }} />
-        <i style={{ background: preset.colors[2] }} />
-        <i style={{ background: preset.colors[1] }} />
+      <span
+        className="dz-brand-preset-option-preview"
+        style={{
+          ['--preset-primary' as string]: preset.colors[0],
+          ['--preset-surface' as string]: preset.colors[1],
+          ['--preset-accent' as string]: preset.colors[2],
+        } as CSSProperties}
+        aria-hidden="true"
+      >
+        <i className="dz-brand-preset-preview-logo" />
+        <i className="dz-brand-preset-preview-heading" />
+        <i className="dz-brand-preset-preview-copy" />
+        <i className="dz-brand-preset-preview-button" />
+        <i className="dz-brand-preset-preview-progress" />
       </span>
     ),
   }));
@@ -139,28 +187,48 @@ export function BrandingTab({
   const backgroundOptions: BrandVisualOption[] = BACKGROUND_STYLES.map((style) => ({
     id: style.id,
     label: style.name,
-    preview: <span className="dz-brand-background-preview" style={{ background: style.previewBg, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }} />,
+    preview: <span className="dz-brand-background-choice" style={{ background: style.previewBg }} aria-hidden="true" />,
   }));
 
   const timelineOptions: BrandVisualOption[] = TIMELINE_DESIGNS.map((style) => ({
     id: style.id,
     label: style.name,
     preview: (
-      <span className={'dz-timeline-swatch dz-timeline-swatch--' + style.id + ' dz-brand-timeline-preview'} style={{ ['--timeline-swatch-brand' as string]: brandConfig.brandColor } as CSSProperties}>
-        <span /><span /><span />
+      <span className={'dz-brand-timeline-thumbnail dz-brand-timeline-thumbnail--' + style.id} style={{ ['--timeline-swatch-brand' as string]: brandConfig.brandColor } as CSSProperties} aria-hidden="true">
+        <span className="dz-brand-timeline-phase">
+          <i className="dz-brand-timeline-marker">01</i>
+          <span className="dz-brand-timeline-copy"><b>تم تجهيز الطلب</b><small>اليوم · 10:30</small></span>
+        </span>
+        <span className="dz-brand-timeline-phase">
+          <i className="dz-brand-timeline-marker">02</i>
+          <span className="dz-brand-timeline-copy"><b>خرج للتوصيل</b><small>اليوم · 11:45</small></span>
+        </span>
       </span>
     ),
   }));
+
+  const linePathByStyle: Record<string, string> = {
+    straight: 'M24 26 H336',
+    dashed: 'M24 26 H336',
+    dotted: 'M24 26 H336',
+    curved: 'M24 26 C105 -1 255 53 336 26',
+    wave: 'M24 26 C75 -2 105 -2 156 26 S258 54 336 26',
+    none: '',
+  };
 
   const lineOptions: BrandVisualOption[] = TIMELINE_LINE_STYLES.map((style) => ({
     id: style.id,
     label: style.name,
     preview: (
-      <span className={'dz-connector-swatch dz-connector-swatch--' + style.id + ' dz-brand-line-preview'} style={{ ['--timeline-swatch-brand' as string]: brandConfig.brandColor } as CSSProperties}>
-        <span />
-        <i />
-        <span />
-      </span>
+      <svg className={'dz-brand-connector-thumbnail dz-brand-connector-thumbnail--' + style.id} viewBox="0 0 360 52" preserveAspectRatio="none" aria-hidden="true">
+        {linePathByStyle[style.id] && (
+          <path d={linePathByStyle[style.id]} fill="none" stroke={brandConfig.brandColor} strokeWidth="3" strokeLinecap="round" strokeDasharray={style.id === 'dashed' ? '10 8' : style.id === 'dotted' ? '1 10' : undefined} />
+        )}
+        <circle cx="24" cy="26" r="8" fill={brandConfig.brandColor} />
+        <circle cx="336" cy="26" r="8" fill={brandConfig.brandColor} />
+        <circle cx="24" cy="26" r="3" fill="#fffefa" />
+        <circle cx="336" cy="26" r="3" fill="#fffefa" />
+      </svg>
     ),
   }));
 
@@ -236,13 +304,13 @@ export function BrandingTab({
               selectedId={activeBrandPresetId ?? '__custom__'}
               options={presetOptions}
               fallbackLabel="مخصص"
-              fallbackPreview={
-                <span className="dz-brand-preset-preview" style={{ background: 'linear-gradient(135deg, #F0F1EA, #D9E1D7)' }}>
-                  <i style={{ background: brandConfig.brandColor }} />
-                  <i style={{ background: '#D9E1D7' }} />
-                  <i style={{ background: '#F7F6F0' }} />
-                </span>
-              }
+              fallbackPreview={<span className="dz-brand-preset-option-preview" style={{ ['--preset-primary' as string]: brandConfig.brandColor, ['--preset-surface' as string]: '#F0F1EA', ['--preset-accent' as string]: '#D9E1D7' } as CSSProperties} />}
+              menuWidth={520}
+              menuMaxHeight={500}
+              menuColumns={2}
+              optionLayout="block"
+              optionMinHeight={112}
+              optionPadding="8px"
               onChange={(value) => {
                 const preset = BRAND_PRESETS.find((item) => item.id === value);
                 if (preset) onApplyBrandPreset(preset);
@@ -258,7 +326,7 @@ export function BrandingTab({
                 preview: <span className="dz-brand-category-mini">{category.number}</span>,
               }))}
               onChange={(value) => onSetBrandingCategory(value as BrandingCategory)}
-              renderOption={(option) => <span className="dz-brand-category-option">{option.preview}{option.label}</span>}
+              renderOption={(option) => option.preview}
               renderValue={(option) => <span className="dz-brand-category-option">{option?.preview}{option?.label ?? 'اختر القسم'}</span>}
             />
           </div>
@@ -333,6 +401,16 @@ export function BrandingTab({
                   selectedId={String(brandConfig.bgStyle)}
                   options={backgroundOptions}
                   onChange={(value) => onUpdateBrandConfig('bgStyle', value as EditableBrandSettings['bgStyle'])}
+                  renderOption={(option) => option.preview}
+                  renderValue={(option) => option?.preview ?? null}
+                  menuWidth={520}
+                  menuMaxHeight={520}
+                  menuColumns={1}
+                  optionLayout="block"
+                  optionMinHeight={78}
+                  optionPadding="5px"
+                  showOptionLabel={false}
+                  triggerHeight={48}
                 />
                 <BrandVisualDropdown
                   label="وضع الصفحة"
@@ -404,12 +482,29 @@ export function BrandingTab({
                 selectedId={String(brandConfig.timelineDesign)}
                 options={timelineOptions}
                 onChange={(value) => onUpdateBrandConfig('timelineDesign', value as EditableBrandSettings['timelineDesign'])}
+                renderOption={(option) => option.preview}
+                menuWidth={600}
+                menuMaxHeight={540}
+                menuColumns={2}
+                optionLayout="block"
+                optionMinHeight={128}
+                optionPadding="8px"
               />
               <BrandVisualDropdown
                 label="خط الربط"
                 selectedId={String(brandConfig.timelineLineStyle || 'straight')}
                 options={lineOptions}
                 onChange={(value) => onUpdateBrandConfig('timelineLineStyle', value as EditableBrandSettings['timelineLineStyle'])}
+                renderOption={(option) => option.preview}
+                renderValue={(option) => option?.preview ?? null}
+                menuWidth={500}
+                menuMaxHeight={460}
+                menuColumns={1}
+                optionLayout="block"
+                optionMinHeight={66}
+                optionPadding="7px 12px"
+                showOptionLabel={false}
+                triggerHeight={52}
               />
             </section>
           )}
