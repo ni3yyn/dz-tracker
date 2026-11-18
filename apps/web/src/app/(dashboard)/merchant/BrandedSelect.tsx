@@ -24,6 +24,8 @@ interface BrandedSelectProps {
   variant?: 'standard' | 'compact' | 'status' | 'field';
   className?: string;
   borderRadius?: string;
+  renderValue?: (option: BrandedSelectOption | undefined) => React.ReactNode;
+  renderOption?: (option: BrandedSelectOption, state: { selected: boolean; active: boolean }) => React.ReactNode;
 }
 
 interface MenuPosition {
@@ -47,6 +49,8 @@ export function BrandedSelect({
   variant = 'standard',
   className,
   borderRadius,
+  renderValue,
+  renderOption,
 }: BrandedSelectProps) {
   const generatedId = useId();
   const listboxId = `branded-select-${generatedId}`;
@@ -270,7 +274,7 @@ export function BrandedSelect({
         onClick={() => isOpen ? closeMenu() : openMenu()}
         onKeyDown={handleTriggerKeyDown}
       >
-        <span className={styles.value}>{selectedOption?.label ?? placeholder}</span>
+        <span className={styles.value}>{renderValue ? renderValue(selectedOption) : (selectedOption?.label ?? placeholder)}</span>
         <span className={styles.indicator} aria-hidden="true">
           {loading ? (
             <svg className={styles.spinner} viewBox="0 0 24 24" fill="none">
@@ -325,7 +329,7 @@ export function BrandedSelect({
                 onMouseEnter={() => !option.disabled && setActiveIndex(index)}
                 onClick={() => chooseOption(option)}
               >
-                <span>{option.label}</span>
+                <span className={styles.optionContent}>{renderOption ? renderOption(option, { selected: isSelected, active: isActive }) : option.label}</span>
                 {isSelected && (
                   <svg className={styles.check} viewBox="0 0 20 20" fill="none" aria-hidden="true">
                     <path d="m4 10 4 4 8-8" />
