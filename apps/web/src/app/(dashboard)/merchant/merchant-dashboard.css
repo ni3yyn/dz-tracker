@@ -7831,11 +7831,27 @@
   text-overflow: clip;
   white-space: normal;
 }
-/* Both open and closed previews use this exact painting model. Starting at
-   the top-left keeps a repeated motif aligned when the available widths differ. */
+/* Both states clip the same fixed artwork canvas. Keeping its dimensions
+   identical also prevents gradient layers from scaling with the trigger width. */
 .dz-brand-background-preview {
+  display: block;
+  position: relative;
   box-sizing: border-box;
+  width: 100%;
+  height: 56px;
+  min-width: 0;
+  overflow: hidden;
   border: 0 !important;
+  direction: ltr;
+}
+
+.dz-brand-background-art {
+  display: block;
+  box-sizing: border-box;
+  width: 520px;
+  min-width: 520px;
+  height: 56px;
+  margin: 0;
   background-position: 0 0 !important;
   background-size: auto !important;
   background-repeat: repeat !important;
