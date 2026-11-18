@@ -405,3 +405,16 @@
     transition: none !important;
   }
 }
+
+/* Row-style visual options keep their thumbnail compact so the label sits
+   immediately beside it. Block previews intentionally remain full width. */
+.option:not(.optionBlock) .optionContent {
+  justify-content: flex-start;
+}
+
+.option:not(.optionBlock) .optionContent > :global(.dz-brand-dropdown-option) {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+}
+
