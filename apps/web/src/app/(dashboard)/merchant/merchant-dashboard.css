@@ -8158,7 +8158,7 @@
   }
 
   .dz-admin-root .dz-branding-workspace .dz-phone-chassis {
-    width: auto !important;
+    width: min(100%, 35.1svh, 342px) !important;
     height: min(76svh, 740px) !important;
     max-width: 100%;
     max-height: calc(100svh - 82px);
@@ -8234,7 +8234,7 @@
     box-sizing: border-box;
     overflow: hidden;
     border: 0 !important;
-    border-inline-end: 1px solid #dfe5dc !important;
+    border-right: 1px solid #dfe5dc !important;
     background: #fffefa !important;
     box-shadow: 18px 0 48px -30px rgba(17, 34, 23, .42) !important;
     transform: translate3d(-105%, 0, 0);
@@ -8300,8 +8300,8 @@
   }
 
   .dz-admin-root .dz-branding-workspace .dz-phone-chassis {
-    width: auto !important;
-    height: min(73svh, 760px) !important;
+    width: min(100%, 36svh, 340px) !important;
+    height: min(78svh, 760px) !important;
     max-width: 100%;
     max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 98px);
     min-height: 0 !important;
