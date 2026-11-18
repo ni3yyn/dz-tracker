@@ -7442,3 +7442,18 @@
   line-height: 1.55;
   white-space: nowrap;
 }
+
+
+
+
+/* BRAND RADIUS PREVIEW — win against the editor-wide square-corner reset */
+.dz-admin-root .dz-branding-workspace .dz-brand-dropdown-art .dz-brand-radius-preview {
+  width: 44px !important;
+  height: 29px !important;
+  border: 2px solid #55745d !important;
+  background: #e8eee6 !important;
+}
+.dz-admin-root .dz-branding-workspace .dz-brand-dropdown-art .dz-brand-radius-preview--sharp { border-radius: 0 !important; }
+.dz-admin-root .dz-branding-workspace .dz-brand-dropdown-art .dz-brand-radius-preview--sleek { border-radius: 4px !important; }
+.dz-admin-root .dz-branding-workspace .dz-brand-dropdown-art .dz-brand-radius-preview--modern { border-radius: 9px !important; }
+.dz-admin-root .dz-branding-workspace .dz-brand-dropdown-art .dz-brand-radius-preview--pebble { border-radius: 14px !important; }
