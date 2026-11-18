@@ -312,6 +312,19 @@ export function BrandingTab({
               optionMinHeight={112}
               optionPadding="8px"
               renderOption={(option) => option.preview}
+              renderValue={(option) => {
+                const preset = BRAND_PRESETS.find((item) => item.id === option?.id);
+                return (
+                  <span className="dz-brand-preset-trigger-preview">
+                    <span>
+                      <i style={{ background: preset?.colors[0] ?? brandConfig.brandColor }} />
+                      <i style={{ background: preset?.colors[1] ?? '#F0F1EA' }} />
+                      <i style={{ background: preset?.colors[2] ?? '#D9E1D7' }} />
+                    </span>
+                    <b>{preset?.name ?? 'مخصص'}</b>
+                  </span>
+                );
+              }}
               onChange={(value) => {
                 const preset = BRAND_PRESETS.find((item) => item.id === value);
                 if (preset) onApplyBrandPreset(preset);
@@ -403,7 +416,10 @@ export function BrandingTab({
                   options={backgroundOptions}
                   onChange={(value) => onUpdateBrandConfig('bgStyle', value as EditableBrandSettings['bgStyle'])}
                   renderOption={(option) => option.preview}
-                  renderValue={(option) => option?.preview ?? null}
+                  renderValue={(option) => {
+                    const background = BACKGROUND_STYLES.find((item) => item.id === option?.id);
+                    return background ? <span className="dz-brand-background-trigger" style={{ background: background.previewBg }} /> : null;
+                  }}
                   menuWidth={520}
                   menuMaxHeight={520}
                   menuColumns={1}
@@ -484,6 +500,12 @@ export function BrandingTab({
                 options={timelineOptions}
                 onChange={(value) => onUpdateBrandConfig('timelineDesign', value as EditableBrandSettings['timelineDesign'])}
                 renderOption={(option) => option.preview}
+                renderValue={(option) => (
+                  <span className="dz-brand-timeline-trigger">
+                    <i /><i />
+                    <b>{option?.label ?? ''}</b>
+                  </span>
+                )}
                 menuWidth={600}
                 menuMaxHeight={540}
                 menuColumns={2}
