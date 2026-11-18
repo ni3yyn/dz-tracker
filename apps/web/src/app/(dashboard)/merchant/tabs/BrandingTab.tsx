@@ -441,9 +441,8 @@ export function BrandingTab({
                       <span
                         className="dz-brand-background-preview dz-brand-background-trigger"
                         data-background-style={background?.id}
-                      >
-                        <span className="dz-brand-background-art" style={{ background: background?.previewBg ?? 'none' }} />
-                      </span>
+                        style={{ background: background?.previewBg ?? 'none' }}
+                      />
                     );
                   }}
                   valueClassName="dz-brand-visual-value--background"
