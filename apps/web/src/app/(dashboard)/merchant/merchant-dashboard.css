@@ -7462,40 +7462,8 @@
 
 
 /* BRAND VISUAL MENU V2 — full, real option previews */
-/* The shared BrandedSelect mounts menus in document.body; all preview artwork
-   below is intentionally global so it renders in both the trigger and portal. */
-.dz-branding-shared-select .value {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-.dz-branding-shared-select .trigger {
-  width: 100%;
-  min-width: 0;
-}
-.dz-branding-shared-select .optionBlock {
-  position: relative;
-}
-.dz-branding-shared-select .optionBlock.selected {
-  background: #e8f0e7;
-  box-shadow: inset 0 0 0 2px #55785c;
-}
-.dz-branding-shared-select .optionBlock.active {
-  background: #edf3eb;
-}
-.dz-branding-shared-select .optionBlock .check {
-  position: absolute;
-  top: 9px;
-  inset-inline-start: 9px;
-  z-index: 5;
-  width: 22px;
-  height: 22px;
-  padding: 4px;
-  background: #fffefa;
-  box-shadow: 0 1px 5px rgba(26, 44, 31, .16);
-}
+/* BrandedSelect menus are portaled to document.body. Menu option states live in
+   branded-select.module.css; trigger preview sizing uses .dz-brand-visual-value. */
 
 /* Preset samples: show enough of a branded tracking page to distinguish each preset. */
 .dz-brand-preset-option-preview {
