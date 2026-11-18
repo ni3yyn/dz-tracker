@@ -1,4 +1,5 @@
-import type { CSSProperties, FormEvent, ReactNode } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import type { CSSProperties, FormEvent, PointerEvent, ReactNode } from 'react';
 import { normalizeCardSurfaceChoice } from '@saas/ui';
 import { BrandedSelect } from '../BrandedSelect';
 import { BrandedToggle } from '../../../../components/BrandedToggle';
@@ -180,6 +181,57 @@ export function BrandingTab({
   onSave,
   preview,
 }: BrandingTabProps) {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const previewDrawerId = useId();
+  const previewTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const previewCloseRef = useRef<HTMLButtonElement | null>(null);
+  const previewSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const wasPreviewOpenRef = useRef(false);
+
+  const handleWorkspacePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (isPreviewOpen || event.pointerType !== 'touch' || event.clientX > 28) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('button, input, select, textarea, a, [contenteditable="true"]')) return;
+    previewSwipeStartRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handleWorkspacePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const start = previewSwipeStartRef.current;
+    if (!start || isPreviewOpen) return;
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = Math.abs(event.clientY - start.y);
+    if (deltaX >= 64 && deltaX > deltaY * 1.25) {
+      previewSwipeStartRef.current = null;
+      setIsPreviewOpen(true);
+      return;
+    }
+    if (deltaX < -12 || (deltaY > 64 && deltaY > Math.abs(deltaX))) {
+      previewSwipeStartRef.current = null;
+    }
+  };
+
+  const clearPreviewSwipe = () => {
+    previewSwipeStartRef.current = null;
+  };
+
+  useEffect(() => {
+    if (isPreviewOpen) {
+      wasPreviewOpenRef.current = true;
+      previewCloseRef.current?.focus({ preventScroll: true });
+      const handleEscape = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') setIsPreviewOpen(false);
+      };
+      window.addEventListener('keydown', handleEscape);
+      return () => window.removeEventListener('keydown', handleEscape);
+    }
+
+    if (wasPreviewOpenRef.current) {
+      wasPreviewOpenRef.current = false;
+      previewTriggerRef.current?.focus({ preventScroll: true });
+    }
+  }, [isPreviewOpen]);
+
   const presetOptions: BrandVisualOption[] = BRAND_PRESETS.map((preset) => ({
     id: preset.id,
     label: preset.name,
@@ -313,7 +365,13 @@ export function BrandingTab({
   ) < 4.5;
 
   return (
-    <div className="dz-branding-workspace">
+    <div
+      className="dz-branding-workspace"
+      onPointerDown={handleWorkspacePointerDown}
+      onPointerMove={handleWorkspacePointerMove}
+      onPointerUp={clearPreviewSwipe}
+      onPointerCancel={clearPreviewSwipe}
+    >
       <div className="dz-customizer-grid">
         <form id="merchant-branding-form" onSubmit={onSave}>
           <header className="dz-branding-panel-head">
@@ -700,14 +758,59 @@ export function BrandingTab({
           )}
         </form>
 
-        <aside className="dz-branding-preview-sticky">
-          <div className="dz-branding-preview-status" aria-live="polite">
-            <span className="dz-preview-live-dot" />
-            <strong>معاينة مباشرة</strong>
-            <span>{hasUnsavedBrandChanges ? 'تغييرات غير محفوظة' : 'آخر نسخة محفوظة'}</span>
+        <button
+          type="button"
+          className="dz-branding-preview-backdrop"
+          data-open={isPreviewOpen ? 'true' : 'false'}
+          aria-label="إغلاق معاينة صفحة التتبع"
+          aria-hidden={!isPreviewOpen}
+          tabIndex={isPreviewOpen ? 0 : -1}
+          onClick={() => setIsPreviewOpen(false)}
+        />
+
+        <aside
+          id={previewDrawerId}
+          className={'dz-branding-preview-sticky' + (isPreviewOpen ? ' is-open' : '')}
+          aria-label="معاينة صفحة التتبع"
+        >
+          <div className="dz-branding-preview-drawer-head">
+            <div className="dz-branding-preview-status" aria-live="polite">
+              <span className="dz-preview-live-dot" />
+              <strong>معاينة مباشرة</strong>
+              <span>{hasUnsavedBrandChanges ? 'تغييرات غير محفوظة' : 'آخر نسخة محفوظة'}</span>
+            </div>
+            <button
+              ref={previewCloseRef}
+              type="button"
+              className="dz-branding-preview-close"
+              onClick={() => setIsPreviewOpen(false)}
+              aria-label="إغلاق المعاينة"
+              title="إغلاق المعاينة"
+            >
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6 18 18M18 6 6 18" />
+              </svg>
+            </button>
           </div>
           {preview}
         </aside>
+
+        <button
+          ref={previewTriggerRef}
+          type="button"
+          className="dz-branding-preview-handle"
+          onClick={() => setIsPreviewOpen(true)}
+          aria-controls={previewDrawerId}
+          aria-expanded={isPreviewOpen}
+          aria-label="فتح معاينة صفحة التتبع"
+          data-open={isPreviewOpen ? 'true' : 'false'}
+        >
+          <span>معاينة</span>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" />
+            <circle cx="12" cy="12" r="2.5" />
+          </svg>
+        </button>
 
         <div className={'dz-brand-savebar' + (hasUnsavedBrandChanges ? ' is-dirty' : '')} role="status" aria-live="polite">
           <div className="dz-brand-savebar-copy">
