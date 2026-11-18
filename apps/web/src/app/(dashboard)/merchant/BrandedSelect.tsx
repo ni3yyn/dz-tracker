@@ -46,6 +46,10 @@ interface BrandedSelectProps {
   triggerHeight?: number;
   /** Extra class applied to the selected-value content wrapper. */
   valueClassName?: string;
+  /** Extra class applied to the trigger button. */
+  triggerClassName?: string;
+  /** Extra class applied to the chevron/loading indicator area. */
+  indicatorClassName?: string;
   /** Extra class applied to option preview and label layout. */
   optionContentClassName?: string;
   /** Extra class applied to the option label. */
@@ -87,6 +91,8 @@ export function BrandedSelect({
   showOptionCheck = true,
   triggerHeight,
   valueClassName,
+  triggerClassName,
+  indicatorClassName,
   optionContentClassName,
   optionLabelClassName,
   renderValue,
@@ -316,7 +322,11 @@ export function BrandedSelect({
         ref={triggerRef}
         id={id}
         type="button"
-        className={`${styles.trigger} ${isOpen ? styles.open : ''}`}
+        className={[
+          styles.trigger,
+          isOpen ? styles.open : '',
+          triggerClassName,
+        ].filter(Boolean).join(' ')}
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -332,7 +342,7 @@ export function BrandedSelect({
         onKeyDown={handleTriggerKeyDown}
       >
         <span className={[styles.value, valueClassName].filter(Boolean).join(' ')}>{renderValue ? renderValue(selectedOption) : (selectedOption?.label ?? placeholder)}</span>
-        <span className={styles.indicator} aria-hidden="true">
+        <span className={[styles.indicator, indicatorClassName].filter(Boolean).join(' ')} aria-hidden="true">
           {loading ? (
             <svg className={styles.spinner} viewBox="0 0 24 24" fill="none">
               <path d="M21 12a9 9 0 1 1-6.2-8.56" />
