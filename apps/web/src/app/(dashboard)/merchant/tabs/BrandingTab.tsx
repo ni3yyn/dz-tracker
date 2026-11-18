@@ -202,7 +202,11 @@ export function BrandingTab({
   const backgroundOptions: BrandVisualOption[] = BACKGROUND_STYLES.map((style) => ({
     id: style.id,
     label: style.name,
-    preview: <span className="dz-brand-background-preview dz-brand-background-choice" style={{ background: style.previewBg }} aria-hidden="true" />,
+    preview: (
+      <span className="dz-brand-background-preview dz-brand-background-choice" aria-hidden="true">
+        <span className="dz-brand-background-art" style={{ background: style.previewBg }} />
+      </span>
+    ),
   }));
 
   const timelineOptions: BrandVisualOption[] = TIMELINE_DESIGNS.map((style) => ({
@@ -437,8 +441,9 @@ export function BrandingTab({
                       <span
                         className="dz-brand-background-preview dz-brand-background-trigger"
                         data-background-style={background?.id}
-                        style={{ background: background?.previewBg ?? 'none' }}
-                      />
+                      >
+                        <span className="dz-brand-background-art" style={{ background: background?.previewBg ?? 'none' }} />
+                      </span>
                     );
                   }}
                   valueClassName="dz-brand-visual-value--background"
