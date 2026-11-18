@@ -1,0 +1,129 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 27px;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  direction: ltr;
+  line-height: 1;
+}
+
+.input {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.track {
+  position: absolute;
+  inset: 0;
+  display: block;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #bec9bf;
+  border-radius: 0;
+  background: #e8ede7;
+  pointer-events: none;
+  transition: border-color .18s ease, background-color .18s ease;
+}
+
+.track::before {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: var(--brand-toggle-fill, #294b37);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform .3s cubic-bezier(.2, .78, .2, 1);
+}
+
+.thumb {
+  position: absolute;
+  z-index: 1;
+  top: 4px;
+  left: 4px;
+  display: grid;
+  width: 17px;
+  height: 17px;
+  box-sizing: border-box;
+  place-items: center;
+  border: 1px solid rgba(30, 48, 35, .12);
+  border-radius: 0;
+  background: #fffefa;
+  box-shadow: 0 1px 2px rgba(20, 35, 24, .12);
+  transform: translateX(0);
+  transition:
+    transform .28s cubic-bezier(.2, .78, .2, 1),
+    border-color .18s ease;
+}
+
+.input:checked + .track {
+  border-color: var(--brand-toggle-fill, #294b37);
+}
+
+.input:checked + .track::before {
+  transform: scaleX(1);
+}
+
+.input:checked + .track .thumb {
+  border-color: #fffefa;
+  transform: translateX(var(--toggle-travel, 21px));
+}
+
+.input:not(:disabled):hover + .track {
+  border-color: var(--brand-toggle-fill, #294b37);
+}
+
+.input:focus-visible + .track {
+  outline: 2px solid rgba(41, 75, 55, .3);
+  outline-offset: 3px;
+}
+
+.input:disabled {
+  cursor: not-allowed;
+}
+
+.root:has(.input:disabled) {
+  cursor: not-allowed;
+}
+
+.root:has(.input:disabled) .track {
+  opacity: .55;
+}
+
+.spinner {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(41, 75, 55, .22);
+  border-top-color: #294b37;
+  border-radius: 50%;
+  animation: brandedToggleSpin .65s linear infinite;
+}
+
+@keyframes brandedToggleSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .track::before,
+  .thumb {
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .spinner {
+    animation-duration: 1.2s;
+  }
+}
