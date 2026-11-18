@@ -7870,6 +7870,21 @@
   background-clip: border-box !important;
 }
 
+/* Menu rows retain their own full-width artwork surface. */
+.dz-brand-background-art {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 100%;
+  height: 100%;
+  margin: 0;
+  background-position: 0 0 !important;
+  background-size: auto !important;
+  background-repeat: repeat !important;
+  background-origin: border-box !important;
+  background-clip: border-box !important;
+}
+
 .dz-brand-visual-value--background .dz-brand-background-trigger {
   display: block;
   box-sizing: border-box;
