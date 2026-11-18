@@ -256,10 +256,7 @@
   line-height: 1.9;
   cursor: pointer;
 }
-.confirmField input {
-  flex: 0 0 auto;
-  width: 17px;
-  height: 17px;
+.confirmField [data-branded-checkbox] {
+  flex: 0 0 17px;
   margin: 2px 0 0;
-  accent-color: #294b37;
 }
