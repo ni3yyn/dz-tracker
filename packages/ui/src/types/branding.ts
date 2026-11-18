@@ -1,6 +1,53 @@
 export type BackgroundStyle  = 'aurora' | 'midnight' | 'minimal' | 'sunset' | 'emerald' | 'mesh';
 export type TimelineDesign   = 'stepper' | 'cards' | 'journey' | 'compact';
 export type CardRadius       = 'sharp' | 'sleek' | 'modern' | 'pebble';
+export type BrandRadiusTokens = {
+  card: string;
+  panel: string;
+  control: string;
+  button: string;
+  timeline: string;
+  badge: string;
+  avatar: string;
+  media: string;
+  marker: string;
+  notice: string;
+  floating: string;
+};
+
+/** Single source of truth for rounded corners across the live page and its editor preview. */
+export function getBrandRadiusTokens(radius: CardRadius | string | null | undefined): BrandRadiusTokens {
+  if (radius === 'sharp') {
+    return {
+      card: '0px', panel: '0px', control: '0px', button: '0px',
+      timeline: '0px', badge: '0px', avatar: '0px', media: '0px',
+      marker: '0px', notice: '0px', floating: '0px',
+    };
+  }
+
+  if (radius === 'sleek') {
+    return {
+      card: '14px', panel: '10px', control: '9px', button: '9px',
+      timeline: '9px', badge: '9px', avatar: '14px', media: '12px',
+      marker: '5px', notice: '10px', floating: '14px',
+    };
+  }
+
+  if (radius === 'pebble') {
+    return {
+      card: '38px', panel: '21px', control: '15px', button: '999px',
+      timeline: '15px', badge: '999px', avatar: '20px', media: '22px',
+      marker: '12px', notice: '18px', floating: '999px',
+    };
+  }
+
+  return {
+    card: '26px', panel: '16px', control: '12px', button: '12px',
+    timeline: '12px', badge: '12px', avatar: '18px', media: '16px',
+    marker: '7px', notice: '12px', floating: '16px',
+  };
+}
+
 export type CardSurface       = 'glass' | 'solid' | 'bordered' | 'borderless' | 'elevated' | 'tinted' | 'paper' | 'inset' | 'filled';
 export type CardSurfaceChoice  = 'filled' | 'glass' | 'bordered' | 'tinted' | 'borderless';
 
