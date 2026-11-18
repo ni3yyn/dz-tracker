@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import type { CSSProperties, FormEvent, PointerEvent, ReactNode } from 'react';
+import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import { normalizeCardSurfaceChoice } from '@saas/ui';
 import { BrandedSelect } from '../BrandedSelect';
 import { BrandedToggle } from '../../../../components/BrandedToggle';
@@ -185,51 +185,108 @@ export function BrandingTab({
   const previewDrawerId = useId();
   const previewTriggerRef = useRef<HTMLButtonElement | null>(null);
   const previewCloseRef = useRef<HTMLButtonElement | null>(null);
-  const previewSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const previewSwipeStartRef = useRef<{ x: number; y: number; pointerId: number; mode: 'open' | 'close' } | null>(null);
   const wasPreviewOpenRef = useRef(false);
-
-  const handleWorkspacePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (isPreviewOpen || event.pointerType !== 'touch' || event.clientX > 28) return;
-    const target = event.target as HTMLElement | null;
-    if (target?.closest('button:not(.dz-branding-preview-handle), input, select, textarea, a, [contenteditable="true"]')) return;
-    previewSwipeStartRef.current = { x: event.clientX, y: event.clientY };
-  };
-
-  const handleWorkspacePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const start = previewSwipeStartRef.current;
-    if (!start || isPreviewOpen) return;
-
-    const deltaX = event.clientX - start.x;
-    const deltaY = Math.abs(event.clientY - start.y);
-    if (deltaX >= 64 && deltaX > deltaY * 1.25) {
-      previewSwipeStartRef.current = null;
-      setIsPreviewOpen(true);
-      return;
-    }
-    if (deltaX < -12 || (deltaY > 64 && deltaY > Math.abs(deltaX))) {
-      previewSwipeStartRef.current = null;
-    }
-  };
-
-  const clearPreviewSwipe = () => {
-    previewSwipeStartRef.current = null;
-  };
+  const previewPanelRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (isPreviewOpen) {
-      wasPreviewOpenRef.current = true;
-      previewCloseRef.current?.focus({ preventScroll: true });
-      const handleEscape = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') setIsPreviewOpen(false);
-      };
-      window.addEventListener('keydown', handleEscape);
-      return () => window.removeEventListener('keydown', handleEscape);
+    if (window.matchMedia('(min-width: 1141px)').matches) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch') return;
+      const target = event.target instanceof Element ? event.target : null;
+      const isHandle = Boolean(target?.closest('.dz-branding-preview-handle'));
+      const isDrawerHeader = Boolean(target?.closest('.dz-branding-preview-drawer-head'));
+      if (isPreviewOpen) {
+        if (isDrawerHeader) {
+          previewSwipeStartRef.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId, mode: 'close' };
+        }
+        return;
+      }
+      if (event.clientX > 48) return;
+      if (!isHandle && target?.closest('button, input, select, textarea, a, [contenteditable="true"]')) return;
+      previewSwipeStartRef.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId, mode: 'open' };
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const start = previewSwipeStartRef.current;
+      if (!start || event.pointerId !== start.pointerId) return;
+      const deltaX = event.clientX - start.x;
+      const deltaY = Math.abs(event.clientY - start.y);
+      const horizontalGesture = Math.abs(deltaX) >= 64 && Math.abs(deltaX) > deltaY * 1.2;
+      if (!horizontalGesture) {
+        if (deltaY > 56 || Math.abs(deltaX) > 28) previewSwipeStartRef.current = null;
+        return;
+      }
+      if (start.mode === 'open' && deltaX > 0) setIsPreviewOpen(true);
+      if (start.mode === 'close' && deltaX < 0) setIsPreviewOpen(false);
+      previewSwipeStartRef.current = null;
+    };
+
+    const clearPointer = (event: PointerEvent) => {
+      if (previewSwipeStartRef.current?.pointerId === event.pointerId) previewSwipeStartRef.current = null;
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown, true);
+    window.addEventListener('pointermove', handlePointerMove, true);
+    window.addEventListener('pointerup', clearPointer, true);
+    window.addEventListener('pointercancel', clearPointer, true);
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown, true);
+      window.removeEventListener('pointermove', handlePointerMove, true);
+      window.removeEventListener('pointerup', clearPointer, true);
+      window.removeEventListener('pointercancel', clearPointer, true);
+      previewSwipeStartRef.current = null;
+    };
+  }, [isPreviewOpen]);
+
+  useEffect(() => {
+    const main = previewPanelRef.current?.closest('.dz-main-branding') as HTMLElement | null;
+    if (!isPreviewOpen) {
+      if (wasPreviewOpenRef.current) {
+        wasPreviewOpenRef.current = false;
+        previewTriggerRef.current?.focus({ preventScroll: true });
+      }
+      return;
     }
 
-    if (wasPreviewOpenRef.current) {
-      wasPreviewOpenRef.current = false;
-      previewTriggerRef.current?.focus({ preventScroll: true });
-    }
+    wasPreviewOpenRef.current = true;
+    const previousOverflowY = main?.style.overflowY ?? '';
+    main?.classList.add('dz-preview-drawer-open');
+    if (main) main.style.overflowY = 'hidden';
+
+    const panel = previewPanelRef.current;
+    previewCloseRef.current?.focus({ preventScroll: true });
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setIsPreviewOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !panel) return;
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      const first = focusable.item(0);
+      const last = focusable.item(focusable.length - 1);
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+      if (main) {
+        main.classList.remove('dz-preview-drawer-open');
+        main.style.overflowY = previousOverflowY;
+      }
+    };
   }, [isPreviewOpen]);
 
   const presetOptions: BrandVisualOption[] = BRAND_PRESETS.map((preset) => ({
@@ -365,13 +422,7 @@ export function BrandingTab({
   ) < 4.5;
 
   return (
-    <div
-      className="dz-branding-workspace"
-      onPointerDown={handleWorkspacePointerDown}
-      onPointerMove={handleWorkspacePointerMove}
-      onPointerUp={clearPreviewSwipe}
-      onPointerCancel={clearPreviewSwipe}
-    >
+    <div className="dz-branding-workspace">
       <div className="dz-customizer-grid">
         <form id="merchant-branding-form" onSubmit={onSave}>
           <header className="dz-branding-panel-head">
@@ -769,14 +820,18 @@ export function BrandingTab({
         />
 
         <aside
+          ref={previewPanelRef}
           id={previewDrawerId}
           className={'dz-branding-preview-sticky' + (isPreviewOpen ? ' is-open' : '')}
+          role={isPreviewOpen ? 'dialog' : 'complementary'}
+          aria-modal={isPreviewOpen ? true : undefined}
           aria-label="معاينة صفحة التتبع"
+          aria-hidden={!isPreviewOpen && undefined}
         >
           <div className="dz-branding-preview-drawer-head">
             <div className="dz-branding-preview-status" aria-live="polite">
               <span className="dz-preview-live-dot" />
-              <strong>معاينة مباشرة</strong>
+              <strong id={previewDrawerId + '-title'}>معاينة مباشرة</strong>
               <span>{hasUnsavedBrandChanges ? 'تغييرات غير محفوظة' : 'آخر نسخة محفوظة'}</span>
             </div>
             <button
@@ -802,6 +857,7 @@ export function BrandingTab({
           onClick={() => setIsPreviewOpen(true)}
           aria-controls={previewDrawerId}
           aria-expanded={isPreviewOpen}
+          tabIndex={isPreviewOpen ? -1 : 0}
           aria-label="فتح معاينة صفحة التتبع"
           data-open={isPreviewOpen ? 'true' : 'false'}
         >
