@@ -1488,7 +1488,6 @@
   outline: none;
 }
 
-.adminLayout input[type="checkbox"],
 .adminLayout input[type="radio"] {
   accent-color: var(--green);
 }
