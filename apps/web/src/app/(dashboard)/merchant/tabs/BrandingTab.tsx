@@ -241,7 +241,6 @@ export function BrandingTab({
   }, [isPreviewOpen]);
 
   useEffect(() => {
-    const main = previewPanelRef.current?.closest('.dz-main-branding') as HTMLElement | null;
     if (!isPreviewOpen) {
       if (wasPreviewOpenRef.current) {
         wasPreviewOpenRef.current = false;
@@ -251,10 +250,6 @@ export function BrandingTab({
     }
 
     wasPreviewOpenRef.current = true;
-    const previousOverflowY = main?.style.overflowY ?? '';
-    main?.classList.add('dz-preview-drawer-open');
-    if (main) main.style.overflowY = 'hidden';
-
     const panel = previewPanelRef.current;
     previewCloseRef.current?.focus({ preventScroll: true });
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -279,13 +274,19 @@ export function BrandingTab({
       }
     };
 
+    const preventBackgroundScroll = (event: WheelEvent | TouchEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const isPreviewContent = Boolean(target?.closest('.dz-phone-scroll-viewport'));
+      if (!isPreviewContent) event.preventDefault();
+    };
+
     document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('wheel', preventBackgroundScroll, { capture: true, passive: false });
+    document.addEventListener('touchmove', preventBackgroundScroll, { capture: true, passive: false });
     return () => {
       document.removeEventListener('keydown', handleKeyDown, true);
-      if (main) {
-        main.classList.remove('dz-preview-drawer-open');
-        main.style.overflowY = previousOverflowY;
-      }
+      document.removeEventListener('wheel', preventBackgroundScroll, true);
+      document.removeEventListener('touchmove', preventBackgroundScroll, true);
     };
   }, [isPreviewOpen]);
 
@@ -826,7 +827,7 @@ export function BrandingTab({
           role={isPreviewOpen ? 'dialog' : 'complementary'}
           aria-modal={isPreviewOpen ? true : undefined}
           aria-label="معاينة صفحة التتبع"
-          aria-hidden={!isPreviewOpen && undefined}
+          aria-labelledby={previewDrawerId + '-title'}
         >
           <div className="dz-branding-preview-drawer-head">
             <div className="dz-branding-preview-status" aria-live="polite">
