@@ -8186,12 +8186,12 @@
     display: none !important;
   }
 
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle {
+  body .dz-branding-preview-handle {
     display: flex;
     position: fixed;
-    left: 0;
+    left: env(safe-area-inset-left, 0px);
     top: 50%;
-    z-index: 1380;
+    z-index: 2147483001;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -8203,7 +8203,7 @@
     background: #294b37 !important;
     color: #fffefa !important;
     box-shadow: 5px 8px 22px -12px rgba(19, 44, 27, .55);
-    transform: translateY(-50%);
+    transform: translate3d(0, -50%, 0);
     cursor: pointer;
     writing-mode: vertical-rl;
     text-orientation: mixed;
@@ -8211,11 +8211,11 @@
     transition: background .18s ease, opacity .2s ease;
   }
 
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle:hover {
+  body .dz-branding-preview-handle:hover {
     background: #1d3b2a !important;
   }
 
-  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle[data-open="true"] {
+  body .dz-branding-preview-handle[data-open="true"] {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -8225,29 +8225,50 @@
     display: flex;
   }
 
-  .dz-order-detail-backdrop.dz-branding-preview-backdrop {
+  body .dz-order-detail-backdrop.dz-branding-preview-backdrop {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     z-index: 2147483000;
+    direction: ltr;
+    justify-content: flex-start;
+    align-items: stretch;
+    overflow: hidden;
+    touch-action: pan-y;
   }
 
-  .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel {
+  body .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel {
     --order-details-width: min(520px, calc(100vw - 40px));
+    direction: rtl;
     box-sizing: border-box;
+    flex: 0 0 var(--order-details-width);
     width: var(--order-details-width);
     max-width: calc(100vw - 40px);
+    height: 100vh;
     height: 100dvh;
     max-height: 100dvh;
     min-height: 0;
+    margin: 0;
     padding: 0;
     overflow: hidden !important;
-    border-inline-start: 1px solid var(--border-soft);
+    border: 0 !important;
+    border-right: 1px solid var(--border-soft) !important;
     background: #fffefa;
     box-shadow: 0 20px 70px rgba(20, 30, 23, .25);
-    clip-path: inset(0 0 0 100%);
-    transition: clip-path .32s cubic-bezier(.2,.75,.25,1), visibility 0s linear .32s;
+    clip-path: inset(0 100% 0 0);
+    -webkit-clip-path: inset(0 100% 0 0);
+    transition:
+      clip-path .32s cubic-bezier(.2,.75,.25,1),
+      -webkit-clip-path .32s cubic-bezier(.2,.75,.25,1),
+      visibility 0s linear .32s;
   }
 
-  .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel[data-open="true"] {
+  body .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel[data-open="true"] {
     clip-path: inset(0);
+    -webkit-clip-path: inset(0);
     visibility: visible;
     overflow: hidden !important;
     transition-delay: 0s;
