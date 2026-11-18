@@ -7983,3 +7983,8 @@
   width: 100%;
   min-width: 0;
 }
+@media (max-width: 380px) {
+  .dz-admin-root .dz-branding-workspace .dz-brand-group {
+    padding-inline: 12px;
+  }
+}
