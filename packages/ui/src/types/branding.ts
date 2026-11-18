@@ -1,7 +1,30 @@
 export type BackgroundStyle  = 'aurora' | 'midnight' | 'minimal' | 'sunset' | 'emerald' | 'mesh';
 export type TimelineDesign   = 'stepper' | 'cards' | 'journey' | 'compact';
 export type CardRadius       = 'sharp' | 'sleek' | 'modern' | 'pebble';
-export type CardSurface      = 'glass' | 'solid' | 'bordered' | 'borderless';
+export type CardSurface       = 'glass' | 'solid' | 'bordered' | 'borderless' | 'elevated' | 'tinted' | 'paper' | 'inset' | 'filled';
+export type CardSurfaceChoice  = 'filled' | 'glass' | 'bordered' | 'tinted' | 'borderless';
+
+/** Normalize values from earlier branding versions to the current, understandable choices. */
+export function normalizeCardSurfaceChoice(surface: CardSurface | string | null | undefined): CardSurfaceChoice {
+  switch (surface) {
+    case 'filled':
+    case 'elevated':
+    case 'paper':
+    case 'inset':
+      return 'filled';
+    case 'glass':
+      return 'glass';
+    case 'bordered':
+      return 'bordered';
+    case 'tinted':
+      return 'tinted';
+    case 'solid':
+    case 'borderless':
+      return 'borderless';
+    default:
+      return 'glass';
+  }
+}
 export type ThemeMode        = 'light' | 'dark' | 'auto';
 
 /** Arabic-optimised Google Fonts available on the tracking page */
