@@ -8154,8 +8154,9 @@
 
   .dz-admin-root .dz-branding-workspace .dz-phone-chassis {
     width: min(100%, 342px, calc(76svh * .461538)) !important;
-    height: min(76svh, 740px) !important;
-    max-height: calc(100svh - 82px);
+    height: auto !important;
+    max-height: calc(76svh, 740px);
+    max-height: min(76svh, 740px);
     min-height: 0 !important;
     aspect-ratio: 9 / 19.5;
     flex: 0 1 auto;
@@ -8318,7 +8319,7 @@
 
   .dz-branding-preview-side-device .dz-phone-chassis {
     width: min(100%, 342px, calc((100dvh - 112px) * .461538)) !important;
-    height: min(calc(100dvh - 112px), 740px) !important;
+    height: auto !important;
     max-width: 100%;
     min-height: 0 !important;
     aspect-ratio: 9 / 19.5;
@@ -8360,7 +8361,7 @@
 
   .dz-branding-preview-side-device .dz-phone-chassis {
     width: min(100%, 342px, calc((100dvh - 108px) * .461538)) !important;
-    height: min(calc(100dvh - 108px), 740px) !important;
+    height: auto !important;
   }
 }
 
