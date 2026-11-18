@@ -23,6 +23,7 @@ import SupabaseUsageTab from './SupabaseUsageTab';
 import { DashboardFilterTabs } from '../merchant/components/DashboardFilterTabs';
 import { DashboardMetricCard } from '../merchant/components/DashboardMetricCard';
 import { BrandedSelect } from '../merchant/BrandedSelect';
+import { BrandedCheckbox } from '../../../components/BrandedCheckbox';
 
 interface MerchantItem {
   id: string;
@@ -1050,7 +1051,7 @@ export function AdminDashboardView({
             </div>
 
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '26px', paddingTop: '18px', borderTop: '1px solid var(--border-soft)', cursor: 'pointer', fontSize: '12px', lineHeight: 1.7, fontWeight: 600 }}>
-              <input type="checkbox" name="reset_used" value="true" style={{ marginTop: '3px' }} />
+              <BrandedCheckbox size={18} name="reset_used" value="true" style={{ marginTop: '3px' }} />
               <span>تصفير عداد الطلبات المستهلكة للشهر الجديد (العداد الحالي: {editingMerchant.monthly_orders_used || 0})</span>
             </label>
           </form>
