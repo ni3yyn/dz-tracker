@@ -8,6 +8,7 @@ body {
 
 *, *::before, *::after {
   box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Utility keyframe for spinners ─────────────────────────── */
