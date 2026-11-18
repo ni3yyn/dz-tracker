@@ -8173,6 +8173,7 @@
 }
 
 @media (max-width: 1140px) {
+  .dz-admin-root .dz-main-branding,
   .dz-admin-root .dz-branding-workspace {
     touch-action: pan-y;
   }
@@ -8369,7 +8370,7 @@
 }
 
 @media (max-width: 420px) {
-  .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel {
+  body .dz-order-detail-panel.dz-order-details-panel.dz-branding-preview-side-panel {
     --order-details-width: calc(100vw - 28px);
     width: var(--order-details-width);
     max-width: var(--order-details-width);
