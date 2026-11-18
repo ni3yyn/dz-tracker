@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@saas/database';
-import { TimelineEvent, BrandSettings, DEFAULT_BRAND_SETTINGS } from '@saas/ui';
+import { TimelineEvent, BrandSettings, DEFAULT_BRAND_SETTINGS, normalizeCardSurfaceChoice } from '@saas/ui';
 import { PushNotificationControl } from './PushNotificationControl';
 import styles from './t.module.css';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
@@ -377,14 +377,12 @@ export function TrackingLiveView({
   };
   const backgroundClass = backgroundClassMap[settings.bgStyle] || styles.bgAurora;
 
+  const surfaceChoice = normalizeCardSurfaceChoice(settings.cardSurface);
   const surfaceClass =
-    settings.cardSurface === 'solid' ? styles.cardSolid
-    : settings.cardSurface === 'bordered' ? styles.cardBordered
-    : settings.cardSurface === 'borderless' ? styles.cardBorderless
-    : String(settings.cardSurface) === 'elevated' ? styles.cardElevated
-    : String(settings.cardSurface) === 'tinted' ? styles.cardTinted
-    : String(settings.cardSurface) === 'paper' ? styles.cardPaper
-    : String(settings.cardSurface) === 'inset' ? styles.cardInset
+    surfaceChoice === 'filled' ? styles.cardFilled
+    : surfaceChoice === 'bordered' ? styles.cardBordered
+    : surfaceChoice === 'tinted' ? styles.cardTinted
+    : surfaceChoice === 'borderless' ? styles.cardBorderless
     : styles.cardGlass;
 
   const radiusClass =
