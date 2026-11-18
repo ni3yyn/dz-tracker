@@ -62,6 +62,8 @@ function BrandVisualDropdown({
   showOptionCheck,
   triggerHeight,
   valueClassName,
+  optionContentClassName,
+  optionLabelClassName,
 }: {
   label: string;
   selectedId: string;
@@ -82,6 +84,8 @@ function BrandVisualDropdown({
   showOptionCheck?: boolean;
   triggerHeight?: number;
   valueClassName?: string;
+  optionContentClassName?: string;
+  optionLabelClassName?: string;
 }) {
   const selectOptions = options.map((option) => ({
     value: option.id,
@@ -137,6 +141,8 @@ function BrandVisualDropdown({
         showOptionCheck={showOptionCheck}
         triggerHeight={triggerHeight}
         valueClassName={['dz-brand-visual-value', valueClassName].filter(Boolean).join(' ')}
+        optionContentClassName={optionContentClassName}
+        optionLabelClassName={optionLabelClassName}
         renderOption={(option, state) => {
           const visualOption = findOption(option);
           return visualOption ? (renderOption ? renderOption(visualOption) : defaultVisual(visualOption)) : null;
@@ -489,6 +495,8 @@ export function BrandingTab({
                   options={fontOptions}
                   onChange={(value) => onUpdateBrandConfig('fontFamily', value as EditableBrandSettings['fontFamily'])}
                   renderOption={(option) => option.preview}
+                  optionContentClassName="dz-brand-font-option-content"
+                  optionLabelClassName="dz-brand-font-option-label"
                   renderValue={(option) => option?.preview ?? <span className="dz-brand-font-preview">تاجر تراك</span>}
                 />
                 <BrandVisualDropdown
