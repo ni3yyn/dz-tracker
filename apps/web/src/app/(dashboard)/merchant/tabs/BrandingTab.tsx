@@ -132,6 +132,8 @@ export function BrandingTab({
                       <button
                         key={palette.hex}
                         type="button"
+                        className="dz-brand-color-swatch"
+                        aria-pressed={brandConfig.brandColor.toLowerCase() === palette.hex.toLowerCase()}
                         onClick={() => onUpdateBrandConfig('brandColor', palette.hex)}
                         style={{
                           width: '38px', height: '38px', borderRadius: '50%', background: palette.hex,
@@ -215,13 +217,13 @@ export function BrandingTab({
                     ))}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-base)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-soft)' }}>
+                  <div className="dz-brand-setting-row dz-brand-theme-row" style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-base)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-soft)' }}>
                     <span style={{ fontSize: '13px', fontWeight: 600 }}>وضع الإضاءة (Theme Mode):</span>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button
                         type="button"
                         onClick={() => onUpdateBrandConfig('themeMode', 'light')}
-                        className={`dz-btn dz-btn-outline ${brandConfig.themeMode === 'light' ? 'active' : ''}`}
+                        className={`dz-btn dz-btn-outline dz-brand-theme-button ${brandConfig.themeMode === 'light' ? 'active' : ''}`}
                         style={{ padding: '6px 14px', fontSize: '12px', background: brandConfig.themeMode === 'light' ? 'var(--ink-main)' : undefined, color: brandConfig.themeMode === 'light' ? '#fff' : undefined }}
                       >
                         فاتح (Light)
@@ -229,7 +231,7 @@ export function BrandingTab({
                       <button
                         type="button"
                         onClick={() => onUpdateBrandConfig('themeMode', 'dark')}
-                        className={`dz-btn dz-btn-outline ${brandConfig.themeMode === 'dark' ? 'active' : ''}`}
+                        className={`dz-btn dz-btn-outline dz-brand-theme-button ${brandConfig.themeMode === 'dark' ? 'active' : ''}`}
                         style={{ padding: '6px 14px', fontSize: '12px', background: brandConfig.themeMode === 'dark' ? 'var(--ink-main)' : undefined, color: brandConfig.themeMode === 'dark' ? '#fff' : undefined }}
                       >
                         داكن (Dark)
@@ -237,7 +239,7 @@ export function BrandingTab({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '18px', marginTop: '14px', padding: '16px', border: '1px solid var(--border-soft)', borderRadius: '12px', background: 'var(--surface)' }}>
+                  <div className="dz-brand-setting-row dz-brand-toggle-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '18px', marginTop: '14px', padding: '16px', border: '1px solid var(--border-soft)', borderRadius: '12px', background: 'var(--surface)' }}>
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: 800, marginBottom: '4px' }}>تمويه الخلفية لتحسين وضوح المحتوى</div>
                       <div style={{ color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.7 }}>طبقة خفيفة بتمويه بسيط للخلفية والزخارف فقط؛ النصوص والمحتوى تبقى واضحة. يمكنك إيقافها في أي وقت.</div>
@@ -249,7 +251,7 @@ export function BrandingTab({
                   </div>
 
                   {String(brandConfig.bgStyle) === 'blobs' && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '18px', marginTop: '14px', padding: '16px', border: '1px solid var(--border-soft)', borderRadius: '12px', background: 'var(--surface)' }}>
+                    <div className="dz-brand-setting-row dz-brand-toggle-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '18px', marginTop: '14px', padding: '16px', border: '1px solid var(--border-soft)', borderRadius: '12px', background: 'var(--surface)' }}>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: 800, marginBottom: '4px' }}>تحريك الأشكال العضوية</div>
                         <div style={{ color: 'var(--ink-muted)', fontSize: '12px', lineHeight: 1.7 }}>حركة بطيئة وناعمة للكتل الضبابية، مستقلة عن مستوى الحركة العام.</div>
@@ -388,7 +390,11 @@ export function BrandingTab({
                     {FONT_FAMILIES.map((ff) => (
                       <div
                         key={ff.id}
+                        className="dz-brand-font-option"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => onUpdateBrandConfig('fontFamily', ff.id)}
+                        onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onUpdateBrandConfig('fontFamily', ff.id); } }}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
