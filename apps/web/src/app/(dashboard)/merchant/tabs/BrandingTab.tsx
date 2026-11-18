@@ -446,6 +446,7 @@ export function BrandingTab({
                     );
                   }}
                   valueClassName="dz-brand-visual-value--background"
+                  triggerClassName="dz-brand-background-trigger-button"
                   menuMaxHeight={520}
                   menuColumns={1}
                   optionLayout="block"
