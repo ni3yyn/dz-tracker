@@ -449,7 +449,6 @@ export function BrandingTab({
                   valueClassName="dz-brand-visual-value--background"
                   triggerClassName="dz-brand-background-select-trigger"
                   indicatorClassName="dz-brand-background-select-indicator"
-                  menuWidth={520}
                   menuMaxHeight={520}
                   menuColumns={1}
                   optionLayout="block"
