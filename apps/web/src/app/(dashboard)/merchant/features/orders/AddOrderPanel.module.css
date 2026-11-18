@@ -197,13 +197,13 @@
   cursor: pointer;
 }
 
-.toggleRow > [data-branded-checkbox],
-.checkboxRow > [data-branded-checkbox] {
+.toggleRow > [data-branded-toggle],
+.checkboxRow > [data-branded-toggle] {
   margin: 2px 0 0;
   cursor: pointer;
 }
 
-.toggleRow > span:not([data-branded-checkbox]) {
+.toggleRow > span:not([data-branded-toggle]) {
   display: grid;
   gap: 4px;
   min-width: 0;
@@ -260,7 +260,7 @@
   cursor: pointer;
 }
 
-.checkboxRow > [data-branded-checkbox] {
+.checkboxRow > [data-branded-toggle] {
   margin-top: 1px;
 }
 
