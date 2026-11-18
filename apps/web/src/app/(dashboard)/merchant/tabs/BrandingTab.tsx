@@ -61,6 +61,7 @@ function BrandVisualDropdown({
   showOptionLabel,
   showOptionCheck,
   triggerHeight,
+  valueClassName,
 }: {
   label: string;
   selectedId: string;
@@ -80,6 +81,7 @@ function BrandVisualDropdown({
   showOptionLabel?: boolean;
   showOptionCheck?: boolean;
   triggerHeight?: number;
+  valueClassName?: string;
 }) {
   const selectOptions = options.map((option) => ({
     value: option.id,
@@ -134,6 +136,7 @@ function BrandVisualDropdown({
         showOptionLabel={showOptionLabel}
         showOptionCheck={showOptionCheck}
         triggerHeight={triggerHeight}
+        valueClassName={['dz-brand-visual-value', valueClassName].filter(Boolean).join(' ')}
         renderOption={(option, state) => {
           const visualOption = findOption(option);
           return visualOption ? (renderOption ? renderOption(visualOption) : defaultVisual(visualOption)) : null;
@@ -418,8 +421,9 @@ export function BrandingTab({
                   renderOption={(option) => option.preview}
                   renderValue={(option) => {
                     const background = BACKGROUND_STYLES.find((item) => item.id === option?.id);
-                    return background ? <span className="dz-brand-background-trigger" style={{ background: background.previewBg }} /> : null;
+                    return <span className="dz-brand-background-trigger" style={{ background: background?.previewBg ?? 'linear-gradient(135deg, #e8eee5, #f8f7f1)' }} />;
                   }}
+                  valueClassName="dz-brand-visual-value--background"
                   menuWidth={520}
                   menuMaxHeight={520}
                   menuColumns={1}
@@ -520,6 +524,7 @@ export function BrandingTab({
                 onChange={(value) => onUpdateBrandConfig('timelineLineStyle', value as EditableBrandSettings['timelineLineStyle'])}
                 renderOption={(option) => option.preview}
                 renderValue={(option) => option?.preview ?? null}
+                valueClassName="dz-brand-visual-value--connector"
                 menuWidth={500}
                 menuMaxHeight={460}
                 menuColumns={1}
