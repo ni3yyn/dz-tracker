@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { normalizeCardSurfaceChoice } from '@saas/ui';
+import { getBrandRadiusTokens, normalizeCardSurfaceChoice } from '@saas/ui';
 import { toCachedImageUrl } from '../../../../../lib/imageProxy';
 import type { EditableBrandSettings } from '../../shared/branding-types';
 import {
@@ -67,13 +67,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
     : isOutlined ? `1px solid ${strongBorderColor}`
     : isTinted ? `1px solid color-mix(in srgb, ${brandConfig.brandColor} 22%, ${borderColor})`
     : `1px solid ${borderColor}`;
-  const radiusTokens = brandConfig.cardRadius === 'sharp'
-    ? { card: '0px', panel: '0px', control: '0px', timeline: '0px', badge: '0px', avatar: '0px', marker: '0px', floating: '0px', notice: '0px' }
-    : brandConfig.cardRadius === 'sleek'
-      ? { card: '14px', panel: '10px', control: '9px', timeline: '9px', badge: '9px', avatar: '14px', marker: '5px', floating: '14px', notice: '10px' }
-      : brandConfig.cardRadius === 'pebble'
-        ? { card: '38px', panel: '21px', control: '15px', timeline: '15px', badge: '999px', avatar: '20px', marker: '12px', floating: '999px', notice: '18px' }
-        : { card: '26px', panel: '16px', control: '12px', timeline: '12px', badge: '12px', avatar: '18px', marker: '7px', floating: '16px', notice: '12px' };
+  const radiusTokens = getBrandRadiusTokens(brandConfig.cardRadius);
   const cardRadius = radiusTokens.card;
   const cardShadow = 'none';
   const fontFamily = brandConfig.fontFamily === 'cairo' ? "'Cairo', system-ui, sans-serif"
@@ -125,12 +119,12 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
           }}
         />
         <div className="dz-phone-scroll-viewport">
-        <div style={{ width: cardWidth, maxWidth: '100%', margin: '0 auto', background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none', overflow: 'visible', position: 'relative', zIndex: 1, transition: 'width .2s ease' }}>
+        <div style={{ width: cardWidth, maxWidth: '100%', margin: '0 auto', background: 'transparent', border: 'none', borderRadius: cardRadius, boxShadow: 'none', overflow: 'visible', position: 'relative', zIndex: 1, transition: 'width .2s ease' }}>
           <div style={{ height: '4px', width: '100%', background: brandConfig.brandColor }} />
 
-          <header style={{ padding: density.padding, borderBottom: `1px solid ${borderColor}` }}>
+          <header style={{ padding: density.padding, border: `1px solid ${borderColor}`, borderRadius: cardRadius, background: `color-mix(in srgb, ${baseSurface} 88%, transparent)` }}>
             {brandConfig.announcementText && (
-              <div style={{ background: brandTint, border: `1px solid ${brandConfig.brandColor}35`, color: textColor, padding: '9px 11px', borderRadius: radiusTokens.notice, fontSize: '12px', lineHeight: 1.7, fontWeight: 600, marginBottom: density.topMargin, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <div style={{ background: brandTint, border: `1px solid ${brandConfig.brandColor}35`, color: textColor, padding: '9px 11px', borderRadius: radiusTokens.control, fontSize: '12px', lineHeight: 1.7, fontWeight: 600, marginBottom: density.topMargin, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                 <span style={{ color: getReadableBrandAccent(brandConfig.brandColor, brandConfig.themeMode), fontSize: '11px', fontWeight: 800, flexShrink: 0 }}>تنبيه</span>
                 <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{brandConfig.announcementText}</span>
               </div>
@@ -182,7 +176,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
           </section>
 
           <section style={{ padding: '15px 13px 21px', borderBottom: `1px solid ${borderColor}` }}>
-            <div style={{ border: cardBorder, borderInlineStart: 0, borderRadius: isBorderless ? 0 : cardRadius, background: cardBg, boxShadow: cardShadow, backdropFilter: isGlass ? 'blur(12px)' : undefined, WebkitBackdropFilter: isGlass ? 'blur(12px)' : undefined, padding: isBorderless ? '8px 0 12px' : '15px 13px 17px' }}>
+            <div style={{ border: cardBorder, borderInlineStart: 0, borderRadius: panelRadius, background: cardBg, boxShadow: cardShadow, backdropFilter: isGlass ? 'blur(12px)' : undefined, WebkitBackdropFilter: isGlass ? 'blur(12px)' : undefined, padding: isBorderless ? '8px 0 12px' : '15px 13px 17px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '5px 10px', marginBottom: '10px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 750, color: mutedColor }}>آخر تحديث</span>
                 <span style={{ fontSize: '10px', color: quietColor, whiteSpace: 'nowrap' }}>اليوم · 10:42</span>
@@ -192,7 +186,7 @@ export const BrandingPhonePreview = memo(function BrandingPhonePreview({
             </div>
 
             {brandConfig.showCarrierBadge && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '15px', padding: '12px 0', borderBlock: `1px solid ${borderColor}`, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '15px', padding: '12px 11px', border: `1px solid ${borderColor}`, borderRadius: panelRadius, background: `color-mix(in srgb, ${baseSurface} 84%, transparent)`, minWidth: 0 }}>
                 <span style={{ width: '31px', height: '31px', display: 'grid', placeItems: 'center', borderRadius: radiusTokens.control, background: brandTint, color: getReadableBrandAccent(brandConfig.brandColor, brandConfig.themeMode), flexShrink: 0, fontWeight: 800, fontSize: '15px' }}>↗</span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: '11px', color: mutedColor, marginBottom: '3px' }}>ياليدين</span>
