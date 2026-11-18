@@ -311,6 +311,7 @@ export function BrandingTab({
               optionLayout="block"
               optionMinHeight={112}
               optionPadding="8px"
+              renderOption={(option) => option.preview}
               onChange={(value) => {
                 const preset = BRAND_PRESETS.find((item) => item.id === value);
                 if (preset) onApplyBrandPreset(preset);
