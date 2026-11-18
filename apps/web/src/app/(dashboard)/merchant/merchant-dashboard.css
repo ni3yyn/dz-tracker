@@ -7457,3 +7457,306 @@
 .dz-admin-root .dz-branding-workspace .dz-brand-dropdown-art .dz-brand-radius-preview--sleek { border-radius: 4px !important; }
 .dz-admin-root .dz-branding-workspace .dz-brand-dropdown-art .dz-brand-radius-preview--modern { border-radius: 9px !important; }
 .dz-admin-root .dz-branding-workspace .dz-brand-dropdown-art .dz-brand-radius-preview--pebble { border-radius: 14px !important; }
+
+
+
+
+/* BRAND VISUAL MENU V2 — full, real option previews */
+/* The shared BrandedSelect mounts menus in document.body; all preview artwork
+   below is intentionally global so it renders in both the trigger and portal. */
+.dz-branding-shared-select .value {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.dz-branding-shared-select .trigger {
+  width: 100%;
+  min-width: 0;
+}
+.dz-branding-shared-select .optionBlock {
+  position: relative;
+}
+.dz-branding-shared-select .optionBlock.selected {
+  background: #e8f0e7;
+  box-shadow: inset 0 0 0 2px #55785c;
+}
+.dz-branding-shared-select .optionBlock.active {
+  background: #edf3eb;
+}
+.dz-branding-shared-select .optionBlock .check {
+  position: absolute;
+  top: 9px;
+  inset-inline-start: 9px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+  background: #fffefa;
+  box-shadow: 0 1px 5px rgba(26, 44, 31, .16);
+}
+
+/* Preset samples: show enough of a branded tracking page to distinguish each preset. */
+.dz-brand-preset-option-preview {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 66px;
+  grid-template-rows: 1fr 1fr;
+  align-items: center;
+  gap: 6px 10px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 78px;
+  padding: 12px 14px;
+  overflow: hidden;
+  border: 1px solid rgba(43, 67, 49, .14);
+  background: var(--preset-surface, #f2f0e8);
+}
+.dz-brand-preset-option-preview::before {
+  content: '';
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: var(--preset-primary, #4f6a55);
+}
+.dz-brand-preset-preview-logo {
+  grid-row: 1 / 3;
+  display: block;
+  width: 27px;
+  height: 27px;
+  border: 5px solid var(--preset-primary, #4f6a55);
+  background: transparent;
+}
+.dz-brand-preset-preview-heading {
+  display: block;
+  width: 68%;
+  height: 8px;
+  background: var(--preset-primary, #4f6a55);
+  opacity: .9;
+}
+.dz-brand-preset-preview-copy {
+  display: block;
+  width: 92%;
+  height: 4px;
+  background: color-mix(in srgb, var(--preset-primary, #4f6a55) 32%, transparent);
+}
+.dz-brand-preset-preview-button {
+  grid-column: 3;
+  grid-row: 1;
+  display: block;
+  width: 100%;
+  height: 22px;
+  background: var(--preset-primary, #4f6a55);
+}
+.dz-brand-preset-preview-progress {
+  grid-column: 3;
+  grid-row: 2;
+  display: block;
+  width: 100%;
+  height: 4px;
+  background: var(--preset-accent, #c6a47a);
+}
+
+/* Background menu choices are wide canvases, stacked without text. */
+.dz-brand-background-choice {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 72px;
+  border: 1px solid rgba(37, 57, 42, .17);
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+}
+.dz-branding-shared-select .optionBlock .dz-brand-background-choice {
+  height: 76px;
+}
+.dz-branding-shared-select .value > .dz-brand-background-choice {
+  height: 32px;
+}
+
+/* Two actual shipment phases, sized to read like a miniature timeline rather than an icon. */
+.dz-brand-timeline-thumbnail {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 98px;
+  padding: 10px 12px;
+  border: 1px solid #dce4db;
+  background: #fbfcf8;
+  direction: rtl;
+}
+.dz-brand-timeline-phase {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-height: 31px;
+  padding: 1px 0;
+}
+.dz-brand-timeline-marker {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--timeline-swatch-brand, #416b52);
+  background: #edf3eb;
+  color: var(--timeline-swatch-brand, #416b52);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1;
+}
+.dz-brand-timeline-phase + .dz-brand-timeline-phase .dz-brand-timeline-marker::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 1px;
+  height: 9px;
+  background: var(--timeline-swatch-brand, #416b52);
+}
+.dz-brand-timeline-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: start;
+}
+.dz-brand-timeline-copy b {
+  display: block;
+  overflow: hidden;
+  color: #34463a;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dz-brand-timeline-copy small {
+  color: #7a897c;
+  font-size: 8px;
+  line-height: 1.35;
+}
+.dz-brand-timeline-thumbnail--cards {
+  gap: 5px;
+  background: #f4f6f1;
+}
+.dz-brand-timeline-thumbnail--cards .dz-brand-timeline-phase {
+  padding: 4px 7px;
+  border: 1px solid #dfe6dc;
+  background: #fffefa;
+}
+.dz-brand-timeline-thumbnail--journey .dz-brand-timeline-marker {
+  transform: rotate(45deg);
+  border-style: dashed;
+}
+.dz-brand-timeline-thumbnail--journey .dz-brand-timeline-marker::first-letter {
+  transform: rotate(-45deg);
+}
+.dz-brand-timeline-thumbnail--compact {
+  gap: 3px;
+  padding-block: 7px;
+}
+.dz-brand-timeline-thumbnail--compact .dz-brand-timeline-phase {
+  grid-template-columns: 15px minmax(0, 1fr);
+  min-height: 25px;
+}
+.dz-brand-timeline-thumbnail--compact .dz-brand-timeline-marker {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  font-size: 0;
+}
+.dz-brand-timeline-thumbnail--compact .dz-brand-timeline-copy {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dz-brand-timeline-thumbnail--compact .dz-brand-timeline-copy small {
+  flex: 0 0 auto;
+}
+.dz-brand-timeline-thumbnail--rail .dz-brand-timeline-marker {
+  border: 0;
+  background: var(--timeline-swatch-brand, #416b52);
+  color: #fffefa;
+  font-size: 0;
+}
+.dz-brand-timeline-thumbnail--rail .dz-brand-timeline-phase + .dz-brand-timeline-phase .dz-brand-timeline-marker::before {
+  width: 3px;
+  left: calc(50% - 1px);
+}
+.dz-brand-timeline-thumbnail--editorial {
+  border: 0;
+  border-inline-start: 3px solid var(--timeline-swatch-brand, #416b52);
+  background: #f6f6f1;
+}
+.dz-brand-timeline-thumbnail--editorial .dz-brand-timeline-marker {
+  border: 0;
+  border-bottom: 2px solid var(--timeline-swatch-brand, #416b52);
+  background: transparent;
+  font-size: 9px;
+}
+.dz-brand-timeline-thumbnail--editorial .dz-brand-timeline-copy b {
+  font-size: 11px;
+}
+.dz-brand-timeline-thumbnail--milestones .dz-brand-timeline-phase {
+  padding: 4px 8px;
+  background: color-mix(in srgb, var(--timeline-swatch-brand, #416b52) 9%, #fffefa);
+}
+.dz-brand-timeline-thumbnail--milestones .dz-brand-timeline-marker {
+  border: 0;
+  background: var(--timeline-swatch-brand, #416b52);
+  color: #fffefa;
+}
+.dz-brand-timeline-thumbnail--numbered .dz-brand-timeline-marker {
+  border: 0;
+  background: var(--timeline-swatch-brand, #416b52);
+  color: #fffefa;
+}
+.dz-brand-timeline-thumbnail--dossier {
+  gap: 0;
+  border: 1px solid #dbe2da;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 34px, #e4e9e2 35px);
+}
+.dz-brand-timeline-thumbnail--dossier .dz-brand-timeline-phase {
+  grid-template-columns: 28px minmax(0, 1fr);
+  min-height: 35px;
+}
+.dz-brand-timeline-thumbnail--dossier .dz-brand-timeline-marker {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  background: transparent;
+  color: var(--timeline-swatch-brand, #416b52);
+}
+
+/* Connector previews are horizontal and show the complete link between two nodes. */
+.dz-brand-connector-thumbnail {
+  display: block;
+  width: 100%;
+  height: 48px;
+  overflow: visible;
+}
+.dz-branding-shared-select .value > .dz-brand-connector-thumbnail {
+  height: 38px;
+}
+
+/* Use taller option surfaces only where the preview needs room; keep other selects compact. */
+@media (max-width: 680px) {
+  .dz-brand-preset-option-preview { min-height: 70px; padding: 9px 11px; }
+  .dz-brand-timeline-thumbnail { min-height: 90px; padding: 8px 9px; }
+  .dz-branding-shared-select .optionBlock .dz-brand-background-choice { height: 66px; }
+}
