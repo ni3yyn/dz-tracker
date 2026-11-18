@@ -62,6 +62,18 @@ export function useMerchantDashboardBackHandler({
         closeCustomMappingModal();
         return true;
       }
+      const brandingPreviewLayer = typeof document !== 'undefined'
+        ? document.querySelector('[data-dashboard-back-dismiss="branding-preview-panel"]')
+        : null;
+      if (brandingPreviewLayer) {
+        brandingPreviewLayer.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }));
+        return true;
+      }
+
       const addOrderLayer = typeof document !== 'undefined'
         ? document.querySelector('[data-dashboard-back-dismiss="add-order-panel"]')
         : null;
