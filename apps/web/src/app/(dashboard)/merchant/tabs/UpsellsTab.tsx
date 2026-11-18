@@ -2,7 +2,6 @@ import type { FormEvent } from 'react';
 import { toCachedImageUrl } from '../../../../lib/imageProxy';
 import { ImageUploadField } from '../ImageUploadField';
 import { BrandedToggle } from '../../../../components/BrandedToggle';
-import { BrandedCheckbox } from '../../../../components/BrandedCheckbox';
 import { Icons } from '../components/DashboardIcons';
 import type { MerchantUpsellItem, ReorderDirection } from '../shared/upsell-types';
 
