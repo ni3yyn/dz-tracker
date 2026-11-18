@@ -262,7 +262,7 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
             tabIndex={isOpen ? -1 : 0}
             data-open={isOpen ? 'true' : 'false'}
           >
-            <span>معاينة</span>
+            <span>معاينة مباشرة</span>
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" />
               <circle cx="12" cy="12" r="2.5" />
@@ -287,14 +287,11 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
               role="dialog"
               aria-modal="true"
               aria-hidden={!isOpen}
-              aria-labelledby={panelId + '-title'}
+              aria-label="معاينة مباشرة"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="dz-order-side-panel-inner dz-order-side-panel-inner--details dz-branding-preview-side-panel-inner">
                 <header className="dz-order-detail-head dz-branding-preview-side-head">
-                  <div>
-                    <h2 id={panelId + '-title'}>معاينة مباشرة</h2>
-                  </div>
                   <button
                     ref={closeRef}
                     type="button"
