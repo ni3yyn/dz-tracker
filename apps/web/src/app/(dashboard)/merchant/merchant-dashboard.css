@@ -7837,6 +7837,15 @@
   text-overflow: clip;
   white-space: normal;
 }
+
+.dz-branding-shared-select .dz-brand-background-trigger-button {
+  align-items: stretch !important;
+  padding-block: 0 !important;
+}
+
+.dz-branding-shared-select .dz-brand-visual-value--background {
+  align-items: stretch !important;
+}
 /* Both states clip the same fixed artwork canvas. Keeping its dimensions
    identical also prevents gradient layers from scaling with the trigger width. */
 .dz-brand-background-preview {
