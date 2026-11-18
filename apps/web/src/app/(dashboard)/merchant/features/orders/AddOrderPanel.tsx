@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { createPortal } from 'react-dom';
 import type { FormEvent } from 'react';
 import { BrandedSelect } from '../../BrandedSelect';
-import { BrandedCheckbox } from '../../../../../components/BrandedCheckbox';
+import { BrandedToggle } from '../../../../../components/BrandedToggle';
 import { Icons } from '../../components/DashboardIcons';
 import { getYalidineManualParcelOptions, getYalidineManualParcelOptionsCacheVersion, getYalidineManualFeeQuote } from '../../yalidine-actions';
 import { readManualParcelOptionsCache, writeManualParcelOptionsCache } from './manual-parcel-options-cache';
@@ -631,8 +631,7 @@ export function AddOrderPanel({
                     {carrierName === 'Yalidine Express' && (
                       <section className={styles.section}>
                         <label className={styles.toggleRow}>
-                          <BrandedCheckbox
-                            size={17}
+                          <BrandedToggle
                             name="send_to_yalidine"
                             checked={sendToYalidine}
                             onChange={(event) => setSendToYalidine(event.target.checked)}
@@ -860,11 +859,11 @@ export function AddOrderPanel({
 
                                 <div className={styles.optionsRow}>
                                   <label className={styles.checkboxRow}>
-                                    <BrandedCheckbox size={16} name="do_insurance" />
+                                    <BrandedToggle name="do_insurance" />
                                     <span>تأمين الشحنة</span>
                                   </label>
                                   <label className={styles.checkboxRow}>
-                                    <BrandedCheckbox size={16} name="has_exchange" checked={hasExchange} onChange={(event) => setHasExchange(event.target.checked)} />
+                                    <BrandedToggle name="has_exchange" checked={hasExchange} onChange={(event) => setHasExchange(event.target.checked)} />
                                     <span>استبدال منتج عند التسليم</span>
                                   </label>
                                 </div>
