@@ -8155,7 +8155,6 @@
   .dz-admin-root .dz-branding-workspace .dz-phone-chassis {
     width: min(100%, 342px, calc(76svh * .461538)) !important;
     height: auto !important;
-    max-height: calc(76svh, 740px);
     max-height: min(76svh, 740px);
     min-height: 0 !important;
     aspect-ratio: 9 / 19.5;
