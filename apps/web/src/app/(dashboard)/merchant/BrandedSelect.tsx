@@ -177,7 +177,16 @@ export function BrandedSelect({
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [isMenuMounted, isOpen, menuPosition?.maxHeight, options.length]);
+  }, [
+    isMenuMounted,
+    isOpen,
+    menuPosition?.maxHeight,
+    menuPosition?.columns,
+    menuPosition?.width,
+    options.length,
+    optionMinHeight,
+    menuGap,
+  ]);
 
   const handleMenuTransitionEnd = useCallback((event: React.TransitionEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget || event.propertyName !== 'height') return;
