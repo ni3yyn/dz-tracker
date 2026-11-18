@@ -23,6 +23,7 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
   const panelRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
   const gestureRef = useRef<{ x: number; y: number; pointerId: number; mode: 'open' | 'close' } | null>(null);
+  const touchGestureRef = useRef<{ x: number; y: number; identifier: number; mode: 'open' | 'close' } | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -31,9 +32,12 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
   useEffect(() => {
     if (!isMounted) return;
 
+    const isDesktop = () => window.matchMedia('(min-width: 1141px)').matches;
+    const getTarget = (target: EventTarget | null) => target instanceof Element ? target : null;
+
     const handlePointerDown = (event: PointerEvent) => {
-      if (window.matchMedia('(min-width: 1141px)').matches || event.pointerType !== 'touch') return;
-      const target = event.target instanceof Element ? event.target : null;
+      if (isDesktop() || event.pointerType !== 'touch') return;
+      const target = getTarget(event.target);
 
       if (isOpen) {
         if (target?.closest('.dz-branding-preview-side-head')) {
@@ -47,8 +51,7 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
         return;
       }
 
-      // Preserve the requested left-edge, left-to-right opening gesture.
-      if (event.clientX > 34) return;
+      if (event.clientX > 56) return;
       if (target?.closest('button, input, select, textarea, a, [contenteditable="true"]') &&
           !target?.closest('.dz-branding-preview-handle')) return;
 
@@ -66,10 +69,10 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
 
       const deltaX = event.clientX - start.x;
       const deltaY = Math.abs(event.clientY - start.y);
-      const horizontal = Math.abs(deltaX) >= 64 && Math.abs(deltaX) > deltaY * 1.2;
+      const horizontal = Math.abs(deltaX) >= 54 && Math.abs(deltaX) > deltaY * 1.15;
 
       if (!horizontal) {
-        if (deltaY > 56 || Math.abs(deltaX) > 28) gestureRef.current = null;
+        if (deltaY > 48 || Math.abs(deltaX) > 24) gestureRef.current = null;
         return;
       }
 
@@ -78,21 +81,88 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
       gestureRef.current = null;
     };
 
-    const clearGesture = (event: PointerEvent) => {
+    const handleTouchStart = (event: TouchEvent) => {
+      if (isDesktop() || event.touches.length !== 1) {
+        touchGestureRef.current = null;
+        return;
+      }
+
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      const target = getTarget(event.target);
+
+      if (isOpen) {
+        if (target?.closest('.dz-branding-preview-side-head')) {
+          touchGestureRef.current = {
+            x: touch.clientX,
+            y: touch.clientY,
+            identifier: touch.identifier,
+            mode: 'close',
+          };
+        }
+        return;
+      }
+
+      if (touch.clientX > 56) return;
+      if (target?.closest('button, input, select, textarea, a, [contenteditable="true"]') &&
+          !target?.closest('.dz-branding-preview-handle')) return;
+
+      touchGestureRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        identifier: touch.identifier,
+        mode: 'open',
+      };
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const start = touchGestureRef.current;
+      if (!start) return;
+      const touch = Array.from(event.changedTouches).find((item) => item.identifier === start.identifier);
+      if (!touch) return;
+
+      const deltaX = touch.clientX - start.x;
+      const deltaY = Math.abs(touch.clientY - start.y);
+      const horizontal = Math.abs(deltaX) >= 54 && Math.abs(deltaX) > deltaY * 1.15;
+
+      if (!horizontal) {
+        if (deltaY > 48 || Math.abs(deltaX) > 24) touchGestureRef.current = null;
+        return;
+      }
+
+      if (start.mode === 'open' && deltaX > 0) setIsOpen(true);
+      if (start.mode === 'close' && deltaX < 0) setIsOpen(false);
+      if (event.cancelable) event.preventDefault();
+      touchGestureRef.current = null;
+    };
+
+    const clearPointerGesture = (event: PointerEvent) => {
       if (gestureRef.current?.pointerId === event.pointerId) gestureRef.current = null;
+    };
+    const clearTouchGesture = () => {
+      touchGestureRef.current = null;
     };
 
     window.addEventListener('pointerdown', handlePointerDown, true);
     window.addEventListener('pointermove', handlePointerMove, true);
-    window.addEventListener('pointerup', clearGesture, true);
-    window.addEventListener('pointercancel', clearGesture, true);
+    window.addEventListener('pointerup', clearPointerGesture, true);
+    window.addEventListener('pointercancel', clearPointerGesture, true);
+    window.addEventListener('touchstart', handleTouchStart, { capture: true, passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { capture: true, passive: false });
+    window.addEventListener('touchend', clearTouchGesture, true);
+    window.addEventListener('touchcancel', clearTouchGesture, true);
 
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown, true);
       window.removeEventListener('pointermove', handlePointerMove, true);
-      window.removeEventListener('pointerup', clearGesture, true);
-      window.removeEventListener('pointercancel', clearGesture, true);
+      window.removeEventListener('pointerup', clearPointerGesture, true);
+      window.removeEventListener('pointercancel', clearPointerGesture, true);
+      window.removeEventListener('touchstart', handleTouchStart, true);
+      window.removeEventListener('touchmove', handleTouchMove, true);
+      window.removeEventListener('touchend', clearTouchGesture, true);
+      window.removeEventListener('touchcancel', clearTouchGesture, true);
       gestureRef.current = null;
+      touchGestureRef.current = null;
     };
   }, [isMounted, isOpen]);
 
@@ -169,71 +239,73 @@ export function BrandingPreviewSidePanel({ preview }: BrandingPreviewSidePanelPr
 
   return (
     <>
-      <button
-        ref={triggerRef}
-        type="button"
-        className="dz-branding-preview-handle"
-        onClick={() => setIsOpen(true)}
-        aria-controls={panelId}
-        aria-expanded={isOpen}
-        aria-label="فتح معاينة صفحة التتبع"
-        tabIndex={isOpen ? -1 : 0}
-        data-open={isOpen ? 'true' : 'false'}
-      >
-        <span>معاينة</span>
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" />
-          <circle cx="12" cy="12" r="2.5" />
-        </svg>
-      </button>
-
       {isMounted && createPortal(
-        <div
-          className="dz-order-detail-backdrop dz-order-details-backdrop dz-branding-preview-backdrop"
-          data-dashboard-back-dismiss="branding-preview-panel"
-          data-open={isOpen ? 'true' : 'false'}
-          aria-hidden={!isOpen}
-          role="presentation"
-          onClick={(event) => {
-            if (event.target === event.currentTarget && isOpen) setIsOpen(false);
-          }}
-        >
-          <aside
-            ref={panelRef}
-            id={panelId}
-            className="dz-order-detail-panel dz-order-details-panel dz-branding-preview-side-panel"
+        <>
+          <button
+            ref={triggerRef}
+            type="button"
+            className="dz-branding-preview-handle"
+            onClick={() => setIsOpen(true)}
+            aria-controls={panelId}
+            aria-expanded={isOpen}
+            aria-label="فتح معاينة صفحة التتبع"
+            tabIndex={isOpen ? -1 : 0}
             data-open={isOpen ? 'true' : 'false'}
-            role="dialog"
-            aria-modal="true"
-            aria-hidden={!isOpen}
-            aria-labelledby={panelId + '-title'}
-            onClick={(event) => event.stopPropagation()}
           >
-            <div className="dz-order-side-panel-inner dz-order-side-panel-inner--details dz-branding-preview-side-panel-inner">
-              <header className="dz-order-detail-head dz-branding-preview-side-head">
-                <div>
-                  <span className="dz-order-detail-kicker">معاينة مباشرة</span>
-                  <h2 id={panelId + '-title'}>صفحة تتبّع الطلب</h2>
-                  <p>تظهر التغييرات هنا فور تعديل الهوية.</p>
+            <span>معاينة</span>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" />
+              <circle cx="12" cy="12" r="2.5" />
+            </svg>
+          </button>
+
+          <div
+            className="dz-order-detail-backdrop dz-order-details-backdrop dz-branding-preview-backdrop"
+            data-dashboard-back-dismiss="branding-preview-panel"
+            data-open={isOpen ? 'true' : 'false'}
+            aria-hidden={!isOpen}
+            role="presentation"
+            onClick={(event) => {
+              if (event.target === event.currentTarget && isOpen) setIsOpen(false);
+            }}
+          >
+            <aside
+              ref={panelRef}
+              id={panelId}
+              className="dz-order-detail-panel dz-order-details-panel dz-branding-preview-side-panel"
+              data-open={isOpen ? 'true' : 'false'}
+              role="dialog"
+              aria-modal="true"
+              aria-hidden={!isOpen}
+              aria-labelledby={panelId + '-title'}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="dz-order-side-panel-inner dz-order-side-panel-inner--details dz-branding-preview-side-panel-inner">
+                <header className="dz-order-detail-head dz-branding-preview-side-head">
+                  <div>
+                    <span className="dz-order-detail-kicker">معاينة مباشرة</span>
+                    <h2 id={panelId + '-title'}>صفحة تتبّع الطلب</h2>
+                    <p>تظهر التغييرات هنا فور تعديل الهوية.</p>
+                  </div>
+                  <button
+                    ref={closeRef}
+                    type="button"
+                    className="dz-order-detail-close"
+                    aria-label="إغلاق المعاينة"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                      <path d="M6 6 18 18M18 6 6 18" />
+                    </svg>
+                  </button>
+                </header>
+                <div className="dz-branding-preview-side-device">
+                  {preview}
                 </div>
-                <button
-                  ref={closeRef}
-                  type="button"
-                  className="dz-order-detail-close"
-                  aria-label="إغلاق المعاينة"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-                    <path d="M6 6 18 18M18 6 6 18" />
-                  </svg>
-                </button>
-              </header>
-              <div className="dz-branding-preview-side-device">
-                {preview}
               </div>
-            </div>
-          </aside>
-        </div>,
+            </aside>
+          </div>
+        </>,
         document.body,
       )}
     </>
