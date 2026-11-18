@@ -431,7 +431,7 @@ export function BrandingTab({
                   optionMinHeight={78}
                   optionPadding="5px"
                   showOptionLabel={false}
-                  triggerHeight={48}
+                  triggerHeight={56}
                 />
                 <BrandVisualDropdown
                   label="وضع الصفحة"
@@ -532,7 +532,7 @@ export function BrandingTab({
                 optionMinHeight={66}
                 optionPadding="7px 12px"
                 showOptionLabel={false}
-                triggerHeight={52}
+                triggerHeight={62}
               />
             </section>
           )}
