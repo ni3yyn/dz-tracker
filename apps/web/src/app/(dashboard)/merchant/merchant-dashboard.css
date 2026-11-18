@@ -1549,7 +1549,7 @@
             font-weight: 650;
             cursor: pointer;
           }
-          .dz-order-mobile-select input { width: 16px; height: 16px; margin: 0; accent-color: #294535; }
+          .dz-order-mobile-select [data-branded-checkbox] { margin: 0; }
           .dz-order-mobile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
           .dz-order-mobile-number { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 120px; }
           .dz-order-mobile-number strong { font-size: 13px; line-height: 1.5; color: var(--ink-main); overflow-wrap: anywhere; }
@@ -5474,11 +5474,12 @@
           text-align: center;
           vertical-align: middle;
         }
-        .dz-admin-root .dz-orders-desktop .dz-order-select-cell input {
-          display: block;
+        .dz-admin-root .dz-orders-desktop .dz-order-select-cell [data-branded-checkbox] {
+          display: inline-flex;
           width: 15px;
           height: 15px;
           margin: 0 auto;
+          vertical-align: middle;
         }
         .dz-admin-root .dz-orders-desktop .dz-order-date-cell { white-space: nowrap; }
         .dz-order-date-value {
@@ -6403,9 +6404,6 @@
 .dz-admin-root .dz-branding-workspace .dz-brand-theme-button:hover {
   transform: none;
 }
-.dz-admin-root .dz-branding-workspace input[type="checkbox"] {
-  accent-color: var(--green);
-}
 .dz-admin-root .dz-branding-workspace [style*="border: 2px solid"] {
   box-shadow: none !important;
 }
@@ -7060,12 +7058,8 @@
   font-weight: 650;
   cursor: pointer;
 }
-.dz-admin-root .dz-branding-workspace .dz-brand-toggle input {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 17px;
+.dz-admin-root .dz-branding-workspace .dz-brand-toggle [data-branded-checkbox] {
   margin: 0;
-  accent-color: var(--green);
 }
 .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
   min-height: 0;
