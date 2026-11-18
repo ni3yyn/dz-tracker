@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { MerchantDashboardTab } from '../dashboard/DashboardSidebar';
 import { BrandedSelect } from '../BrandedSelect';
+import { BrandedCheckbox } from '../../../../components/BrandedCheckbox';
 import { StatusSelector } from '../StatusSelector';
 import { Icons } from '../components/DashboardIcons';
 import { DashboardMetricCard } from '../components/DashboardMetricCard';
@@ -169,8 +170,8 @@ export function OrdersTab({
               {filteredOrders.length > 0 && (
                 <div className="dz-bulk-select-toolbar" role="group" aria-label="إجراءات الحذف الجماعي">
                   <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 650, cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
+                    <BrandedCheckbox
+                      size={17}
                       checked={allFilteredOrdersSelected}
                       disabled={isDeletingOrders}
                       onChange={(event) => onToggleFilteredOrderSelection(event.target.checked)}
@@ -279,13 +280,13 @@ export function OrdersTab({
                             }}
                           >
                             <td className="dz-order-select-cell">
-                              <input
-                                type="checkbox"
-                                aria-label={`تحديد الطلب ${order.external_order_id}`}
-                                checked={selectedOrderIds.includes(order.id)}
-                                disabled={isDeletingOrders}
-                                onChange={(event) => onToggleOrderSelection(order.id, event.target.checked)}
-                              />
+                              <BrandedCheckbox
+                           size={15}
+                           aria-label={`تحديد الطلب ${order.external_order_id}`}
+                           checked={selectedOrderIds.includes(order.id)}
+                           disabled={isDeletingOrders}
+                           onChange={(event) => onToggleOrderSelection(order.id, event.target.checked)}
+                         />
                             </td>
                             <td className="dz-order-date-cell">
                               <div className="dz-order-date-value">
@@ -404,13 +405,13 @@ export function OrdersTab({
                          onOpenOrder(order.id);
                        }}>
                       <label className="dz-order-mobile-select">
-                        <input
-                          type="checkbox"
-                          aria-label={`تحديد الطلب ${order.external_order_id}`}
-                          checked={selectedOrderIds.includes(order.id)}
-                          disabled={isDeletingOrders}
-                          onChange={(event) => onToggleOrderSelection(order.id, event.target.checked)}
-                        />
+                        <BrandedCheckbox
+                           size={16}
+                           aria-label={`تحديد الطلب ${order.external_order_id}`}
+                           checked={selectedOrderIds.includes(order.id)}
+                           disabled={isDeletingOrders}
+                           onChange={(event) => onToggleOrderSelection(order.id, event.target.checked)}
+                         />
                         تحديد الطلب
                       </label>
                       <div className="dz-order-mobile-top">
