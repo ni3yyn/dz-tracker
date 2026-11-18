@@ -7175,7 +7175,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
   min-width: 0;
+  align-self: stretch;
 }
 .dz-admin-root .dz-branding-workspace .dz-brand-visual-control-label {
   color: var(--ink-muted);
@@ -7183,8 +7185,12 @@
   font-weight: 750;
 }
 .dz-admin-root .dz-branding-workspace .dz-branding-shared-select {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
+  align-self: stretch;
 }
 .dz-admin-root .dz-branding-workspace .dz-branding-shared-select .dz-brand-font-preview {
   text-align: start;
@@ -7878,11 +7884,12 @@
   gap: 0 !important;
   width: 100% !important;
   min-width: 0 !important;
-  min-height: 56px !important;
-  height: 56px !important;
+  max-width: 100% !important;
+  min-height: 58px !important;
+  height: 58px !important;
   padding: 0 !important;
-  border: 0 !important;
-  background: transparent !important;
+  border: 1px solid #d7e0d6 !important;
+  background: #fffefa !important;
   box-shadow: none !important;
   overflow: hidden !important;
 }
@@ -7890,8 +7897,8 @@
 .dz-branding-shared-select .dz-brand-background-select-trigger:hover:not(:disabled),
 .dz-branding-shared-select .dz-brand-background-select-trigger:focus-visible,
 .dz-branding-shared-select .dz-brand-background-select-trigger.open {
-  border: 0 !important;
-  background: transparent !important;
+  border: 1px solid #9aaf9a !important;
+  background: #fffefa !important;
   box-shadow: none !important;
 }
 
@@ -7902,7 +7909,7 @@
   width: 0 !important;
   min-width: 0 !important;
   height: 56px !important;
-  min-height: 56px !important;
+  min-height: 0 !important;
   align-self: stretch !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -7917,8 +7924,8 @@
   justify-content: center !important;
   width: 56px !important;
   min-width: 56px !important;
-  height: 56px !important;
-  min-height: 56px !important;
+  height: auto !important;
+  min-height: 0 !important;
   align-self: stretch !important;
   margin: 0 !important;
   padding: 0 !important;
