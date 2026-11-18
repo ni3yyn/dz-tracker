@@ -4,6 +4,7 @@ import React, { useId, useState } from 'react';
 import { login, signup } from './login/actions';
 import styles from './auth.module.css';
 import SiteHeader from '../SiteHeader';
+import { BrandedCheckbox } from '../../components/BrandedCheckbox';
 
 type AuthMode = 'login' | 'register';
 
@@ -148,7 +149,7 @@ export default function AuthForm({ mode, isAuthenticated = false, nextPath = '' 
             {!isLogin && (
               <div className={styles.legalAcceptance}>
                 <label>
-                  <input type="checkbox" name="acceptLegal" value="yes" required disabled={loading} />
+                  <BrandedCheckbox size={16} name="acceptLegal" value="yes" required disabled={loading} style={{ marginTop: 4 }} />
                   <span>
                     أوافق على <a href="/terms" target="_blank" rel="noopener noreferrer">شروط الاستخدام</a>
                     {' '}وأقر باطلاعي على <a href="/privacy" target="_blank" rel="noopener noreferrer">سياسة الخصوصية</a>.
