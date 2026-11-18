@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react';
 import { toCachedImageUrl } from '../../../../lib/imageProxy';
 import { ImageUploadField } from '../ImageUploadField';
+import { BrandedCheckbox } from '../../../../components/BrandedCheckbox';
 import { Icons } from '../components/DashboardIcons';
 import type { MerchantUpsellItem, ReorderDirection } from '../shared/upsell-types';
 
@@ -215,11 +216,10 @@ export function UpsellsTab({
 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', paddingTop: '10px', borderTop: '1px solid rgba(9, 9, 11, 0.06)' }}>
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: '#374151' }}>
-                      <input
-                        type="checkbox"
+                      <BrandedCheckbox
+                        size={18}
                         checked={isActive}
                         onChange={(e) => onActiveChange(e.target.checked)}
-                        style={{ width: '18px', height: '18px', accentColor: '#27342d', cursor: 'pointer' }}
                       />
                       تفعيل ظهور هذا المنتج في صفحة التتبع (نشط)
                     </label>
