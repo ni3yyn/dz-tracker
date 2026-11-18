@@ -267,3 +267,11 @@
     animation-duration: 1.6s;
   }
 }
+
+
+.optionContent {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
