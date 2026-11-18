@@ -8117,3 +8117,248 @@
   inset: 16px 6px auto;
   height: 2px;
 }
+
+
+/* BRANDING PREVIEW UX — fixed desktop device, mobile edge drawer. */
+@media (min-width: 1141px) {
+  .dz-admin-root .dz-branding-workspace .dz-customizer-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    align-items: start;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
+    position: sticky !important;
+    top: 16px !important;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    min-width: 0;
+    min-height: 0 !important;
+    max-height: calc(100svh - 32px);
+    padding: 0 !important;
+    overflow: hidden;
+    z-index: 22;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-drawer-head {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    flex: 0 0 auto;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-status {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 3px 2px 12px !important;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-phone-chassis {
+    width: auto !important;
+    height: min(76svh, 740px) !important;
+    max-width: 100%;
+    max-height: calc(100svh - 82px);
+    min-height: 0 !important;
+    aspect-ratio: 9 / 19.5;
+    flex: 0 1 auto;
+    margin-inline: auto;
+    border-radius: 34px !important;
+  }
+}
+
+.dz-admin-root .dz-branding-workspace .dz-branding-preview-backdrop,
+.dz-admin-root .dz-branding-workspace .dz-branding-preview-handle,
+.dz-admin-root .dz-branding-workspace .dz-branding-preview-close {
+  display: none;
+}
+
+@media (max-width: 1140px) {
+  .dz-admin-root .dz-branding-workspace {
+    touch-action: pan-y;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-customizer-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 20px;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1390;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: rgba(15, 25, 19, .42);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    cursor: default;
+    touch-action: none;
+    transition: opacity .28s ease, visibility 0s linear .28s;
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-backdrop[data-open="true"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: opacity .28s ease;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    z-index: 1400;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    width: min(90vw, 430px) !important;
+    max-width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: max(12px, env(safe-area-inset-top)) 15px max(12px, env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: 0 !important;
+    border-inline-end: 1px solid #dfe5dc !important;
+    background: #fffefa !important;
+    box-shadow: 18px 0 48px -30px rgba(17, 34, 23, .42) !important;
+    transform: translate3d(-105%, 0, 0);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform .34s cubic-bezier(.2, .72, .22, 1), visibility 0s linear .34s;
+    will-change: transform;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky.is-open {
+    transform: translate3d(0, 0, 0);
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform .34s cubic-bezier(.2, .72, .22, 1), visibility 0s;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 48px;
+    flex: 0 0 auto;
+    margin-bottom: 8px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid #e5e9e2;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    padding: 0 !important;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-status > span:last-child {
+    margin-inline-start: auto;
+    white-space: nowrap;
+    font-size: 10px;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-close {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    padding: 0;
+    border: 0 !important;
+    background: #edf1eb !important;
+    color: #294b37 !important;
+    cursor: pointer;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-close:hover {
+    background: #e2e9df !important;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-phone-chassis {
+    width: auto !important;
+    height: min(73svh, 760px) !important;
+    max-width: 100%;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 98px);
+    min-height: 0 !important;
+    aspect-ratio: 9 / 19.5;
+    flex: 0 1 auto;
+    margin-inline: auto;
+    border-radius: 31px !important;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-phone-screen,
+  .dz-admin-root .dz-branding-workspace .dz-phone-scroll-viewport {
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle {
+    display: flex;
+    position: fixed;
+    left: 0;
+    top: 50%;
+    z-index: 1380;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 36px;
+    height: 122px;
+    padding: 12px 7px;
+    border: 0 !important;
+    background: #294b37 !important;
+    color: #fffefa !important;
+    box-shadow: 5px 8px 22px -12px rgba(19, 44, 27, .55);
+    transform: translateY(-50%);
+    cursor: pointer;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transition: background .18s ease, opacity .2s ease, transform .2s ease;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle:hover {
+    background: #1d3b2a !important;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle[data-open="true"] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle svg {
+    flex: 0 0 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-backdrop,
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-sticky,
+  .dz-admin-root .dz-branding-workspace .dz-branding-preview-handle {
+    transition: none !important;
+  }
+}
