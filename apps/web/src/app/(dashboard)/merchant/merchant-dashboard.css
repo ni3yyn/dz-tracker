@@ -7834,11 +7834,13 @@
 /* Both open and closed previews use this exact painting model. Starting at
    the top-left keeps a repeated motif aligned when the available widths differ. */
 .dz-brand-background-preview {
+  box-sizing: border-box;
+  border: 0 !important;
   background-position: 0 0 !important;
   background-size: auto !important;
   background-repeat: repeat !important;
-  background-origin: padding-box !important;
-  background-clip: padding-box !important;
+  background-origin: border-box !important;
+  background-clip: border-box !important;
 }
 
 .dz-brand-visual-value--background .dz-brand-background-trigger {
