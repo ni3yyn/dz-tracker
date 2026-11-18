@@ -44,6 +44,8 @@ interface BrandedSelectProps {
   showOptionCheck?: boolean;
   /** Height of the closed trigger in CSS pixels. */
   triggerHeight?: number;
+  /** Extra class applied to the selected-value content wrapper. */
+  valueClassName?: string;
   renderValue?: (option: BrandedSelectOption | undefined) => React.ReactNode;
   renderOption?: (option: BrandedSelectOption, state: { selected: boolean; active: boolean }) => React.ReactNode;
 }
@@ -80,6 +82,7 @@ export function BrandedSelect({
   showOptionLabel = true,
   showOptionCheck = true,
   triggerHeight,
+  valueClassName,
   renderValue,
   renderOption,
 }: BrandedSelectProps) {
@@ -313,7 +316,7 @@ export function BrandedSelect({
         onClick={() => isOpen ? closeMenu() : openMenu()}
         onKeyDown={handleTriggerKeyDown}
       >
-        <span className={styles.value}>{renderValue ? renderValue(selectedOption) : (selectedOption?.label ?? placeholder)}</span>
+        <span className={[styles.value, valueClassName].filter(Boolean).join(' ')}>{renderValue ? renderValue(selectedOption) : (selectedOption?.label ?? placeholder)}</span>
         <span className={styles.indicator} aria-hidden="true">
           {loading ? (
             <svg className={styles.spinner} viewBox="0 0 24 24" fill="none">
@@ -337,6 +340,9 @@ export function BrandedSelect({
           data-expanded={isMenuExpanded && isOpen ? 'true' : 'false'}
           className={styles.menu}
           style={{
+            display: 'grid',
+            alignContent: 'start',
+            gridAutoRows: 'min-content',
             top: menuPosition.top,
             left: menuPosition.left,
             width: menuPosition.width,
