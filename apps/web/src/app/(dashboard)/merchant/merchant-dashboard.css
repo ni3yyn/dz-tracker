@@ -7827,3 +7827,46 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+
+
+
+/* BRAND SELECT VALUE — render the selected visual without clipping */
+.dz-branding-shared-select .dz-brand-visual-value {
+  display: flex !important;
+  align-items: center;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: normal;
+}
+.dz-brand-visual-value--background .dz-brand-background-trigger {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 31px;
+  min-width: 0;
+  flex: 1 1 auto;
+  border: 1px solid rgba(37, 57, 42, .22);
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+}
+.dz-brand-visual-value--connector .dz-brand-connector-thumbnail {
+  display: block;
+  width: 100%;
+  height: 36px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.dz-brand-visual-value .dz-brand-preset-trigger-preview {
+  width: 100%;
+  min-width: 0;
+}
+.dz-brand-visual-value .dz-brand-timeline-trigger {
+  width: 100%;
+  min-width: 0;
+}
