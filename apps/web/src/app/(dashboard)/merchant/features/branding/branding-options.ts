@@ -58,10 +58,10 @@ export const SAMPLE_PREVIEW_EVENTS: TimelineEvent[] = [
 ];
 
 export const BRANDING_CATEGORIES = [
-  { id: 'identity', number: '01', label: 'الهوية', description: 'العلامة والألوان' },
-  { id: 'appearance', number: '02', label: 'المظهر', description: 'الخلفية والخطوط والحركة' },
-  { id: 'layout', number: '03', label: 'سجل الشحنة', description: 'طريقة عرض مراحل التوصيل' },
-  { id: 'customer', number: '04', label: 'معلومات الزبون', description: 'الدعم والمحتوى الظاهر' },
+  { id: 'identity', number: '01', label: 'الهوية', description: 'ألوان المتجر ووصفه' },
+  { id: 'appearance', number: '02', label: 'المظهر', description: 'الخلفية والبطاقات والخط' },
+  { id: 'layout', number: '03', label: 'سجل الشحنة', description: 'مراحل التوصيل وطريقة عرضها' },
+  { id: 'customer', number: '04', label: 'تجربة الزبون', description: 'التواصل والمعلومات الظاهرة' },
 ] as const;
 
 export const BRANDING_MOTIFS: Record<string, string> = {
