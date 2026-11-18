@@ -316,7 +316,7 @@ export function BrandingTab({
               optionPadding="8px"
               renderOption={(option) => option.preview}
               renderValue={(option) => {
-                const preset = BRAND_PRESETS.find((item) => item.id === option?.id);
+                const preset = BRAND_PRESETS.find((item) => item.id === option?.value);
                 return (
                   <span className="dz-brand-preset-trigger-preview">
                     <span>
@@ -420,7 +420,7 @@ export function BrandingTab({
                   onChange={(value) => onUpdateBrandConfig('bgStyle', value as EditableBrandSettings['bgStyle'])}
                   renderOption={(option) => option.preview}
                   renderValue={(option) => {
-                    const background = BACKGROUND_STYLES.find((item) => item.id === option?.id);
+                    const background = BACKGROUND_STYLES.find((item) => item.id === option?.value);
                     return <span className="dz-brand-background-trigger" style={{ background: background?.previewBg ?? 'linear-gradient(135deg, #e8eee5, #f8f7f1)' }} />;
                   }}
                   valueClassName="dz-brand-visual-value--background"
