@@ -7557,24 +7557,14 @@
   background: var(--preset-accent, #c6a47a);
 }
 
-/* Background menu choices are wide canvases. SVG motifs repeat at their
-   authored tile size; gradient-only styles still fill the whole preview. */
+/* Menu and closed previews share one canvas height and one paint origin. */
 .dz-brand-background-choice {
   display: block;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 72px;
+  height: 56px;
   border: 1px solid rgba(37, 57, 42, .17);
-  background-position: center !important;
-  background-size: auto !important;
-  background-repeat: repeat !important;
-}
-.dz-branding-shared-select .optionBlock .dz-brand-background-choice {
-  height: 76px;
-}
-.dz-branding-shared-select .value > .dz-brand-background-choice {
-  height: 32px;
 }
 
 /* Two actual shipment phases, sized to read like a miniature timeline rather than an icon. */
@@ -7756,7 +7746,7 @@
 @media (max-width: 680px) {
   .dz-brand-preset-option-preview { min-height: 70px; padding: 9px 11px; }
   .dz-brand-timeline-thumbnail { min-height: 90px; padding: 8px 9px; }
-  .dz-branding-shared-select .optionBlock .dz-brand-background-choice { height: 66px; }
+  .dz-brand-background-choice { height: 56px; }
 }
 
 
@@ -7841,61 +7831,80 @@
   text-overflow: clip;
   white-space: normal;
 }
+/* Both open and closed previews use this exact painting model. Starting at
+   the top-left keeps a repeated motif aligned when the available widths differ. */
+.dz-brand-background-preview {
+  background-position: 0 0 !important;
+  background-size: auto !important;
+  background-repeat: repeat !important;
+  background-origin: padding-box !important;
+  background-clip: padding-box !important;
+}
+
 .dz-brand-visual-value--background .dz-brand-background-trigger {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  height: 100%;
   min-width: 0;
+  height: 56px;
   flex: 1 1 auto;
   border: 0;
   box-shadow: none;
-  background-position: center !important;
-  background-size: auto !important;
-  background-repeat: repeat !important;
 }
 
-/* The background itself is the closed select surface; only the chevron keeps
-   a fixed white square. Keep this isolated from every other branded select. */
-.dz-branding-shared-select button:has(> .dz-brand-visual-value--background) {
+.dz-branding-shared-select .dz-brand-background-select-trigger {
+  display: flex !important;
+  box-sizing: border-box !important;
   align-items: stretch !important;
+  justify-content: stretch !important;
   gap: 0 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 56px !important;
+  height: 56px !important;
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
-.dz-branding-shared-select button:has(> .dz-brand-visual-value--background):hover:not(:disabled),
-.dz-branding-shared-select button:has(> .dz-brand-visual-value--background):focus:not(:disabled),
-.dz-branding-shared-select button:has(> .dz-brand-visual-value--background).open {
+.dz-branding-shared-select .dz-brand-background-select-trigger:hover:not(:disabled),
+.dz-branding-shared-select .dz-brand-background-select-trigger:focus-visible,
+.dz-branding-shared-select .dz-brand-background-select-trigger.open {
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
-.dz-branding-shared-select button:has(> .dz-brand-visual-value--background) > .dz-brand-visual-value--background {
+.dz-branding-shared-select .dz-brand-background-select-trigger > .dz-brand-visual-value--background {
   display: block !important;
-  flex: 1 1 0;
-  width: auto;
-  min-width: 0;
-  height: 100%;
-  align-self: stretch;
-  overflow: hidden;
+  box-sizing: border-box !important;
+  flex: 1 1 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  align-self: stretch !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
-.dz-branding-shared-select button:has(> .dz-brand-visual-value--background) > span:last-child {
-  display: flex;
-  box-sizing: border-box;
-  flex: 0 0 56px;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  min-width: 56px;
-  height: 56px;
-  align-self: stretch;
-  background: #fffefa;
+.dz-branding-shared-select .dz-brand-background-select-trigger > .dz-brand-background-select-indicator {
+  display: flex !important;
+  box-sizing: border-box !important;
+  flex: 0 0 56px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 56px !important;
+  min-width: 56px !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  align-self: stretch !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fffefa !important;
 }
 .dz-brand-visual-value--connector .dz-brand-connector-thumbnail {
   display: block;
