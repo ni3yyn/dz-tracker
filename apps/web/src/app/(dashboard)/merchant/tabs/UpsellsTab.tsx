@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react';
 import { toCachedImageUrl } from '../../../../lib/imageProxy';
 import { ImageUploadField } from '../ImageUploadField';
+import { BrandedToggle } from '../../../../components/BrandedToggle';
 import { BrandedCheckbox } from '../../../../components/BrandedCheckbox';
 import { Icons } from '../components/DashboardIcons';
 import type { MerchantUpsellItem, ReorderDirection } from '../shared/upsell-types';
@@ -216,8 +217,7 @@ export function UpsellsTab({
 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', paddingTop: '10px', borderTop: '1px solid rgba(9, 9, 11, 0.06)' }}>
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: '#374151' }}>
-                      <BrandedCheckbox
-                        size={18}
+                      <BrandedToggle
                         checked={isActive}
                         onChange={(e) => onActiveChange(e.target.checked)}
                       />
