@@ -139,7 +139,7 @@ export function BrandingTab({
   const backgroundOptions: BrandVisualOption[] = BACKGROUND_STYLES.map((style) => ({
     id: style.id,
     label: style.name,
-    preview: <span className="dz-brand-background-preview" style={{ background: style.previewBg }} />,
+    preview: <span className="dz-brand-background-preview" style={{ background: style.previewBg, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }} />,
   }));
 
   const timelineOptions: BrandVisualOption[] = TIMELINE_DESIGNS.map((style) => ({
@@ -170,7 +170,7 @@ export function BrandingTab({
     preview: <span className={'dz-brand-surface-preview dz-brand-surface-preview--' + surface.id}><i /></span>,
   }));
 
-  const radiusLabels = ['حواف حادة', 'حواف منحنية قليلاً', 'حواف متوسطة', 'حواف متوسطة'];
+  const radiusLabels = ['حواف حادة', 'حواف منحنية قليلاً', 'حواف متوسطة', 'حواف مستديرة'];
   const radiusOptions: BrandVisualOption[] = CARD_RADII.map((radius, index) => ({
     id: radius.id,
     label: radiusLabels[index] ?? radius.name,
