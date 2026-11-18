@@ -7838,17 +7838,12 @@
   white-space: normal;
 }
 
-.dz-branding-shared-select .dz-brand-background-trigger-button {
-  align-items: center !important;
-  padding: 0 13px !important;
-}
-
 .dz-branding-shared-select .dz-brand-visual-value--background {
   align-items: stretch !important;
   align-self: stretch !important;
   height: 100% !important;
   min-height: 0 !important;
-  padding: 0 !important;
+  overflow: visible !important;
 }
 /* The selected artwork itself fills the value slot; no fixed-width inner
    canvas or nested height calculation can leave a blank strip. */
@@ -7887,11 +7882,13 @@
 
 .dz-brand-visual-value--background .dz-brand-background-trigger {
   display: block;
+  position: relative;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 100%;
+  height: calc(100% + 20px) !important;
   min-height: 0;
+  margin-block: -10px !important;
   flex: 1 1 auto;
   border: 0;
   box-shadow: none;
