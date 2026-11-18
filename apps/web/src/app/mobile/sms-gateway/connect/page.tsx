@@ -5,6 +5,7 @@ import { isAuthorizedAdmin } from '../../../../lib/admin-auth';
 import { hashNativeSmsCredential } from '../../../../lib/native-sms-gateway-auth';
 import { approveNativeSmsDevice, approveNativeSmsInvite } from './actions';
 import PairingSubmitButton from './PairingSubmitButton';
+import { BrandedCheckbox } from '../../../../components/BrandedCheckbox';
 import styles from './connect.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -250,7 +251,7 @@ export default async function ConnectNativeSmsPage({
             {managerNeedsReplacementConfirmation && (
               <div className={styles.confirmField}>
                 <label>
-                  <input type="checkbox" name="replaceExisting" value="yes" required />
+                  <BrandedCheckbox size={17} name="replaceExisting" value="yes" required style={{ marginTop: 2 }} />
                   <span>هذا هاتف مختلف عن الهاتف الرئيسي المسجّل. أؤكد استبداله، وسيُلغى وصول الهاتف السابق إلى إدارة الأجهزة.</span>
                 </label>
               </div>
