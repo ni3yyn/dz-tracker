@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@saas/database';
-import { TimelineEvent, BrandSettings, DEFAULT_BRAND_SETTINGS, normalizeCardSurfaceChoice } from '@saas/ui';
+import { TimelineEvent, BrandSettings, DEFAULT_BRAND_SETTINGS, getBrandRadiusTokens, normalizeCardSurfaceChoice } from '@saas/ui';
 import { PushNotificationControl } from './PushNotificationControl';
 import styles from './t.module.css';
 import { toCachedImageUrl } from '../../../lib/imageProxy';
@@ -187,6 +187,10 @@ export function TrackingLiveView({
   };
 
   const skipEntranceAnimation = settings.animationLevel === 'none';
+  const radiusTokens = getBrandRadiusTokens(settings.cardRadius);
+  const controlBorderRadius = radiusTokens.control;
+  const panelBorderRadius = radiusTokens.panel;
+  const buttonBorderRadius = radiusTokens.button;
 
   const dynamicStyle = {
     '--brand-primary': settings.brandColor,
@@ -195,6 +199,17 @@ export function TrackingLiveView({
     '--brand-glow': `${settings.brandColor}20`,
     '--brand-on-primary': getReadableBrandForeground(settings.brandColor),
     '--brand-readable': getReadableBrandAccent(settings.brandColor, settings.themeMode),
+    '--radius-card': radiusTokens.card,
+    '--radius-panel': radiusTokens.panel,
+    '--radius-control': radiusTokens.control,
+    '--radius-button': radiusTokens.button,
+    '--radius-timeline': radiusTokens.timeline,
+    '--radius-badge': radiusTokens.badge,
+    '--radius-avatar': radiusTokens.avatar,
+    '--radius-media': radiusTokens.media,
+    '--radius-marker': radiusTokens.marker,
+    '--radius-notice': radiusTokens.notice,
+    '--radius-floating': radiusTokens.floating,
   } as React.CSSProperties;
 
   const latestEvent = events[0];
@@ -385,27 +400,6 @@ export function TrackingLiveView({
     : surfaceChoice === 'borderless' ? styles.cardBorderless
     : styles.cardGlass;
 
-  const radiusClass =
-    settings.cardRadius === 'sharp' ? styles.radiusSharp
-    : settings.cardRadius === 'sleek' ? styles.radiusSleek
-    : settings.cardRadius === 'pebble' ? styles.radiusPebble
-    : styles.radiusModern;
-  const controlBorderRadius =
-    settings.cardRadius === 'sharp' ? '0px'
-    : settings.cardRadius === 'sleek' ? '9px'
-    : settings.cardRadius === 'pebble' ? '15px'
-    : '12px';
-  const panelBorderRadius =
-    settings.cardRadius === 'sharp' ? '0px'
-    : settings.cardRadius === 'sleek' ? '10px'
-    : settings.cardRadius === 'pebble' ? '21px'
-    : '16px';
-  const buttonBorderRadius =
-    settings.cardRadius === 'sharp' ? '0px'
-    : settings.cardRadius === 'sleek' ? '9px'
-    : settings.cardRadius === 'pebble' ? '999px'
-    : '12px';
-
   const fontClass =
     settings.fontFamily === 'cairo' ? styles.fontCairo
     : settings.fontFamily === 'tajawal' ? styles.fontTajawal
@@ -446,7 +440,7 @@ export function TrackingLiveView({
 
   return (
     <main
-      className={`${styles.pageContainer} ${backgroundClass} ${darkMode ? styles.themeDark : ''} ${fontClass} ${radiusClass} ${animationClass} ${waSupportUrl ? styles.hasFloatingSupport : ''} ${blobAnimationClass} ${backgroundBlurClass}`}
+      className={`${styles.pageContainer} ${backgroundClass} ${darkMode ? styles.themeDark : ''} ${fontClass} ${animationClass} ${waSupportUrl ? styles.hasFloatingSupport : ''} ${blobAnimationClass} ${backgroundBlurClass}`}
       style={dynamicStyle}
       aria-busy={introPhase !== 'done'}
     >
@@ -484,7 +478,7 @@ export function TrackingLiveView({
       )}
       <div className={styles.backgroundBlurLayer} aria-hidden="true" />
       <div className={styles.cardShell}>
-        <div className={`${styles.card} ${surfaceClass} ${radiusClass}`}>
+        <div className={`${styles.card} ${surfaceClass}`}>
           <div className={styles.brandAccentBar} />
 
           <header className={styles.header}>
