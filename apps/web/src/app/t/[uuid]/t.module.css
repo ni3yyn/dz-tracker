@@ -104,17 +104,15 @@
 .cardShell { width: 100%; max-width: none; margin: 0 auto; display: flex; justify-content: center; position: relative; z-index: 1; }
 /* The tracking page itself is an open canvas. Surface presets style only the active-status treatment. */
 .card { position: relative; width: 100%; max-width: none; overflow: visible; background: transparent; color: var(--ink-main); border: 0; border-radius: 0; box-shadow: none; transition: width .24s ease; }
-.cardGlass { --status-panel-bg: color-mix(in srgb, var(--surface) 76%, transparent); --status-panel-border: var(--border-soft); --status-panel-shadow: none; --status-panel-blur: none; }
-.cardSolid { --status-panel-bg: transparent; --status-panel-border: transparent; --status-panel-shadow: none; --status-panel-blur: none; }
+.cardFilled { --status-panel-bg: var(--surface-raised); --status-panel-border: var(--border-soft); --status-panel-shadow: none; --status-panel-blur: none; }
+.cardGlass { --status-panel-bg: color-mix(in srgb, var(--surface) 76%, transparent); --status-panel-border: var(--border-soft); --status-panel-shadow: none; --status-panel-blur: blur(12px); }
 .cardBordered { --status-panel-bg: transparent; --status-panel-border: var(--border-strong); --status-panel-shadow: none; --status-panel-blur: none; }
-.cardBorderless { --status-panel-bg: transparent; --status-panel-border: transparent; --status-panel-shadow: none; --status-panel-blur: none; }
-.cardElevated { --status-panel-bg: var(--surface-raised); --status-panel-border: color-mix(in srgb, var(--border-soft) 78%, transparent); --status-panel-shadow: none; --status-panel-blur: none; }
-.cardTinted { --status-panel-bg: color-mix(in srgb, var(--brand-primary, #355846) 6%, var(--surface)); --status-panel-border: color-mix(in srgb, var(--brand-primary, #355846) 18%, var(--border-soft)); --status-panel-shadow: none; --status-panel-blur: none; }
-.cardPaper { --status-panel-bg: color-mix(in srgb, #fffdf7 88%, var(--surface)); --status-panel-border: color-mix(in srgb, #a99b82 22%, var(--border-soft)); --status-panel-shadow: none; --status-panel-blur: none; }
-.cardInset { --status-panel-bg: color-mix(in srgb, var(--canvas) 70%, var(--surface)); --status-panel-border: var(--border-soft); --status-panel-shadow: none; --status-panel-blur: none; }
-.themeDark .cardPaper { --status-panel-bg: color-mix(in srgb, #292720 70%, var(--surface)); --status-panel-border: var(--border-soft); }
-.themeDark .cardElevated { --status-panel-shadow: none; }
+.cardTinted { --status-panel-bg: color-mix(in srgb, var(--brand-primary, #355846) 7%, var(--surface)); --status-panel-border: color-mix(in srgb, var(--brand-primary, #355846) 22%, var(--border-soft)); --status-panel-shadow: none; --status-panel-blur: none; }
+/* Legacy class aliases remain available for previously stored settings. */
+.cardSolid, .cardBorderless { --status-panel-bg: transparent; --status-panel-border: transparent; --status-panel-shadow: none; --status-panel-blur: none; }
+.cardElevated, .cardPaper, .cardInset { --status-panel-bg: var(--surface-raised); --status-panel-border: var(--border-soft); --status-panel-shadow: none; --status-panel-blur: none; }
 .cardBorderless .header, .cardBorderless .trackingSection { background: transparent; }
+.cardSolid .header, .cardSolid .trackingSection { background: transparent; }
 .radiusSharp { --radius-card: 0px; --radius-panel: 0px; --radius-control: 0px; --radius-button: 0px; --radius-timeline: 0px; --radius-badge: 0px; --radius-avatar: 0px; --radius-media: 0px; --radius-marker: 0px; --radius-notice: 0px; --radius-floating: 0px; }
 .radiusSleek { --radius-card: 14px; --radius-panel: 10px; --radius-control: 9px; --radius-button: 9px; --radius-timeline: 9px; --radius-badge: 9px; --radius-avatar: 14px; --radius-media: 12px; --radius-marker: 5px; --radius-notice: 10px; --radius-floating: 14px; }
 .radiusModern { --radius-card: 26px; --radius-panel: 16px; --radius-control: 12px; --radius-button: 12px; --radius-timeline: 12px; --radius-badge: 12px; --radius-avatar: 18px; --radius-media: 16px; --radius-marker: 7px; --radius-notice: 12px; --radius-floating: 16px; }
@@ -145,13 +143,13 @@
 .orderProductBlock { min-width: 0; padding-inline-start: 0; border-inline-start: 0; }
 .orderProductNames { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .orderProductName { color: var(--ink-main); font-size: 18px; font-weight: 800; line-height: 1.65; overflow-wrap: anywhere; }
-.currentStatusPanel { --status-accent: var(--brand-primary, #355846); margin: 0; padding: 25px 26px 27px; border: 1px solid var(--status-panel-border, var(--border-soft)); border-inline-start: 0; border-radius: var(--radius-panel); background: var(--status-panel-bg, color-mix(in srgb, var(--status-accent) 8%, var(--surface))); box-shadow: none; backdrop-filter: var(--status-panel-blur, none); -webkit-backdrop-filter: var(--status-panel-blur, none); color: var(--ink-main); }
+.currentStatusPanel { --status-accent: var(--brand-primary, #355846); margin: 0; padding: 25px 26px 27px; border: 1px solid var(--status-panel-border, var(--border-soft)); border-inline-start: 0; border-radius: var(--radius-panel); background: var(--status-panel-bg, color-mix(in srgb, var(--status-accent) 8%, var(--surface))); box-shadow: var(--status-panel-shadow, none); backdrop-filter: var(--status-panel-blur, none); -webkit-backdrop-filter: var(--status-panel-blur, none); color: var(--ink-main); }
 .cardBorderless .currentStatusPanel { border: 0; border-inline-start: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 12px 0 15px; }
 .currentStatusPanel.statusDelivered { --status-accent: #2e8853; --status-tint: #edf7ef; }
 .currentStatusPanel.statusInTransit { --status-accent: var(--brand-primary, #355846); }
 .currentStatusPanel.statusAttention { --status-accent: #b95e42; --status-tint: #fcf0ea; }
 .currentStatusPanel.statusNeutral { --status-accent: var(--brand-primary, #355846); }
-.themeDark .currentStatusPanel { background: color-mix(in srgb, var(--status-accent) 12%, var(--surface)); }
+.themeDark .currentStatusPanel { background: var(--status-panel-bg, color-mix(in srgb, var(--status-accent) 12%, var(--surface))); }
 .themeDark .currentStatusPanel.statusDelivered { --status-tint: rgba(52,137,79,.16); }
 .themeDark .currentStatusPanel.statusAttention { --status-tint: rgba(185,94,66,.15); }
 .cardSolid .currentStatusPanel { border: 0; border-inline-start: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 22px 0; }
