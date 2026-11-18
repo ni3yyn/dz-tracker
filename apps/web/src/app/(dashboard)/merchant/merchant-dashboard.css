@@ -6920,6 +6920,98 @@
   font-weight: 800;
   letter-spacing: -.02em;
 }
+
+/* Related branding parameters share one clear, compact surface. */
+.dz-admin-root .dz-branding-workspace .dz-brand-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px 15px;
+  border: 1px solid var(--brand-control-line);
+  background: #fafbf8;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-group--featured {
+  border-color: #cfdacb;
+  background: #f3f6f1;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-group-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-group-heading h4 {
+  margin: 0;
+  color: var(--ink-main);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-group-heading p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  line-height: 1.7;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-group-controls {
+  display: grid;
+  gap: 13px;
+  min-width: 0;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-group-controls > *,
+.dz-admin-root .dz-branding-workspace .dz-brand-group .dz-brand-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-setting-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-toggle--feature {
+  min-height: 0;
+  padding: 11px 12px;
+  border: 1px solid #d6e0d3;
+  background: #edf2ea;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-toggle-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-toggle-copy strong {
+  color: var(--ink-main);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-toggle-copy small {
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 450;
+  line-height: 1.65;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-group .dz-brand-toggle-list {
+  display: grid;
+  gap: 0;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-group .dz-brand-toggle-list .dz-brand-toggle:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
 .dz-admin-root .dz-branding-workspace .dz-brand-color-row {
   display: flex;
   align-items: center;
@@ -7071,6 +7163,16 @@
 @media (max-width: 680px) {
   .dz-admin-root .dz-branding-workspace {
     padding-bottom: 108px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-group {
+    gap: 12px;
+    padding: 12px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-group-heading p {
+    font-size: 10px;
+  }
+  .dz-admin-root .dz-branding-workspace .dz-brand-toggle--feature {
+    padding: 10px;
   }
   .dz-admin-root .dz-branding-workspace .dz-brand-toolbar {
     grid-template-columns: minmax(0, 1fr);
