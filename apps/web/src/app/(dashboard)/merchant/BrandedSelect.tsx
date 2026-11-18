@@ -46,6 +46,10 @@ interface BrandedSelectProps {
   triggerHeight?: number;
   /** Extra class applied to the selected-value content wrapper. */
   valueClassName?: string;
+  /** Extra class applied to option preview and label layout. */
+  optionContentClassName?: string;
+  /** Extra class applied to the option label. */
+  optionLabelClassName?: string;
   renderValue?: (option: BrandedSelectOption | undefined) => React.ReactNode;
   renderOption?: (option: BrandedSelectOption, state: { selected: boolean; active: boolean }) => React.ReactNode;
 }
@@ -83,6 +87,8 @@ export function BrandedSelect({
   showOptionCheck = true,
   triggerHeight,
   valueClassName,
+  optionContentClassName,
+  optionLabelClassName,
   renderValue,
   renderOption,
 }: BrandedSelectProps) {
@@ -388,10 +394,10 @@ export function BrandedSelect({
                 onMouseEnter={() => !option.disabled && setActiveIndex(index)}
                 onClick={() => chooseOption(option)}
               >
-                <span className={styles.optionContent}>
+                <span className={[styles.optionContent, optionContentClassName].filter(Boolean).join(' ')}>
                   {renderOption ? renderOption(option, { selected: isSelected, active: isActive }) : null}
                   {showOptionLabel && (
-                    <span className={styles.optionLabel}>{option.label}</span>
+                    <span className={[styles.optionLabel, optionLabelClassName].filter(Boolean).join(' ')}>{option.label}</span>
                   )}
                 </span>
                 {showOptionCheck && isSelected && (
