@@ -11,7 +11,7 @@ import { absoluteUrl } from '../lib/site-url';
 export const dynamic = 'error';
 
 export const metadata = {
-  title: 'تتبّع طلبات المتاجر الجزائرية عبر SMS',
+  title: 'TajerTrack | تاجر تراك — تتبّع طلبات المتاجر الجزائرية عبر SMS',
   description: 'تاجر تراك منصة لتتبّع طلبات المتاجر الإلكترونية في الجزائر. ترسل رابط التتبّع من رقمك الشخصي عبر شريحتك، دون رسوم SMS من تاجر تراك، وتسهّل متابعة الشحن وطلبات الاستبدال بعد التسليم.',
   alternates: {
     canonical: absoluteUrl('/'),
