@@ -8406,10 +8406,10 @@ body .dz-brand-savebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 0 !important;
-  max-height: 0;
-  gap: 0;
-  padding-block: 0 !important;
+  min-height: 52px !important;
+  max-height: 56px;
+  gap: 10px;
+  padding: 6px 12px !important;
   overflow: hidden;
   border: 0 !important;
   background: rgba(255, 254, 250, .985) !important;
@@ -8417,20 +8417,20 @@ body .dz-brand-savebar {
   direction: rtl;
   font-family: 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif;
   box-shadow: 0 -8px 28px rgba(31, 48, 36, .08) !important;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translate3d(0, calc(100% + 12px), 0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
   transition:
     max-height .34s cubic-bezier(.2,.75,.25,1),
     padding .34s cubic-bezier(.2,.75,.25,1),
     opacity .2s ease,
     transform .34s cubic-bezier(.2,.75,.25,1),
-    visibility 0s linear .34s;
+    visibility 0s linear;
 }
 
 body .dz-brand-savebar.is-dirty {
-  min-height: 66px !important;
+  min-height: 72px !important;
   max-height: 112px;
   gap: 14px;
   padding: 10px 14px !important;
@@ -8441,6 +8441,16 @@ body .dz-brand-savebar.is-dirty {
   pointer-events: auto;
   transform: translate3d(0, 0, 0);
   transition-delay: 0s;
+}
+
+body .dz-brand-savebar:not(.is-dirty) .dz-brand-save-undo {
+  display: none;
+}
+
+body .dz-brand-savebar .dz-brand-save-button:disabled {
+  opacity: .42 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
 }
 
 body .dz-brand-savebar .dz-brand-savebar-copy {
@@ -8544,8 +8554,8 @@ body .dz-brand-savebar .dz-brand-save-button:focus-visible {
 
 @media (max-width: 620px) {
   body .dz-brand-savebar.is-dirty {
-    min-height: 58px !important;
-    max-height: 94px;
+    min-height: 46px !important;
+    max-height: 50px;
     gap: 8px;
     padding: 8px 10px !important;
   }
