@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { MerchantDashboardTab } from './DashboardSidebar';
 
 interface DashboardPanelTransitionProps {
@@ -12,35 +12,9 @@ export function DashboardPanelTransition({
   children,
   tabOrder,
 }: DashboardPanelTransitionProps) {
-  const measureRef = useRef<HTMLDivElement | null>(null);
   const previousKeyRef = useRef(transitionKey);
-  const animationFrameRef = useRef<number | null>(null);
-  const [height, setHeight] = useState<number | null>(null);
   const [direction, setDirection] = useState<'next' | 'previous'>('next');
   const [hasTabTransitioned, setHasTabTransitioned] = useState(false);
-
-  const measure = useCallback(() => {
-    const content = measureRef.current;
-    if (!content) return;
-    const nextHeight = Math.ceil(content.getBoundingClientRect().height);
-    setHeight((current) => (current === nextHeight ? current : nextHeight));
-  }, []);
-
-  useLayoutEffect(() => {
-    const content = measureRef.current;
-    if (!content) return;
-
-    measure();
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(measure);
-      observer.observe(content);
-      return () => observer.disconnect();
-    }
-
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [measure]);
 
   useLayoutEffect(() => {
     const previousKey = previousKeyRef.current;
@@ -55,26 +29,11 @@ export function DashboardPanelTransition({
     );
     previousKeyRef.current = transitionKey;
     setHasTabTransitioned(true);
-
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    animationFrameRef.current = requestAnimationFrame(measure);
-
-    return () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-    };
-  }, [measure, tabOrder, transitionKey]);
+  }, [tabOrder, transitionKey]);
 
   return (
-    <div
-      className="dz-dashboard-transition-frame"
-      style={{ height: height === null ? 'auto' : `${height}px` }}
-    >
-      <div ref={measureRef} className="dz-dashboard-transition-measure">
+    <div className="dz-dashboard-transition-frame">
+      <div className="dz-dashboard-transition-measure">
         <div
           key={transitionKey}
           className={'dz-dashboard-transition-content' + (hasTabTransitioned ? ' is-animated' : '')}
