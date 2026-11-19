@@ -169,7 +169,7 @@
           display: flex; align-items: center; background: rgba(255, 255, 255, 0.6);
           backdrop-filter: blur(10px); border: 1px solid var(--border-strong);
           padding: 10px 16px; border-radius: 99px; width: 320px;
-          transition: all 0.3s var(--ease-out); box-shadow: var(--shadow-sm);
+          transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease;
         }
         .dz-search-box:focus-within { background: var(--surface); border-color: var(--ink-main); box-shadow: 0 0 0 4px rgba(9, 9, 11, 0.05); }
         .dz-search-box input { border: none; background: transparent; outline: none; width: 100%; font-size: 13px; color: var(--ink-main); margin-right: 12px; }
@@ -836,7 +836,7 @@
         .dz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px; }
         .dz-card-box { background: var(--surface); border-radius: var(--radius-lg); padding: 24px; border: 1px solid var(--border-soft); box-shadow: var(--shadow-sm); }
         
-        .dz-toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(24px); background: #09090B; color: #ffffff; padding: 14px 28px; border-radius: 99px; font-weight: 600; font-size: 14px; letter-spacing: 0.01em; box-shadow: 0 16px 40px rgba(9,9,11,0.28); z-index: 99999; opacity: 0; pointer-events: none; transition: opacity 0.35s cubic-bezier(0.25,1,0.4,1), transform 0.35s cubic-bezier(0.25,1,0.4,1); white-space: nowrap; max-width: 90vw; }
+        .dz-toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(24px); background: #09090B; color: #ffffff; padding: 14px 28px; border-radius: 99px; font-weight: 600; font-size: 14px; letter-spacing: 0.01em; box-shadow: 0 16px 40px rgba(9,9,11,0.28); z-index: 99999; opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s cubic-bezier(.2,.75,.25,1); white-space: nowrap; max-width: 90vw; }
         .dz-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
         @media (max-width: 1024px) {
@@ -1798,7 +1798,7 @@
         .dz-waiting-mark { color: #54715b; font-size: 21px; }
         .dz-integration-waiting strong { display: block; margin: 1px 0 5px; color: #344a39; font-size: 12px; }
         .dz-integration-waiting p { margin: 0; max-width: 650px; color: #69736e; font-size: 11px; line-height: 1.8; }
-        .dz-integration-results { margin-top: 5px; animation: dzGuideIn .35s ease both; }
+        .dz-integration-results { margin-top: 5px; animation: dzGuideIn .18s ease both; }
         @keyframes dzGuideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .dz-integration-results-title { display: flex; gap: 13px; align-items: flex-start; margin: 4px 0 18px; }
         .dz-result-ready-dot { width: 9px; height: 9px; margin-top: 8px; flex: 0 0 9px; border-radius: 50%; background: #52775b; box-shadow: 0 0 0 5px rgba(82,119,91,.12); }
@@ -2042,7 +2042,7 @@
           visibility: visible;
           pointer-events: auto;
           transition-delay: 0s;
-          animation: dzDashboardBackdropEnter .18s ease both;
+          animation: none;
         }
 
         .dz-mapping-modal-backdrop,
@@ -2065,7 +2065,7 @@
           visibility: hidden;
           pointer-events: none;
           animation: none !important;
-          transition: opacity .3s ease, visibility 0s linear .5s;
+          transition: opacity .18s ease, visibility 0s linear .24s;
         }
         .dz-order-side-backdrop[data-open="true"] {          opacity: 1;
           visibility: visible;
@@ -2138,7 +2138,7 @@
           pointer-events: none;
           animation: none !important;
           transition:
-            opacity .3s cubic-bezier(.2,.65,.25,1),
+            opacity .18s cubic-bezier(.2,.75,.25,1),
             visibility 0s linear .22s;
         }
         .dz-order-details-backdrop[data-open="true"] {
@@ -2224,7 +2224,7 @@
         .dz-mobile-menu-toggle.is-open span:nth-child(2) { opacity:0; }
         .dz-mobile-menu-toggle.is-open span:last-child { transform:translateY(-6.7px) rotate(-45deg); }
         .dz-billing-plan-list { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
-        .dz-billing-plan { display:flex; flex-direction:column; align-items:stretch; min-width:0; min-height:190px; padding:18px 15px; border:1px solid var(--border-soft); border-radius:16px; background:rgba(255,254,250,.76); gap:11px; transition:opacity .3s ease,transform .35s cubic-bezier(.2,.65,.25,1),border-color .3s ease,background .3s ease; }
+        .dz-billing-plan { display:flex; flex-direction:column; align-items:stretch; min-width:0; min-height:190px; padding:18px 15px; border:1px solid var(--border-soft); border-radius:16px; background:rgba(255,254,250,.76); gap:11px; transition:opacity .18s ease,transform .18s cubic-bezier(.2,.75,.25,1),border-color .18s ease,background .18s ease; }
         .dz-billing-plan > div { min-height:48px; }
         .dz-billing-plan b { text-align:right; font-size:23px; }
         .dz-billing-plan b small { display:block; margin-top:3px; font-size:10px; font-weight:600; color:var(--ink-muted); }
