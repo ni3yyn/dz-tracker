@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import SolutionPage from '../../SolutionPage';
+import { absoluteUrl } from '../../../lib/site-url';
 
-const canonical = 'https://tajertrack.vercel.app/fr/suivi-commandes-ecommerce';
+export const dynamic = 'error';
+
+const canonical = absoluteUrl('/fr/suivi-commandes-ecommerce');
 
 export const metadata: Metadata = {
   title: 'Suivi des commandes e-commerce en Algérie',

@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import LegalDocument from '../LegalDocument';
+import { absoluteUrl } from '../../lib/site-url';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'error';
 
 export const metadata: Metadata = {
+  alternates: { canonical: absoluteUrl('/privacy') },
   title: 'سياسة الخصوصية',
   description: 'كيف يجمع تاجر تراك البيانات الشخصية ويستخدمها ويحميها عند استخدام خدمات تتبع الطلبات.',
 };

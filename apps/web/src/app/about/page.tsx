@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
 import LegalDocument from '../LegalDocument';
+import { absoluteUrl } from '../../lib/site-url';
+
+export const dynamic = 'error';
 
 export const metadata: Metadata = {
   title: 'عن تاجر تراك',
   description: 'تعرّف على تاجر تراك، منصة جزائرية لتتبّع طلبات المتاجر عبر SMS من رقم التاجر وشريحته، دون رسوم SMS لكل رسالة من المنصة.',
   alternates: {
-    canonical: 'https://tajertrack.vercel.app/about',
+    canonical: absoluteUrl('/about'),
   },
 };
 

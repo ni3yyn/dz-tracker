@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import SolutionPage from '../../SolutionPage';
+import { absoluteUrl } from '../../../lib/site-url';
 
-const canonical = 'https://tajertrack.vercel.app/solutions/after-sales-ecommerce-algeria';
+export const dynamic = 'error';
+
+const canonical = absoluteUrl('/solutions/after-sales-ecommerce-algeria');
 
 export const metadata: Metadata = {
   title: 'خدمات ما بعد البيع للمتاجر الإلكترونية',

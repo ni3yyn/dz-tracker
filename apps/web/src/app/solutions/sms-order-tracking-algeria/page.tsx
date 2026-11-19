@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import SolutionPage from '../../SolutionPage';
+import { absoluteUrl } from '../../../lib/site-url';
 
-const canonical = 'https://tajertrack.vercel.app/solutions/sms-order-tracking-algeria';
+export const dynamic = 'error';
+
+const canonical = absoluteUrl('/solutions/sms-order-tracking-algeria');
 
 export const metadata: Metadata = {
   title: 'تتبّع الطلبات عبر SMS للمتاجر الجزائرية',

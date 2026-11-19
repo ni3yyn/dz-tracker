@@ -5,15 +5,17 @@ import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import FaqAccordion from './FaqAccordion';
 import CustomPlanRequest from './CustomPlanRequest';
-import { createClient } from '../lib/supabase-server';
-import { cookies } from 'next/headers';
+import HomePrimaryAction from './HomePrimaryAction';
+import { absoluteUrl } from '../lib/site-url';
+
+export const dynamic = 'error';
 
 export const metadata = {
   title: 'تتبّع طلبات المتاجر الجزائرية عبر SMS',
   description: 'تاجر تراك منصة لتتبّع طلبات المتاجر الإلكترونية في الجزائر. ترسل رابط التتبّع من رقمك الشخصي عبر شريحتك، دون رسوم SMS من تاجر تراك، وتسهّل متابعة الشحن وطلبات الاستبدال بعد التسليم.',
   alternates: {
-    canonical: 'https://tajertrack.vercel.app/',
-    languages: { 'ar-DZ': 'https://tajertrack.vercel.app/' },
+    canonical: absoluteUrl('/'),
+    languages: { 'ar-DZ': absoluteUrl('/') },
   },
 };
 
@@ -457,25 +459,11 @@ function FeatureSymbol({ type }: { type: string }) {
   );
 }
 
-export default async function HomePage() {
-  let isAuthenticated = false;
-  try {
-    const cookieStore = await cookies();
-    const hasSupabaseSessionCookie = cookieStore.getAll().some(({ name }) =>
-      name.startsWith('sb-') && name.includes('auth-token')
-    );
-    if (hasSupabaseSessionCookie) {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      isAuthenticated = Boolean(user);
-    }
-  } catch {
-    isAuthenticated = false;
-  }
+export default function HomePage() {
   return (
     <main id="top" className={styles.page}>
       <ScrollRevealObserver />
-      <SiteHeader isAuthenticated={isAuthenticated} />
+      <SiteHeader />
 
       <section className={styles.hero} aria-labelledby="hero-title">
         <div className={styles.heroCopy} data-dz-reveal>
@@ -483,7 +471,7 @@ export default async function HomePage() {
           <h1 id="hero-title">كل طلب له رحلة<br /><em>حتى بعد التسليم.</em></h1>
           <p className={styles.heroDescription}>تاجر تراك منصة لتتبّع طلبات المتاجر الإلكترونية في الجزائر. يرسل رابط التتبّع للزبون عبر SMS من رقمك وشريحتك، دون رسوم SMS من تاجر تراك، مع Telegram كخيار إضافي وخدمات ما بعد البيع.</p>
           <div className={styles.heroActions}>
-            <a className={styles.primaryButton} href={isAuthenticated ? "/merchant" : "/register"}>{isAuthenticated ? "افتح لوحة التاجر" : "اربط متجرك الآن"} <span aria-hidden="true">↗</span></a>
+            <HomePrimaryAction className={styles.primaryButton} />
             <a className={styles.secondaryButton} href="#how-it-works">شاهد طريقة الربط <span aria-hidden="true">↓</span></a>
           </div>
           <div className={styles.heroProof}>
@@ -637,7 +625,7 @@ export default async function HomePage() {
         <svg className={styles.ctaRouteArt} viewBox="0 0 240 180" fill="none" aria-hidden="true"><path className={styles.ctaRoutePath} d="M5 22h65c45 0 45 48 0 48H42c-38 0-38 45 0 45h64c39 0 39 43 77 43h52" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 7" strokeLinecap="round"/><circle className={styles.ctaRouteNode} cx="5" cy="22" r="4" fill="#D57955"/><circle className={styles.ctaRouteNode} cx="70" cy="70" r="4" fill="currentColor"/><circle className={styles.ctaRouteNode} cx="106" cy="115" r="4" fill="#D57955"/><circle className={styles.ctaRouteNode} cx="235" cy="158" r="4" fill="currentColor"/></svg>
       </section>
 
-      <SiteFooter isAuthenticated={isAuthenticated} />
+      <SiteFooter />
     </main>
   );
 }

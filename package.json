@@ -16,7 +16,8 @@
     "seo:benchmark": "node tools/seo/benchmark.mjs run",
     "seo:benchmark:import": "node tools/seo/benchmark.mjs import",
     "seo:benchmark:report": "node tools/seo/benchmark.mjs report",
-    "seo:benchmark:test": "node tools/seo/benchmark.mjs test"
+    "seo:benchmark:test": "node tools/seo/benchmark.mjs test",
+    "seo:prerender:check": "node tools/seo/assert-prerendered-routes.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

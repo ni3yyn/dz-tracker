@@ -1,6 +1,9 @@
 import type { MetadataRoute } from 'next';
+import { absoluteUrl } from '../lib/site-url';
 
-const sitemapUrl = 'https://tajertrack.vercel.app/sitemap.xml';
+export const dynamic = 'error';
+
+const sitemapUrl = absoluteUrl('/sitemap.xml');
 const privatePaths = ['/merchant', '/admin', '/api', '/login', '/register', '/mobile'];
 
 export default function robots(): MetadataRoute.Robots {

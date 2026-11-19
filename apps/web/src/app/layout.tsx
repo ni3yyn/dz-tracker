@@ -1,8 +1,9 @@
 import '../styles/globals.css';
 import { GlobalDialogProvider } from '../components/GlobalDialogProvider';
 import type { Metadata } from 'next';
+import { SITE_URL } from '../lib/site-url';
 
-const siteUrl = 'https://tajertrack.vercel.app';
+const siteUrl = SITE_URL;
 const organizationId = `${siteUrl}/#organization`;
 
 const structuredData = {

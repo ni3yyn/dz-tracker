@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useSiteAuthentication } from '../components/useSiteAuthentication';
 import styles from './site-header.module.css';
 
 type HeaderVariant = 'site' | 'dashboard';
@@ -42,7 +43,7 @@ function Hamburger() {
 }
 
 export default function SiteHeader({
-  isAuthenticated = false,
+  isAuthenticated,
   compact = false,
   variant = 'site',
   menuOpen = false,
@@ -55,9 +56,11 @@ export default function SiteHeader({
   const [menuPortalTarget, setMenuPortalTarget] = useState<HTMLElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
   const isDashboard = variant === 'dashboard';
+  const browserIsAuthenticated = useSiteAuthentication(!isDashboard && isAuthenticated === undefined);
+  const resolvedIsAuthenticated = isAuthenticated ?? browserIsAuthenticated;
   const effectiveMenuOpen = isDashboard ? menuOpen : siteMenuOpen;
-  const accountHref = isAuthenticated ? '/merchant' : '/login';
-  const primaryHref = isAuthenticated ? '/merchant' : '/register';
+  const accountHref = resolvedIsAuthenticated ? '/merchant' : '/login';
+  const primaryHref = resolvedIsAuthenticated ? '/merchant' : '/register';
   const closeSiteMenu = () => setSiteMenuOpen(false);
 
   useEffect(() => {
@@ -148,12 +151,12 @@ export default function SiteHeader({
         <a href="/#faq">الأسئلة الشائعة</a>
         <a href="/privacy">سياسة الخصوصية</a>
         <a href="/terms">شروط الاستخدام</a>
-        {!isAuthenticated && <a className={styles.loginLink} href={accountHref}>تسجيل الدخول</a>}
+        {!resolvedIsAuthenticated && <a className={styles.loginLink} href={accountHref}>تسجيل الدخول</a>}
       </nav>
 
       <div className={styles.actions}>
         <a className={styles.primaryLink} href={primaryHref}>
-          {isAuthenticated ? 'لوحة التاجر' : 'إنشاء حساب'}
+          {resolvedIsAuthenticated ? 'لوحة التاجر' : 'إنشاء حساب'}
           <span aria-hidden="true">↗</span>
         </a>
       </div>
@@ -184,9 +187,9 @@ export default function SiteHeader({
                   <a href="/terms" onClick={closeSiteMenu}>شروط الاستخدام</a>
                 </nav>
                 <div className={styles.mobileActions}>
-                  {!isAuthenticated && <a href={accountHref} onClick={closeSiteMenu}>تسجيل الدخول</a>}
+                  {!resolvedIsAuthenticated && <a href={accountHref} onClick={closeSiteMenu}>تسجيل الدخول</a>}
                   <a className={styles.mobilePrimary} href={primaryHref} onClick={closeSiteMenu}>
-                    {isAuthenticated ? 'لوحة التاجر' : 'إنشاء حساب'}
+                    {resolvedIsAuthenticated ? 'لوحة التاجر' : 'إنشاء حساب'}
                     <span aria-hidden="true">↗</span>
                   </a>
                 </div>
