@@ -8389,3 +8389,153 @@
     transition: none !important;
   }
 }
+
+
+/* BRANDING SAVE BAR — stay anchored to the viewport and expand upward only while edits are pending. */
+.dz-admin-root .dz-branding-workspace .dz-brand-savebar {
+  position: fixed !important;
+  z-index: 1200;
+  box-sizing: border-box;
+  bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+  left: calc(360px + 48px + 26px) !important;
+  right: calc(280px + 28px) !important;
+  min-height: 0 !important;
+  max-height: 0;
+  gap: 0;
+  padding-block: 0 !important;
+  overflow: hidden;
+  border: 0 !important;
+  background: rgba(255, 254, 250, .985) !important;
+  box-shadow: 0 -8px 28px rgba(31, 48, 36, .08) !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(0, calc(100% + 12px), 0);
+  transition:
+    max-height .34s cubic-bezier(.2,.75,.25,1),
+    padding .34s cubic-bezier(.2,.75,.25,1),
+    opacity .2s ease,
+    transform .34s cubic-bezier(.2,.75,.25,1),
+    visibility 0s linear .34s;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-savebar.is-dirty {
+  min-height: 66px !important;
+  max-height: 112px;
+  gap: 14px;
+  padding: 10px 14px !important;
+  border: 0 !important;
+  border-top: 1px solid var(--brand-control-line) !important;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+  transition-delay: 0s;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-savebar-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-savebar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+  gap: 8px;
+  direction: rtl;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-save-undo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-width: 82px;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--brand-control-line);
+  border-radius: 0 !important;
+  background: var(--brand-control-bg);
+  color: var(--green);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, opacity .18s ease;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-save-undo:hover:not(:disabled) {
+  background: #e4ebe1;
+  color: var(--green-deep);
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-save-undo:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-savebar .dz-brand-save-button {
+  min-width: 150px;
+  min-height: 44px;
+  border-radius: 0 !important;
+}
+
+.dz-admin-root .dz-branding-workspace .dz-brand-save-undo:focus-visible,
+.dz-admin-root .dz-branding-workspace .dz-brand-save-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--green) 30%, transparent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1140px) {
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar {
+    left: 18px !important;
+    right: 18px !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar.is-dirty {
+    min-height: 58px !important;
+    max-height: 94px;
+    gap: 8px;
+    padding: 8px 10px !important;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar-copy strong {
+    font-size: 11px;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar-copy span:not(.dz-brand-save-indicator) {
+    display: none;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar-actions {
+    gap: 6px;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar .dz-brand-save-button {
+    min-width: 116px;
+    min-height: 40px;
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+
+  .dz-admin-root .dz-branding-workspace .dz-brand-save-undo {
+    min-width: 70px;
+    min-height: 40px;
+    gap: 4px;
+    padding-inline: 8px;
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dz-admin-root .dz-branding-workspace .dz-brand-savebar {
+    transition: none !important;
+  }
+}
