@@ -243,10 +243,8 @@ export function MerchantDashboardView({
     hasUnsavedStoreNameChanges,
     isSavingBrand,
     canUndo,
-    canRedo,
     updateBrandConfig,
     undoBrandChange,
-    redoBrandChange,
     applyBrandPreset,
     resetBrandCategory,
     handleSaveBranding,
@@ -631,9 +629,7 @@ export function MerchantDashboardView({
               onSetBrandingCategory={setBrandingCategory}
               brandHistoryTick={brandHistoryTick}
               canUndo={canUndo}
-              canRedo={canRedo}
               onUndo={undoBrandChange}
-              onRedo={redoBrandChange}
               onResetCategory={resetBrandCategory}
               onUpdateBrandConfig={updateBrandConfig}
               hasUnsavedBrandChanges={hasUnsavedBrandChanges}
