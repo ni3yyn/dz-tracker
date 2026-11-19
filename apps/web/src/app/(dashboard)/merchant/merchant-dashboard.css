@@ -1874,7 +1874,7 @@
           opacity: 1;
           transform: translateY(0);
           overflow: hidden;
-          transition: max-height .68s cubic-bezier(.2,.65,.25,1), opacity .48s ease, transform .68s cubic-bezier(.2,.65,.25,1), margin .68s ease;
+          transition: max-height .22s cubic-bezier(.2,.75,.25,1), opacity .16s ease, transform .22s cubic-bezier(.2,.75,.25,1), margin .22s ease;
         }
         .dz-integration-questions.is-complete {
           max-height: 0;
@@ -1883,8 +1883,8 @@
           margin-block: 0;
           pointer-events: none;
         }
-        .dz-integration-results-enter { animation: dz-guide-fade-up .68s cubic-bezier(.2,.65,.25,1) both; }
-        @keyframes dz-guide-fade-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        .dz-integration-results-enter { animation: dz-guide-fade-up .18s cubic-bezier(.2,.75,.25,1) both; }
+        @keyframes dz-guide-fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .dz-integration-question { padding: 25px 28px; margin: 0 0 18px; border: 1px solid rgba(39,52,45,.12); border-radius: 20px; background: rgba(255,255,252,.78); }
         .dz-integration-question-head { display: flex; align-items: flex-start; gap: 17px; margin-bottom: 20px; }
         .dz-integration-question-head h3 { margin: 0 0 6px; font-size: clamp(19px,2vw,25px); font-weight: 850; letter-spacing: -.035em; }
@@ -1953,7 +1953,7 @@
           max-width: 100%;
           min-width: 0;
           overflow: clip;
-          transition: height .22s cubic-bezier(.2,.75,.25,1);
+          transition: none;
         }
         .dz-dashboard-transition-measure {
           display: flow-root;
@@ -2028,14 +2028,7 @@
             box-shadow .24s ease,
             transform .24s cubic-bezier(.2,.72,.25,1);
         }
-        .dz-overview-item, .dz-order-mobile-card {
-          animation: dzDashboardItemEnter .18s cubic-bezier(.2,.72,.25,1) both;
-        }
-        .dz-order-mobile-card:nth-child(2) { animation-delay: 0ms; }
-        .dz-order-mobile-card:nth-child(3) { animation-delay: 0ms; }
-        .dz-order-mobile-card:nth-child(4) { animation-delay: 0ms; }
-        .dz-order-mobile-card:nth-child(5) { animation-delay: 0ms; }
-        .dz-order-mobile-card:nth-child(6) { animation-delay: 0ms; }
+        .dz-overview-item, .dz-order-mobile-card { animation: none; }
 
         .dz-mobile-backdrop {
           opacity: 0;
@@ -2248,7 +2241,7 @@
         .dz-billing-usage-note { margin-top:12px; color:var(--ink-muted); font-size:11px; line-height:1.9; }
 
         /* Subscription Warning Banner */
-        .dz-sub-alert-banner { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; padding:16px 20px; border-radius:14px; font-size:13px; animation:dz-tab-fade-up .4s ease; }
+        .dz-sub-alert-banner { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; padding:16px 20px; border-radius:14px; font-size:13px; animation:none; }
         .dz-sub-alert-banner.is-expired { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; }
         .dz-sub-alert-banner.is-limit { background:#fffbeb; border:1px solid #fde68a; color:#92400e; }
         .dz-sub-alert-banner.is-suspended { background:#450a0a; border:1px solid #7f1d1d; color:#fef2f2; }
@@ -2316,7 +2309,7 @@
         .dz-int-guided-carrier-select { display:grid; grid-template-columns:150px minmax(0,1fr); align-items:center; gap:12px; margin-top:13px; padding:13px; border:1px solid var(--border-soft); border-radius:11px; background:#f8faf7; }
         .dz-int-guided-carrier-select label { font-size:11px; font-weight:800; }
         .dz-int-guided-carrier-select select { min-height:39px; padding:8px 10px; border:1px solid var(--border-strong); border-radius:9px; background:#fff; color:var(--ink-main); font:inherit; font-size:11px; }
-        .dz-int-guided-result { display:flex; flex-direction:column; gap:12px; animation:dz-tab-fade-up .3s ease both; }
+        .dz-int-guided-result { display:flex; flex-direction:column; gap:12px; animation:dz-tab-fade-up .18s ease both; }
         .dz-int-guided-result-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; padding:0 2px 3px; }
         .dz-int-guided-result-head h3 { margin:4px 0; color:var(--ink-main); font-size:20px; font-weight:850; }
         .dz-int-guided-result-head p { margin:0; color:var(--ink-muted); font-size:11px; line-height:1.7; }
@@ -2474,7 +2467,7 @@
         .dz-int-nav-btn { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:10px; border:1px solid transparent; background:transparent; font:inherit; font-size:13px; font-weight:700; color:var(--ink-muted); cursor:pointer; transition:all .2s ease; }
         .dz-int-nav-btn:hover { background:rgba(0,0,0,.03); color:var(--ink-main); }
         .dz-int-nav-btn.active { background:#27342d; color:#fff; }
-        .dz-int-panel { display:flex; flex-direction:column; gap:20px; animation:dz-tab-fade-up .35s ease; }
+        .dz-int-panel { display:flex; flex-direction:column; gap:20px; animation:none; }
         .dz-features-badges { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
         .dz-feature-pill { display:flex; align-items:flex-start; gap:10px; background:rgba(255,255,250,.85); border:1px solid var(--border-soft); border-radius:12px; padding:12px 14px; }
         .dz-feature-pill-icon { width:32px; height:32px; border-radius:8px; background:#eef2eb; color:#27342d; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -2507,7 +2500,7 @@
           opacity: 0;
           visibility: hidden;
           pointer-events: none;
-          transition: opacity .3s ease, visibility 0s linear .3s;
+          transition: opacity .18s ease, visibility 0s linear .18s;
           animation: none;
         }
 
@@ -2632,7 +2625,7 @@
         .dz-admin-root .dz-main { padding-top: 0 !important; }
 
         /* UPSELL FEATURE STYLES */
-        .dz-upsell-container { display:flex; flex-direction:column; gap:24px; max-width:1100px; padding-bottom:60px; animation:dz-tab-fade-up .35s ease; }
+        .dz-upsell-container { display:flex; flex-direction:column; gap:24px; max-width:1100px; padding-bottom:60px; animation:none; }
         .dz-upsell-hero-banner { background:linear-gradient(135deg, #18201a 0%, #27342d 100%); border-radius:18px; padding:24px 28px; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; box-shadow:0 10px 30px rgba(0,0,0,0.08); }
         .dz-upsell-hero-text h3 { margin:0 0 6px; font-size:18px; font-weight:850; display:flex; align-items:center; gap:8px; }
         .dz-upsell-hero-text p { margin:0; font-size:13px; color:#d1d5db; line-height:1.6; max-width:620px; }
@@ -4326,8 +4319,8 @@
             box-shadow: 0 -16px 38px rgba(32, 40, 36, .16) !important;
             transform: translate3d(0, 100%, 0) !important;
             transform-origin: bottom center;
-            transition: transform .46s cubic-bezier(.2, .75, .25, 1),
-              opacity .28s ease, visibility .46s ease !important;
+            transition: transform .22s cubic-bezier(.2, .75, .25, 1),
+              opacity .16s ease, visibility .22s ease !important;
             will-change: transform;
             z-index: 1300 !important;
           }
@@ -5779,7 +5772,7 @@
   animation: none;
 }
 .dz-dashboard-transition-content.is-animated {
-  animation: dzDashboardRouteEnter .42s cubic-bezier(.2,.72,.25,1) both;
+  animation: dzDashboardRouteEnter .18s cubic-bezier(.2,.72,.25,1) both;
 }
 .dz-main > header,
 .dz-header-actions,
@@ -8617,5 +8610,98 @@ body .dz-brand-savebar .dz-brand-save-button:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   body .dz-brand-savebar {
     transition: none !important;
+  }
+}
+
+
+/* DASHBOARD MOTION SYSTEM
+   One page-level reveal, short control feedback, and no animated full-screen blur layers. */
+.dz-admin-root {
+  --dz-motion-fast: .14s;
+  --dz-motion-standard: .18s;
+  --dz-motion-panel: .22s;
+  --dz-motion-easing: cubic-bezier(.2,.75,.25,1);
+}
+
+.dz-blob {
+  filter: none !important;
+  will-change: auto !important;
+  mix-blend-mode: normal !important;
+}
+.dz-blob1,
+.dz-blob2 {
+  animation: none !important;
+}
+
+.dz-dashboard-transition-frame {
+  height: auto !important;
+  transition: none !important;
+}
+.dz-dashboard-transition-content.is-animated {
+  animation: dzDashboardRouteEnter var(--dz-motion-standard) var(--dz-motion-easing) both !important;
+}
+.dz-overview-item,
+.dz-order-mobile-card,
+.dz-int-panel,
+.dz-upsell-container,
+.dz-sub-alert-banner {
+  animation: none !important;
+}
+
+.dz-nav-item {
+  transition:
+    color var(--dz-motion-standard) ease,
+    background-color var(--dz-motion-standard) ease,
+    box-shadow var(--dz-motion-standard) ease !important;
+}
+.dz-nav-item::after,
+.dz-nav-icon svg,
+.dz-nav-group-chevron,
+.dz-nav-subitem {
+  transition-duration: var(--dz-motion-standard) !important;
+}
+.dz-nav-submenu {
+  transition:
+    grid-template-rows var(--dz-motion-panel) var(--dz-motion-easing),
+    opacity var(--dz-motion-standard) ease !important;
+}
+.dz-mobile-menu-toggle span {
+  transition:
+    transform var(--dz-motion-standard) var(--dz-motion-easing),
+    opacity var(--dz-motion-fast) ease !important;
+}
+.dz-mobile-backdrop,
+.dz-order-detail-backdrop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.dz-mobile-backdrop {
+  transition: opacity var(--dz-motion-standard) ease, visibility 0s linear var(--dz-motion-standard) !important;
+}
+.dz-mobile-backdrop.is-visible {
+  transition-delay: 0s !important;
+}
+
+@media (max-width: 760px) {
+  .dz-admin-root .dz-sidebar {
+    transition:
+      max-height var(--dz-motion-panel) var(--dz-motion-easing),
+      transform var(--dz-motion-panel) var(--dz-motion-easing),
+      opacity var(--dz-motion-standard) ease,
+      visibility 0s linear var(--dz-motion-panel) !important;
+  }
+  .dz-admin-root .dz-sidebar.dz-mobile-nav-open {
+    transition-delay: 0s !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dz-admin-root *,
+  .dz-admin-root *::before,
+  .dz-admin-root *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
