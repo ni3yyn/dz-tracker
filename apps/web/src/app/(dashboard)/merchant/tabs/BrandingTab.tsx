@@ -721,6 +721,7 @@ export function BrandingTab({
           className={'dz-brand-savebar' + (hasUnsavedBrandChanges ? ' is-dirty' : '')}
           role="status"
           aria-live="polite"
+          aria-hidden={!hasUnsavedBrandChanges}
         >
           <div className="dz-brand-savebar-copy">
             <span className={'dz-brand-save-indicator' + (hasUnsavedBrandChanges ? ' is-dirty' : '')} aria-hidden="true" />
