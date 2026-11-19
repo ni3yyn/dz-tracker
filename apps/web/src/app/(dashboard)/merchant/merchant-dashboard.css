@@ -8400,6 +8400,7 @@ body .dz-brand-savebar {
   position: fixed !important;
   z-index: 1200;
   box-sizing: border-box;
+  border-radius: 0 !important;
   bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
   left: calc(360px + 48px + 26px) !important;
   right: calc(280px + 28px) !important;
@@ -8510,7 +8511,7 @@ body .dz-brand-savebar .dz-brand-save-undo {
   min-width: 44px;
   min-height: 44px;
   padding: 0;
-  border: 1px solid #dfe5dc;
+  border: 0 !important;
   border-radius: 0 !important;
   background: #f0f2ec;
   color: #294b37;
