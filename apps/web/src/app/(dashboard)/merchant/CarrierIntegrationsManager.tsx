@@ -817,8 +817,8 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         .dz-carrier-manager .dz-animated-height[data-ready="true"] {
           visibility: visible;
           transition:
-            height .46s cubic-bezier(.2, .75, .25, 1),
-            opacity .28s ease,
+            height .22s cubic-bezier(.2, .75, .25, 1),
+            opacity .16s ease,
             visibility 0s linear 0s;
         }
         .dz-carrier-manager .dz-animated-height[data-ready="true"][data-expanded="false"] {
@@ -826,9 +826,9 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         }
         .dz-carrier-manager .dz-animated-height[data-ready="true"][data-expanded="false"] {
           transition:
-            height .46s cubic-bezier(.2, .75, .25, 1),
-            opacity .28s ease,
-            visibility 0s linear .46s;
+            height .22s cubic-bezier(.2, .75, .25, 1),
+            opacity .16s ease,
+            visibility 0s linear .22s;
         }
         .dz-carrier-manager .dz-animated-height-measure {
           display: flow-root;
@@ -836,14 +836,14 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         }
         .dz-carrier-manager .dz-animated-height-enter {
           min-width: 0;
-          animation: dzIntegrationReveal .38s cubic-bezier(.2, .75, .25, 1) both;
+          animation: dzIntegrationReveal .18s cubic-bezier(.2, .75, .25, 1) both;
         }
         .dz-carrier-manager .dz-animated-height[data-expanded="false"] .dz-animated-height-enter {
           animation: none;
         }
         @keyframes dzIntegrationReveal {
-          from { opacity: 0; transform: translate3d(8px, 7px, 0) scale(.997); }
-          to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+          from { opacity: 0; transform: translate3d(4px, 3px, 0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
         }
         .dz-carrier-manager .dz-integration-content {
           width: 100%;
@@ -856,9 +856,9 @@ export function CarrierIntegrationsManager({ merchantId, siteUrl, onOpenOrders }
         }
         .dz-carrier-manager .dz-integration-tab {
           transition:
-            background-color .22s ease,
-            color .22s ease,
-            opacity .22s ease;
+            background-color .16s ease,
+            color .16s ease,
+            opacity .16s ease;
         }
         .dz-carrier-manager .dz-integration-tab:active {
           opacity: .82;
