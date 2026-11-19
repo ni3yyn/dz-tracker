@@ -736,9 +736,22 @@ export function BrandingTab({
               form="merchant-branding-form"
               disabled={!hasUnsavedBrandChanges || isSavingBrand}
               className="dz-btn dz-brand-save-button"
+              aria-label={isSavingBrand ? 'جارٍ الحفظ' : 'حفظ التغييرات'}
+              title={isSavingBrand ? 'جارٍ الحفظ' : 'حفظ التغييرات'}
+              aria-busy={isSavingBrand}
               style={{ background: brandConfig.brandColor, color: getReadableOnBrand(brandConfig.brandColor) }}
             >
-              {isSavingBrand ? 'جارٍ الحفظ…' : 'حفظ التغييرات'}
+              {isSavingBrand ? (
+                <svg className="dz-brand-save-icon is-loading" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="8.25" opacity=".28" />
+                  <path d="M12 3.75A8.25 8.25 0 0 1 20.25 12" />
+                </svg>
+              ) : (
+                <svg className="dz-brand-save-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 3.75h11.4l3.85 3.85v12.65H3.75V3.75H5Z" />
+                  <path d="M7.5 3.75v5.5h9v-5.5M7.5 20.25v-7h9v7" />
+                </svg>
+              )}
             </button>
             <button
               type="button"
@@ -748,11 +761,10 @@ export function BrandingTab({
               aria-label="تراجع عن آخر تغيير"
               title="تراجع عن آخر تغيير"
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9 14 4 9l5-5" />
                 <path d="M4 9h10a6 6 0 0 1 0 12h-2" />
               </svg>
-              <span>تراجع</span>
             </button>
           </div>
         </div>,
