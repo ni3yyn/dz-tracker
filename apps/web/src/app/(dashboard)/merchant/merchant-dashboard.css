@@ -8553,9 +8553,16 @@ body .dz-brand-savebar .dz-brand-save-button:focus-visible {
 }
 
 @media (max-width: 620px) {
+  body .dz-brand-savebar:not(.is-dirty) {
+    min-height: 48px !important;
+    max-height: 52px;
+    gap: 8px;
+    padding: 4px 10px !important;
+  }
+
   body .dz-brand-savebar.is-dirty {
-    min-height: 46px !important;
-    max-height: 50px;
+    min-height: 62px !important;
+    max-height: 94px;
     gap: 8px;
     padding: 8px 10px !important;
   }
