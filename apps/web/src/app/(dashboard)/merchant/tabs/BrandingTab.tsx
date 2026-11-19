@@ -717,41 +717,45 @@ export function BrandingTab({
       </div>
 
       {isSaveBarPortalReady && createPortal(
-      <div className={'dz-brand-savebar' + (hasUnsavedBrandChanges ? ' is-dirty' : '')} role="status" aria-live="polite">
-        <div className="dz-brand-savebar-copy">
-          <span className={'dz-brand-save-indicator' + (hasUnsavedBrandChanges ? ' is-dirty' : '')} aria-hidden="true" />
-          <div>
-            <strong>{hasUnsavedBrandChanges ? 'تغييرات غير محفوظة' : 'كل التغييرات محفوظة'}</strong>
-            <span>{hasUnsavedBrandChanges ? 'احفظ لتطبيق الهوية على صفحة التتبع.' : 'تظهر التعديلات في المعاينة مباشرة.'}</span>
+        <div
+          className={'dz-brand-savebar' + (hasUnsavedBrandChanges ? ' is-dirty' : '')}
+          role="status"
+          aria-live="polite"
+          aria-hidden={!hasUnsavedBrandChanges}
+        >
+          <div className="dz-brand-savebar-copy">
+            <span className={'dz-brand-save-indicator' + (hasUnsavedBrandChanges ? ' is-dirty' : '')} aria-hidden="true" />
+            <div>
+              <strong>{hasUnsavedBrandChanges ? 'تغييرات غير محفوظة' : 'كل التغييرات محفوظة'}</strong>
+              <span>{hasUnsavedBrandChanges ? 'احفظ لتطبيق الهوية على صفحة التتبع.' : 'تظهر التعديلات في المعاينة مباشرة.'}</span>
+            </div>
           </div>
-        </div>
-        <div className="dz-brand-savebar-actions">
-          <button
-            type="submit"
-            form="merchant-branding-form"
-            disabled={!hasUnsavedBrandChanges || isSavingBrand}
-            className="dz-btn dz-brand-save-button"
-            style={{ background: brandConfig.brandColor, color: getReadableOnBrand(brandConfig.brandColor) }}
-          >
-            {isSavingBrand ? 'جارٍ الحفظ…' : 'حفظ التغييرات'}
-          </button>
-          <button
-            type="button"
-            className="dz-brand-save-undo"
-            onClick={onUndo}
-            disabled={!canUndo || isSavingBrand}
-            aria-label="تراجع عن آخر تغيير"
-            title="تراجع عن آخر تغيير"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 14 4 9l5-5" />
-              <path d="M4 9h10a6 6 0 0 1 0 12h-2" />
-            </svg>
-            <span>تراجع</span>
-          </button>
-        </div>
-      </div>
-        ,
+          <div className="dz-brand-savebar-actions">
+            <button
+              type="submit"
+              form="merchant-branding-form"
+              disabled={!hasUnsavedBrandChanges || isSavingBrand}
+              className="dz-btn dz-brand-save-button"
+              style={{ background: brandConfig.brandColor, color: getReadableOnBrand(brandConfig.brandColor) }}
+            >
+              {isSavingBrand ? 'جارٍ الحفظ…' : 'حفظ التغييرات'}
+            </button>
+            <button
+              type="button"
+              className="dz-brand-save-undo"
+              onClick={onUndo}
+              disabled={!canUndo || isSavingBrand}
+              aria-label="تراجع عن آخر تغيير"
+              title="تراجع عن آخر تغيير"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 14 4 9l5-5" />
+                <path d="M4 9h10a6 6 0 0 1 0 12h-2" />
+              </svg>
+              <span>تراجع</span>
+            </button>
+          </div>
+        </div>,
         document.body,
       )}
     </div>
