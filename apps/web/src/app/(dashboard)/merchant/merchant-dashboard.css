@@ -8421,11 +8421,12 @@ body .dz-brand-savebar {
   visibility: hidden;
   pointer-events: none;
   transform: translate3d(0, calc(100% + 100vh), 0);
+  --brand-savebar-motion: .34s cubic-bezier(.2,.75,.25,1);
   transition:
-    max-height .34s cubic-bezier(.2,.75,.25,1),
-    padding .34s cubic-bezier(.2,.75,.25,1),
-    opacity .2s ease,
-    transform .34s cubic-bezier(.2,.75,.25,1),
+    max-height var(--brand-savebar-motion),
+    padding var(--brand-savebar-motion),
+    opacity var(--brand-savebar-motion),
+    transform var(--brand-savebar-motion),
     visibility 0s linear .34s;
 }
 
@@ -8504,11 +8505,11 @@ body .dz-brand-savebar .dz-brand-save-undo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   box-sizing: border-box;
-  min-width: 82px;
+  width: 44px;
+  min-width: 44px;
   min-height: 44px;
-  padding: 9px 12px;
+  padding: 0;
   border: 1px solid #dfe5dc;
   border-radius: 0 !important;
   background: #f0f2ec;
@@ -8533,10 +8534,28 @@ body .dz-brand-savebar .dz-brand-save-undo:disabled {
 }
 
 body .dz-brand-savebar .dz-brand-save-button {
-  min-width: 150px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 48px;
+  min-width: 48px;
   min-height: 44px;
-  padding: 10px 18px;
+  padding: 0;
   border-radius: 0 !important;
+}
+
+body .dz-brand-savebar .dz-brand-save-button svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+body .dz-brand-savebar .dz-brand-save-icon.is-loading {
+  animation: dz-brand-save-spin .8s linear infinite;
+}
+
+@keyframes dz-brand-save-spin {
+  to { transform: rotate(360deg); }
 }
 
 body .dz-brand-savebar .dz-brand-save-undo:focus-visible,
@@ -8580,18 +8599,17 @@ body .dz-brand-savebar .dz-brand-save-button:focus-visible {
   }
 
   body .dz-brand-savebar .dz-brand-save-button {
-    min-width: 116px;
+    width: 40px;
+    min-width: 40px;
     min-height: 40px;
-    padding-inline: 10px;
-    font-size: 11px;
+    padding: 0;
   }
 
   body .dz-brand-savebar .dz-brand-save-undo {
-    min-width: 70px;
+    width: 40px;
+    min-width: 40px;
     min-height: 40px;
-    gap: 4px;
-    padding-inline: 8px;
-    font-size: 10px;
+    padding: 0;
   }
 }
 
