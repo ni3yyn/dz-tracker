@@ -8406,10 +8406,10 @@ body .dz-brand-savebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 52px !important;
-  max-height: 56px;
-  gap: 10px;
-  padding: 6px 12px !important;
+  min-height: 0 !important;
+  max-height: 0;
+  gap: 0;
+  padding: 0 !important;
   overflow: hidden;
   border: 0 !important;
   background: rgba(255, 254, 250, .985) !important;
@@ -8417,16 +8417,16 @@ body .dz-brand-savebar {
   direction: rtl;
   font-family: 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif;
   box-shadow: 0 -8px 28px rgba(31, 48, 36, .08) !important;
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translate3d(0, 0, 0);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(0, calc(100% + 100vh), 0);
   transition:
     max-height .34s cubic-bezier(.2,.75,.25,1),
     padding .34s cubic-bezier(.2,.75,.25,1),
     opacity .2s ease,
     transform .34s cubic-bezier(.2,.75,.25,1),
-    visibility 0s linear;
+    visibility 0s linear .34s;
 }
 
 body .dz-brand-savebar.is-dirty {
@@ -8554,10 +8554,10 @@ body .dz-brand-savebar .dz-brand-save-button:focus-visible {
 
 @media (max-width: 620px) {
   body .dz-brand-savebar:not(.is-dirty) {
-    min-height: 48px !important;
-    max-height: 52px;
-    gap: 8px;
-    padding: 4px 10px !important;
+    min-height: 0 !important;
+    max-height: 0;
+    gap: 0;
+    padding: 0 !important;
   }
 
   body .dz-brand-savebar.is-dirty {
