@@ -1953,7 +1953,7 @@
           max-width: 100%;
           min-width: 0;
           overflow: clip;
-          transition: height .48s cubic-bezier(.2,.75,.25,1);
+          transition: height .22s cubic-bezier(.2,.75,.25,1);
         }
         .dz-dashboard-transition-measure {
           display: flow-root;
@@ -1964,15 +1964,15 @@
           width: 100%;
           min-width: 0;
           transform-origin: top center;
-          animation: dzDashboardRouteEnter .42s cubic-bezier(.2,.72,.25,1) both;
+          animation: dzDashboardRouteEnter .2s cubic-bezier(.2,.72,.25,1) both;
         }
         .dz-dashboard-transition-content[data-direction="next"] { --dashboard-enter-x: 11px; }
         .dz-dashboard-transition-content[data-direction="previous"] { --dashboard-enter-x: -11px; }
-        .dz-header-titles-enter { animation: dzDashboardHeaderEnter .32s cubic-bezier(.2,.72,.25,1) both; }
-        .dz-header-actions { animation: dzDashboardHeaderEnter .34s cubic-bezier(.2,.72,.25,1) both; }
+        .dz-header-titles-enter { animation: dzDashboardHeaderEnter .18s cubic-bezier(.2,.72,.25,1) both; }
+        .dz-header-actions { animation: dzDashboardHeaderEnter .18s cubic-bezier(.2,.72,.25,1) both; }
         @keyframes dzDashboardRouteEnter {
-          from { opacity: 0; transform: translate3d(var(--dashboard-enter-x, 8px), 8px, 0) scale(.997); filter: blur(1px); }
-          to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+          from { opacity: 0; transform: translate3d(var(--dashboard-enter-x, 4px), 3px, 0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
         }
         @keyframes dzDashboardHeaderEnter {
           from { opacity: 0; transform: translate3d(0, 5px, 0); }
@@ -2029,19 +2029,19 @@
             transform .24s cubic-bezier(.2,.72,.25,1);
         }
         .dz-overview-item, .dz-order-mobile-card {
-          animation: dzDashboardItemEnter .32s cubic-bezier(.2,.72,.25,1) both;
+          animation: dzDashboardItemEnter .18s cubic-bezier(.2,.72,.25,1) both;
         }
-        .dz-order-mobile-card:nth-child(2) { animation-delay: 25ms; }
-        .dz-order-mobile-card:nth-child(3) { animation-delay: 45ms; }
-        .dz-order-mobile-card:nth-child(4) { animation-delay: 65ms; }
-        .dz-order-mobile-card:nth-child(5) { animation-delay: 85ms; }
-        .dz-order-mobile-card:nth-child(6) { animation-delay: 105ms; }
+        .dz-order-mobile-card:nth-child(2) { animation-delay: 0ms; }
+        .dz-order-mobile-card:nth-child(3) { animation-delay: 0ms; }
+        .dz-order-mobile-card:nth-child(4) { animation-delay: 0ms; }
+        .dz-order-mobile-card:nth-child(5) { animation-delay: 0ms; }
+        .dz-order-mobile-card:nth-child(6) { animation-delay: 0ms; }
 
         .dz-mobile-backdrop {
           opacity: 0;
           visibility: hidden;
           pointer-events: none;
-          transition: opacity .3s ease, visibility 0s linear .3s;
+          transition: opacity .18s ease, visibility 0s linear .18s;
           animation: none;
         }
         .dz-mobile-backdrop.is-visible {
@@ -2049,19 +2049,19 @@
           visibility: visible;
           pointer-events: auto;
           transition-delay: 0s;
-          animation: dzDashboardBackdropEnter .3s ease both;
+          animation: dzDashboardBackdropEnter .18s ease both;
         }
 
         .dz-mapping-modal-backdrop,
         .dz-order-detail-backdrop {
-          animation: dzDashboardBackdropEnter .26s ease both;
+          animation: dzDashboardBackdropEnter .18s ease both;
         }
         .dz-mapping-modal-panel {
-          animation: dzDashboardDialogEnter .36s cubic-bezier(.2,.72,.25,1) both;
+          animation: dzDashboardDialogEnter .22s cubic-bezier(.2,.72,.25,1) both;
           transform-origin: center;
         }
         .dz-order-detail-panel {
-          animation: dzDashboardDrawerEnter .4s cubic-bezier(.2,.72,.25,1) both;
+          animation: dzDashboardDrawerEnter .24s cubic-bezier(.2,.72,.25,1) both;
           transform-origin: right center;
         }
 
@@ -2093,10 +2093,10 @@
           animation: none !important;
           transform: none !important;
           transition:
-            flex-basis .48s cubic-bezier(.2,.75,.25,1),
-            width .48s cubic-bezier(.2,.75,.25,1),
-            opacity .28s ease,
-            visibility 0s linear .48s;
+            flex-basis .24s cubic-bezier(.2,.75,.25,1),
+            width .24s cubic-bezier(.2,.75,.25,1),
+            opacity .18s ease,
+            visibility 0s linear .24s;
         }
         .dz-order-side-panel--add { --order-side-panel-width: min(620px, 100vw); }
         .dz-order-side-panel[data-open="true"] {
@@ -2146,7 +2146,7 @@
           animation: none !important;
           transition:
             opacity .3s cubic-bezier(.2,.65,.25,1),
-            visibility 0s linear .32s;
+            visibility 0s linear .22s;
         }
         .dz-order-details-backdrop[data-open="true"] {
           opacity: 1;
@@ -2167,7 +2167,7 @@
           animation: none !important;
           transform: none !important;
           transition:
-            clip-path .32s cubic-bezier(.2,.75,.25,1),
+            clip-path .22s cubic-bezier(.2,.75,.25,1),
             visibility 0s linear .32s;
         }
         .dz-order-details-panel[data-open="true"] {
@@ -2199,10 +2199,10 @@
           .dz-sidebar {
             max-height: 0;
             transition:
-              max-height .42s cubic-bezier(.2,.75,.25,1),
-              opacity .28s ease,
-              transform .34s cubic-bezier(.2,.72,.25,1),
-              visibility 0s linear .42s;
+              max-height .24s cubic-bezier(.2,.75,.25,1),
+              opacity .18s ease,
+              transform .22s cubic-bezier(.2,.72,.25,1),
+              visibility 0s linear .24s;
           }
           .dz-sidebar.dz-mobile-nav-open {
             max-height: calc(100dvh - 90px);
@@ -8422,13 +8422,13 @@ body .dz-brand-savebar {
   visibility: hidden;
   pointer-events: none;
   transform: translate3d(0, calc(100% + 100vh), 0);
-  --brand-savebar-motion: .34s cubic-bezier(.2,.75,.25,1);
+  --brand-savebar-motion: .22s cubic-bezier(.2,.75,.25,1);
   transition:
     max-height var(--brand-savebar-motion),
     padding var(--brand-savebar-motion),
     opacity var(--brand-savebar-motion),
     transform var(--brand-savebar-motion),
-    visibility 0s linear .34s;
+    visibility 0s linear .22s;
 }
 
 body .dz-brand-savebar.is-dirty {
@@ -8521,7 +8521,7 @@ body .dz-brand-savebar .dz-brand-save-undo {
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
-  transition: background .18s ease, color .18s ease, opacity .18s ease;
+  transition: background .14s ease, color .14s ease, opacity .14s ease;
 }
 
 body .dz-brand-savebar .dz-brand-save-undo:hover:not(:disabled) {
