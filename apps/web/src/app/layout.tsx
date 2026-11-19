@@ -28,7 +28,8 @@ const structuredData = {
       '@type': 'WebSite',
       '@id': `${siteUrl}/#website`,
       url: siteUrl,
-      name: 'TajerTrack | تاجر تراك',
+      name: 'TajerTrack',
+      alternateName: ['تاجر تراك', 'tajertrack.vercel.app'],
       inLanguage: ['ar-DZ', 'fr-DZ'],
       publisher: { '@id': organizationId },
     },
@@ -80,7 +81,7 @@ export const metadata: Metadata = {
     google: 'AFnzXBtqTfOnsmNvNGZVw3u-WbUcjaeg-yj0sH2T7N4', // <-- Paste only the content string here
   },
   description: 'تاجر تراك منصة جزائرية لتتبّع طلبات المتاجر الإلكترونية. ترسل رابط التتبّع عبر SMS من رقم التاجر وشريحته، دون رسوم لكل رسالة من تاجر تراك؛ وتبقى أي تكلفة حسب باقة متعامل الهاتف.',
-  applicationName: 'تاجر تراك',
+  applicationName: 'TajerTrack | تاجر تراك',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -99,8 +100,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'ar_DZ',
-    siteName: 'تاجر تراك',
-    title: 'تاجر تراك | تتبّع طلبات المتاجر الجزائرية عبر SMS',
+    siteName: 'TajerTrack | تاجر تراك',
+    title: 'TajerTrack | تاجر تراك — تتبّع طلبات المتاجر الجزائرية عبر SMS',
     description: 'منصة للمتاجر الإلكترونية في الجزائر: إرسال رابط التتبّع عبر SMS من رقم التاجر وشريحته، دون رسوم لكل رسالة من تاجر تراك، مع متابعة الشحن وطلبات الاستبدال.',
   },
   twitter: {
