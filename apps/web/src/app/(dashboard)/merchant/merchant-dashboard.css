@@ -1966,8 +1966,8 @@
           transform-origin: top center;
           animation: dzDashboardRouteEnter .2s cubic-bezier(.2,.72,.25,1) both;
         }
-        .dz-dashboard-transition-content[data-direction="next"] { --dashboard-enter-x: 11px; }
-        .dz-dashboard-transition-content[data-direction="previous"] { --dashboard-enter-x: -11px; }
+        .dz-dashboard-transition-content[data-direction="next"] { --dashboard-enter-x: 4px; }
+        .dz-dashboard-transition-content[data-direction="previous"] { --dashboard-enter-x: -4px; }
         .dz-header-titles-enter { animation: dzDashboardHeaderEnter .18s cubic-bezier(.2,.72,.25,1) both; }
         .dz-header-actions { animation: dzDashboardHeaderEnter .18s cubic-bezier(.2,.72,.25,1) both; }
         @keyframes dzDashboardRouteEnter {
@@ -2168,7 +2168,7 @@
           transform: none !important;
           transition:
             clip-path .22s cubic-bezier(.2,.75,.25,1),
-            visibility 0s linear .32s;
+            visibility 0s linear .22s;
         }
         .dz-order-details-panel[data-open="true"] {
           visibility: visible;
