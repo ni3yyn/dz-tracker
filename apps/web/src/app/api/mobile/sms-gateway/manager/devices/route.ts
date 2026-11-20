@@ -10,12 +10,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const { data, error } = await auth.supabase
+  const baseColumns = 'device_id, display_name, operator_code, enabled, revoked_at, connected_at, last_seen_at, last_status';
+  let healthReportingAvailable = true;
+  let { data, error } = await auth.supabase
     .from('sms_gateway_devices')
-    .select('device_id, display_name, operator_code, enabled, revoked_at, connected_at, last_seen_at, last_status, health_report, health_reported_at')
+    .select(baseColumns + ', health_report, health_reported_at')
     .eq('merchant_id', auth.manager.merchant_id)
     .order('connected_at', { ascending: false })
     .limit(50);
+
+  // Keep device controls usable during a rolling deploy when the API has
+  // shipped but the separately-applied database migration has not.
+  const schemaError = error?.message || '';
+  const healthColumnsMissing = Boolean(error) &&
+    /health_report(?:ed_at)?/i.test(schemaError) &&
+    /(column|schema cache|could not find|does not exist)/i.test(schemaError);
+  if (healthColumnsMissing) {
+    healthReportingAvailable = false;
+    const fallback = await auth.supabase
+      .from('sms_gateway_devices')
+      .select(baseColumns)
+      .eq('merchant_id', auth.manager.merchant_id)
+      .order('connected_at', { ascending: false })
+      .limit(50);
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     console.error('[NativeSmsGateway] Could not list manager sender devices:', error.message);
@@ -35,10 +55,11 @@ export async function GET(request: Request) {
       connectedAt: device.connected_at,
       lastSeenAt: device.last_seen_at,
       lastStatus: device.last_status,
-      healthReport: device.health_report && typeof device.health_report === 'object' && !Array.isArray(device.health_report)
+      healthReportingAvailable,
+      healthReport: healthReportingAvailable && device.health_report && typeof device.health_report === 'object' && !Array.isArray(device.health_report)
         ? device.health_report
         : null,
-      healthReportedAt: device.health_reported_at,
+      healthReportedAt: healthReportingAvailable ? device.health_reported_at : null,
       isOnline: device.enabled === true && !device.revoked_at &&
         Number.isFinite(lastSeen) && now - lastSeen <= 120_000,
     };
