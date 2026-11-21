@@ -142,6 +142,23 @@ export async function POST(request: Request) {
       }, { status: 503 });
     }
 
+    let healthRefreshRequestedAt: string | null = null;
+    // Resolve the device from its authenticated token: the poll RPC omits
+    // deviceId when there is no queued SMS.
+    const { data: refreshRequest, error: refreshRequestError } = await supabase
+      .from('sms_gateway_devices')
+      .select('health_refresh_requested_at')
+      .eq('token_hash', tokenHash)
+      .is('revoked_at', null)
+      .maybeSingle();
+    if (!refreshRequestError) {
+      healthRefreshRequestedAt = typeof refreshRequest?.health_refresh_requested_at === 'string'
+        ? refreshRequest.health_refresh_requested_at
+        : null;
+    } else if (!/health_refresh_requested_at/i.test(refreshRequestError.message || '')) {
+      console.error('[NativeSmsGateway] Could not inspect sender health refresh request:', refreshRequestError.message);
+    }
+
     if (poll?.errorCode === 'unauthorized') {
       return NextResponse.json({ error: 'This phone is no longer connected. Reconnect it from TajerTrack.' }, { status: 401 });
     }
@@ -151,6 +168,7 @@ export async function POST(request: Request) {
     if (poll?.operatorConflict === true) {
       return NextResponse.json({
         job: null,
+        healthRefreshRequestedAt,
         operatorConflict: true,
         error: 'شبكة الشريحة المختارة لا تطابق شبكة خط الإرسال المرتبط بهذا الهاتف.',
       }, { headers: { 'Cache-Control': 'no-store' } });
@@ -158,19 +176,21 @@ export async function POST(request: Request) {
     if (poll?.operatorUnassigned === true) {
       return NextResponse.json({
         job: null,
+        healthRefreshRequestedAt,
         operatorUnassigned: true,
         error: 'لم يتمكن Android من تحديد شبكة الشريحة المفعّلة. فعّل شريحة جزائرية معروفة ثم أعد تشغيل الإرسال.',
       }, { headers: { 'Cache-Control': 'no-store' } });
     }
     if (poll?.deviceDisabled === true) {
-      return NextResponse.json({ job: null, deviceDisabled: true }, { headers: { 'Cache-Control': 'no-store' } });
+      return NextResponse.json({ job: null, healthRefreshRequestedAt, deviceDisabled: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
     if (poll?.gatewayPaused === true) {
-      return NextResponse.json({ job: null, gatewayPaused: true }, { headers: { 'Cache-Control': 'no-store' } });
+      return NextResponse.json({ job: null, healthRefreshRequestedAt, gatewayPaused: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
     if (poll?.merchantDisabled === true || !poll?.job) {
       return NextResponse.json({
         job: null,
+        healthRefreshRequestedAt,
         merchantDisabled: poll?.merchantDisabled === true,
       }, { headers: { 'Cache-Control': 'no-store' } });
     }
@@ -218,13 +238,13 @@ export async function POST(request: Request) {
         claimToken,
         'The order does not have a tracking UUID yet. The SMS remains queued for another check.'
       );
-      return NextResponse.json({ job: null, deferred: true }, { headers: { 'Cache-Control': 'no-store' } });
+      return NextResponse.json({ job: null, healthRefreshRequestedAt, deferred: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     const phone = normalizeAlgerianMobilePhone(order.customer_phone);
     if (!phone) {
       await skipJob(supabase, job.id, deviceId, claimToken, 'invalid_algerian_mobile_number');
-      return NextResponse.json({ job: null }, { headers: { 'Cache-Control': 'no-store' } });
+      return NextResponse.json({ job: null, healthRefreshRequestedAt }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     const actualOperator = operatorForPhone(phone);
@@ -238,7 +258,7 @@ export async function POST(request: Request) {
       // order-update trigger will recalculate the route when the phone changes.
       await skipJob(supabase, job.id, deviceId, claimToken, 'recipient_carrier_mismatch');
       console.error('[NativeSmsGateway] Refused a sender/recipient carrier mismatch for order:', order.id);
-      return NextResponse.json({ job: null }, { headers: { 'Cache-Control': 'no-store' } });
+      return NextResponse.json({ job: null, healthRefreshRequestedAt }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     const baseUrl = (
@@ -250,6 +270,7 @@ export async function POST(request: Request) {
     const message = `TajerTrack - Suivez votre commande: ${trackingUrl}`;
 
     return NextResponse.json({
+      healthRefreshRequestedAt,
       job: {
         id: job.id,
         claimToken,

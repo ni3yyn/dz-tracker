@@ -148,17 +148,31 @@ export async function POST(request: Request) {
 
   const reportedAt = new Date(now).toISOString();
   const minimumNextReport = new Date(now - 45_000).toISOString();
-  const { data, error } = await auth.supabase
+  const requestedRefreshAt = typeof payload?.healthRefreshRequestedAt === 'string' &&
+      Number.isFinite(Date.parse(payload.healthRefreshRequestedAt))
+    ? payload.healthRefreshRequestedAt
+    : null;
+  let updateQuery = auth.supabase
     .from('sms_gateway_devices')
     .update({
       health_report: healthReport,
       health_reported_at: reportedAt,
       device_model: deviceInfo.model,
+      ...(requestedRefreshAt ? { health_refresh_requested_at: null } : {}),
     })
     .eq('device_id', auth.device.device_id)
     .eq('merchant_id', auth.device.merchant_id)
-    .is('revoked_at', null)
-    .or(`health_reported_at.is.null,health_reported_at.lt.${minimumNextReport}`)
+    .is('revoked_at', null);
+
+  // A manager-triggered request bypasses the normal 45-second write throttle.
+  // Match the exact request observed by this phone so newer requests survive.
+  if (requestedRefreshAt) {
+    updateQuery = updateQuery.eq('health_refresh_requested_at', requestedRefreshAt);
+  } else {
+    updateQuery = updateQuery.or(`health_reported_at.is.null,health_reported_at.lt.${minimumNextReport}`);
+  }
+
+  const { data, error } = await updateQuery
     .select('device_id')
     .maybeSingle();
 
