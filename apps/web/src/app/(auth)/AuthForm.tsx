@@ -130,10 +130,10 @@ export default function AuthForm({ mode, isAuthenticated = false, nextPath = '' 
             <div className={styles.field}>
               <div className={styles.labelRow}>
                 <label htmlFor={passwordId}>كلمة المرور</label>
-                {isLogin && <span className={styles.passwordHint}>٦ أحرف على الأقل</span>}
+                <span className={styles.passwordHint}>{isLogin ? '٦ أحرف على الأقل' : '١٢ حرفاً على الأقل'}</span>
               </div>
               <div className={styles.passwordWrap} dir="ltr">
-                <input id={passwordId} type={showPassword ? 'text' : 'password'} name="password" required minLength={6} autoComplete={isLogin ? 'current-password' : 'new-password'} placeholder="••••••••" className={styles.input} disabled={loading} />
+                <input id={passwordId} type={showPassword ? 'text' : 'password'} name="password" required minLength={isLogin ? 6 : 12} autoComplete={isLogin ? 'current-password' : 'new-password'} placeholder="••••••••" className={styles.input} disabled={loading} />
                 <button type="button" className={styles.passwordToggle} onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'} aria-pressed={showPassword} disabled={loading}><EyeIcon hidden={showPassword} /></button>
               </div>
             </div>
@@ -141,7 +141,7 @@ export default function AuthForm({ mode, isAuthenticated = false, nextPath = '' 
               <div className={styles.field}>
                 <label htmlFor={confirmId}>تأكيد كلمة المرور</label>
                 <div className={styles.passwordWrap} dir="ltr">
-                  <input id={confirmId} type={showPassword ? 'text' : 'password'} name="passwordConfirm" required minLength={6} autoComplete="new-password" placeholder="أعد كتابة كلمة المرور" className={styles.input} disabled={loading} />
+                  <input id={confirmId} type={showPassword ? 'text' : 'password'} name="passwordConfirm" required minLength={12} autoComplete="new-password" placeholder="أعد كتابة كلمة المرور" className={styles.input} disabled={loading} />
                   <button type="button" className={styles.passwordToggle} onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'إخفاء كلمات المرور' : 'إظهار كلمات المرور'} aria-pressed={showPassword} disabled={loading}><EyeIcon hidden={showPassword} /></button>
                 </div>
               </div>
