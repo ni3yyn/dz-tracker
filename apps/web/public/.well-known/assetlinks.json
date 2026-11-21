@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.tajertrack.phone",
+      "sha256_cert_fingerprints": [
+        "79:1E:63:85:30:29:90:C7:29:A9:2E:25:A8:35:85:47:A7:40:49:66:CD:F0:C2:4A:15:84:10:B0:62:2A:CB:2E"
+      ]
+    }
+  }
+]

@@ -8,8 +8,8 @@ import { isAuthorizedAdmin } from '../../../../lib/admin-auth';
 import { hashNativeSmsCredential } from '../../../../lib/native-sms-gateway-auth';
 
 const PAIRING_PATH = '/mobile/sms-gateway/connect';
-const MANAGER_REDIRECT = 'tajertrack-sms://manager-pair';
-const SENDER_REDIRECT = 'tajertrack-sms://pair';
+const MANAGER_REDIRECT = 'https://tajertrack.vercel.app/mobile/sms-gateway/complete?mode=manager';
+const SENDER_REDIRECT = 'https://tajertrack.vercel.app/mobile/sms-gateway/complete?mode=sender';
 
 function connectErrorUrl(error: string, managerDeviceId = '') {
   const params = new URLSearchParams({
@@ -139,5 +139,5 @@ export async function approveNativeSmsInvite(formData: FormData) {
     redirect(`${invitePage}&error=invite_expired`);
   }
 
-  redirect(`${SENDER_REDIRECT}?code=${encodeURIComponent(code)}`);
+  redirect(`${SENDER_REDIRECT}&code=${encodeURIComponent(code)}`);
 }

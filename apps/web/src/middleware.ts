@@ -3,6 +3,16 @@ import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  // Pairing codes are single-use bearer credentials. Never cache the callback
+  // page or allow its URL to become a referrer to another origin.
+  if (pathname === '/mobile/sms-gateway/complete') {
+    const response = NextResponse.next({ request });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Referrer-Policy', 'no-referrer');
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    return response;
+  }
   const needsDashboardLogin = pathname.startsWith('/merchant') || pathname.startsWith('/admin');
   // Carrier-scoped invitations are bearer-token flows and must work for recipients without TajerTrack accounts.
   // Keep the normal manager-pairing route protected; only a non-empty invite token bypasses this login gate.

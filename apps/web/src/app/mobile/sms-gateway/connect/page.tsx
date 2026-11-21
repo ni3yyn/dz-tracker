@@ -20,7 +20,7 @@ export const metadata = {
   },
 };
 
-const MANAGER_REDIRECT = 'tajertrack-sms://manager-pair';
+const MANAGER_REDIRECT = 'https://tajertrack.vercel.app/mobile/sms-gateway/complete?mode=manager';
 const OPERATOR_LABELS: Record<string, string> = {
   djezzy: 'Djezzy',
   mobilis: 'Mobilis',
