@@ -88,8 +88,8 @@ export async function signup(formData: FormData) {
   if (!merchantPhone) {
     return { error: 'أدخل رقم هاتف جزائري صحيحاً بصيغة 05 أو 06 أو 07، أو مع رمز الدولة +213.' };
   }
-  if (password.length < 6) {
-    return { error: 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل' };
+  if (password.length < 12) {
+    return { error: 'يجب أن تتكون كلمة المرور من 12 حرفاً على الأقل.' };
   }
   if (!passwordConfirm || password !== passwordConfirm) {
     return { error: 'كلمتا المرور غير متطابقتين. تحقق منهما ثم حاول مجدداً.' };
@@ -115,7 +115,7 @@ export async function signup(formData: FormData) {
     if (/user already registered/i.test(message) || /already been registered/i.test(message)) {
       userMessage = 'يوجد حساب مسجل بهذا البريد الإلكتروني. جرّب تسجيل الدخول بدلاً من إنشاء حساب جديد.';
     } else if (/password should be at least/i.test(message) || /password is too short/i.test(message)) {
-      userMessage = 'كلمة المرور قصيرة جداً. استخدم 6 أحرف على الأقل.';
+      userMessage = 'كلمة المرور قصيرة جداً. استخدم 12 حرفاً على الأقل.';
     } else if (/invalid email|unable to validate email/i.test(message)) {
       userMessage = 'تحقق من صيغة البريد الإلكتروني ثم حاول مجدداً.';
     } else if (/rate limit|too many requests/i.test(message)) {
