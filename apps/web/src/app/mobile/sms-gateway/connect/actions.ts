@@ -111,7 +111,7 @@ export async function approveNativeSmsDevice(formData: FormData) {
     redirect(connectErrorUrl('pairing_code_create_failed', suppliedManagerDeviceId));
   }
 
-  redirect(`${MANAGER_REDIRECT}?code=${encodeURIComponent(code)}`);
+  redirect(`${MANAGER_REDIRECT}&code=${encodeURIComponent(code)}`);
 }
 
 /** Redeems a merchant-created, carrier-scoped invitation without requiring the recipient to log in. */
