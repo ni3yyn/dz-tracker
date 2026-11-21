@@ -1,12 +1,24 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@saas/database';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 async function incrementClicks(id: string): Promise<boolean> {
-  if (!id || typeof id !== 'string') return false;
+  if (!UUID_RE.test(id)) return false;
 
   const supabase = getSupabaseAdminClient();
 
-  // 1. Try atomic RPC first (requires migration applied in Supabase)
+  // Only count clicks for products currently published on a tracking page.
+  const { data: activeItem, error: lookupError } = await supabase
+    .from('merchant_upsells')
+    .select('id')
+    .eq('id', id)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (lookupError || !activeItem) return false;
+
+  // Try the atomic, server-privileged RPC first.
   try {
     const { error } = await supabase.rpc('increment_merchant_upsell_clicks', { upsell_id: id });
     if (!error) return true;
@@ -15,20 +27,22 @@ async function incrementClicks(id: string): Promise<boolean> {
     console.warn('[upsell/click] RPC threw:', e);
   }
 
-  // 2. Fallback: read-then-write increment
+  // Fallback for installations where the RPC migration is not yet applied.
   try {
     const { data: row } = await supabase
       .from('merchant_upsells')
       .select('clicks_count')
       .eq('id', id)
+      .eq('is_active', true)
       .maybeSingle();
 
     if (row) {
-      await supabase
+      const { error } = await supabase
         .from('merchant_upsells')
         .update({ clicks_count: ((row as any).clicks_count || 0) + 1 })
-        .eq('id', id);
-      return true;
+        .eq('id', id)
+        .eq('is_active', true);
+      return !error;
     }
   } catch (err) {
     console.error('[upsell/click] fallback error:', err);
@@ -71,21 +85,40 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    const redirectUrl = searchParams.get('redirect');
+    const requestedRedirect = searchParams.get('redirect');
 
-    if (id) {
-      await incrementClicks(id);
+    // Never redirect to a caller-supplied URL. When legacy callers request a
+    // redirect, resolve the destination from the merchant's active product row.
+    if (!id || !UUID_RE.test(id)) {
+      return NextResponse.json({ error: 'Valid product ID is required.' }, { status: 400 });
     }
 
-    if (redirectUrl) {
-      try {
-        const parsedUrl = new URL(redirectUrl);
-        if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
-          return NextResponse.redirect(parsedUrl.toString(), 302);
-        }
-      } catch {
-        // Fall through if URL is invalid
-      }
+    const supabase = getSupabaseAdminClient();
+    const { data: item, error } = await supabase
+      .from('merchant_upsells')
+      .select('product_url')
+      .eq('id', id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error || !item?.product_url) {
+      return NextResponse.json({ error: 'Product is unavailable.' }, { status: 404 });
+    }
+
+    let destination: URL;
+    try {
+      destination = new URL(item.product_url);
+    } catch {
+      return NextResponse.json({ error: 'Product destination is invalid.' }, { status: 409 });
+    }
+    if (destination.protocol !== 'https:' && destination.protocol !== 'http:') {
+      return NextResponse.json({ error: 'Product destination is invalid.' }, { status: 409 });
+    }
+
+    await incrementClicks(id);
+
+    if (requestedRedirect !== null) {
+      return NextResponse.redirect(destination.toString(), 302);
     }
 
     return NextResponse.json({ success: true });
